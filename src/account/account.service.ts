@@ -15,6 +15,10 @@ export class AccountService {
   ) {}
 
   addIndexer(indexer: string): Promise<Account> {
+    if (indexer === this.indexer) {
+      return this.getIndexerAccount();
+    }
+
     this.indexer = indexer;
     const account = this.accountRepo.create({
       id: uuid(),
@@ -25,14 +29,25 @@ export class AccountService {
     return this.accountRepo.save(account);
   }
 
-  async getIndexer(): Promise<string> {
-    if (this.indexer) return this.indexer;
+  async getMetadata(): Promise<{ indexer: string; network: string }> {
+    const indexer = await this.getIndexer();
+    const network = 'moonbeam local';
 
+    return { indexer, network};
+  }
+
+  async getIndexerAccount(): Promise<Account | undefined> {
     const accounts = await this.accountRepo.find({
       where: { controller: '' }
     });
-    if (isEmpty(accounts)) return '';
-    return accounts[0].indexer;
+    if (isEmpty(accounts)) return undefined;
+    return accounts[0]
+  }
+
+  async getIndexer(): Promise<string> {
+    if (this.indexer) return this.indexer;
+    const account = await this.getIndexerAccount();
+    return account?.indexer || '';
   }
 
   async addController(

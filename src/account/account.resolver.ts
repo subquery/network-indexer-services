@@ -1,6 +1,6 @@
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { AccountService } from './account.service';
-import { AccountType } from './account.model';
+import { AccountMetaDataType, AccountType } from './account.model';
 
 @Resolver(() => AccountType)
 export class AccountResolver {
@@ -14,6 +14,11 @@ export class AccountResolver {
   @Mutation(() => AccountType)
   addIndexer(@Args('indexer') indexer: string) {
     return this.accountService.addIndexer(indexer);
+  }
+
+  @Query(() => AccountMetaDataType)
+  accountMetadata() {
+    return this.accountService.getMetadata();
   }
 
   @Mutation(() => AccountType)

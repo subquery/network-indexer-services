@@ -24,3 +24,13 @@ export class AccountType {
   @Field()
   controller: string;
 }
+
+@ObjectType('Metadata')
+export class AccountMetaDataType {
+  @Field(() => ID)
+  indexer: string;
+
+  @Field()
+  network: string;
+}
+
