@@ -10,7 +10,7 @@
     "/bin"
   ],
   "bin": {
-    "@indexer/coordinator": "./bin/run"
+    "subql-coordinator": "./bin/run"
   },
   "scripts": {
     "prebuild": "rimraf dist",
@@ -45,7 +45,6 @@
     "graphql": "15.7.2",
     "graphql-tools": "^8.2.0",
     "lodash": "^4.17.21",
-    "nest-commander": "^2.3.4",
     "node-fetch": "2.6.1",
     "pg": "^8.7.1",
     "pino": "^7.3.0",
@@ -53,7 +52,8 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "typeorm": "^0.2.40",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "yargs": "^17.2.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",
