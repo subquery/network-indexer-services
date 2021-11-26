@@ -67,15 +67,23 @@ export class ProjectService {
     });
   }
 
-  async addProject(id: string, indexerEndpoint: string): Promise<Project> {
+  async addProject(id: string): Promise<Project> {
     const project = this.projectRepo.create({
       id,
-      status: 1,
-      indexerEndpoint,
+      status: 0,
+      indexerEndpoint: '',
       queryEndpoint: '',
       blockHeight: 0,
     });
     return this.projectRepo.save(project);
+  }
+
+  async startProject(id: string, indexerEndpoint: string): Promise<Project> {
+    return this.updateProject(id, indexerEndpoint);
+  }
+
+  async updateProjectToReady(id: string, queryEndpoint: string): Promise<Project> {
+    return this.updateProject(id, undefined, queryEndpoint);
   }
 
   async updateProject(
@@ -86,11 +94,20 @@ export class ProjectService {
     const project = await this.projectRepo.findOne({ id });
     if (indexerEndpoint) {
       project.indexerEndpoint = indexerEndpoint;
+      // FIXME: shoudn't update status here
+      project.status = 1;
     }
     if (queryEndpoint) {
       project.queryEndpoint = queryEndpoint;
+      project.status = 2;
     }
 
+    return this.projectRepo.save(project);
+  }
+
+  async stopProject(id: string): Promise<Project> {
+    const project = await this.projectRepo.findOne({ id });
+    project.status = 3;
     return this.projectRepo.save(project);
   }
 }

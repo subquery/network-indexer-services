@@ -80,8 +80,8 @@ export class ReportService {
 
     indexingProjects.forEach(async (project) => {
       try {
-        if (isEmpty(project.queryEndpoint)) return;
-        const metadata = await this.projectService.getQueryMetaData(project.id);
+        if (isEmpty(project.indexerEndpoint)) return;
+        const metadata = await this.projectService.getIndexerMetaData(project.id);
         // FIXME: extract `mmrRoot` and `blockheight`
         const { lastProcessedHeight } = metadata;
         const timestamp = Date.now();

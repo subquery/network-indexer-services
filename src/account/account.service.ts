@@ -31,6 +31,7 @@ export class AccountService {
 
   async getMetadata(): Promise<{ indexer: string; network: string }> {
     const indexer = await this.getIndexer();
+    // TODO: get network type from `argv`
     const network = 'moonbeam local';
 
     return { indexer, network};
