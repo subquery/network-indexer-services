@@ -3,17 +3,17 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProjectModule } from './project/project.module';
 import { AccountModule } from './account/account.module';
-import { CliModule } from './cli/cli.module';
+import { ConfigureModule } from './configure/configure.module';
 
 @Module({
   imports: [
   TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'coordinator',
+      host: process.env.DB_HOST ?? 'localhost',
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+      username: process.env.DB_USER ?? 'postgres',
+      password: process.env.DB_PASS ?? 'postgres',
+      database: process.env.DB_DATABASE ?? 'coordinator',
       autoLoadEntities: true,
       synchronize: true,
     }),
@@ -26,7 +26,7 @@ import { CliModule } from './cli/cli.module';
     }),
     ProjectModule,
     AccountModule,
-    CliModule
+    ConfigureModule.register(),
   ],
 })
 export class AppModule {}
