@@ -9,10 +9,13 @@ import { ProjectService } from './project.service';
 import { initContractSDK } from 'src/utils/contractSDK';
 import { getLogger } from 'src/utils/logger';
 import { decrypt } from '../utils/encrypto';
+import { Config } from '../configure/configure.module';
 
-// TODO: replace with command line input
-const url = 'http://127.0.0.1:9933';
-const chainID = 1281;
+const chainNames: Record<string, number> = {
+  local: 1281,
+  dev: 1287,
+  prod: 1285,
+};
 
 @Injectable()
 export class ReportService {
@@ -25,8 +28,11 @@ export class ReportService {
   constructor(
     private projectService: ProjectService,
     private accountService: AccountService,
+    private config: Config,
   ) {
-    this.provider = new ethers.providers.StaticJsonRpcProvider(url, chainID);
+    const ws = this.config.wsEndpoint;
+    const chainID = chainNames[this.config.network];
+    this.provider = new ethers.providers.StaticJsonRpcProvider(ws, chainID);
     this.periodicReport();
   }
 
@@ -80,7 +86,7 @@ export class ReportService {
 
     indexingProjects.forEach(async (project) => {
       try {
-        if (isEmpty(project.indexerEndpoint)) return;
+        if (isEmpty(project.indexerEndpoint) || [0,3].includes(project.status)) return;
         const metadata = await this.projectService.getIndexerMetaData(project.id);
         // FIXME: extract `mmrRoot` and `blockheight`
         const { lastProcessedHeight } = metadata;

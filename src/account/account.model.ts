@@ -25,12 +25,15 @@ export class AccountType {
   controller: string;
 }
 
-@ObjectType('Metadata')
+@ObjectType('AccountMetadata')
 export class AccountMetaDataType {
   @Field(() => ID)
   indexer: string;
 
   @Field()
   network: string;
+
+  @Field()
+  ws: string;
 }
 

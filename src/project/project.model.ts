@@ -37,8 +37,8 @@ export class ProjectType {
   blockHeight: number;
 }
 
-@ObjectType('MetaData')
-export class MetaDataType {
+@ObjectType('ServiceMetaData')
+export class ServiceMetaDataType {
   @Field(() => Int)
   lastProcessedHeight: number;
 

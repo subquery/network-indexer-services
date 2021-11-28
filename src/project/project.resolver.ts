@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ProjectService } from './project.service';
-import { ProjectType, MetaDataType } from './project.model';
+import { ProjectType, ServiceMetaDataType } from './project.model';
 import { Logger } from '@nestjs/common';
 
 @Resolver(() => ProjectType)
@@ -13,12 +13,12 @@ export class ProjectResolver {
     return this.projectService.getProject(id);
   }
 
-  @Query(() => MetaDataType)
+  @Query(() => ServiceMetaDataType)
   queryMetaData(@Args('id') id: string) {
     return this.projectService.getQueryMetaData(id);
   }
 
-  @Query(() => MetaDataType)
+  @Query(() => ServiceMetaDataType)
   indexerMetaData(@Args('id') id: string) {
     return this.projectService.getIndexerMetaData(id);
   }

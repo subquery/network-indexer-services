@@ -5,6 +5,7 @@ import { encrypt } from 'src/utils/encrypto';
 import { DeleteResult, Repository } from 'typeorm';
 import { Account } from './account.model';
 import { isEmpty } from 'lodash';
+import { Config } from 'src/configure/configure.module';
 
 @Injectable()
 export class AccountService {
@@ -12,6 +13,7 @@ export class AccountService {
 
   constructor(
     @InjectRepository(Account) private accountRepo: Repository<Account>,
+    private config: Config,
   ) {}
 
   addIndexer(indexer: string): Promise<Account> {
@@ -29,12 +31,12 @@ export class AccountService {
     return this.accountRepo.save(account);
   }
 
-  async getMetadata(): Promise<{ indexer: string; network: string }> {
+  async getMetadata(): Promise<{ indexer: string; network: string; ws: string }> {
     const indexer = await this.getIndexer();
-    // TODO: get network type from `argv`
-    const network = 'moonbeam local';
+    const network = this.config.network;
+    const ws = this.config.wsEndpoint;
 
-    return { indexer, network};
+    return { indexer, network, ws };
   }
 
   async getIndexerAccount(): Promise<Account | undefined> {

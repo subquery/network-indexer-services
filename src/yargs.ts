@@ -7,7 +7,6 @@ import yargs from 'yargs';
 export function getYargsOption() {
   return yargs(hideBin(process.argv)).options({
     network: {
-      alias: 'n',
       demandOption: false,
       describe: 'Network type for the service',
       type: 'string',
@@ -15,12 +14,12 @@ export function getYargsOption() {
       default: 'local'
     },
     'ws-endpoint': {
-      alias: 'ws',
       type: 'string',
       describe: 'Specify wss endpoint for this network',
+      demandOption: true
+      // TODO: if `ws` not consist with network, throw error
     },
     port: {
-      alias: 'p',
       type: 'number',
       describe: 'Port the service will listen on',
       default: 3001,

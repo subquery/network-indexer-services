@@ -10,7 +10,7 @@ export interface IConfig {
   readonly port: number;
 }
 
-class Config implements IConfig {
+export class Config implements IConfig {
 
   public static fromArgs(): Config {
     const { argv } = getYargsOption();
