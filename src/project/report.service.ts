@@ -6,16 +6,11 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
 import { ProjectService } from './project.service';
-import { initContractSDK } from 'src/utils/contractSDK';
+import { chainIds, initContractSDK } from 'src/utils/contractSDK';
 import { getLogger } from 'src/utils/logger';
 import { decrypt } from '../utils/encrypto';
 import { Config } from '../configure/configure.module';
 
-const chainNames: Record<string, number> = {
-  local: 1281,
-  dev: 1287,
-  prod: 1285,
-};
 
 @Injectable()
 export class ReportService {
@@ -23,6 +18,7 @@ export class ReportService {
   private accountID: string;
   private currentController: string;
   private provider: JsonRpcProvider;
+  private chainID: number;
   private sdk: ContractSDK;
 
   constructor(
@@ -31,8 +27,8 @@ export class ReportService {
     private config: Config,
   ) {
     const ws = this.config.wsEndpoint;
-    const chainID = chainNames[this.config.network];
-    this.provider = new ethers.providers.StaticJsonRpcProvider(ws, chainID);
+    this.chainID = chainIds[this.config.network];
+    this.provider = new ethers.providers.StaticJsonRpcProvider(ws, this.chainID);
     this.periodicReport();
   }
 
@@ -62,7 +58,7 @@ export class ReportService {
       try {
         const controllerBuff = toBuffer(controller);
         const wallet = new Wallet(controllerBuff, this.provider);
-        const sdk = await initContractSDK(wallet);
+        const sdk = await initContractSDK(wallet, this.chainID);
         this.currentController = (await sdk.indexerRegistry.indexerToController(indexer)).toLowerCase();
   
         if (wallet.address.toLowerCase() === this.currentController) {
@@ -71,7 +67,8 @@ export class ReportService {
           this.sdk = sdk;
         }
       } catch (e) {
-        getLogger('report').error(e, 'init contract sdk failed');
+        // FIXME: set the logger back
+        // getLogger('report').error(e, 'init contract sdk failed');
         return;
       }
     });
@@ -105,7 +102,7 @@ export class ReportService {
   }
 
   periodicReport() {
-    const interval = 5000;
+    const interval = 50000;
     setInterval(() => {
       this.reportIndexingServices();
     }, interval);

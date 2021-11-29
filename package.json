@@ -28,7 +28,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
-    "upgrade:contract": "sh ./scripts/deploy-contract.sh && yarn upgrade @subql/contract-sdk"
+    "upgrade:contract": "yarn upgrade @subql/contract-sdk"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
@@ -37,7 +37,7 @@
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^0.13.0",
-    "@subql/contract-sdk": "../contracts/build/build",
+    "@subql/contract-sdk": "0.1.1-3",
     "apollo-server-express": "^3.5.0",
     "class-validator": "^0.13.1",
     "ethereumjs-util": "^7.1.3",

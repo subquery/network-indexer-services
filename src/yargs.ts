@@ -10,7 +10,7 @@ export function getYargsOption() {
       demandOption: false,
       describe: 'Network type for the service',
       type: 'string',
-      choices: ['local', 'dev', 'prod'],
+      choices: ['local', 'testnet', 'mainnet'],
       default: 'local'
     },
     'ws-endpoint': {
