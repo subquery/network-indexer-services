@@ -4,16 +4,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProjectModule } from './project/project.module';
 import { AccountModule } from './account/account.module';
 import { ConfigureModule } from './configure/configure.module';
+import { argv, PostgresKeys } from './yargs';
 
 @Module({
   imports: [
   TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST ?? 'localhost',
-      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
-      username: process.env.DB_USER ?? 'postgres',
-      password: process.env.DB_PASS ?? 'postgres',
-      database: process.env.DB_DATABASE ?? 'coordinator',
+      host: argv(PostgresKeys.host) as string ,
+      port:  argv(PostgresKeys.port) as number,
+      username: argv(PostgresKeys.username) as string,
+      password:  argv(PostgresKeys.password) as string,
+      database:  argv(PostgresKeys.database) as string,
       autoLoadEntities: true,
       synchronize: true,
     }),

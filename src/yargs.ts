@@ -3,6 +3,15 @@
 
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
+import { secretKey } from './utils/encrypto';
+
+export enum PostgresKeys {
+  host = 'postgres-host',
+  port = 'postgres-port',
+  username = 'postgres-username',
+  password = 'postgres-password',
+  database = 'postgres-database',
+}
 
 export function getYargsOption() {
   return yargs(hideBin(process.argv)).options({
@@ -11,19 +20,51 @@ export function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['local', 'testnet', 'mainnet'],
-      default: 'local'
+      default: 'local',
+      group: 'Indexer Coordinator'
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
-      demandOption: true
-      // TODO: if `ws` not consist with network, throw error
+      demandOption: true,
+      group: 'Indexer Coordinator'
     },
     port: {
       type: 'number',
       describe: 'Port the service will listen on',
-      default: 3001,
-    }
+      default: 8000,
+      group: 'Indexer Coordinator'
+    },
+    [PostgresKeys.host]: {
+      type: 'string',
+      describe: 'Postgres host',
+      demandOption: true,
+      group: 'Postgres'
+    },
+    [PostgresKeys.port]: {
+      type: 'number',
+      describe: 'Postgres port',
+      default: 5432,
+      group: 'Postgres',
+    },
+    [PostgresKeys.username]: {
+      type: 'string',
+      describe: 'Postgres username',
+      default: 'postgres',
+      group: 'Postgres'
+    },
+    [PostgresKeys.password]: {
+      type: 'string',
+      describe: 'Postgres password',
+      default: 'postgres',
+      group: 'Postgres'
+    },
+    [PostgresKeys.database]: {
+      type: 'string',
+      describe: 'Postgres database name',
+      demandOption: true,
+      group: 'Postgres'
+    },
   });
 }
 
