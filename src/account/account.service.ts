@@ -31,12 +31,12 @@ export class AccountService {
     return this.accountRepo.save(account);
   }
 
-  async getMetadata(): Promise<{ indexer: string; network: string; ws: string }> {
+  async getMetadata(): Promise<{ indexer: string; network: string; wsEndpoint: string }> {
     const indexer = await this.getIndexer();
     const network = this.config.network;
-    const ws = this.config.wsEndpoint;
+    const wsEndpoint = this.config.wsEndpoint;
 
-    return { indexer, network, ws };
+    return { indexer, network, wsEndpoint };
   }
 
   async getIndexerAccount(): Promise<Account | undefined> {
@@ -73,5 +73,10 @@ export class AccountService {
 
   deleteAccount(id: string): Promise<DeleteResult> {
     return this.accountRepo.delete(id);
+  }
+
+  async removeAccounts(): Promise<Account[]> {
+    const accounts = await this.getAccounts();
+    return this.accountRepo.remove(accounts);
   }
 }
