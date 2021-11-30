@@ -76,6 +76,7 @@ export class AccountService {
   }
 
   async removeAccounts(): Promise<Account[]> {
+    this.indexer = undefined;
     const accounts = await this.getAccounts();
     return this.accountRepo.remove(accounts);
   }

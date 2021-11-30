@@ -21,7 +21,7 @@ import { argv, PostgresKeys } from './yargs';
     GraphQLModule.forRoot({
       autoSchemaFile: true,
       cors: {
-        origin: 'http://localhost:3000',
+        origin: true,
         credentials: true,
       },
     }),
