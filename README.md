@@ -6,26 +6,16 @@ $ npm install
 
 ## Running the app
 
-```bash
-# development
-$ npm run start
+Make sure `docker` start
 
-# watch mode
-$ npm run start:dev
+- Start postgres db
 
-# production mode
-$ npm run start:prod
+```
+yarn start:db
 ```
 
-## Test
+- Start the service
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```
+yarn start:prod --network testnet --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' --postgres-host localhost --postgres-database coordinator --port 8000
 ```

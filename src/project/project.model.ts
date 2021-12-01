@@ -1,5 +1,5 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, Timestamp } from 'typeorm';
 
 @Entity()
 export class Project {

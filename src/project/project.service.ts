@@ -110,4 +110,9 @@ export class ProjectService {
     project.status = 3;
     return this.projectRepo.save(project);
   }
+
+  async removeProjects(): Promise<Project[]> {
+    const projects = await this.getProjects();
+    return this.projectRepo.remove(projects);
+  }
 }
