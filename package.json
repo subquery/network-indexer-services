@@ -2,8 +2,7 @@
   "name": "@indexer/coordinator",
   "version": "0.0.1",
   "description": "",
-  "author": "",
-  "private": true,
+  "author": "SubQuery",
   "license": "Apache-2.0",
   "files": [
     "/dist",
