@@ -6,6 +6,7 @@ import { DeleteResult, Repository } from 'typeorm';
 import { Account } from './account.model';
 import { isEmpty } from 'lodash';
 import { Config } from 'src/configure/configure.module';
+import { ProjectService } from 'src/project/project.service';
 
 @Injectable()
 export class AccountService {
@@ -13,6 +14,7 @@ export class AccountService {
 
   constructor(
     @InjectRepository(Account) private accountRepo: Repository<Account>,
+    private projectService: ProjectService,
     private config: Config,
   ) {}
 
@@ -78,6 +80,7 @@ export class AccountService {
   async removeAccounts(): Promise<Account[]> {
     this.indexer = undefined;
     const accounts = await this.getAccounts();
+    await this.projectService.removeProjects();
     return this.accountRepo.remove(accounts);
   }
 }

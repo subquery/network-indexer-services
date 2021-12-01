@@ -5,9 +5,10 @@ import { ProjectResolver } from './project.resolver';
 import { Project } from './project.model';
 import { AccountModule } from 'src/account/account.module';
 import { ReportService } from './report.service';
+import { ContractService } from './contract.service';
 
 @Module({
   imports: [AccountModule, TypeOrmModule.forFeature([Project])],
-  providers: [ProjectService, ProjectResolver, ReportService],
+  providers: [ProjectService, ProjectResolver, ReportService, ContractService],
 })
 export class ProjectModule {}
