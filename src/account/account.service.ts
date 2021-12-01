@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { v4 as uuid } from 'uuid';
-import { encrypt } from 'src/utils/encrypto';
+import { encrypt } from '../utils/encrypto';
 import { DeleteResult, Repository } from 'typeorm';
 import { Account } from './account.model';
 import { isEmpty } from 'lodash';
-import { Config } from 'src/configure/configure.module';
-import { ProjectService } from 'src/project/project.service';
+import { Config } from '../configure/configure.module';
+import { ProjectService } from '../project/project.service';
 
 @Injectable()
 export class AccountService {
