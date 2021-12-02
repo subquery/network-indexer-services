@@ -1,9 +1,8 @@
 {
-  "name": "@indexer/coordinator",
-  "version": "0.0.1",
+  "name": "@subql/indexer-coordinator",
+  "version": "0.0.2-1",
   "description": "",
-  "author": "",
-  "private": true,
+  "author": "SubQuery",
   "license": "Apache-2.0",
   "files": [
     "/dist",
@@ -28,6 +27,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
+    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' --postgres-host localhost --postgres-database coordinator --postgres-port 5432 --port 8000",
     "upgrade:contract": "yarn upgrade @subql/contract-sdk"
   },
   "dependencies": {

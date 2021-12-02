@@ -5,11 +5,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountService } from './account.service';
 import { AccountResolver } from './account.resolver';
-import { ProjectService } from '../project/project.service';
 import { Account } from './account.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Account]), ProjectService],
+  imports: [TypeOrmModule.forFeature([Account])],
   providers: [AccountService, AccountResolver],
   exports: [AccountService],
 })
