@@ -1,10 +1,13 @@
-import {LoggerService} from '@nestjs/common';
-import {Logger} from '@subql/common';
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { LoggerService } from '@nestjs/common';
+import { Logger } from '@subql/common';
 import Pino from 'pino';
 
 export const LogCategory = 'indexer-coordinator';
 
-const logger = new Logger({level: 'info', outputFormat: 'colored', nestedKey: 'payload'});
+const logger = new Logger({ level: 'info', outputFormat: 'colored', nestedKey: 'payload' });
 
 export function getLogger(category: string): Pino.Logger {
   return logger.getLogger(category);
@@ -19,7 +22,7 @@ export class NestLogger implements LoggerService {
 
   error(message: any, trace?: string) {
     if (trace) {
-      this.logger.error({trace}, message);
+      this.logger.error({ trace }, message);
     } else {
       this.logger.error(message);
     }

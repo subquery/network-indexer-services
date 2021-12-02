@@ -1,3 +1,6 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ProjectService } from './project.service';
 import { ProjectType, ServiceMetaDataType } from './project.model';

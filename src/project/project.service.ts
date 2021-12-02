@@ -1,4 +1,7 @@
-import { Logger, Injectable } from '@nestjs/common';
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
 import { Repository } from 'typeorm';
@@ -6,9 +9,7 @@ import { Project } from './project.model';
 import { MetaData } from '@subql/common';
 @Injectable()
 export class ProjectService {
-  constructor(
-    @InjectRepository(Project) private projectRepo: Repository<Project>,
-  ) {}
+  constructor(@InjectRepository(Project) private projectRepo: Repository<Project>) {}
 
   async getProject(id: string): Promise<Project> {
     return this.projectRepo.findOne({ id });
@@ -60,10 +61,7 @@ export class ProjectService {
 
   async getIndexingProjects() {
     return this.projectRepo.find({
-      where: [
-        { status: 1 },
-        { status: 2 },
-      ]
+      where: [{ status: 1 }, { status: 2 }],
     });
   }
 

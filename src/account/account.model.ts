@@ -1,10 +1,13 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Account {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column()
   indexer: string; // indexer address
@@ -36,4 +39,3 @@ export class AccountMetaDataType {
   @Field()
   wsEndpoint: string;
 }
-

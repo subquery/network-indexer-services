@@ -1,5 +1,8 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn, Timestamp } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Project {

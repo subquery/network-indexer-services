@@ -1,6 +1,8 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
-import { AccountService } from 'src/account/account.service';
 import { ProjectService } from './project.service';
 import { getLogger } from 'src/utils/logger';
 import { ContractService } from './contract.service';
@@ -8,10 +10,7 @@ import { IndexingStatus } from './types';
 
 @Injectable()
 export class ReportService {
-  constructor(
-    private projectService: ProjectService,
-    private contractService: ContractService,
-  ) {
+  constructor(private projectService: ProjectService, private contractService: ContractService) {
     this.periodicReport();
   }
 
@@ -28,11 +27,14 @@ export class ReportService {
       try {
         const { id } = project;
         const status = await this.contractService.deploymentStatusByIndexer(id);
-        if (isEmpty(project.indexerEndpoint) || [IndexingStatus.NOTSTART,IndexingStatus.TERMINATED].includes(status)) return;
+        if (
+          isEmpty(project.indexerEndpoint) ||
+          [IndexingStatus.NOTSTART, IndexingStatus.TERMINATED].includes(status)
+        )
+          return;
 
-        const metadata = await this.projectService.getIndexerMetaData(id);
+        // const metadata = await this.projectService.getIndexerMetaData(id);
         // FIXME: extract `mmrRoot` and `blockheight`
-        const { lastProcessedHeight } = metadata;
         const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
         const timestamp = Date.now();
         await sdk.queryRegistry.connect(wallet).reportIndexingStatus(id, 10, mmrRoot, timestamp);

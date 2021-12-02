@@ -3,7 +3,6 @@
 
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
-import { secretKey } from './utils/encrypto';
 
 export enum PostgresKeys {
   host = 'postgres-host',
@@ -21,25 +20,25 @@ export function getYargsOption() {
       type: 'string',
       choices: ['local', 'testnet', 'mainnet'],
       default: 'local',
-      group: 'Indexer Coordinator'
+      group: 'Indexer Coordinator',
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      group: 'Indexer Coordinator'
+      group: 'Indexer Coordinator',
     },
     port: {
       type: 'number',
       describe: 'Port the service will listen on',
       default: 8000,
-      group: 'Indexer Coordinator'
+      group: 'Indexer Coordinator',
     },
     [PostgresKeys.host]: {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      group: 'Postgres'
+      group: 'Postgres',
     },
     [PostgresKeys.port]: {
       type: 'number',
@@ -51,19 +50,19 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres username',
       default: 'postgres',
-      group: 'Postgres'
+      group: 'Postgres',
     },
     [PostgresKeys.password]: {
       type: 'string',
       describe: 'Postgres password',
       default: 'postgres',
-      group: 'Postgres'
+      group: 'Postgres',
     },
     [PostgresKeys.database]: {
       type: 'string',
       describe: 'Postgres database name',
       demandOption: true,
-      group: 'Postgres'
+      group: 'Postgres',
     },
   });
 }

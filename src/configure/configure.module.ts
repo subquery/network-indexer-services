@@ -1,3 +1,5 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
 
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { getYargsOption } from '../yargs';
@@ -11,7 +13,6 @@ export interface IConfig {
 }
 
 export class Config implements IConfig {
-
   public static fromArgs(): Config {
     const { argv } = getYargsOption();
 
@@ -41,7 +42,6 @@ export class Config implements IConfig {
 @Module({})
 export class ConfigureModule {
   static register(): DynamicModule {
-
     const config = Config.fromArgs();
 
     return {

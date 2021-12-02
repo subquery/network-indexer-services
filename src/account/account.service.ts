@@ -1,3 +1,6 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { v4 as uuid } from 'uuid';
@@ -43,10 +46,10 @@ export class AccountService {
 
   async getIndexerAccount(): Promise<Account | undefined> {
     const accounts = await this.accountRepo.find({
-      where: { controller: '' }
+      where: { controller: '' },
     });
     if (isEmpty(accounts)) return undefined;
-    return accounts[0]
+    return accounts[0];
   }
 
   async getIndexer(): Promise<string> {
@@ -55,15 +58,13 @@ export class AccountService {
     return account?.indexer || '';
   }
 
-  async addController(
-    controller: string,
-  ): Promise<Account> {
+  async addController(controller: string): Promise<Account> {
     const encryptedController = encrypt(controller);
     const indexer = await this.getIndexer();
     const account = this.accountRepo.create({
       id: uuid(),
       indexer,
-      controller: encryptedController
+      controller: encryptedController,
     });
 
     return this.accountRepo.save(account);

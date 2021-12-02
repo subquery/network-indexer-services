@@ -1,3 +1,6 @@
+// Copyright 2020-2021 OnFinality Limited authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { AccountService } from './account.service';
 import { AccountMetaDataType, AccountType } from './account.model';
@@ -22,9 +25,7 @@ export class AccountResolver {
   }
 
   @Mutation(() => AccountType)
-  updateController(
-    @Args('controller') controller: string,
-  ) {
+  updateController(@Args('controller') controller: string) {
     return this.accountService.addController(controller);
   }
 
