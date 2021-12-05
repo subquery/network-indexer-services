@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { Project } from './project.model';
 import { MetaData } from '@subql/common';
 @Injectable()
@@ -57,6 +57,14 @@ export class ProjectService {
 
   async getProjects(): Promise<Project[]> {
     return this.projectRepo.find();
+  }
+
+  async getAliveProjects(): Promise<Project[]> {
+    return this.projectRepo.find({
+      where: {
+        queryEndpoint: Not(''),
+      },
+    });
   }
 
   async getIndexingProjects() {

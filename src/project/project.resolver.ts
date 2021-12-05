@@ -31,6 +31,11 @@ export class ProjectResolver {
     return this.projectService.getProjects();
   }
 
+  @Query(() => [ProjectType])
+  getAliveProjects() {
+    return this.projectService.getAliveProjects();
+  }
+
   @Mutation(() => ProjectType)
   addProject(@Args('id') id: string) {
     return this.projectService.addProject(id);
