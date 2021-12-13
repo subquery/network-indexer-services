@@ -57,6 +57,11 @@ export class ProjectResolver {
   }
 
   @Mutation(() => [ProjectType])
+  removeProject(@Args('id') id: string) {
+    return this.projectService.removeProject(id);
+  }
+
+  @Mutation(() => [ProjectType])
   removeProjects() {
     return this.projectService.removeProjects();
   }

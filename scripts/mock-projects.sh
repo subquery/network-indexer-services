@@ -1,8 +1,8 @@
 URL="Http://127.0.0.1:8000/graphql"
 
-PROJECT_1="0x7aa3510fe0f76233d377cce09631fb1b0093de258ca0036afb7dc704c7c1d15e"
-PROJECT_2="0x92d5267833fed349c8b617404cd8d01bcfffcb609eb00bdb1e45acc59c27314b"
-PROJECT_3="0x6c8212408c3c62fc78cbfa9d6fe5ff39348c1009114a6315b1e2256459135348"
+PROJECT_1="QmWbNtPEbXY2id3yc332P4uLyAYwJ7vpBz1TgqxvnNx8xd"
+PROJECT_2="QmYDpk94SCgxv4j2PyLkaD8fWJpHwJufMLX2HGjefsNHH4"
+PROJECT_3="QmVeDmzmkFDJp1B5biDZ4bFYgWKbwg4de9ZFCyqzmK61H1"
 
 QUERY_SERVICE_URL_1="https://api.subquery.network/sq/darwinia-network/darwinia/graphql"
 QUERY_SERVICE_URL_2="https://api.subquery.network/sq/m00nbeans/marketplace-v3/graphql"
