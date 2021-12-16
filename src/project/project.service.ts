@@ -121,6 +121,11 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
+  async removeProject(id: string): Promise<Project[]> {
+    const project = await this.getProject(id);
+    return this.projectRepo.remove([project]);
+  }
+
   async removeProjects(): Promise<Project[]> {
     const projects = await this.getProjects();
     return this.projectRepo.remove(projects);
