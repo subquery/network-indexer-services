@@ -7,6 +7,7 @@ import { ProjectService } from './project.service';
 import { getLogger } from 'src/utils/logger';
 import { ContractService } from './contract.service';
 import { IndexingStatus } from './types';
+import { cidToBytes32 } from 'src/utils/contractSDK';
 
 @Injectable()
 export class ReportService {
@@ -14,39 +15,52 @@ export class ReportService {
     this.periodicReport();
   }
 
-  async reportIndexingServices() {
-    const indexingProjects = await this.projectService.getIndexingProjects();
-    if (isEmpty(indexingProjects)) return;
+  async getIndexingProjects() {
+    const projects = await this.projectService.getProjects();
+    const indexingProjects = await Promise.all(
+      projects.map(async ({ id }) => {
+        const status = await this.contractService.deploymentStatusByIndexer(id);
+        const project = await this.projectService.updateProjectStatus(id, status);
+        return project;
+      }),
+    );
 
+    return indexingProjects.filter(
+      ({ queryEndpoint, status }) =>
+        !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status),
+    );
+  }
+
+  async reportIndexingServices() {
     await this.contractService.updateContractSDK();
     const wallet = this.contractService.getWallet();
     const sdk = this.contractService.getSdk();
     if (!wallet || !sdk) return;
 
-    indexingProjects.forEach(async (project) => {
-      try {
-        const { id } = project;
-        const status = await this.contractService.deploymentStatusByIndexer(id);
-        if (
-          isEmpty(project.indexerEndpoint) ||
-          [IndexingStatus.NOTSTART, IndexingStatus.TERMINATED].includes(status)
-        )
-          return;
+    const indexingProjects = await this.getIndexingProjects();
+    if (isEmpty(indexingProjects)) return;
 
-        // const metadata = await this.projectService.getIndexerMetaData(id);
-        // FIXME: extract `mmrRoot` and `blockheight`
+    indexingProjects.forEach(async ({ id }) => {
+      try {
+        // FIXME: extract `mmrRoot` should get from query endpoint `_por`;
         const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
+        const { lastProcessedHeight } = await this.projectService.getQueryMetaData(id);
         const timestamp = Date.now();
-        await sdk.queryRegistry.connect(wallet).reportIndexingStatus(id, 10, mmrRoot, timestamp);
-        getLogger('report').info(`report status for proejct: ${id} ${timestamp}`);
+
+        const tx = await sdk.queryRegistry
+          .connect(wallet)
+          .reportIndexingStatus(cidToBytes32(id), lastProcessedHeight, mmrRoot, timestamp);
+        await tx.wait(1);
+
+        getLogger('report').info(`report status for proejct: ${id} ${lastProcessedHeight}`);
       } catch (e) {
-        getLogger('report').error(e, `failed to report status for proejct: ${project.id}`);
+        getLogger('report').error(e, `failed to report status for proejct: ${id}`);
       }
     });
   }
 
   periodicReport() {
-    const interval = 1800000;
+    const interval = 30000;
     setInterval(() => {
       this.reportIndexingServices();
     }, interval);

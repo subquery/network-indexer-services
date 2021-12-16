@@ -8,10 +8,11 @@ import { isEmpty } from 'lodash';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
-import { chainIds, initContractSDK } from 'src/utils/contractSDK';
+import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
 import { decrypt } from '../utils/encrypto';
 import { Config } from '../configure/configure.module';
 import { IndexingStatus } from './types';
+import { getLogger } from 'src/utils/logger';
 
 @Injectable()
 export class ContractService {
@@ -80,8 +81,7 @@ export class ContractService {
           this.sdk = sdk;
         }
       } catch (e) {
-        // FIXME: set the logger back
-        // getLogger('report').error(e, 'init contract sdk failed');
+        getLogger('report').error(e, 'init contract sdk failed');
         return;
       }
     });
@@ -91,7 +91,10 @@ export class ContractService {
     const indexer = await this.accountService.getIndexer();
     if (!this.sdk || !indexer) return IndexingStatus.NOTSTART;
 
-    const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(id, indexer);
+    const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+      cidToBytes32(id),
+      indexer,
+    );
     return status as IndexingStatus;
   }
 }

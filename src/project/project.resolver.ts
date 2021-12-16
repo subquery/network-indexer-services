@@ -51,18 +51,8 @@ export class ProjectResolver {
   }
 
   @Mutation(() => ProjectType)
-  startProject(@Args('id') id: string) {
-    return this.projectService.startProject(id);
-  }
-
-  @Mutation(() => ProjectType)
-  updateProjectToReady(@Args('id') id: string) {
-    return this.projectService.updateProjectToReady(id);
-  }
-
-  @Mutation(() => ProjectType)
-  stopProject(@Args('id') id: string) {
-    return this.projectService.stopProject(id);
+  updateProjectStatus(@Args('id') id: string, @Args('status') status: number) {
+    return this.projectService.updateProjectStatus(id, status);
   }
 
   @Mutation(() => [ProjectType])

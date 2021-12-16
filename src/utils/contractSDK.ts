@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
-import { Signer } from 'ethers';
+import { Signer, utils } from 'ethers';
 import { localnet, testnet } from '../contract/deployment';
 
 const deployments = {
@@ -39,4 +39,8 @@ const options = {
 export async function initContractSDK(provider: Signer, chainID: ChainID): Promise<ContractSDK> {
   const sdk = await ContractSDK.create(provider, options[chainID]);
   return sdk;
+}
+
+export function cidToBytes32(cid: string): string {
+  return `0x${Buffer.from(utils.base58.decode(cid)).slice(2).toString('hex')}`;
 }

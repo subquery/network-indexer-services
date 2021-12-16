@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import fetch from 'node-fetch';
-import { Repository, Not, IsNull } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { Project } from './project.model';
 import { MetaData } from '@subql/common';
 import { IndexingStatus } from './types';
@@ -45,13 +45,12 @@ export class ProjectService {
         }}`,
     });
 
-    const response = await fetch(queryEndpoint, {
+    const response = await fetch(`${queryEndpoint}/graphql`, {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
       body: queryBody,
     });
 
-    // FIXME: error handling
     const data = await response.json();
     return data.data._metadata;
   }
@@ -65,12 +64,6 @@ export class ProjectService {
       where: {
         queryEndpoint: Not(''),
       },
-    });
-  }
-
-  async getIndexingProjects() {
-    return this.projectRepo.find({
-      where: [{ status: 1 }, { status: 2 }],
     });
   }
 
@@ -91,14 +84,6 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
-  async startProject(id: string): Promise<Project> {
-    return this.updateProjectStatus(id, IndexingStatus.INDEXING);
-  }
-
-  async updateProjectToReady(id: string): Promise<Project> {
-    return this.updateProjectStatus(id, IndexingStatus.READY);
-  }
-
   async updateProjectServices(
     id: string,
     indexerEndpoint?: string,
@@ -112,12 +97,6 @@ export class ProjectService {
       project.queryEndpoint = queryEndpoint;
     }
 
-    return this.projectRepo.save(project);
-  }
-
-  async stopProject(id: string): Promise<Project> {
-    const project = await this.projectRepo.findOne({ id });
-    project.status = 3;
     return this.projectRepo.save(project);
   }
 
