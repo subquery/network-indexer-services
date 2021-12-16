@@ -7,6 +7,7 @@ import fetch from 'node-fetch';
 import { Repository, Not, IsNull } from 'typeorm';
 import { Project } from './project.model';
 import { MetaData } from '@subql/common';
+import { IndexingStatus } from './types';
 @Injectable()
 export class ProjectService {
   constructor(@InjectRepository(Project) private projectRepo: Repository<Project>) {}
@@ -84,15 +85,21 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
-  async startProject(id: string, indexerEndpoint: string): Promise<Project> {
-    return this.updateProject(id, indexerEndpoint);
+  async updateProjectStatus(id: string, status: IndexingStatus): Promise<Project> {
+    const project = await this.projectRepo.findOne({ id });
+    project.status = status;
+    return this.projectRepo.save(project);
   }
 
-  async updateProjectToReady(id: string, queryEndpoint: string): Promise<Project> {
-    return this.updateProject(id, undefined, queryEndpoint);
+  async startProject(id: string): Promise<Project> {
+    return this.updateProjectStatus(id, IndexingStatus.INDEXING);
   }
 
-  async updateProject(
+  async updateProjectToReady(id: string): Promise<Project> {
+    return this.updateProjectStatus(id, IndexingStatus.READY);
+  }
+
+  async updateProjectServices(
     id: string,
     indexerEndpoint?: string,
     queryEndpoint?: string,
@@ -100,12 +107,9 @@ export class ProjectService {
     const project = await this.projectRepo.findOne({ id });
     if (indexerEndpoint) {
       project.indexerEndpoint = indexerEndpoint;
-      // FIXME: shoudn't update status here
-      project.status = 1;
     }
     if (queryEndpoint) {
       project.queryEndpoint = queryEndpoint;
-      project.status = 2;
     }
 
     return this.projectRepo.save(project);

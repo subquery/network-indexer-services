@@ -42,13 +42,22 @@ export class ProjectResolver {
   }
 
   @Mutation(() => ProjectType)
-  startProject(@Args('id') id: string, @Args('indexerEndpoint') endpoint: string) {
-    return this.projectService.startProject(id, endpoint);
+  updateProjectServices(
+    @Args('id') id: string,
+    @Args('indexerEndpoint') indexerUrl: string,
+    @Args('queryEndpoint') queryUrl: string,
+  ) {
+    return this.projectService.updateProjectServices(id, indexerUrl, queryUrl);
   }
 
   @Mutation(() => ProjectType)
-  updateProjectToReady(@Args('id') id: string, @Args('queryEndpoint') endpoint: string) {
-    return this.projectService.updateProjectToReady(id, endpoint);
+  startProject(@Args('id') id: string) {
+    return this.projectService.startProject(id);
+  }
+
+  @Mutation(() => ProjectType)
+  updateProjectToReady(@Args('id') id: string) {
+    return this.projectService.updateProjectToReady(id);
   }
 
   @Mutation(() => ProjectType)
