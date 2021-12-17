@@ -47,14 +47,13 @@ export class ReportService {
         const { lastProcessedHeight } = await this.projectService.getQueryMetaData(id);
         const timestamp = Date.now();
 
-        const tx = await sdk.queryRegistry
+        await sdk.queryRegistry
           .connect(wallet)
           .reportIndexingStatus(cidToBytes32(id), lastProcessedHeight, mmrRoot, timestamp);
-        await tx.wait(1);
 
         getLogger('report').info(`report status for proejct: ${id} ${lastProcessedHeight}`);
       } catch (e) {
-        getLogger('report').error(e, `failed to report status for proejct: ${id}`);
+        // getLogger('report').error(e, `failed to report status for proejct: ${id}`);
       }
     });
   }
