@@ -27,7 +27,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
-    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --port 8000",
+    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' --postgres-host localhost --postgres-database coordinator --postgres-port 5432 --port 8000",
     "start:help": "yarn start:prod --help",
     "mock:projects": "sh ./scripts/mock-projects.sh",
     "upgrade:contract": "yarn upgrade @subql/contract-sdk"
