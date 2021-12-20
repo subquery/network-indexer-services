@@ -1,13 +1,16 @@
 // Copyright 2020-2021 OnFinality Limited authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProjectModule } from './project/project.module';
 import { AccountModule } from './account/account.module';
 import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
+import { AdminController } from './admin.controller';
 
 @Module({
   imports: [
@@ -30,7 +33,12 @@ import { argv, PostgresKeys } from './yargs';
     }),
     ProjectModule,
     AccountModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '../../indexer-admin/build'),
+      exclude: ['/env.js', '/api*'],
+    }),
     ConfigureModule.register(),
   ],
+  controllers: [AdminController],
 })
 export class AppModule {}
