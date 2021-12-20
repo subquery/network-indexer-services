@@ -35,7 +35,7 @@ import { AdminController } from './admin.controller';
     AccountModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '../../indexer-admin/build'),
-      exclude: ['/env.js', '/api*'],
+      exclude: ['/env.js', '/graphql*'],
     }),
     ConfigureModule.register(),
   ],
