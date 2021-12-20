@@ -5,7 +5,10 @@ import { LoggerService } from '@nestjs/common';
 import { Logger } from '@subql/common';
 import Pino from 'pino';
 
-export const LogCategory = 'indexer-coordinator';
+export enum LogCategory {
+  coordinator = 'indexer-coordinator',
+  admin = 'indexer-admin',
+}
 
 const logger = new Logger({ level: 'info', outputFormat: 'colored', nestedKey: 'payload' });
 
