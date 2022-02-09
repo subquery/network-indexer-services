@@ -43,4 +43,4 @@ console.log('path:', join(__dirname));
   ],
   controllers: [AdminController],
 })
-export class AppModule { }
+export class AppModule {}

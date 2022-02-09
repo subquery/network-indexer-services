@@ -64,7 +64,6 @@ export const localnet = {
   },
 };
 
-
 export const testnet = {
   Settings: {
     address: '0x4236C0B5230f668362388fEAAD59f30fd386c8A7',

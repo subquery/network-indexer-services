@@ -6,7 +6,7 @@ const controllerPrivateKey = '8075991ce870b93a8870eca0c0f91913d12f47948ca0fd25b4
 
 const deloymentID = '0xcec921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
 
-const _mmrRoot = "0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55";
+const _mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
 
 // # Write your query or mutation here
 
