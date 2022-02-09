@@ -18,7 +18,7 @@ docker run --name "coordinator-server" -e POSTGRES_PASSWORD="postgres" \
     -d postgres
 
 # Create db
-docker exec -i "coordinator-server" psql -U postgres -c "create database "coordinator"
+docker exec -i "coordinator-server" psql -U postgres -c "create database \"coordinator\""
 ```
 
 ### Run the Coordinator Command
@@ -52,11 +52,11 @@ Options:
 2. Start coordinator service
 
 ```sh
-subql-coordinator --network testnet \ 
+subql-coordinator --network testnet \
     --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' \
     --postgres-host localhost \
-    --postgres-database coordinator \ 
-    --postgres-port 5432 \ 
+    --postgres-database coordinator \
+    --postgres-port 5432 \
     --port 8000
 ```
 
