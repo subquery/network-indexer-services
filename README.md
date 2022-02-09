@@ -8,10 +8,16 @@ $ npm install
 
 Make sure `docker` start
 
+- Install dependencies
+
+```
+yarn
+```
+
 - Start postgres db
 
 ```
-yarn start:db
+ yarn start:db
 ```
 
 - Start the service
