@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "0.0.4-7",
+  "version": "0.1.0",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "nest build",
+    "build": "nest build && cp -r ./node_modules/@subql/indexer-admin/build/ ./dist/indexer-admin",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:db": "sh ./scripts/start-db.sh",
@@ -41,6 +41,7 @@
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^0.13.0",
     "@subql/contract-sdk": "^0.1.1-28",
+    "@subql/indexer-admin": "0.0.1-2",
     "apollo-server-express": "^3.5.0",
     "class-validator": "^0.13.2",
     "ethereumjs-util": "^7.1.3",

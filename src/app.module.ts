@@ -12,6 +12,8 @@ import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
 
+console.log('path:', join(__dirname));
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -34,11 +36,11 @@ import { AdminController } from './admin.controller';
     ProjectModule,
     AccountModule,
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../../indexer-admin/build'),
+      rootPath: join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),
     ConfigureModule.register(),
   ],
   controllers: [AdminController],
 })
-export class AppModule {}
+export class AppModule { }
