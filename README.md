@@ -2,7 +2,7 @@
 
 ## Install
 
-`npm install -g  @subql/indexer-coordinator@0.1.1-1`
+`npm install -g  @subql/indexer-coordinator@0.1.1-2`
 
 ## Start Coordinator Service
 
