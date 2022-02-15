@@ -2752,10 +2752,10 @@
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
-"@subql/indexer-admin@0.0.1-2":
-  version "0.0.1-2"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-2.tgz#a4f59f6e9053ac5b1f75f481de56a5b86d04c1e9"
-  integrity sha512-okoK26kh2EHSaQT2/e1sEWGhyF2bhlm3KIjv32aIsAnynd8dOPHAcFaUI8F3gDz+dkV/V8TCIaEJvlEo2G7Ceg==
+"@subql/indexer-admin@0.0.1-4":
+  version "0.0.1-4"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-4.tgz#2cc36f1b21921a15e1d238054e82cc4307a59e47"
+  integrity sha512-blW+1ocZF2z/FQ5A3Tv2jej82Yj9Lo9fG0u3DJmS7ZF8mbdsC7R3benkTBatdqvVjMmZXujJLiG3gPhNJ1xJdQ==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@subql/contract-sdk" "^0.1.1-28"
