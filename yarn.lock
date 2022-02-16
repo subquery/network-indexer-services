@@ -2752,6 +2752,15 @@
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
+"@subql/contract-sdk@^0.1.1-31":
+  version "0.1.1-31"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.1.1-31.tgz#d03c05876c92c212d3d92c72ad1630502c7984cf"
+  integrity sha512-wRi3HTu15oOBYIJVRojf0SMWyEsbq0ChCMWiQjEM9LQngi3Ex2z88PTA9BF1IppNHnMhp6HF0WZbaDlNCBSiAQ==
+  dependencies:
+    "@openzeppelin/contracts-upgradeable" "^4.3.3"
+    dotenv "^10.0.0"
+    fs "^0.0.1-security"
+
 "@subql/indexer-admin@0.0.1-4":
   version "0.0.1-4"
   resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-4.tgz#2cc36f1b21921a15e1d238054e82cc4307a59e47"
