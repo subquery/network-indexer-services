@@ -8,7 +8,7 @@ import { Logger } from '@nestjs/common';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
-  constructor(private projectService: ProjectService) {}
+  constructor(private projectService: ProjectService) { }
   private readonly logger = new Logger(ProjectService.name);
 
   @Query(() => ProjectType)
@@ -63,5 +63,11 @@ export class ProjectResolver {
   @Mutation(() => [ProjectType])
   removeProjects() {
     return this.projectService.removeProjects();
+  }
+
+  // project management
+  @Query(() => ProjectType)
+  startProject(@Args('id') id: string) {
+    return this.projectService.startProject(id);
   }
 }

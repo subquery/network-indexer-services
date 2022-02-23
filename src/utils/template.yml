@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  {{nodeServiceName}}:
+    image: onfinality/subql-node:{{nodeVersion}}
+    restart: always
+    environment:
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: {{database}}
+      DB_HOST: postgres
+      DB_PORT: 5432
+    volumes:
+      - ./:/app
+    command:
+      - -f=ipfs://{{deploymentID}}
+      - -d={{dictionary}}
+      - --ipfs=https://ipfs.subquery.network/ipfs/api/v0
+      - --network-endpoint={{networkEndpoint}}
+      - --db-schema=app_{{deploymentID}}
+      - --port={{servicePort}}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://{{nodeServiceName}}:{{servicePort}}/ready"
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  {{queryName}}:
+    image: onfinality/subql-query:{{queryVersion}}
+    ports:
+      - {{servicePort}}:{{servicePort}}
+    depends_on:
+      "{{nodeServiceName}}":
+        condition: service_healthy
+    restart: always
+    environment:
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: {{database}}
+      DB_HOST: postgres
+      DB_PORT: 5432
+    command:
+      - --name=app_{{deploymentID}}
+      - --playground
+      - --indexer=http://{{nodeServiceName}}:{{servicePort}}
+
+networks:
+  default:
+    external:
+      name: cooridnator-service

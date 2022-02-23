@@ -8,9 +8,18 @@ import { Repository, Not } from 'typeorm';
 import { Project } from './project.model';
 import { MetaData } from '@subql/common';
 import { IndexingStatus } from './types';
+import { getLogger } from 'src/utils/logger';
+import { DockerService } from './docker.service';
+import { generateDockerComposeFile, TemplateType } from 'src/utils/docker';
 @Injectable()
 export class ProjectService {
-  constructor(@InjectRepository(Project) private projectRepo: Repository<Project>) {}
+  private port: number;
+  constructor(
+    @InjectRepository(Project) private projectRepo: Repository<Project>,
+    private docker: DockerService,
+  ) {
+    this.port = 3000;
+  }
 
   async getProject(id: string): Promise<Project> {
     return this.projectRepo.findOne({ id });
@@ -108,5 +117,42 @@ export class ProjectService {
   async removeProjects(): Promise<Project[]> {
     const projects = await this.getProjects();
     return this.projectRepo.remove(projects);
+  }
+
+  // docker project management
+  async startProject(deploymentID: string): Promise<Project> {
+    // create templete item
+    // TODO: should get these information from contract
+    // FIXME: `servicePort` should be increased
+    const suffix = deploymentID.substring(10);
+    const database = `node_db_${suffix}`.toLocaleLowerCase();
+    const item: TemplateType = {
+      deploymentID,
+      networkEndpoint: 'wss://acala-polkadot.api.onfinality.io/public-ws',
+      dictionary: 'https://api.subquery.network/sq/subquery/acala-dictionary',
+      nodeServiceName: `node_${suffix}`,
+      nodeVersion: 'v0.29.1',
+      database,
+      servicePort: this.port++,
+      queryName: `query_${suffix}`,
+      queryVersion: 'v0.12.0',
+    };
+
+    try {
+      // 1. create new db
+      await this.docker.createDB(database);
+      // 2. generate new docker compose file
+      generateDockerComposeFile(item);
+      // 3. docker compose up
+      await this.docker.up(item.deploymentID);
+    } catch (e) {
+      getLogger('docker').error(`start project failed: ${e}`);
+    }
+
+    return this.addProject(item.deploymentID);
+  }
+
+  async stopProject(deploymentID: string) {
+    console.log('stop project:', deploymentID);
   }
 }
