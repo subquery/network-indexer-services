@@ -12,8 +12,6 @@ import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
 
-console.log('path:', join(__dirname));
-
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -43,4 +41,4 @@ console.log('path:', join(__dirname));
   ],
   controllers: [AdminController],
 })
-export class AppModule {}
+export class AppModule { }

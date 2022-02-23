@@ -9,10 +9,11 @@ import { Project } from './project.model';
 import { AccountModule } from 'src/account/account.module';
 import { ReportService } from './report.service';
 import { ContractService } from './contract.service';
+import { DockerService } from './docker.service';
 
 @Module({
   imports: [AccountModule, TypeOrmModule.forFeature([Project])],
-  providers: [ProjectService, ProjectResolver, ReportService, ContractService],
+  providers: [ProjectService, ProjectResolver, ReportService, ContractService, DockerService],
   exports: [ProjectService],
 })
-export class ProjectModule {}
+export class ProjectModule { }
