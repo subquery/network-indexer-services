@@ -32,7 +32,7 @@ export class DockerService {
   async createDB(name: string): Promise<boolean> {
     getLogger('docker').info(`create new db: ${name}`);
     // TODO: check db exist or not
-    const dbDocker = 'dev_postgres_1'; // FIXME: 'indexer-coordinator_postgres_1'
+    const dbDocker = process.env.DB_DOCKER ?? 'coordinator_db';
     try {
       await this.execute(
         `docker exec -i ${dbDocker} psql -U postgres -c "create database ${name}"`,

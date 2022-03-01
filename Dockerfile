@@ -5,8 +5,7 @@ WORKDIR /app
 ARG RELEASE_VERSION
 RUN npm i -g @subql/indexer-coordinator
 
-RUN apk add --no-cache tini git curl
+RUN apk add --no-cache tini git curl docker-cli docker-compose
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/lib/node_modules/@subql/indexer-coordinator/bin/run"]
-CMD ["-f","/app"]

@@ -10,7 +10,7 @@ import { MetaData } from '@subql/common';
 import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
-import { generateDockerComposeFile, TemplateType } from 'src/utils/docker';
+import { generateDockerComposeFile, projectId, TemplateType } from 'src/utils/docker';
 @Injectable()
 export class ProjectService {
   private port: number;
@@ -124,23 +124,21 @@ export class ProjectService {
     // create templete item
     // TODO: should get these information from contract
     // FIXME: `servicePort` should be increased
-    const suffix = deploymentID.substring(10);
-    const database = `node_db_${suffix}`.toLocaleLowerCase();
+    const projectID = projectId(deploymentID);
     const item: TemplateType = {
       deploymentID,
+      projectID,
+      // FIXME: networkEndpoint and dictionatry url should include in the `metadata`
       networkEndpoint: 'wss://acala-polkadot.api.onfinality.io/public-ws',
       dictionary: 'https://api.subquery.network/sq/subquery/acala-dictionary',
-      nodeServiceName: `node_${suffix}`,
       nodeVersion: 'v0.29.1',
-      database,
-      servicePort: this.port++,
-      queryName: `query_${suffix}`,
       queryVersion: 'v0.12.0',
+      servicePort: this.port++,
     };
 
     try {
       // 1. create new db
-      await this.docker.createDB(database);
+      await this.docker.createDB(`db_${projectID}`);
       // 2. generate new docker compose file
       generateDockerComposeFile(item);
       // 3. docker compose up
@@ -149,6 +147,7 @@ export class ProjectService {
       getLogger('docker').error(`start project failed: ${e}`);
     }
 
+    // TODO: add project with more info `containerID`, `containerName`, `query_endpoint`, `node_endpoint`
     return this.addProject(item.deploymentID);
   }
 

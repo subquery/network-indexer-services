@@ -1,13 +1,14 @@
 version: "3"
 
 services:
-  {{nodeServiceName}}:
+  node_{{projectID}}:
     image: onfinality/subql-node:{{nodeVersion}}
+    container_name: node_{{projectID}}
     restart: always
     environment:
       DB_USER: postgres
       DB_PASS: postgres
-      DB_DATABASE: {{database}}
+      DB_DATABASE: db_{{projectID}}
       DB_HOST: postgres
       DB_PORT: 5432
     volumes:
@@ -25,30 +26,31 @@ services:
           "CMD",
           "curl",
           "-f",
-          "http://{{nodeServiceName}}:{{servicePort}}/ready"
+          "http://node_{{projectID}}:{{servicePort}}/ready"
         ]
       interval: 3s
       timeout: 5s
       retries: 30
 
-  {{queryName}}:
+  query_{{projectID}}:
     image: onfinality/subql-query:{{queryVersion}}
+    container_name: query_{{projectID}}
     ports:
       - {{servicePort}}:{{servicePort}}
     depends_on:
-      "{{nodeServiceName}}":
+      "node_{{projectID}}":
         condition: service_healthy
     restart: always
     environment:
       DB_USER: postgres
       DB_PASS: postgres
-      DB_DATABASE: {{database}}
+      DB_DATABASE: db_{{projectID}}
       DB_HOST: postgres
       DB_PORT: 5432
     command:
       - --name=app_{{deploymentID}}
       - --playground
-      - --indexer=http://{{nodeServiceName}}:{{servicePort}}
+      - --indexer=http://node_{{projectID}}:{{servicePort}}
 
 networks:
   default:

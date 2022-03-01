@@ -8,25 +8,28 @@ import { getLogger } from 'src/utils/logger';
 
 export type TemplateType = {
   deploymentID: string;
+  projectID: string;
   networkEndpoint: string;
   dictionary: string;
-  nodeServiceName: string;
   nodeVersion: string;
-  database: string;
-  servicePort: number;
-  queryName: string;
   queryVersion: string;
+  servicePort: number;
 };
 
-export function getInsideComposeFilePath(name: string) {
-  const root = __dirname.substring(0, __dirname.lastIndexOf('/'));
-  return join(root, 'compose-files', name);
+export function projectId(cid: string) {
+  return cid.substring(0, 15).toLowerCase();
 }
 
-export function getOutsideComposeFilePath(name: string) {
-  // TODO: this path can be an optional param
-  const path = '/var/tmp/app';
-  return join(path, 'compose-files', name);
+export function nodeEndpoint(cid: string, port: number) {
+  return `http://node-${projectId(cid)}:${port}`;
+}
+
+export function queryEndpoint(cid: string, port: number) {
+  return `http://query-${projectId(cid)}:${port}`;
+}
+
+export function getInsideComposeFilePath(name: string) {
+  return join('/var/tmp', 'composeFiles', name);
 }
 
 // TODO: handle project with same `deploymentID`

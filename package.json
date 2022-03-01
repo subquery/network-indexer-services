@@ -30,7 +30,8 @@
     "start:help": "yarn start:prod --help",
     "mock:projects": "sh ./scripts/mock-projects.sh",
     "upgrade:contract": "yarn upgrade @subql/contract-sdk",
-    "start:docker": "docker-compose -f ./dev/docker-compose.yml build --no-cache && docker-compose up",
+    "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
+    "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up",
     "start:db": "docker-compose -f ./dev/docker-db.yml up"
   },
   "dependencies": {
