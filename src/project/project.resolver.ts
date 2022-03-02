@@ -67,7 +67,17 @@ export class ProjectResolver {
 
   // project management
   @Query(() => ProjectType)
-  startProject(@Args('id') id: string) {
-    return this.projectService.startProject(id);
+  createAndStartProject(@Args('id') id: string) {
+    return this.projectService.createAndStartProject(id);
+  }
+
+  @Query(() => ProjectType)
+  restartProject(@Args('id') id: string) {
+    return this.projectService.restartProject(id);
+  }
+
+  @Query(() => ProjectType)
+  stopProject(@Args('id') id: string) {
+    return this.projectService.stopProject(id);
   }
 }

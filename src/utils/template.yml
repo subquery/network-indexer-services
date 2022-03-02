@@ -51,6 +51,7 @@ services:
       - --name=app_{{deploymentID}}
       - --playground
       - --indexer=http://node_{{projectID}}:{{servicePort}}
+      - --port={{servicePort}}
 
 networks:
   default:

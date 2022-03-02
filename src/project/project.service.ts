@@ -10,7 +10,15 @@ import { MetaData } from '@subql/common';
 import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
-import { generateDockerComposeFile, projectId, TemplateType } from 'src/utils/docker';
+import {
+  generateDockerComposeFile,
+  nodeEndpoint,
+  projectContainers,
+  projectId,
+  queryEndpoint,
+  TemplateType,
+} from 'src/utils/docker';
+
 @Injectable()
 export class ProjectService {
   private port: number;
@@ -84,6 +92,7 @@ export class ProjectService {
       queryEndpoint: '',
       blockHeight: 0,
     });
+
     return this.projectRepo.save(project);
   }
 
@@ -97,6 +106,7 @@ export class ProjectService {
     id: string,
     indexerEndpoint?: string,
     queryEndpoint?: string,
+    status?: IndexingStatus,
   ): Promise<Project> {
     const project = await this.projectRepo.findOne({ id });
     if (indexerEndpoint) {
@@ -104,6 +114,9 @@ export class ProjectService {
     }
     if (queryEndpoint) {
       project.queryEndpoint = queryEndpoint;
+    }
+    if (status) {
+      project.status = status;
     }
 
     return this.projectRepo.save(project);
@@ -120,7 +133,7 @@ export class ProjectService {
   }
 
   // docker project management
-  async startProject(deploymentID: string): Promise<Project> {
+  async createAndStartProject(deploymentID: string): Promise<Project> {
     // create templete item
     // TODO: should get these information from contract
     // FIXME: `servicePort` should be increased
@@ -133,7 +146,7 @@ export class ProjectService {
       dictionary: 'https://api.subquery.network/sq/subquery/acala-dictionary',
       nodeVersion: 'v0.29.1',
       queryVersion: 'v0.12.0',
-      servicePort: this.port++,
+      servicePort: ++this.port,
     };
 
     try {
@@ -147,11 +160,34 @@ export class ProjectService {
       getLogger('docker').error(`start project failed: ${e}`);
     }
 
-    // TODO: add project with more info `containerID`, `containerName`, `query_endpoint`, `node_endpoint`
-    return this.addProject(item.deploymentID);
+    return this.updateProjectServices(
+      item.deploymentID,
+      nodeEndpoint(deploymentID, this.port),
+      queryEndpoint(deploymentID, this.port),
+      IndexingStatus.INDEXING,
+    );
   }
 
   async stopProject(deploymentID: string) {
-    console.log('stop project:', deploymentID);
+    const project = await this.getProject(deploymentID);
+    if (!project) {
+      getLogger('docker').error(`project not exist: ${deploymentID}`);
+      return;
+    }
+
+    getLogger('docker').info(`stop project: ${deploymentID}`);
+    this.docker.stop(projectContainers(deploymentID));
+    return this.updateProjectStatus(deploymentID, IndexingStatus.TERMINATED);
+  }
+
+  async restartProject(deploymentID: string) {
+    const project = await this.getProject(deploymentID);
+    if (!project) {
+      getLogger('docker').error(`project not exist: ${deploymentID}`);
+    }
+
+    getLogger('docker').info(`restart project: ${deploymentID}`);
+    this.docker.start(projectContainers(deploymentID));
+    return this.updateProjectStatus(deploymentID, IndexingStatus.INDEXING);
   }
 }

@@ -32,6 +32,18 @@ export function getInsideComposeFilePath(name: string) {
   return join('/var/tmp', 'composeFiles', name);
 }
 
+export function nodeContainer(cid: string) {
+  return `node_${projectId(cid)}`;
+}
+
+export function queryContainer(cid: string) {
+  return `query_${projectId(cid)}`;
+}
+
+export function projectContainers(cid: string) {
+  return [nodeContainer(cid), queryContainer(cid)];
+}
+
 // TODO: handle project with same `deploymentID`
 export function generateDockerComposeFile(data: TemplateType) {
   try {

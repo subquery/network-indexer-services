@@ -5,33 +5,50 @@ import * as fs from 'fs';
 import { exec } from 'child_process';
 import { Injectable } from '@nestjs/common';
 import { getLogger } from 'src/utils/logger';
-import { getInsideComposeFilePath } from 'src/utils/docker';
-
-// TODO: 
-// 1. don't output indexing project logs in `coordinator` console
-// 2. support to get latest logs for specific indexing project
+import { getInsideComposeFilePath, projectContainers, projectId } from 'src/utils/docker';
 
 @Injectable()
 export class DockerService {
   constructor() { }
 
-  up(fileName: string): Promise<boolean> {
+  async up(fileName: string): Promise<boolean> {
     const filePath = getInsideComposeFilePath(`${fileName}.yml`);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
-      return this.execute(`docker-compose -f ${filePath} up -d`);
+      try {
+        await this.rm(projectContainers(fileName));
+        getLogger('docker').info(`remove the old containers`);
+      } catch (_) {
+        getLogger('docker').info(`no containers need to be removed`);
+      }
+
+      return this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
+      return false;
     }
   }
 
-  stop(service: string): Promise<boolean> {
-    return this.execute(`docker-compose stop ${service}`);
+  start(containers: string[]): Promise<boolean> {
+    return this.execute(`docker start ${containers.join(' ')}`);
+  }
+
+  stop(containers: string[]): Promise<boolean> {
+    return this.execute(`docker stop ${containers.join(' ')}`);
+  }
+
+  rm(containers: string[]): Promise<boolean> {
+    return this.execute(`docker container rm ${containers.join(' ')}`);
+  }
+
+  // TODO: support logs for node | query services
+  logs(container: string): Promise<boolean> {
+    // TODO: the format of the text?
+    return this.execute(`docker logs -l ${container}`);
   }
 
   async createDB(name: string): Promise<boolean> {
     getLogger('docker').info(`create new db: ${name}`);
-    // TODO: check db exist or not
     const dbDocker = process.env.DB_DOCKER ?? 'coordinator_db';
     try {
       await this.execute(
@@ -45,19 +62,17 @@ export class DockerService {
     }
   }
 
-  // TODO: support get latest log with container id or name
-
   execute(cmd: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
+          // FIXME: output this only with verbose [process.env.VERBOSE]
           getLogger('docker').error(error);
           reject(error);
         } else if (stdout) {
           getLogger('docker').info(stdout);
         } else {
-          getLogger('docker').error(stderr);
-          reject(error);
+          reject(stderr);
         }
         resolve(stdout ? true : false);
       });
