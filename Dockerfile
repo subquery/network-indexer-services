@@ -1,9 +1,11 @@
+FROM node:16 as builder
+
+# ARG RELEASE_VERSION
+ENTRYPOINT ["subql-coordinator"]
+RUN npm i -g --unsafe-perm @subql/indexer-coordinator@0.1.1-3
+
 FROM node:16-alpine
-
-WORKDIR /app
-
-ARG RELEASE_VERSION
-RUN npm i -g @subql/indexer-coordinator
+ENV TZ utc
 
 RUN apk add --no-cache tini git curl docker-cli docker-compose
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules

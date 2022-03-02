@@ -3,6 +3,7 @@ version: "3"
 services:
   postgres:
     image: postgres:12-alpine
+    container_name: coordinator_db
     ports:
       - 5432:5432
     volumes:
@@ -15,14 +16,17 @@ services:
       timeout: 5s
       retries: 5
 
-  subquery-coordinator:
-    image: dev4mz/test4mz:0.1.1
+  coordinator-service:
+    image: dev4mz/test4mz:0.1.4
+    container_name: coordinator_service
     ports:
       - 8000:8000
     depends_on:
       "postgres":
         condition: service_healthy
     restart: always
+    environment:
+      DB_DOCKER: coordinator_db
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock
