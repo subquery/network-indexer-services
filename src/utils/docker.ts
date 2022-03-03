@@ -10,10 +10,10 @@ export type TemplateType = {
   deploymentID: string;
   projectID: string;
   networkEndpoint: string;
-  dictionary: string;
   nodeVersion: string;
   queryVersion: string;
   servicePort: number;
+  dictionary?: string;
 };
 
 export function projectId(cid: string) {

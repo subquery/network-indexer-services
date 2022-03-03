@@ -108,7 +108,11 @@ export class ProjectService {
     queryEndpoint?: string,
     status?: IndexingStatus,
   ): Promise<Project> {
-    const project = await this.projectRepo.findOne({ id });
+    let project = await this.projectRepo.findOne({ id });
+    if (!project) {
+      project = await this.addProject(id);
+    }
+
     if (indexerEndpoint) {
       project.indexerEndpoint = indexerEndpoint;
     }
@@ -141,9 +145,7 @@ export class ProjectService {
     const item: TemplateType = {
       deploymentID,
       projectID,
-      // FIXME: networkEndpoint and dictionatry url should include in the `metadata`
-      networkEndpoint: 'wss://acala-polkadot.api.onfinality.io/public-ws',
-      dictionary: 'https://api.subquery.network/sq/subquery/acala-dictionary',
+      networkEndpoint: process.env.NETWORK_ENDPOINT,
       nodeVersion: 'v0.29.1',
       queryVersion: 'v0.12.0',
       servicePort: ++this.port,
