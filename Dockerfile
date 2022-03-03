@@ -7,7 +7,7 @@ RUN npm i -g --unsafe-perm @subql/indexer-coordinator@0.1.1-5
 FROM node:16-alpine
 ENV TZ utc
 
-RUN apk add --no-cache tini git curl docker-cli
+RUN apk add --no-cache tini git curl docker-cli docker-compose
 
 # docker network create cooridnator-service
 

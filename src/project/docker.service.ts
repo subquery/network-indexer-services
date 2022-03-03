@@ -22,7 +22,7 @@ export class DockerService {
         getLogger('docker').info(`no containers need to be removed`);
       }
 
-      return this.execute(`docker compose -f ${filePath} -p ${projectId(fileName)} up -d`);
+      return this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
       return false;
