@@ -17,7 +17,7 @@ services:
       retries: 5
 
   coordinator-service:
-    image: dev4mz/test4mz:0.1.4
+    image: dev4mz/test4mz:0.1.7
     container_name: coordinator_service
     ports:
       - 8000:8000
@@ -27,6 +27,7 @@ services:
     restart: always
     environment:
       DB_DOCKER: coordinator_db
+      NETWORK_ENDPOINT: wss://polkadot.api.onfinality.io/public-ws
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock
