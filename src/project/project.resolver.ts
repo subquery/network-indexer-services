@@ -66,17 +66,17 @@ export class ProjectResolver {
   }
 
   // project management
-  @Query(() => ProjectType)
+  @Mutation(() => ProjectType)
   createAndStartProject(@Args('id') id: string) {
     return this.projectService.createAndStartProject(id);
   }
 
-  @Query(() => ProjectType)
+  @Mutation(() => ProjectType)
   restartProject(@Args('id') id: string) {
     return this.projectService.restartProject(id);
   }
 
-  @Query(() => ProjectType)
+  @Mutation(() => ProjectType)
   stopProject(@Args('id') id: string) {
     return this.projectService.stopProject(id);
   }

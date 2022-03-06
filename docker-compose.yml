@@ -33,7 +33,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
-      - --ws-endpoint=https://moonbeam-alpha.api.onfinality.io/public
+      - --ws-endpoint=https://sqtn.api.onfinality.io/public
       - --postgres-host=postgres
       - --postgres-database=postgres
       - --postgres-port=5432
