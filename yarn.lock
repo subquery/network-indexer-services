@@ -2743,7 +2743,7 @@
     pino "^6.13.3"
     reflect-metadata "^0.1.13"
 
-"@subql/contract-sdk@0.1.1-31", "@subql/contract-sdk@^0.1.1-31":
+"@subql/contract-sdk@0.1.1-31":
   version "0.1.1-31"
   resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.1.1-31.tgz#d03c05876c92c212d3d92c72ad1630502c7984cf"
   integrity sha512-wRi3HTu15oOBYIJVRojf0SMWyEsbq0ChCMWiQjEM9LQngi3Ex2z88PTA9BF1IppNHnMhp6HF0WZbaDlNCBSiAQ==
@@ -2752,14 +2752,14 @@
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
-"@subql/indexer-admin@0.0.1-5":
-  version "0.0.1-5"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-5.tgz#fa2974f2b19f97a55ac7a9ad1d7c15a5fbe58d1e"
-  integrity sha512-zB5sLHBFiWmCBgFqAq5y7ezpqCln85ftXa6v9RiTLbbyjXa4ls+QhwkcTcMZREW/uEW4JiA7EdV28TbFaka6Ww==
+"@subql/indexer-admin@0.0.1-7":
+  version "0.0.1-7"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-7.tgz#77b0c5c56baf84a6146ecd7fc19f5e9a5982e522"
+  integrity sha512-SbjS+MlA0QnKoZA5LYAph5eyZV5xoWrkGT52Cnr6yjxVJiaqhNHobiMnDqAM4reMeEl1K8UejP85JOifQqi9ng==
   dependencies:
     "@apollo/client" "^3.4.17"
-    "@subql/contract-sdk" "^0.1.1-31"
-    "@subql/react-ui" "^1.0.1-19"
+    "@subql/contract-sdk" "0.1.1-31"
+    "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
     "@testing-library/user-event" "^12.1.10"
@@ -2786,10 +2786,10 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/react-ui@^1.0.1-19":
-  version "1.0.1-19"
-  resolved "https://registry.npmjs.org/@subql/react-ui/-/react-ui-1.0.1-19.tgz"
-  integrity sha512-uvKYQ978I66rj4y3dAt4LNcNIQNq1ArTcYFfdif3Re6YRg7johCGMfBp6S1kKO4LdhliXJVAanAte4TYj50YRA==
+"@subql/react-ui@^1.0.1-21":
+  version "1.0.1-21"
+  resolved "https://registry.yarnpkg.com/@subql/react-ui/-/react-ui-1.0.1-21.tgz#0612ab608250b3f2a12075ebe54dfc6417c0080a"
+  integrity sha512-xp43nDQLUV1T2BLMEqZ4LMchxMmOeLtzeXLXV6hveg8/nr36HPaPFoE2N+pwvyQb5umvp2m61yWE/2JqcWY2hg==
   dependencies:
     clsx "^1.1.1"
     eslint-plugin-react "^7.27.1"
