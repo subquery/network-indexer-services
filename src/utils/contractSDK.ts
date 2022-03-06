@@ -13,7 +13,7 @@ const deployments = {
 
 export enum ChainID {
   local = 1281,
-  testnet = 1287,
+  testnet = 1280,
   mainnet = 1285,
 }
 

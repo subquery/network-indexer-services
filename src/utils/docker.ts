@@ -21,11 +21,11 @@ export function projectId(cid: string) {
 }
 
 export function nodeEndpoint(cid: string, port: number) {
-  return `http://node-${projectId(cid)}:${port}`;
+  return `http://node_${projectId(cid)}:${port}`;
 }
 
 export function queryEndpoint(cid: string, port: number) {
-  return `http://query-${projectId(cid)}:${port}`;
+  return `http://query_${projectId(cid)}:${port}`;
 }
 
 export function getInsideComposeFilePath(name: string) {
