@@ -43,7 +43,7 @@
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^0.13.0",
     "@subql/contract-sdk": "0.1.1-31",
-    "@subql/indexer-admin": "0.0.1-5",
+    "@subql/indexer-admin": "0.0.1-7",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",
     "class-validator": "^0.13.2",
