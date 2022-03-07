@@ -13,7 +13,7 @@ export class AdminController {
     const config = {
       NETWORK: `${argv('network')}`, // local | mainnet | testnet
       COORDINATOR_HOST: `http://${argv('host')}`,
-      COORDINATOR_GRAPHQL: `http://${argv('host')}:${argv('port')}`,
+      COORDINATOR_GRAPHQL: `http://${argv('host')}:${argv('port')}/graphql`,
       IPFS_GATEWAY: 'https://ipfs.thechainhub.com/api/v0',
       REGISTRY_PROJECT: 'https://api.subquery.network/sq/subquery/subquery-network-query-registry',
     };
