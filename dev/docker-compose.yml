@@ -41,6 +41,34 @@ services:
       - --postgres-database=postgres
       - --postgres-port=5432
       - --port=8000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-i",
+          "-X POST",
+          "http://coordinator-service:8000/graphql",
+          "-H 'Content-Type: application/json'",
+          "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  proxy-server:
+    image: dev4mz/proxy:0.0.4
+    container_name: coordinator_proxy
+    ports:
+      - 8001:8001
+    depends_on:
+      "coordinator-service":
+        condition: service_healthy
+    restart: always
+    command:
+      - --port=8001
+      - --secret-key=qmbyd5hwac2jdcu
+      - --service-url=http://coordinator-service:8000/graphql
+      - --host=0.0.0.0
 networks:
   default:
     external:
