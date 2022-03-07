@@ -64,8 +64,9 @@ export class ContractService {
         isEmpty(controller) ||
         !controller.startsWith('0x') ||
         !isValidPrivate(toBuffer(controller))
-      )
+      ) {
         return;
+      }
 
       try {
         const controllerBuff = toBuffer(controller);

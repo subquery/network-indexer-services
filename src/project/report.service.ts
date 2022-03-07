@@ -59,7 +59,7 @@ export class ReportService {
   }
 
   periodicReport() {
-    const interval = 30000;
+    const interval = 300000;
     setInterval(() => {
       this.reportIndexingServices();
     }, interval);
