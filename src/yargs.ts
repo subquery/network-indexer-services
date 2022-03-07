@@ -28,6 +28,12 @@ export function getYargsOption() {
       demandOption: true,
       group: 'Indexer Coordinator',
     },
+    host: {
+      type: 'string',
+      describe: 'Host the service will deploy on',
+      default: 'localhost',
+      group: 'Indexer Coordinator',
+    },
     port: {
       type: 'number',
       describe: 'Port the service will listen on',
