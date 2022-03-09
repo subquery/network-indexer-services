@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
+import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import { Signer, utils } from 'ethers';
-import { localnet, testnet } from '../contract/deployment';
+
+import { localnet } from '../contract/deployment';
 
 const deployments = {
   local: localnet,
-  testnet: testnet,
-  mainnet: testnet,
+  testnet: testnetDeployment,
+  mainnet: testnetDeployment,
 };
 
 export enum ChainID {

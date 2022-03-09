@@ -2609,6 +2609,11 @@
   resolved "https://registry.npmjs.org/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-4.4.2.tgz"
   integrity sha512-bavxs18L47EmcdnL9I6DzsVSUJO+0/zD6zH7/6qG7QRBugvR3VNVZR+nMvuZlCNwuTTnCa3apR00PYzYr/efAw==
 
+"@openzeppelin/contracts-upgradeable@^4.5.2":
+  version "4.5.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-4.5.2.tgz#90d9e47bacfd8693bfad0ac8a394645575528d05"
+  integrity sha512-xgWZYaPlrEOQo3cBj97Ufiuv79SPd8Brh4GcFYhPgb6WvAq4ppz8dWKL6h+jLAK01rUqMRp/TS9AdXgAeNvCLA==
+
 "@pmmmwh/react-refresh-webpack-plugin@0.4.3":
   version "0.4.3"
   resolved "https://registry.npmjs.org/@pmmmwh/react-refresh-webpack-plugin/-/react-refresh-webpack-plugin-0.4.3.tgz"
@@ -2749,6 +2754,15 @@
   integrity sha512-wRi3HTu15oOBYIJVRojf0SMWyEsbq0ChCMWiQjEM9LQngi3Ex2z88PTA9BF1IppNHnMhp6HF0WZbaDlNCBSiAQ==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.3.3"
+    dotenv "^10.0.0"
+    fs "^0.0.1-security"
+
+"@subql/contract-sdk@0.1.1-41":
+  version "0.1.1-41"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.1.1-41.tgz#2e53271d9c598fa4a3dc49d10aad798e198c997e"
+  integrity sha512-tjYhzOGqFHl4Kk7BG+vwFP1BCxz0U1OA/QLGOTdTt5ZAtrSE/9xsGls22UC3j3D80gf0XtRst2rdzEfwF1zEfQ==
+  dependencies:
+    "@openzeppelin/contracts-upgradeable" "^4.5.2"
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 

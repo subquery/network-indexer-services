@@ -7,13 +7,13 @@ import { ProjectService } from './project.service';
 import { ProjectResolver } from './project.resolver';
 import { Project } from './project.model';
 import { AccountModule } from 'src/account/account.module';
-import { ReportService } from './report.service';
+import { NetworkService } from './network.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 
 @Module({
   imports: [AccountModule, TypeOrmModule.forFeature([Project])],
-  providers: [ProjectService, ProjectResolver, ReportService, ContractService, DockerService],
+  providers: [ProjectService, ProjectResolver, NetworkService, ContractService, DockerService],
   exports: [ProjectService],
 })
 export class ProjectModule { }

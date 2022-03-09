@@ -1,8 +1,26 @@
 # INDEXER COORDINATOR
 
+## Start with Docker
+
+Start all the services: `db service` `coordinator service` and `proxy service` together with docker compose command.
+
+### Run Docker Compose
+
+```sh
+docker-compose up
+```
+
+- image
+
+### Indexer Management with Admin app
+
+For the default config, open the indexer admin app with `http://localhost:8000`
+
+## Start With CLI
+
 ## Install
 
-`npm install -g  @subql/indexer-coordinator@0.1.1-2`
+`npm install -g  @subql/indexer-coordinator@0.1.1-10`
 
 ## Start Coordinator Service
 
@@ -64,3 +82,17 @@ subql-coordinator --network testnet \
 
 Open the indexer-admin app with `http://localhost:8000`.
 The domain and port depends on the deployment.
+
+## Development
+
+Run the following command to build the local image for the coordinator updates
+
+```sh
+yarn build:docker-compose
+```
+  
+Then start all the services:
+
+```sh
+yarn start:docker-compose
+```

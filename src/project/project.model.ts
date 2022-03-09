@@ -13,7 +13,10 @@ export class Project {
   status: number;
 
   @Column()
-  indexerEndpoint: string; // endpoint of indexer service
+  networkEndpoint: string;
+
+  @Column()
+  nodeEndpoint: string; // endpoint of indexer service
 
   @Column()
   queryEndpoint: string; // endpoint of query service
@@ -31,7 +34,10 @@ export class ProjectType {
   status: number;
 
   @Field()
-  indexerEndpoint: string;
+  networkEndpoint: string;
+
+  @Field()
+  nodeEndpoint: string;
 
   @Field()
   queryEndpoint: string;

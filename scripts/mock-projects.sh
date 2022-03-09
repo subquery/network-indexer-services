@@ -25,9 +25,9 @@ start_project() {
   curl -v -X POST $URL \
   -H 'Content-Type: application/json' \
   -d "{
-    \"query\": \"mutation StartProject(\$id: String!, \$indexerEndpoint: String!) { startProject(id: \$id, indexerEndpoint: \$indexerEndpoint) { id } }\",
+    \"query\": \"mutation StartProject(\$id: String!, \$nodeEndpoint: String!) { startProject(id: \$id, nodeEndpoint: \$nodeEndpoint) { id } }\",
     \"operationName\": \"StartProject\",
-    \"variables\": { \"id\": \"$RPOJECT_ID\", \"indexerEndpoint\": \"$SERVICE_URL\" }
+    \"variables\": { \"id\": \"$RPOJECT_ID\", \"nodeEndpoint\": \"$SERVICE_URL\" }
   }"
 }
 

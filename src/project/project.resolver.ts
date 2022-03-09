@@ -3,7 +3,7 @@
 
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ProjectService } from './project.service';
-import { ProjectType, ServiceMetaDataType } from './project.model';
+import { ProjectType } from './project.model';
 import { Logger } from '@nestjs/common';
 
 @Resolver(() => ProjectType)
@@ -14,16 +14,6 @@ export class ProjectResolver {
   @Query(() => ProjectType)
   project(@Args('id') id: string) {
     return this.projectService.getProject(id);
-  }
-
-  @Query(() => ServiceMetaDataType)
-  queryMetaData(@Args('id') id: string) {
-    return this.projectService.getQueryMetaData(id);
-  }
-
-  @Query(() => ServiceMetaDataType)
-  indexerMetaData(@Args('id') id: string) {
-    return this.projectService.getIndexerMetaData(id);
   }
 
   @Query(() => [ProjectType])
@@ -41,39 +31,15 @@ export class ProjectResolver {
     return this.projectService.addProject(id);
   }
 
-  @Mutation(() => ProjectType)
-  updateProjectServices(
-    @Args('id') id: string,
-    @Args('indexerEndpoint') indexerUrl: string,
-    @Args('queryEndpoint') queryUrl: string,
-  ) {
-    return this.projectService.updateProjectServices(id, indexerUrl, queryUrl);
-  }
-
-  @Mutation(() => ProjectType)
-  updateProjectStatus(@Args('id') id: string, @Args('status') status: number) {
-    return this.projectService.updateProjectStatus(id, status);
-  }
-
   @Mutation(() => [ProjectType])
   removeProject(@Args('id') id: string) {
     return this.projectService.removeProject(id);
   }
 
-  @Mutation(() => [ProjectType])
-  removeProjects() {
-    return this.projectService.removeProjects();
-  }
-
   // project management
   @Mutation(() => ProjectType)
-  createAndStartProject(@Args('id') id: string) {
-    return this.projectService.createAndStartProject(id);
-  }
-
-  @Mutation(() => ProjectType)
-  restartProject(@Args('id') id: string) {
-    return this.projectService.restartProject(id);
+  startProject(@Args('id') id: string, @Args('networkEndpoint') networkEndpoint: string) {
+    return this.projectService.startProject(id, networkEndpoint);
   }
 
   @Mutation(() => ProjectType)

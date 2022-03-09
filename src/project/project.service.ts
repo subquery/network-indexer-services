@@ -3,15 +3,15 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import fetch from 'node-fetch';
 import { Repository, Not } from 'typeorm';
+
 import { Project } from './project.model';
-import { MetaData } from '@subql/common';
 import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
 import {
   generateDockerComposeFile,
+  getServicePort,
   nodeEndpoint,
   projectContainers,
   projectId,
@@ -33,49 +33,11 @@ export class ProjectService {
     return this.projectRepo.findOne({ id });
   }
 
-  async getIndexerMetaData(id: string): Promise<MetaData> {
-    const project = await this.getProject(id);
-    const { indexerEndpoint } = project;
-
-    const response = await fetch(new URL(`meta`, indexerEndpoint));
-    const result = await response.json();
-    // FIXME: error handling
-    return result;
-  }
-
-  async getQueryMetaData(id: string): Promise<MetaData> {
-    const project = await this.getProject(id);
-    const { queryEndpoint } = project;
-
-    const queryBody = JSON.stringify({
-      query: `{
-        _metadata {
-          lastProcessedHeight
-          lastProcessedTimestamp
-          targetHeight
-          chain
-          specName
-          genesisHash
-          indexerHealthy
-          indexerNodeVersion
-          queryNodeVersion
-        }}`,
-    });
-
-    const response = await fetch(`${queryEndpoint}/graphql`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-      body: queryBody,
-    });
-
-    const data = await response.json();
-    return data.data._metadata;
-  }
-
   async getProjects(): Promise<Project[]> {
     return this.projectRepo.find();
   }
 
+  // FIXME: filter alive project with status
   async getAliveProjects(): Promise<Project[]> {
     return this.projectRepo.find({
       where: {
@@ -88,7 +50,8 @@ export class ProjectService {
     const project = this.projectRepo.create({
       id,
       status: 0,
-      indexerEndpoint: '',
+      networkEndpoint: '',
+      nodeEndpoint: '',
       queryEndpoint: '',
       blockHeight: 0,
     });
@@ -102,72 +65,47 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
-  async updateProjectServices(
-    id: string,
-    indexerEndpoint?: string,
-    queryEndpoint?: string,
-    status?: IndexingStatus,
-  ): Promise<Project> {
-    let project = await this.projectRepo.findOne({ id });
+  // project management
+  async startProject(deploymentID: string, networkEndpoint: string): Promise<Project> {
+    let project = await this.getProject(deploymentID);
     if (!project) {
-      project = await this.addProject(id);
+      project = await this.addProject(deploymentID);
     }
 
-    if (indexerEndpoint) {
-      project.indexerEndpoint = indexerEndpoint;
-    }
-    if (queryEndpoint) {
-      project.queryEndpoint = queryEndpoint;
-    }
-    if (status) {
-      project.status = status;
+    // restart the project if project already exist and network endpoint keep same
+    if (project.networkEndpoint === networkEndpoint) {
+      const restartedProject = await this.restartProject(deploymentID);
+      return restartedProject;
     }
 
-    return this.projectRepo.save(project);
-  }
-
-  async removeProject(id: string): Promise<Project[]> {
-    const project = await this.getProject(id);
-    return this.projectRepo.remove([project]);
-  }
-
-  async removeProjects(): Promise<Project[]> {
-    const projects = await this.getProjects();
-    return this.projectRepo.remove(projects);
-  }
-
-  // docker project management
-  async createAndStartProject(deploymentID: string): Promise<Project> {
-    // create templete item
-    // TODO: should get these information from contract
-    // FIXME: `servicePort` should be increased
+    // create and start new project if the project not start before
     const projectID = projectId(deploymentID);
+    const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
     const item: TemplateType = {
       deploymentID,
       projectID,
-      networkEndpoint: process.env.NETWORK_ENDPOINT,
-      nodeVersion: 'v0.29.1',
-      queryVersion: 'v0.12.0',
-      servicePort: ++this.port,
+      networkEndpoint,
+      servicePort,
+      nodeVersion: 'v0.29.1', // TODO: image versions will be included in the manifest
+      queryVersion: 'v0.12.0', // file in the future version of subqul sdk
     };
 
     try {
-      // 1. create new db
       await this.docker.createDB(`db_${projectID}`);
-      // 2. generate new docker compose file
       generateDockerComposeFile(item);
-      // 3. docker compose up
       await this.docker.up(item.deploymentID);
     } catch (e) {
       getLogger('docker').error(`start project failed: ${e}`);
     }
 
-    return this.updateProjectServices(
-      item.deploymentID,
-      nodeEndpoint(deploymentID, this.port),
-      queryEndpoint(deploymentID, this.port),
-      IndexingStatus.INDEXING,
-    );
+    // TODO: only save project when project started, otherwise return start project failed error
+    return this.projectRepo.save({
+      id: deploymentID,
+      networkEndpoint,
+      queryEndpoint: queryEndpoint(deploymentID, servicePort),
+      nodeEndpoint: nodeEndpoint(deploymentID, servicePort),
+      status: IndexingStatus.INDEXING,
+    });
   }
 
   async stopProject(deploymentID: string) {
@@ -179,17 +117,23 @@ export class ProjectService {
 
     getLogger('docker').info(`stop project: ${deploymentID}`);
     this.docker.stop(projectContainers(deploymentID));
-    return this.updateProjectStatus(deploymentID, IndexingStatus.TERMINATED);
+    return this.updateProjectStatus(deploymentID, IndexingStatus.NOTINDEXING);
   }
 
   async restartProject(deploymentID: string) {
-    const project = await this.getProject(deploymentID);
-    if (!project) {
-      getLogger('docker').error(`project not exist: ${deploymentID}`);
-    }
-
     getLogger('docker').info(`restart project: ${deploymentID}`);
     this.docker.start(projectContainers(deploymentID));
+
     return this.updateProjectStatus(deploymentID, IndexingStatus.INDEXING);
+  }
+
+  async removeProject(id: string): Promise<Project[]> {
+    const project = await this.getProject(id);
+    return this.projectRepo.remove([project]);
+  }
+
+  async removeProjects(): Promise<Project[]> {
+    const projects = await this.getProjects();
+    return this.projectRepo.remove(projects);
   }
 }

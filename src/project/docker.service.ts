@@ -5,14 +5,14 @@ import * as fs from 'fs';
 import { exec } from 'child_process';
 import { Injectable } from '@nestjs/common';
 import { getLogger } from 'src/utils/logger';
-import { getInsideComposeFilePath, projectContainers, projectId } from 'src/utils/docker';
+import { getComposeFilePath, projectContainers, projectId } from 'src/utils/docker';
 
 @Injectable()
 export class DockerService {
   constructor() { }
 
   async up(fileName: string): Promise<boolean> {
-    const filePath = getInsideComposeFilePath(`${fileName}.yml`);
+    const filePath = getComposeFilePath(`${fileName}.yml`);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       try {
@@ -66,8 +66,8 @@ export class DockerService {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
-          // FIXME: output this only with verbose [process.env.VERBOSE]
-          getLogger('docker').error(error);
+          // TODO: output this only with verbose [process.env.VERBOSE]
+          // getLogger('docker').error(error);
           reject(error);
         } else if (stdout) {
           getLogger('docker').info(stdout);

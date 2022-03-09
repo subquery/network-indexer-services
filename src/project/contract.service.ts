@@ -90,7 +90,7 @@ export class ContractService {
 
   async deploymentStatusByIndexer(id: string): Promise<IndexingStatus> {
     const indexer = await this.accountService.getIndexer();
-    if (!this.sdk || !indexer) return IndexingStatus.NOTSTART;
+    if (!this.sdk || !indexer) return IndexingStatus.NOTINDEXING;
 
     const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
       cidToBytes32(id),

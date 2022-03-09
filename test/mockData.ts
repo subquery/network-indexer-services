@@ -35,22 +35,22 @@ const _mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c
 // # }
 
 // # mutation {
-// #   addProject(id: "0xcec921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55", indexerEndpoint: "") {
+// #   addProject(id: "0xcec921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55", nodeEndpoint: "") {
 // #     id
 // #     status
 // #     blockHeight
 // #     queryEndpoint
-// #     indexerEndpoint
+// #     nodeEndpoint
 // #   }
 // # }
 
 // mutation {
-//   updateProject(id: "0xcec921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55", indexerEndpoint: "", queryEndpoint: "https://api.subquery.network/sq/subquery/polkadot-gift") {
+//   updateProject(id: "0xcec921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55", nodeEndpoint: "", queryEndpoint: "https://api.subquery.network/sq/subquery/polkadot-gift") {
 //     id
 //     status
 //     blockHeight
 //     queryEndpoint
-//     indexerEndpoint
+//     nodeEndpoint
 //   }
 // }
 

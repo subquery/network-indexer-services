@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as fs from 'fs';
-import * as handlebars from 'handlebars';
 import { join } from 'path';
+import * as handlebars from 'handlebars';
 import { getLogger } from 'src/utils/logger';
 
 export type TemplateType = {
@@ -16,19 +16,23 @@ export type TemplateType = {
   dictionary?: string;
 };
 
-export function projectId(cid: string) {
+export function projectId(cid: string): string {
   return cid.substring(0, 15).toLowerCase();
 }
 
-export function nodeEndpoint(cid: string, port: number) {
+export function getServicePort(queryEndpoint: string): number | undefined {
+  return queryEndpoint ? Number(queryEndpoint.split(':')[2]) : undefined;
+}
+
+export function nodeEndpoint(cid: string, port: number): string {
   return `http://node_${projectId(cid)}:${port}`;
 }
 
-export function queryEndpoint(cid: string, port: number) {
+export function queryEndpoint(cid: string, port: number): string {
   return `http://query_${projectId(cid)}:${port}`;
 }
 
-export function getInsideComposeFilePath(name: string) {
+export function getComposeFilePath(name: string): string {
   return join('/var/tmp', 'composeFiles', name);
 }
 
@@ -44,12 +48,11 @@ export function projectContainers(cid: string) {
   return [nodeContainer(cid), queryContainer(cid)];
 }
 
-// TODO: handle project with same `deploymentID`
 export function generateDockerComposeFile(data: TemplateType) {
   try {
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
-    fs.writeFileSync(getInsideComposeFilePath(`${data.deploymentID}.yml`), template(data));
+    fs.writeFileSync(getComposeFilePath(`${data.deploymentID}.yml`), template(data));
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(
