@@ -26,7 +26,7 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      DB_DOCKER: coordinator_db
+      DOCKER_DB: coordinator_db
       NETWORK_ENDPOINT: wss://polkadot.api.onfinality.io/public-ws
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles

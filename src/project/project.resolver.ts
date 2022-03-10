@@ -1,15 +1,15 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+import { SubscriptionService } from './subscription.service';
 import { ProjectService } from './project.service';
 import { ProjectType } from './project.model';
-import { Logger } from '@nestjs/common';
+import { ProjectEvent } from 'src/utils/subscription';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
-  constructor(private projectService: ProjectService) { }
-  private readonly logger = new Logger(ProjectService.name);
+  constructor(private projectService: ProjectService, private pubSub: SubscriptionService) { }
 
   @Query(() => ProjectType)
   project(@Args('id') id: string) {
@@ -45,5 +45,10 @@ export class ProjectResolver {
   @Mutation(() => ProjectType)
   stopProject(@Args('id') id: string) {
     return this.projectService.stopProject(id);
+  }
+
+  @Subscription(() => ProjectType)
+  projectChanged() {
+    return this.pubSub.asyncIterator([ProjectEvent.ProjectStarted, ProjectEvent.ProjectStopped]);
   }
 }

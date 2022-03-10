@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
@@ -7,7 +7,7 @@ import { AccountMetaDataType, AccountType } from './account.model';
 
 @Resolver(() => AccountType)
 export class AccountResolver {
-  constructor(private accountService: AccountService) {}
+  constructor(private accountService: AccountService) { }
 
   @Query(() => [AccountType])
   accounts() {

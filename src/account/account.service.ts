@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
@@ -17,7 +17,7 @@ export class AccountService {
   constructor(
     @InjectRepository(Account) private accountRepo: Repository<Account>,
     private config: Config,
-  ) {}
+  ) { }
 
   addIndexer(indexer: string): Promise<Account> {
     if (indexer === this.indexer) {

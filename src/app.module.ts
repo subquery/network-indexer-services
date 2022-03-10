@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { join } from 'path';
@@ -26,10 +26,11 @@ import { AdminController } from './admin.controller';
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: true,
-      cors: {
-        origin: true,
-        credentials: true,
+      subscriptions: {
+        'graphql-ws': true,
+        'subscriptions-transport-ws': true,
       },
+      cors: { origin: true, credentials: true },
     }),
     ProjectModule,
     AccountModule,

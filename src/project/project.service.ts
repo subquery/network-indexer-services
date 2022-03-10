@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
@@ -18,12 +18,15 @@ import {
   queryEndpoint,
   TemplateType,
 } from 'src/utils/docker';
+import { SubscriptionService } from './subscription.service';
+import { ProjectEvent } from 'src/utils/subscription';
 
 @Injectable()
 export class ProjectService {
   private port: number;
   constructor(
     @InjectRepository(Project) private projectRepo: Repository<Project>,
+    private pubSub: SubscriptionService,
     private docker: DockerService,
   ) {
     this.port = 3000;
@@ -53,7 +56,6 @@ export class ProjectService {
       networkEndpoint: '',
       nodeEndpoint: '',
       queryEndpoint: '',
-      blockHeight: 0,
     });
 
     return this.projectRepo.save(project);
@@ -98,14 +100,16 @@ export class ProjectService {
       getLogger('docker').error(`start project failed: ${e}`);
     }
 
-    // TODO: only save project when project started, otherwise return start project failed error
-    return this.projectRepo.save({
+    project = {
       id: deploymentID,
       networkEndpoint,
       queryEndpoint: queryEndpoint(deploymentID, servicePort),
       nodeEndpoint: nodeEndpoint(deploymentID, servicePort),
       status: IndexingStatus.INDEXING,
-    });
+    };
+
+    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    return this.projectRepo.save(project);
   }
 
   async stopProject(deploymentID: string) {
@@ -117,13 +121,13 @@ export class ProjectService {
 
     getLogger('docker').info(`stop project: ${deploymentID}`);
     this.docker.stop(projectContainers(deploymentID));
+    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.updateProjectStatus(deploymentID, IndexingStatus.NOTINDEXING);
   }
 
   async restartProject(deploymentID: string) {
     getLogger('docker').info(`restart project: ${deploymentID}`);
     this.docker.start(projectContainers(deploymentID));
-
     return this.updateProjectStatus(deploymentID, IndexingStatus.INDEXING);
   }
 

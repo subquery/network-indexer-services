@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import * as fs from 'fs';
@@ -49,7 +49,7 @@ export class DockerService {
 
   async createDB(name: string): Promise<boolean> {
     getLogger('docker').info(`create new db: ${name}`);
-    const dbDocker = process.env.DB_DOCKER ?? 'coordinator_db';
+    const dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
     try {
       await this.execute(
         `docker exec -i ${dbDocker} psql -U postgres -c "create database ${name}"`,

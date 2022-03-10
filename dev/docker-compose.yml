@@ -29,7 +29,8 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      DB_DOCKER: coordinator_db
+      DOCKER_DB: coordinator_db
+      PROXY_PORT: 8001
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock

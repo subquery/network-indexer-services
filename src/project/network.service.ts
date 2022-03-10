@@ -1,9 +1,10 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
 import { MetaData } from '@subql/common';
 import { isEmpty } from 'lodash';
+import fetch from 'node-fetch';
 
 import { ProjectService } from './project.service';
 import { getLogger } from 'src/utils/logger';
@@ -27,7 +28,7 @@ export class NetworkService {
     this.periodicUpdateNetwrok();
   }
 
-  async getQueryMetaData(id: string): Promise<MetaData> {
+  async getQueryMetaData(id: string): Promise<MetaData | undefined> {
     const project = await this.projectService.getProject(id);
     const { queryEndpoint } = project;
 
@@ -46,14 +47,18 @@ export class NetworkService {
         }}`,
     });
 
-    const response = await fetch(`${queryEndpoint}/graphql`, {
-      headers: { 'Content-Type': 'application/json' },
-      method: 'POST',
-      body: queryBody,
-    });
-
-    const data = await response.json();
-    return data.data._metadata;
+    try {
+      const response = await fetch(`${queryEndpoint}/graphql`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: queryBody,
+      });
+      const data = await response.json();
+      return data.data._metadata;
+    } catch (e) {
+      getLogger('netwrok').error(`Fetch query metadata failed: ${e}`);
+      return undefined;
+    }
   }
 
   async getIndexingProjects() {
@@ -87,7 +92,7 @@ export class NetworkService {
   async sendTransaction(actionName: string, tx: ContractTransaction) {
     try {
       getLogger('netwrok').info(`Sending Transaction: ${actionName}`);
-      await tx.wait(3);
+      await tx.wait(5);
       getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
       return;
     } catch (e) {
@@ -105,13 +110,22 @@ export class NetworkService {
     indexingProjects.forEach(async ({ id }) => {
       // TODO: extract `mmrRoot` should get from query endpoint `_por`;
       const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
-      const { lastProcessedHeight } = await this.getQueryMetaData(id);
+      const metadata = await this.getQueryMetaData(id);
+      if (!metadata) return;
 
       await this.sendTransaction(
-        `report status for project ${id} ${lastProcessedHeight}`,
+        `report status for project ${id} ${metadata.lastProcessedHeight}`,
         await this.sdk.queryRegistry
           .connect(this.wallet)
-          .reportIndexingStatus(cidToBytes32(id), lastProcessedHeight, mmrRoot, Date.now()),
+          .reportIndexingStatus(
+            cidToBytes32(id),
+            metadata.lastProcessedHeight,
+            mmrRoot,
+            Date.now() - 120,
+            {
+              gasLimit: '1000000',
+            },
+          ),
       );
     });
   }
@@ -134,7 +148,8 @@ export class NetworkService {
   }
 
   periodicUpdateNetwrok() {
-    const interval = 60000;
+    // TODO: update the interval to a reasonal value
+    const interval = 240000;
     setInterval(async () => {
       await this.updateNetwrokStates();
       await this.reportIndexingServices();

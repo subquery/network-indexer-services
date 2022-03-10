@@ -1,4 +1,4 @@
-// Copyright 2020-2021 OnFinality Limited authors & contributors
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
@@ -20,9 +20,6 @@ export class Project {
 
   @Column()
   queryEndpoint: string; // endpoint of query service
-
-  @Column()
-  blockHeight: number;
 }
 
 @ObjectType('Project')
@@ -41,9 +38,6 @@ export class ProjectType {
 
   @Field()
   queryEndpoint: string;
-
-  @Field(() => Int)
-  blockHeight: number;
 }
 
 @ObjectType('ServiceMetaData')
