@@ -17,7 +17,7 @@ services:
       retries: 5
 
   coordinator-service:
-    image: dev4mz/test4mz:0.1.11
+    image: dev4mz/test4mz:0.1.12
     container_name: coordinator_service
     ports:
       - 8000:8000
@@ -27,7 +27,7 @@ services:
     restart: always
     environment:
       DOCKER_DB: coordinator_db
-      NETWORK_ENDPOINT: wss://polkadot.api.onfinality.io/public-ws
+      PROXY_PORT: 8001
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock
@@ -53,7 +53,7 @@ services:
       timeout: 5s
       retries: 5
   proxy-server:
-    image: dev4mz/proxy:0.0.6
+    image: dev4mz/proxy:0.0.7
     container_name: coordinator_proxy
     ports:
       - 8001:8001
@@ -63,10 +63,9 @@ services:
     restart: always
     command:
       - --port=8001
+      - --host=0.0.0.0
       - --secret-key=qmbyd5hwac2jdcu
       - --service-url=http://coordinator-service:8000/graphql
-      - --host=0.0.0.0
 networks:
   default:
-    external:
-      name: cooridnator-service
+    name: cooridnator-service
