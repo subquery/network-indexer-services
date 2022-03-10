@@ -152,7 +152,7 @@ export class NetworkService {
     const interval = 240000;
     setInterval(async () => {
       await this.updateNetwrokStates();
-      await this.reportIndexingServices();
+      // await this.reportIndexingServices();
     }, interval);
   }
 }

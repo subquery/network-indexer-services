@@ -27,7 +27,6 @@ import { AdminController } from './admin.controller';
     GraphQLModule.forRoot({
       autoSchemaFile: true,
       subscriptions: {
-        'graphql-ws': true,
         'subscriptions-transport-ws': true,
       },
       cors: { origin: true, credentials: true },
