@@ -38,7 +38,8 @@ export class DockerService {
 
   async stop(containers: string[]): Promise<string> {
     try {
-      return this.execute(`docker stop ${containers.join(' ')}`);
+      const result = await this.execute(`docker stop ${containers.join(' ')}`);
+      return result;
     } catch (e) {
       getLogger('docker').error(`failed to stop the containers: ${e}`);
     }

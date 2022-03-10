@@ -38,11 +38,7 @@ export class ProjectService {
     const projects = await this.getProjects();
     if (projects.length === 0) return 3000;
 
-    const ports = projects.map(({ queryEndpoint }) => {
-      if (!queryEndpoint) return 3000;
-      return getServicePort(queryEndpoint) ?? 3000;
-    });
-
+    const ports = projects.map(({ queryEndpoint }) => getServicePort(queryEndpoint) ?? 3000);
     return Math.max(...ports);
   }
 
