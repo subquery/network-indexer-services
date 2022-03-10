@@ -11,7 +11,7 @@ import { getComposeFilePath, projectContainers, projectId } from 'src/utils/dock
 export class DockerService {
   constructor() { }
 
-  async up(fileName: string): Promise<boolean> {
+  async up(fileName: string): Promise<string> {
     const filePath = getComposeFilePath(`${fileName}.yml`);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
@@ -25,44 +25,50 @@ export class DockerService {
       return this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
-      return false;
     }
   }
 
-  start(containers: string[]): Promise<boolean> {
-    return this.execute(`docker start ${containers.join(' ')}`);
+  async start(containers: string[]): Promise<string> {
+    try {
+      return this.execute(`docker start ${containers.join(' ')}`);
+    } catch (e) {
+      getLogger('docker').error(`failed to restart the containers: ${e}`);
+    }
   }
 
-  stop(containers: string[]): Promise<boolean> {
-    return this.execute(`docker stop ${containers.join(' ')}`);
+  async stop(containers: string[]): Promise<string> {
+    try {
+      return this.execute(`docker stop ${containers.join(' ')}`);
+    } catch (e) {
+      getLogger('docker').error(`failed to stop the containers: ${e}`);
+    }
   }
 
-  rm(containers: string[]): Promise<boolean> {
+  rm(containers: string[]): Promise<string> {
     return this.execute(`docker container rm ${containers.join(' ')}`);
   }
 
+  ps(): Promise<string> {
+    return this.execute('docker container ps -a');
+  }
+
   // TODO: support logs for node | query services
-  logs(container: string): Promise<boolean> {
+  logs(container: string): Promise<string> {
     // TODO: the format of the text?
     return this.execute(`docker logs -l ${container}`);
   }
 
-  async createDB(name: string): Promise<boolean> {
+  async createDB(name: string): Promise<string> {
     getLogger('docker').info(`create new db: ${name}`);
     const dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
     try {
-      await this.execute(
+      return this.execute(
         `docker exec -i ${dbDocker} psql -U postgres -c "create database ${name}"`,
       );
-      return true;
-    } catch (e) {
-      if (e.message.includes('already exists')) {
-        return true;
-      }
-    }
+    } catch (e) { }
   }
 
-  execute(cmd: string): Promise<boolean> {
+  execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
@@ -74,7 +80,7 @@ export class DockerService {
         } else {
           reject(stderr);
         }
-        resolve(stdout ? true : false);
+        resolve(stdout);
       });
     });
   }

@@ -53,7 +53,7 @@ services:
       timeout: 5s
       retries: 5
   proxy-server:
-    image: dev4mz/proxy:0.0.7
+    image: dev4mz/proxy:0.0.9
     container_name: coordinator_proxy
     ports:
       - 8001:8001

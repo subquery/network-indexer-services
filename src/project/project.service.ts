@@ -29,7 +29,21 @@ export class ProjectService {
     private pubSub: SubscriptionService,
     private docker: DockerService,
   ) {
-    this.port = 3000;
+    this.getLatestPort().then((port) => {
+      this.port = port;
+    });
+  }
+
+  async getLatestPort(): Promise<number> {
+    const projects = await this.getProjects();
+    if (projects.length === 0) return 3000;
+
+    const ports = projects.map(({ queryEndpoint }) => {
+      if (!queryEndpoint) return 3000;
+      return getServicePort(queryEndpoint) ?? 3000;
+    });
+
+    return Math.max(...ports);
   }
 
   async getProject(id: string): Promise<Project> {
@@ -73,6 +87,9 @@ export class ProjectService {
     if (!project) {
       project = await this.addProject(deploymentID);
     }
+
+    const info = this.docker.ps();
+    getLogger('docker').info(`restart project: ${info}`);
 
     // restart the project if project already exist and network endpoint keep same
     if (project.networkEndpoint === networkEndpoint) {
