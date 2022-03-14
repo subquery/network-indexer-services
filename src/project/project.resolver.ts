@@ -6,10 +6,15 @@ import { SubscriptionService } from './subscription.service';
 import { ProjectService } from './project.service';
 import { ProjectType } from './project.model';
 import { ProjectEvent } from 'src/utils/subscription';
+import { DockerService } from './docker.service';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
-  constructor(private projectService: ProjectService, private pubSub: SubscriptionService) { }
+  constructor(
+    private projectService: ProjectService,
+    private pubSub: SubscriptionService,
+    private docker: DockerService,
+  ) { }
 
   @Query(() => ProjectType)
   project(@Args('id') id: string) {
@@ -24,6 +29,11 @@ export class ProjectResolver {
   @Query(() => [ProjectType])
   getAliveProjects() {
     return this.projectService.getAliveProjects();
+  }
+
+  @Query(() => String)
+  getLog(@Args('container') container: string) {
+    return this.docker.logs(container);
   }
 
   @Mutation(() => ProjectType)

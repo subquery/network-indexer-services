@@ -5,10 +5,8 @@ import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import { Signer, utils } from 'ethers';
 
-import { localnet } from '../contract/deployment';
-
 const deployments = {
-  local: localnet,
+  local: testnetDeployment,
   testnet: testnetDeployment,
   mainnet: testnetDeployment,
 };

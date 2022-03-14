@@ -9,5 +9,5 @@ RUN npm install
 RUN npm run build
 RUN npm cache clean --force
 
-RUN apk add --no-cache tini git curl docker-cli docker-compose
+RUN apk add --no-cache tini git curl docker-cli docker-compose grep
 ENTRYPOINT ["/sbin/tini", "--", "/app/bin/run"]

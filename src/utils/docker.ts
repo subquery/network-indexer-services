@@ -36,12 +36,16 @@ export function getComposeFilePath(name: string): string {
   return join('/var/tmp', 'composeFiles', name);
 }
 
-export function nodeContainer(cid: string) {
+export function nodeContainer(cid: string): string {
   return `node_${projectId(cid)}`;
 }
 
-export function queryContainer(cid: string) {
+export function queryContainer(cid: string): string {
   return `query_${projectId(cid)}`;
+}
+
+export function dbName(cid: string): string {
+  return `db_${projectId(cid)}`;
 }
 
 export function projectContainers(cid: string) {
@@ -56,7 +60,7 @@ export function generateDockerComposeFile(data: TemplateType) {
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(
-      `fail to generate new docker compose file for ${data.deploymentID}: ${e}`,
+      `fail to generate new docker compose file for ${data.deploymentID}: ${e} `,
     );
   }
 }

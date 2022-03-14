@@ -39,33 +39,3 @@ export class ProjectType {
   @Field()
   queryEndpoint: string;
 }
-
-@ObjectType('ServiceMetaData')
-export class ServiceMetaDataType {
-  @Field(() => Int)
-  lastProcessedHeight: number;
-
-  @Field(() => Date)
-  lastProcessedTimestamp: number;
-
-  @Field(() => Int)
-  targetHeight: number;
-
-  @Field()
-  chain: string;
-
-  @Field()
-  specName: string;
-
-  @Field()
-  genesisHash: string;
-
-  @Field()
-  indexerHealthy: boolean;
-
-  @Field()
-  indexerNodeVersion: string;
-
-  @Field()
-  queryNodeVersion: string;
-}

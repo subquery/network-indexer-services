@@ -9,7 +9,10 @@ import { getComposeFilePath, projectContainers, projectId } from 'src/utils/dock
 
 @Injectable()
 export class DockerService {
-  constructor() { }
+  private dbDocker: string;
+  constructor() {
+    this.dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
+  }
 
   async up(fileName: string): Promise<string> {
     const filePath = getComposeFilePath(`${fileName}.yml`);
@@ -49,32 +52,42 @@ export class DockerService {
     return this.execute(`docker container rm ${containers.join(' ')}`);
   }
 
-  ps(): Promise<string> {
-    return this.execute('docker container ps -a');
+  ps(containers: string[]): Promise<string> {
+    return this.execute(`docker container ps -a | grep -E '${containers.join('|')}'`);
   }
 
-  // TODO: support logs for node | query services
-  logs(container: string): Promise<string> {
-    // TODO: the format of the text?
-    return this.execute(`docker logs -l ${container}`);
+  async logs(container: string): Promise<string> {
+    return this.execute(`docker logs -f -n 30 ${container} >> /proc/1/fd/1`);
+  }
+
+  async checkDBExist(name: string): Promise<boolean> {
+    try {
+      const result = await this.execute(
+        `docker exec -i ${this.dbDocker} psql -U postgres  -l | grep '${name}'`,
+      );
+      return !!result;
+    } catch {
+      return false;
+    }
   }
 
   async createDB(name: string): Promise<string> {
+    const isDBExist = await this.checkDBExist(name);
+    if (isDBExist) {
+      getLogger('docker').info(`db: ${name} already exist`);
+      return;
+    }
+
     getLogger('docker').info(`create new db: ${name}`);
-    const dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
-    try {
-      return this.execute(
-        `docker exec -i ${dbDocker} psql -U postgres -c "create database ${name}"`,
-      );
-    } catch (e) { }
+    return this.execute(
+      `docker exec -i ${this.dbDocker} psql -U postgres -c "create database ${name}"`,
+    );
   }
 
   execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
-          // TODO: output this only with verbose [process.env.VERBOSE]
-          // getLogger('docker').error(error);
           reject(error);
         } else if (stdout) {
           getLogger('docker').info(stdout);

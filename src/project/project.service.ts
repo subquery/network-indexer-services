@@ -10,6 +10,7 @@ import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
 import {
+  dbName,
   generateDockerComposeFile,
   getServicePort,
   nodeEndpoint,
@@ -78,26 +79,31 @@ export class ProjectService {
   }
 
   // project management
-  async startProject(deploymentID: string, networkEndpoint: string): Promise<Project> {
-    let project = await this.getProject(deploymentID);
+  async startProject(id: string, networkEndpoint: string): Promise<Project> {
+    let project = await this.getProject(id);
     if (!project) {
-      project = await this.addProject(deploymentID);
+      project = await this.addProject(id);
     }
 
-    const info = this.docker.ps();
-    getLogger('docker').info(`restart project: ${info}`);
-
     // restart the project if project already exist and network endpoint keep same
-    if (project.networkEndpoint === networkEndpoint) {
-      const restartedProject = await this.restartProject(deploymentID);
+    const isDBExist = await this.docker.checkDBExist(dbName(id));
+    const containers = await this.docker.ps(projectContainers(id));
+    const isContainersExist = containers.split('\n').length == projectContainers.length;
+    if (project.networkEndpoint === networkEndpoint && isContainersExist && isDBExist) {
+      const restartedProject = await this.restartProject(id);
       return restartedProject;
     }
 
-    // create and start new project if the project not start before
-    const projectID = projectId(deploymentID);
+    const startedProject = await this.createAndStartProject(id, networkEndpoint);
+    return startedProject;
+  }
+
+  async createAndStartProject(id: string, networkEndpoint: string) {
+    let project = await this.getProject(id);
+    const projectID = projectId(id);
     const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
     const item: TemplateType = {
-      deploymentID,
+      deploymentID: id,
       projectID,
       networkEndpoint,
       servicePort,
@@ -114,10 +120,10 @@ export class ProjectService {
     }
 
     project = {
-      id: deploymentID,
+      id,
       networkEndpoint,
-      queryEndpoint: queryEndpoint(deploymentID, servicePort),
-      nodeEndpoint: nodeEndpoint(deploymentID, servicePort),
+      queryEndpoint: queryEndpoint(id, servicePort),
+      nodeEndpoint: nodeEndpoint(id, servicePort),
       status: IndexingStatus.INDEXING,
     };
 
@@ -125,23 +131,23 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
-  async stopProject(deploymentID: string) {
-    const project = await this.getProject(deploymentID);
+  async stopProject(id: string) {
+    const project = await this.getProject(id);
     if (!project) {
-      getLogger('docker').error(`project not exist: ${deploymentID}`);
+      getLogger('docker').error(`project not exist: ${id}`);
       return;
     }
 
-    getLogger('docker').info(`stop project: ${deploymentID}`);
-    this.docker.stop(projectContainers(deploymentID));
+    getLogger('docker').info(`stop project: ${id}`);
+    this.docker.stop(projectContainers(id));
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
-    return this.updateProjectStatus(deploymentID, IndexingStatus.NOTINDEXING);
+    return this.updateProjectStatus(id, IndexingStatus.NOTINDEXING);
   }
 
-  async restartProject(deploymentID: string) {
-    getLogger('docker').info(`restart project: ${deploymentID}`);
-    this.docker.start(projectContainers(deploymentID));
-    return this.updateProjectStatus(deploymentID, IndexingStatus.INDEXING);
+  async restartProject(id: string) {
+    getLogger('docker').info(`restart project: ${id}`);
+    this.docker.start(projectContainers(id));
+    return this.updateProjectStatus(id, IndexingStatus.INDEXING);
   }
 
   async removeProject(id: string): Promise<Project[]> {
