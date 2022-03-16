@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 
-import { Project } from './project.model';
+import { LogType, Project } from './project.model';
 import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
@@ -158,5 +158,10 @@ export class ProjectService {
   async removeProjects(): Promise<Project[]> {
     const projects = await this.getProjects();
     return this.projectRepo.remove(projects);
+  }
+
+  async logs(container: string): Promise<LogType> {
+    const log = await this.docker.logs(container);
+    return { log };
   }
 }
