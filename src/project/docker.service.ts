@@ -18,13 +18,7 @@ export class DockerService {
     const filePath = getComposeFilePath(`${fileName}.yml`);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
-      try {
-        await this.rm(projectContainers(fileName));
-        getLogger('docker').info(`remove the old containers`);
-      } catch (_) {
-        getLogger('docker').info(`no containers need to be removed`);
-      }
-
+      await this.rm(projectContainers(fileName));
       return this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
@@ -48,12 +42,24 @@ export class DockerService {
     }
   }
 
-  rm(containers: string[]): Promise<string> {
-    return this.execute(`docker container rm ${containers.join(' ')}`);
+  async rm(containers: string[]) {
+    try {
+      getLogger('docker').info(`remove the old containers`);
+      await this.execute(`docker container rm ${containers.join(' ')}`);
+    } catch (_) {
+      getLogger('docker').info(`no containers need to be removed`);
+    }
   }
 
-  ps(containers: string[]): Promise<string> {
-    return this.execute(`docker container ps -a | grep -E '${containers.join('|')}'`);
+  async ps(containers: string[]): Promise<string> {
+    try {
+      const result = await this.execute(
+        `docker container ps -a | grep -E '${containers.join('|')}'`,
+      );
+      return result;
+    } catch (_) {
+      return '';
+    }
   }
 
   async logs(container: string): Promise<string> {
