@@ -39,3 +39,9 @@ export class ProjectType {
   @Field()
   queryEndpoint: string;
 }
+
+@ObjectType('Log')
+export class LogType {
+  @Field()
+  log: string;
+}

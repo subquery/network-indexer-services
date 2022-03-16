@@ -57,7 +57,7 @@ export class DockerService {
   }
 
   async logs(container: string): Promise<string> {
-    return this.execute(`docker logs -f -n 30 ${container} >> /proc/1/fd/1`);
+    return this.execute(`docker logs -n 30 ${container}`);
   }
 
   async checkDBExist(name: string): Promise<boolean> {
