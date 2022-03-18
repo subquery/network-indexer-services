@@ -20,6 +20,7 @@ services:
       - --network-endpoint={{networkEndpoint}}
       - --db-schema=app_{{deploymentID}}
       - --port={{servicePort}}
+      - --proof-of-index=true
     healthcheck:
       test:
         [

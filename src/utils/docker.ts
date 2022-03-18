@@ -6,6 +6,7 @@ import { join } from 'path';
 import * as handlebars from 'handlebars';
 import { getLogger } from 'src/utils/logger';
 
+// move to types folder
 export type TemplateType = {
   deploymentID: string;
   projectID: string;

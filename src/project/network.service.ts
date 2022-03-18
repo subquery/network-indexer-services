@@ -149,7 +149,7 @@ export class NetworkService {
 
   periodicUpdateNetwrok() {
     // TODO: update the interval to a reasonal value
-    const interval = 240000;
+    const interval = 1000 * 60 * 60 * 6;
     setInterval(async () => {
       await this.updateNetwrokStates();
       // await this.reportIndexingServices();
