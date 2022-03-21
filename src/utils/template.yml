@@ -12,7 +12,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
     volumes:
-      - ./:/app
+      - /var/tmp/composeFiles/{{deploymentID}}:/var/tmp/composeFiles/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{dictionary}}
@@ -21,6 +21,7 @@ services:
       - --db-schema=app_{{deploymentID}}
       - --port={{servicePort}}
       - --proof-of-index=true
+      - -m=/var/tmp/composeFiles/{{deploymentID}}
     healthcheck:
       test:
         [

@@ -33,8 +33,8 @@ export function queryEndpoint(cid: string, port: number): string {
   return `http://query_${projectId(cid)}:${port}`;
 }
 
-export function getComposeFilePath(name: string): string {
-  return join('/var/tmp', 'composeFiles', name);
+export function getComposeFilePath(cid: string): string {
+  return join('/var/tmp', `composeFiles/${cid}/`, `${cid}.yml`);
 }
 
 export function nodeContainer(cid: string): string {
@@ -57,7 +57,7 @@ export function generateDockerComposeFile(data: TemplateType) {
   try {
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
-    fs.writeFileSync(getComposeFilePath(`${data.deploymentID}.yml`), template(data));
+    fs.writeFileSync(getComposeFilePath(data.deploymentID), template(data));
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(

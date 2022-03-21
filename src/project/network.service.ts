@@ -147,9 +147,17 @@ export class NetworkService {
     );
   }
 
+  async getInterval() {
+    const isContractReady = await this.syncContractConfig();
+    if (!isContractReady) return 1000 * 60;
+
+    const eraPeriod = await this.sdk.eraManager.eraPeriod();
+    return Number(eraPeriod.toString());
+  }
+
   periodicUpdateNetwrok() {
     // TODO: update the interval to a reasonal value
-    const interval = 1000 * 60 * 60 * 6;
+    const interval = 1000 * 60;
     setInterval(async () => {
       await this.updateNetwrokStates();
       // await this.reportIndexingServices();

@@ -15,7 +15,7 @@ export class DockerService {
   }
 
   async up(fileName: string): Promise<string> {
-    const filePath = getComposeFilePath(`${fileName}.yml`);
+    const filePath = getComposeFilePath(fileName);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       await this.rm(projectContainers(fileName));
