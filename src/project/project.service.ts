@@ -13,9 +13,11 @@ import {
   dbName,
   generateDockerComposeFile,
   getServicePort,
+  nodeContainer,
   nodeEndpoint,
   projectContainers,
   projectId,
+  queryContainer,
   queryEndpoint,
   TemplateType,
 } from 'src/utils/docker';
@@ -92,7 +94,8 @@ export class ProjectService {
     // restart the project if project already exist and network endpoint keep same
     const isDBExist = await this.docker.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
-    const isContainersExist = containers.split('\n').length == projectContainers.length;
+    const isContainersExist =
+      containers.includes(nodeContainer(id)) && containers.includes(queryContainer(id));
     if (project.networkEndpoint === networkEndpoint && isContainersExist && isDBExist) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;

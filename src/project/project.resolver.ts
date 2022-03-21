@@ -4,12 +4,22 @@
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { SubscriptionService } from './subscription.service';
 import { ProjectService } from './project.service';
-import { LogType, ProjectType } from './project.model';
+import { LogType, MetadataType, ProjectType } from './project.model';
 import { ProjectEvent } from 'src/utils/subscription';
+import { QueryService } from './query.service';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
-  constructor(private projectService: ProjectService, private pubSub: SubscriptionService) { }
+  constructor(
+    private projectService: ProjectService,
+    private queryService: QueryService,
+    private pubSub: SubscriptionService,
+  ) { }
+
+  @Query(() => MetadataType)
+  queryMetadata(@Args('id') id: string) {
+    return this.queryService.getQueryMetaData(id);
+  }
 
   @Query(() => ProjectType)
   project(@Args('id') id: string) {

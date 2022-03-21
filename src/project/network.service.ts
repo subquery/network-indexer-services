@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { MetaData } from '@subql/common';
 import { isEmpty } from 'lodash';
-import fetch from 'node-fetch';
 
 import { ProjectService } from './project.service';
 import { getLogger } from 'src/utils/logger';
@@ -14,6 +12,7 @@ import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
 import { ContractTransaction, Wallet } from 'ethers';
 import { AccountService } from 'src/account/account.service';
+import { QueryService } from './query.service';
 
 @Injectable()
 export class NetworkService {
@@ -24,41 +23,9 @@ export class NetworkService {
     private projectService: ProjectService,
     private contractService: ContractService,
     private accountService: AccountService,
+    private queryService: QueryService,
   ) {
     this.periodicUpdateNetwrok();
-  }
-
-  async getQueryMetaData(id: string): Promise<MetaData | undefined> {
-    const project = await this.projectService.getProject(id);
-    const { queryEndpoint } = project;
-
-    const queryBody = JSON.stringify({
-      query: `{
-        _metadata {
-          lastProcessedHeight
-          lastProcessedTimestamp
-          targetHeight
-          chain
-          specName
-          genesisHash
-          indexerHealthy
-          indexerNodeVersion
-          queryNodeVersion
-        }}`,
-    });
-
-    try {
-      const response = await fetch(`${queryEndpoint}/graphql`, {
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-        body: queryBody,
-      });
-      const data = await response.json();
-      return data.data._metadata;
-    } catch (e) {
-      getLogger('netwrok').error(`Fetch query metadata failed: ${e}`);
-      return undefined;
-    }
   }
 
   async getIndexingProjects() {
@@ -110,7 +77,7 @@ export class NetworkService {
     indexingProjects.forEach(async ({ id }) => {
       // TODO: extract `mmrRoot` should get from query endpoint `_por`;
       const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
-      const metadata = await this.getQueryMetaData(id);
+      const metadata = await this.queryService.getQueryMetaData(id);
       if (!metadata) return;
 
       await this.sendTransaction(

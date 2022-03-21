@@ -11,6 +11,7 @@ import { NetworkService } from './network.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { SubscriptionService } from './subscription.service';
+import { QueryService } from './query.service';
 
 @Module({
   imports: [AccountModule, TypeOrmModule.forFeature([Project])],
@@ -21,6 +22,7 @@ import { SubscriptionService } from './subscription.service';
     ContractService,
     DockerService,
     SubscriptionService,
+    QueryService,
   ],
   exports: [ProjectService],
 })

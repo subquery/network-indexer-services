@@ -45,3 +45,33 @@ export class LogType {
   @Field()
   log: string;
 }
+
+@ObjectType('Metadata')
+export class MetadataType {
+  @Field(() => Int)
+  lastProcessedHeight: number;
+
+  @Field()
+  lastProcessedTimestamp: string;
+
+  @Field(() => Int)
+  targetHeight: number;
+
+  @Field()
+  chain: string;
+
+  @Field()
+  specName: string;
+
+  @Field()
+  genesisHash: string;
+
+  @Field()
+  indexerHealthy: string;
+
+  @Field()
+  indexerNodeVersion: string;
+
+  @Field()
+  queryNodeVersion: string;
+}
