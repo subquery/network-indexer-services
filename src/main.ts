@@ -12,7 +12,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, { logger: new NestLogger() });
     await app.listen(port);
     getLogger(LogCategory.coordinator).info('coordinator service started');
-    getLogger(LogCategory.admin).info(`indexer admin app started: http://localhost:${port}`);
+    getLogger(LogCategory.admin).info(`indexer admin app started: ${argv('host')}:${port}`);
   } catch (e) {
     getLogger(LogCategory.coordinator).error(e, 'coordinator service failed');
   }

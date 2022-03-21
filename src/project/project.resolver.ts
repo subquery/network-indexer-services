@@ -43,8 +43,12 @@ export class ProjectResolver {
 
   // project management
   @Mutation(() => ProjectType)
-  startProject(@Args('id') id: string, @Args('networkEndpoint') networkEndpoint: string) {
-    return this.projectService.startProject(id, networkEndpoint);
+  startProject(
+    @Args('id') id: string,
+    @Args('networkEndpoint') networkEndpoint: string,
+    @Args('networkDictionary') networkDictionary: string,
+  ) {
+    return this.projectService.startProject(id, networkEndpoint, networkDictionary);
   }
 
   @Mutation(() => ProjectType)

@@ -79,7 +79,11 @@ export class ProjectService {
   }
 
   // project management
-  async startProject(id: string, networkEndpoint: string): Promise<Project> {
+  async startProject(
+    id: string,
+    networkEndpoint: string,
+    networkDictionary: string,
+  ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
@@ -94,11 +98,11 @@ export class ProjectService {
       return restartedProject;
     }
 
-    const startedProject = await this.createAndStartProject(id, networkEndpoint);
+    const startedProject = await this.createAndStartProject(id, networkEndpoint, networkDictionary);
     return startedProject;
   }
 
-  async createAndStartProject(id: string, networkEndpoint: string) {
+  async createAndStartProject(id: string, networkEndpoint: string, networkDictionary: string) {
     let project = await this.getProject(id);
     const projectID = projectId(id);
     const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
@@ -107,6 +111,7 @@ export class ProjectService {
       projectID,
       networkEndpoint,
       servicePort,
+      dictionary: networkDictionary,
       nodeVersion: 'v0.29.1', // TODO: image versions will be included in the manifest
       queryVersion: 'v0.12.0', // file in the future version of subqul sdk
     };
