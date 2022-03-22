@@ -3,7 +3,7 @@ FROM node:16 as builder
 
 ARG RELEASE_VERSION
 ENTRYPOINT ["subql-coordinator"]
-RUN npm i -g --unsafe-perm @subql/indexer-coordinator@RELEASE_VERSION
+RUN npm i -g --unsafe-perm @subql/indexer-coordinator@${RELEASE_VERSION}
 
 FROM node:16-alpine
 ENV TZ utc
