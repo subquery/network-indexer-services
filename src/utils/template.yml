@@ -20,7 +20,7 @@ services:
       - --network-endpoint={{networkEndpoint}}
       - --db-schema=app_{{deploymentID}}
       - --port={{servicePort}}
-      - --proof-of-index=true
+      - --proof-of-index=false
       - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
     healthcheck:
       test:

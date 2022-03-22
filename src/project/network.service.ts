@@ -63,7 +63,7 @@ export class NetworkService {
       getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
       return;
     } catch (e) {
-      getLogger('netwrok').error(`Transaction Failed: ${actionName}. ${e}`);
+      getLogger('netwrok').error(`Transaction Failed: ${actionName}`);
     }
   }
 
