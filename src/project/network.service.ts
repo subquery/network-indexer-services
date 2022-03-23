@@ -56,9 +56,10 @@ export class NetworkService {
     }
   }
 
-  async sendTransaction(actionName: string, tx: ContractTransaction) {
+  async sendTransaction(actionName: string, txFun: () => Promise<ContractTransaction>) {
     try {
       getLogger('netwrok').info(`Sending Transaction: ${actionName}`);
+      const tx = await txFun();
       await tx.wait(5);
       getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
       return;
@@ -82,17 +83,20 @@ export class NetworkService {
 
       await this.sendTransaction(
         `report status for project ${id} ${metadata.lastProcessedHeight}`,
-        await this.sdk.queryRegistry
-          .connect(this.wallet)
-          .reportIndexingStatus(
-            cidToBytes32(id),
-            metadata.lastProcessedHeight,
-            mmrRoot,
-            Date.now() - 120,
-            {
-              gasLimit: '1000000',
-            },
-          ),
+        async () => {
+          const tx = await this.sdk.queryRegistry
+            .connect(this.wallet)
+            .reportIndexingStatus(
+              cidToBytes32(id),
+              metadata.lastProcessedHeight,
+              mmrRoot,
+              Date.now() - 120,
+              {
+                gasLimit: '1000000',
+              },
+            );
+          return tx;
+        },
       );
     });
   }
@@ -102,16 +106,36 @@ export class NetworkService {
     const isContractReady = await this.syncContractConfig();
     if (!isContractReady) return;
 
-    await this.sendTransaction(
-      'update era number',
-      await this.sdk.eraManager.connect(this.wallet).safeUpdateAndGetEra(),
-    );
+    await this.sendTransaction('update era number', async () => {
+      const tx = await this.sdk.eraManager.connect(this.wallet).safeUpdateAndGetEra();
+      return tx;
+    });
 
+    // collect and distribute rewards
     const indexer = await this.accountService.getIndexer();
-    await this.sendTransaction(
-      'collect and distribute rewards',
-      await this.sdk.rewardsDistributor.connect(this.wallet).collectAndDistributeRewards(indexer),
-    );
+    await this.sendTransaction('collect and distribute rewards', async () => {
+      const tx = await this.sdk.rewardsDistributor
+        .connect(this.wallet)
+        .collectAndDistributeRewards(indexer);
+      return tx;
+    });
+
+    // apply ICR change
+    await this.sendTransaction('apply ICR changes', async () => {
+      const tx = await this.sdk.rewardsDistributor.connect(this.wallet).applyICRChange(indexer);
+      return tx;
+    });
+
+    // apply stake changes
+    // TODO: uncomment this after upgrade contract sdk
+    // const stakers = this.sdk.rewardsDistributor.getPendingStakers(indexer);
+    const stakers = [];
+    await this.sendTransaction('apply stake changes', async () => {
+      const tx = await this.sdk.rewardsDistributor
+        .connect(this.wallet)
+        .applyStakeChanges(indexer, stakers);
+      return tx;
+    });
   }
 
   async getInterval() {
