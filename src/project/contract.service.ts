@@ -81,9 +81,8 @@ export class ContractService {
           this.wallet = wallet;
           this.sdk = sdk;
         }
-      } catch (e) {
-        getLogger('report').error(e, 'init contract sdk failed');
-        return;
+      } catch {
+        getLogger('contract').error('Init contract sdk failed');
       }
     });
   }

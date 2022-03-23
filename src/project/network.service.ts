@@ -44,6 +44,31 @@ export class NetworkService {
     );
   }
 
+  async reportIndexingService(id: string) {
+    // TODO: extract `mmrRoot` should get from query endpoint `_por`;
+    const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
+    const metadata = await this.queryService.getQueryMetaData(id);
+    if (!metadata) return;
+
+    await this.sendTransaction(
+      `report status for project ${id} ${metadata.lastProcessedHeight}`,
+      async () => {
+        const tx = await this.sdk.queryRegistry
+          .connect(this.wallet)
+          .reportIndexingStatus(
+            cidToBytes32(id),
+            metadata.lastProcessedHeight,
+            mmrRoot,
+            Date.now() - 1000,
+            {
+              gasLimit: '10000000',
+            },
+          );
+        return tx;
+      },
+    );
+  }
+
   async syncContractConfig(): Promise<boolean> {
     try {
       await this.contractService.updateContractSDK();
@@ -64,78 +89,69 @@ export class NetworkService {
       getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
       return;
     } catch (e) {
-      getLogger('netwrok').error(`Transaction Failed: ${actionName}`);
+      getLogger('netwrok').warn(`Transaction Failed: ${actionName}`);
+
+      if (actionName.includes('report status for projec')) {
+        getLogger('netwrok').error(`Transaction Failed: ${actionName}`, e);
+      }
     }
   }
 
-  async reportIndexingServices() {
+  async reportIndexingServiceActions() {
     const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return;
+    if (!isContractReady) return [];
 
     const indexingProjects = await this.getIndexingProjects();
-    if (isEmpty(indexingProjects)) return;
+    if (isEmpty(indexingProjects)) return [];
 
-    indexingProjects.forEach(async ({ id }) => {
-      // TODO: extract `mmrRoot` should get from query endpoint `_por`;
-      const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
-      const metadata = await this.queryService.getQueryMetaData(id);
-      if (!metadata) return;
-
-      await this.sendTransaction(
-        `report status for project ${id} ${metadata.lastProcessedHeight}`,
-        async () => {
-          const tx = await this.sdk.queryRegistry
-            .connect(this.wallet)
-            .reportIndexingStatus(
-              cidToBytes32(id),
-              metadata.lastProcessedHeight,
-              mmrRoot,
-              Date.now() - 120,
-              {
-                gasLimit: '1000000',
-              },
-            );
-          return tx;
-        },
-      );
-    });
+    return indexingProjects.map(
+      ({ id }) =>
+        async () =>
+          this.reportIndexingService(id),
+    );
   }
 
   // TODO: check wallet balances before sending the transaction
-  async updateNetwrokStates() {
+  async networkActions() {
     const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return;
+    if (!isContractReady) return [];
 
-    await this.sendTransaction('update era number', async () => {
-      const tx = await this.sdk.eraManager.connect(this.wallet).safeUpdateAndGetEra();
-      return tx;
-    });
+    const updateEraNumber = () =>
+      this.sendTransaction('update era number', async () => {
+        const tx = await this.sdk.eraManager.connect(this.wallet).safeUpdateAndGetEra();
+        return tx;
+      });
 
     // collect and distribute rewards
     const indexer = await this.accountService.getIndexer();
-    await this.sendTransaction('collect and distribute rewards', async () => {
-      const tx = await this.sdk.rewardsDistributor
-        .connect(this.wallet)
-        .collectAndDistributeRewards(indexer);
-      return tx;
-    });
+    const collectAndDistributeRewards = () =>
+      this.sendTransaction('collect and distribute rewards', async () => {
+        const tx = await this.sdk.rewardsDistributor
+          .connect(this.wallet)
+          .collectAndDistributeRewards(indexer);
+        return tx;
+      });
 
     // apply ICR change
-    await this.sendTransaction('apply ICR changes', async () => {
-      const tx = await this.sdk.rewardsDistributor.connect(this.wallet).applyICRChange(indexer);
-      return tx;
-    });
+    const applyICRChange = () =>
+      this.sendTransaction('apply ICR changes', async () => {
+        const tx = await this.sdk.rewardsDistributor.connect(this.wallet).applyICRChange(indexer);
+        return tx;
+      });
 
     // apply stake changes
     // TODO: uncomment this after upgrade contract sdk
     // const stakers = this.sdk.rewardsDistributor.getPendingStakers(indexer);
     const stakers = [];
-    await this.sendTransaction('apply stake changes', async () => {
-      const tx = await this.sdk.rewardsDistributor
-        .connect(this.wallet)
-        .applyStakeChanges(indexer, stakers);
-      return tx;
-    });
+    const applyStakeChanges = () =>
+      this.sendTransaction('apply stake changes', async () => {
+        const tx = await this.sdk.rewardsDistributor
+          .connect(this.wallet)
+          .applyStakeChanges(indexer, stakers);
+        return tx;
+      });
+
+    return [updateEraNumber, collectAndDistributeRewards, applyICRChange, applyStakeChanges];
   }
 
   async getInterval() {
@@ -147,11 +163,15 @@ export class NetworkService {
   }
 
   periodicUpdateNetwrok() {
-    // TODO: update the interval to a reasonal value
-    const interval = 1000 * 60;
+    const interval = 1000 * 60 * 5;
     setInterval(async () => {
-      await this.updateNetwrokStates();
-      // await this.reportIndexingServices();
+      const networkActions = await this.networkActions();
+      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
+      const actions = [...networkActions, ...reportIndexingServiceActions];
+
+      for (let i = 0; i < actions.length; i++) {
+        await actions[i]();
+      }
     }, interval);
   }
 }

@@ -14,12 +14,15 @@ export class DockerService {
     this.dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
   }
 
-  async up(fileName: string): Promise<string> {
+  async up(fileName: string) {
     const filePath = getComposeFilePath(fileName);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       await this.rm(projectContainers(fileName));
-      return this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
+      const result = await this.execute(
+        `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`,
+      );
+      getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
     }
@@ -45,7 +48,8 @@ export class DockerService {
   async rm(containers: string[]) {
     try {
       getLogger('docker').info(`remove the old containers`);
-      await this.execute(`docker container rm ${containers.join(' ')}`);
+      const result = await this.execute(`docker container rm ${containers.join(' ')}`);
+      getLogger('docker').info(result);
     } catch (_) {
       getLogger('docker').info(`no containers need to be removed`);
     }
@@ -95,8 +99,6 @@ export class DockerService {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
           reject(error);
-        } else if (stdout) {
-          getLogger('docker').info(stdout);
         } else {
           reject(stderr);
         }
