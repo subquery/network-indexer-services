@@ -3,13 +3,21 @@
 
 import { Injectable } from '@nestjs/common';
 import { MetaData } from '@subql/common';
+import { isEmpty } from 'lodash';
 import fetch from 'node-fetch';
+import { nodeContainer } from 'src/utils/docker';
+import { DockerService } from './docker.service';
 
 import { ProjectService } from './project.service';
 
 @Injectable()
 export class QueryService {
-  constructor(private projectService: ProjectService) { }
+  constructor(private projectService: ProjectService, private docker: DockerService) { }
+
+  async indexerServiceHealth(id: string): Promise<boolean> {
+    const result = await this.docker.ps([nodeContainer(id)]);
+    return !(isEmpty(result) || result.includes('Exited'));
+  }
 
   async getQueryMetaData(id: string): Promise<MetaData> {
     const project = await this.projectService.getProject(id);
@@ -36,8 +44,13 @@ export class QueryService {
         method: 'POST',
         body: queryBody,
       });
+
       const data = await response.json();
-      return data.data._metadata;
+      const metadata = data.data._metadata;
+      const indexerServiceHealthy = await this.indexerServiceHealth(id);
+      const indexerHealthy = indexerServiceHealthy && metadata.indexerHealthy;
+
+      return { ...metadata, indexerHealthy };
     } catch {
       return;
     }

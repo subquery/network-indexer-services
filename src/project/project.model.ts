@@ -67,7 +67,7 @@ export class MetadataType {
   genesisHash: string;
 
   @Field()
-  indexerHealthy: string;
+  indexerHealthy: boolean;
 
   @Field()
   indexerNodeVersion: string;
