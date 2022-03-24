@@ -74,3 +74,12 @@ export function generateDockerComposeFile(data: TemplateType) {
     );
   }
 }
+
+export function canContainersRestart(id: string, containersInfo: string): boolean {
+  const containersExist =
+    containersInfo.includes(nodeContainer(id)) && containersInfo.includes(queryContainer(id));
+  const isContainerAborted =
+    containersInfo.includes('Exited (134)') || containersInfo.includes('Exited (137)');
+
+  return containersExist && !isContainerAborted;
+}

@@ -32,7 +32,7 @@ services:
         ]
       interval: 3s
       timeout: 5s
-      retries: 30
+      retries: 100
 
   query_{{projectID}}:
     image: onfinality/subql-query:{{queryVersion}}

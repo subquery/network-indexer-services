@@ -10,14 +10,13 @@ import { IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
 import {
+  canContainersRestart,
   dbName,
   generateDockerComposeFile,
   getServicePort,
-  nodeContainer,
   nodeEndpoint,
   projectContainers,
   projectId,
-  queryContainer,
   queryEndpoint,
   TemplateType,
 } from 'src/utils/docker';
@@ -94,9 +93,11 @@ export class ProjectService {
     // restart the project if project already exist and network endpoint keep same
     const isDBExist = await this.docker.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
-    const isContainersExist =
-      containers.includes(nodeContainer(id)) && containers.includes(queryContainer(id));
-    if (project.networkEndpoint === networkEndpoint && isContainersExist && isDBExist) {
+    if (
+      project.networkEndpoint === networkEndpoint &&
+      canContainersRestart(id, containers) &&
+      isDBExist
+    ) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
     }
