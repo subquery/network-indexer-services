@@ -99,7 +99,7 @@ export class DockerService {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
           reject(error);
-        } else {
+        } else if (stderr) {
           reject(stderr);
         }
         resolve(stdout);

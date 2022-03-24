@@ -53,17 +53,15 @@ export class NetworkService {
     await this.sendTransaction(
       `report status for project ${id} ${metadata.lastProcessedHeight}`,
       async () => {
-        const tx = await this.sdk.queryRegistry
-          .connect(this.wallet)
-          .reportIndexingStatus(
-            cidToBytes32(id),
-            metadata.lastProcessedHeight,
-            mmrRoot,
-            Date.now() - 1000,
-            {
-              gasLimit: '10000000',
-            },
-          );
+        const tx = await this.sdk.queryRegistry.reportIndexingStatus(
+          cidToBytes32(id),
+          metadata.lastProcessedHeight,
+          mmrRoot,
+          Date.now() - 1000,
+          {
+            gasLimit: '10000000',
+          },
+        );
         return tx;
       },
     );
@@ -117,39 +115,27 @@ export class NetworkService {
     if (!isContractReady) return [];
 
     const updateEraNumber = () =>
-      this.sendTransaction('update era number', async () => {
-        const tx = await this.sdk.eraManager.connect(this.wallet).safeUpdateAndGetEra();
-        return tx;
-      });
+      this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
 
     // collect and distribute rewards
     const indexer = await this.accountService.getIndexer();
     const collectAndDistributeRewards = () =>
-      this.sendTransaction('collect and distribute rewards', async () => {
-        const tx = await this.sdk.rewardsDistributor
-          .connect(this.wallet)
-          .collectAndDistributeRewards(indexer);
-        return tx;
-      });
+      this.sendTransaction('collect and distribute rewards', () =>
+        this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
+      );
 
     // apply ICR change
     const applyICRChange = () =>
-      this.sendTransaction('apply ICR changes', async () => {
-        const tx = await this.sdk.rewardsDistributor.connect(this.wallet).applyICRChange(indexer);
-        return tx;
-      });
+      this.sendTransaction('apply ICR changes', async () =>
+        this.sdk.rewardsDistributor.applyICRChange(indexer),
+      );
 
     // apply stake changes
-    // TODO: uncomment this after upgrade contract sdk
-    // const stakers = this.sdk.rewardsDistributor.getPendingStakers(indexer);
-    const stakers = [];
+    const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
     const applyStakeChanges = () =>
-      this.sendTransaction('apply stake changes', async () => {
-        const tx = await this.sdk.rewardsDistributor
-          .connect(this.wallet)
-          .applyStakeChanges(indexer, stakers);
-        return tx;
-      });
+      this.sendTransaction('apply stake changes', async () =>
+        this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
+      );
 
     return [updateEraNumber, collectAndDistributeRewards, applyICRChange, applyStakeChanges];
   }
@@ -163,11 +149,11 @@ export class NetworkService {
   }
 
   periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * 5;
+    const interval = 1000 * 60 * 20;
     setInterval(async () => {
+      // const reportIndexingServiceActions = await this.reportIndexingServiceActions();
       const networkActions = await this.networkActions();
-      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
-      const actions = [...networkActions, ...reportIndexingServiceActions];
+      const actions = [...networkActions];
 
       for (let i = 0; i < actions.length; i++) {
         await actions[i]();
