@@ -30,7 +30,7 @@ services:
     restart: always
     environment:
       DOCKER_DB: coordinator_db
-      PROXY_PORT: 8001
+      TRANSACTION_INTERVAL: 1
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock

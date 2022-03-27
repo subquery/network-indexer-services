@@ -149,7 +149,7 @@ export class NetworkService {
   }
 
   periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * 20;
+    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 2);
     setInterval(async () => {
       // const reportIndexingServiceActions = await this.reportIndexingServiceActions();
       const networkActions = await this.networkActions();

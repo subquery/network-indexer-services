@@ -10,8 +10,6 @@ ENV TZ utc
 
 RUN apk add --no-cache tini git curl docker-cli docker-compose grep
 
-# docker network create cooridnator-service
-
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/lib/node_modules/@subql/indexer-coordinator/bin/run"]
