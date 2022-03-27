@@ -1,0 +1,70 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:12-alpine
+    container_name: coordinator_db
+    ports:
+      - 5432:5432
+    volumes:
+      - /var/tmp/.data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  coordinator-service:
+    image: onfinality/subql-coordinator:v0.1.1-23
+    container_name: coordinator_service
+    ports:
+      - 8000:8000
+    depends_on:
+      "postgres":
+        condition: service_healthy
+    restart: always
+    environment:
+      DOCKER_DB: coordinator_db
+    volumes:
+      - /var/tmp/composeFiles:/var/tmp/composeFiles
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --network=testnet
+      - --ws-endpoint=https://sqtn.api.onfinality.io/public
+      - --postgres-host=postgres
+      - --postgres-database=postgres
+      - --postgres-port=5432
+      - --port=8000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-i",
+          "-X POST",
+          "http://coordinator-service:8000/graphql",
+          "-H 'Content-Type: application/json'",
+          "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  proxy-server:
+    image: onfinality/subql-indexer-proxy:v0.1.4
+    container_name: coordinator_proxy
+    ports:
+      - 80:80
+    depends_on:
+      "coordinator-service":
+        condition: service_healthy
+    restart: always
+    command:
+      - --port=80
+      - --host=0.0.0.0
+      - --secret-key=qmbyd5hwac2jdcu
+      - --service-url=http://coordinator-service:8000/graphql
+networks:
+  default:
+    name: cooridnator-service

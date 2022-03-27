@@ -60,6 +60,7 @@ export class ContractService {
 
     accounts.forEach(async ({ id, indexer, controller: encryptedController }) => {
       const controller = decrypt(encryptedController);
+      // getLogger('contract').info(`controller:${controller}`);
       if (
         isEmpty(controller) ||
         !controller.startsWith('0x') ||
@@ -71,7 +72,9 @@ export class ContractService {
       try {
         const controllerBuff = toBuffer(controller);
         const wallet = new Wallet(controllerBuff, this.provider);
+        // getLogger('contract').info(`wallet: ${wallet}`);
         const sdk = await initContractSDK(wallet, this.chainID);
+        // getLogger('contract').info(`init contract done: ${sdk}`);
         this.currentController = (
           await sdk.indexerRegistry.indexerToController(indexer)
         ).toLowerCase();
@@ -81,8 +84,8 @@ export class ContractService {
           this.wallet = wallet;
           this.sdk = sdk;
         }
-      } catch {
-        getLogger('contract').error('Init contract sdk failed');
+      } catch (e) {
+        getLogger('contract').error(`Init contract sdk failed: ${e}`);
       }
     });
   }
