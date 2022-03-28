@@ -31,6 +31,12 @@ export class ContractService {
     return this.sdk;
   }
 
+  async getBlockTime() {
+    const blockNumber = await this.provider.getBlockNumber();
+    const block = await this.provider.getBlock(blockNumber);
+    return block.timestamp;
+  }
+
   isPrivateKeyValid(key: string) {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
   }

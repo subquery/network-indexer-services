@@ -6,3 +6,25 @@ export enum IndexingStatus {
   INDEXING,
   READY,
 }
+
+export enum ServiceStatus {
+  Starting = 'STARTING',
+  Healthy = 'HEALTHY',
+  UnHealthy = 'UNHEALTHY',
+  NotStarted = 'NOT START',
+  Terminated = 'TERMINATED',
+}
+
+export declare type MetaData = {
+  lastProcessedHeight: number;
+  lastProcessedTimestamp: number;
+  targetHeight: number;
+  chain: string;
+  specName: string;
+  genesisHash: string;
+  indexerHealthy: boolean;
+  indexerNodeVersion: string;
+  queryNodeVersion: string;
+  indexerStatus: string;
+  queryStatus: string;
+};

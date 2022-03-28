@@ -2,21 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { MetaData } from '@subql/common';
 import { isEmpty } from 'lodash';
 import fetch from 'node-fetch';
 import { nodeContainer, queryContainer } from 'src/utils/docker';
 import { DockerService } from './docker.service';
 
 import { ProjectService } from './project.service';
-
-enum ServiceStatus {
-  Starting = 'STARTING',
-  Healthy = 'HEALTHY',
-  UnHealthy = 'UNHEALTHY',
-  NotStarted = 'NOT START',
-  Terminated = 'TERMINATED',
-}
+import { ServiceStatus, MetaData } from './types';
 
 @Injectable()
 export class QueryService {
@@ -38,8 +30,8 @@ export class QueryService {
   async getQueryMetaData(id: string): Promise<MetaData> {
     const indexerInfo = await this.docker.ps([nodeContainer(id)]);
     const queryInfo = await this.docker.ps([queryContainer(id)]);
-    const indexerStatus = this.serviceStatus(indexerInfo).toString();
-    const queryStatus = this.serviceStatus(queryInfo).toString();
+    const indexerStatus = this.serviceStatus(indexerInfo);
+    const queryStatus = this.serviceStatus(queryInfo);
 
     const project = await this.projectService.getProject(id);
     const { queryEndpoint } = project;
@@ -71,8 +63,8 @@ export class QueryService {
 
       return {
         ...metadata,
-        indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy.toString(),
-        queryStatus: ServiceStatus.Healthy.toString(),
+        indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
+        queryStatus: ServiceStatus.Healthy,
       };
     } catch {
       return {

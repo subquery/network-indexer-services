@@ -10,7 +10,7 @@ import { ContractService } from './contract.service';
 import { IndexingStatus } from './types';
 import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
-import { ContractTransaction, Wallet } from 'ethers';
+import { ContractTransaction } from 'ethers';
 import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 
@@ -49,17 +49,16 @@ export class NetworkService {
     const metadata = await this.queryService.getQueryMetaData(id);
     if (!metadata) return;
 
+    const timestamp = await this.contractService.getBlockTime();
+
     await this.sendTransaction(
-      `report status for project ${id} ${metadata.lastProcessedHeight}`,
+      `report status for project ${id} | time: ${timestamp} | block height: ${metadata.lastProcessedHeight}`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           cidToBytes32(id),
           metadata.lastProcessedHeight,
           mmrRoot,
-          Date.now() - 1000,
-          {
-            gasLimit: '10000000',
-          },
+          timestamp,
         );
         return tx;
       },
@@ -86,10 +85,6 @@ export class NetworkService {
       return;
     } catch (e) {
       getLogger('netwrok').warn(`Transaction Failed: ${actionName}`);
-
-      if (actionName.includes('report status for projec')) {
-        getLogger('netwrok').error(`Transaction Failed: ${actionName}`, e);
-      }
     }
   }
 
