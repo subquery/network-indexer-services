@@ -2964,35 +2964,26 @@
     pino "^6.13.3"
     reflect-metadata "^0.1.13"
 
-"@subql/contract-sdk@^0.3.2":
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.3.2.tgz#c3d99a34a82cb9189dbf128a9c7a2a8b633c1b5d"
-  integrity sha512-6DvA+SxcFV3pzYufkUn5SAQvuNlARpjjIAZO2T5DHgUXnxsIzbPJrin1Csh8n28AacFHBRm2siBsR7eTeTNYYw==
+"@subql/contract-sdk@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.4.0.tgz#a75b2321a497d61a31586ab0c13f60362cea8b96"
+  integrity sha512-zSkRDy4+z+oLPokuk36l8LNwlcgJLP8euycn31v4gvQ1kUcQ9vNjoLyaacIgHINgAIysANSN6cMEHud88m5H9g==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
-"@subql/contract-sdk@^0.3.3-0 ":
-  version "0.3.3-0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.3.3-0.tgz#bf524c5a43faeaafd3b086fcf41dda9e1f7d0a37"
-  integrity sha512-plLKQBMqHVWqPBjnOEEmmYfZSqkTl90kI8ozJoE4vJbqJ7PmfvB8pp0g9NWl0w74QOwaatfyutvlhqhqNLRUkw==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-    dotenv "^10.0.0"
-    fs "^0.0.1-security"
-
-"@subql/indexer-admin@0.0.1-24":
-  version "0.0.1-24"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-24.tgz#adf18f948a2c3fa5f3b0ad1a0ca1d07500983064"
-  integrity sha512-oBgpPjuWMfEEPDISB2gbXuU0NYpmfKfvkescutqvfUxhpJi8jgRqMDFPV/97Gyg76WOiq8z0PQYLXndU9orecA==
+"@subql/indexer-admin@0.0.1-26":
+  version "0.0.1-26"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-26.tgz#5aaae31c13aa5dadafac86253f8a76f7cb0953f2"
+  integrity sha512-ClANjOQqT0NsHN3AuvO3ZCA80wU8iNcMXS/yhCxeka7gmoB4ITY3RlFdytr4pL5NH+rqKbiPs5uhwdd4HEjisA==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
     "@emotion/styled" "^11.8.1"
     "@mui/material" "^5.5.1"
     "@patternfly/react-log-viewer" "^4.43.19"
-    "@subql/contract-sdk" "^0.3.2"
+    "@subql/contract-sdk" "^0.4.0"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"

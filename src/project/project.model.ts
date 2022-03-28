@@ -74,4 +74,10 @@ export class MetadataType {
 
   @Field()
   queryNodeVersion: string;
+
+  @Field()
+  indexerStatus: string;
+
+  @Field()
+  queryStatus: string;
 }

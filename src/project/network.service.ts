@@ -16,7 +16,6 @@ import { QueryService } from './query.service';
 
 @Injectable()
 export class NetworkService {
-  private wallet: Wallet;
   private sdk: ContractSDK;
 
   constructor(
@@ -71,9 +70,8 @@ export class NetworkService {
     try {
       await this.contractService.updateContractSDK();
       this.sdk = await this.contractService.getSdk().isReady;
-      this.wallet = this.contractService.getWallet();
 
-      return this.wallet && !!this.sdk;
+      return !!this.sdk;
     } catch {
       return false;
     }
@@ -96,9 +94,6 @@ export class NetworkService {
   }
 
   async reportIndexingServiceActions() {
-    const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return [];
-
     const indexingProjects = await this.getIndexingProjects();
     if (isEmpty(indexingProjects)) return [];
 
@@ -111,9 +106,6 @@ export class NetworkService {
 
   // TODO: check wallet balances before sending the transaction
   async networkActions() {
-    const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return [];
-
     const updateEraNumber = () =>
       this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
 
@@ -149,11 +141,14 @@ export class NetworkService {
   }
 
   periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 2);
+    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 3);
     setInterval(async () => {
-      // const reportIndexingServiceActions = await this.reportIndexingServiceActions();
+      const isContractReady = await this.syncContractConfig();
+      if (!isContractReady) return;
+
+      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
       const networkActions = await this.networkActions();
-      const actions = [...networkActions];
+      const actions = [...networkActions, ...reportIndexingServiceActions];
 
       for (let i = 0; i < actions.length; i++) {
         await actions[i]();

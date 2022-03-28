@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { isValidPrivate, toBuffer } from 'ethereumjs-util';
+import { bufferToHex, isValidPrivate, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { Wallet, ethers } from 'ethers';
 import { isEmpty } from 'lodash';
 import { JsonRpcProvider } from '@ethersproject/providers';
@@ -17,8 +17,6 @@ import { getLogger } from 'src/utils/logger';
 @Injectable()
 export class ContractService {
   private wallet: Wallet;
-  private accountID: string;
-  private currentController: string;
   private provider: JsonRpcProvider;
   private chainID: number;
   private sdk: ContractSDK;
@@ -29,60 +27,57 @@ export class ContractService {
     this.provider = new ethers.providers.StaticJsonRpcProvider(ws, this.chainID);
   }
 
-  getWallet() {
-    return this.wallet;
-  }
-
   getSdk() {
     return this.sdk;
   }
 
-  isWalletValid() {
-    return this.wallet?.address.toLowerCase() === this.currentController;
+  isPrivateKeyValid(key: string) {
+    return key.startsWith('0x') && isValidPrivate(toBuffer(key));
+  }
+
+  async indexerToController(indexer: string) {
+    const controller = await this.sdk.indexerRegistry.indexerToController(indexer);
+    return controller ? controller.toLowerCase() : '';
+  }
+
+  async createSDK(key: string) {
+    const keyBuffer = toBuffer(key);
+    this.wallet = new Wallet(keyBuffer, this.provider);
+    this.sdk = await initContractSDK(this.wallet, this.chainID);
   }
 
   async updateContractSDK() {
     const accounts = await this.accountService.getAccounts();
     if (isEmpty(accounts)) return;
 
+    // check current sdk signer is same with the controller account on network
     const indexer = await this.accountService.getIndexer();
     if (indexer && this.wallet && this.sdk) {
-      this.currentController = (
-        await this.sdk.indexerRegistry.indexerToController(indexer)
-      ).toLowerCase();
-      if (this.isWalletValid()) return;
-
-      this.accountService.deleteAccount(this.accountID);
-      this.wallet = undefined;
-      this.sdk = undefined;
-      this.accountID = undefined;
+      const controller = await this.indexerToController(indexer);
+      if (this.wallet.address.toLowerCase() === controller) return;
     }
 
-    accounts.forEach(async ({ id, indexer, controller: encryptedController }) => {
-      const controller = decrypt(encryptedController);
-      // getLogger('contract').info(`controller:${controller}`);
-      if (
-        isEmpty(controller) ||
-        !controller.startsWith('0x') ||
-        !isValidPrivate(toBuffer(controller))
-      ) {
-        return;
-      }
+    const validAccounts = accounts
+      .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
+      .filter(async ({ controllerKey }) => this.isPrivateKeyValid(controllerKey));
 
+    if (!this.sdk) {
+      await this.createSDK(validAccounts[0].controllerKey);
+    }
+
+    const controller = await this.indexerToController(indexer);
+    accounts.forEach(async ({ id, controller: controllerKey }) => {
       try {
-        const controllerBuff = toBuffer(controller);
-        const wallet = new Wallet(controllerBuff, this.provider);
-        // getLogger('contract').info(`wallet: ${wallet}`);
-        const sdk = await initContractSDK(wallet, this.chainID);
-        // getLogger('contract').info(`init contract done: ${sdk}`);
-        this.currentController = (
-          await sdk.indexerRegistry.indexerToController(indexer)
-        ).toLowerCase();
+        if (isEmpty(controllerKey)) return;
+        const keyBuffer = toBuffer(decrypt(controllerKey));
+        const controllerAddress = bufferToHex(privateToAddress(keyBuffer)).toLowerCase();
+        if (controllerAddress !== controller) {
+          await this.accountService.deleteAccount(id);
+          return;
+        }
 
-        if (wallet.address.toLowerCase() === this.currentController) {
-          this.accountID = id;
-          this.wallet = wallet;
-          this.sdk = sdk;
+        if (this.wallet.address.toLowerCase() !== controller) {
+          await this.createSDK(controllerKey);
         }
       } catch (e) {
         getLogger('contract').error(`Init contract sdk failed: ${e}`);
