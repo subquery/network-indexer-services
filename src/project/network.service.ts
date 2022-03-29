@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 
 import { ProjectService } from './project.service';
@@ -15,7 +15,7 @@ import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 
 @Injectable()
-export class NetworkService {
+export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
 
   constructor(
@@ -23,7 +23,9 @@ export class NetworkService {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
-  ) {
+  ) {}
+
+  onApplicationBootstrap() {
     this.periodicUpdateNetwrok();
   }
 
@@ -101,28 +103,52 @@ export class NetworkService {
 
   // TODO: check wallet balances before sending the transaction
   async networkActions() {
-    const updateEraNumber = () =>
-      this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
+    const [eraStartTime, eraPeriod, currentEra] = await Promise.all([
+      this.sdk.eraManager.eraStartTime(),
+      this.sdk.eraManager.eraPeriod(),
+      this.sdk.eraManager.eraNumber(),
+    ]);
+    const updateEraNumber = async () => {
+      if (new Date().getTime() / 1000 - eraStartTime.toNumber() > eraPeriod.toNumber()) {
+        return this.sendTransaction('update era number', () =>
+          this.sdk.eraManager.safeUpdateAndGetEra(),
+        );
+      }
+    };
 
     // collect and distribute rewards
     const indexer = await this.accountService.getIndexer();
-    const collectAndDistributeRewards = () =>
-      this.sendTransaction('collect and distribute rewards', () =>
-        this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
-      );
+    const [lastClaimedEra, lastSettledEra, icrChangEra] = await Promise.all([
+      this.sdk.rewardsDistributor.getLastClaimEra(indexer),
+      this.sdk.rewardsDistributor.getLastSettledEra(indexer),
+      this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
+    ]);
+    const collectAndDistributeRewards = async () => {
+      if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
+        return this.sendTransaction('collect and distribute rewards', () =>
+          this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
+        );
+      }
+    };
 
     // apply ICR change
-    const applyICRChange = () =>
-      this.sendTransaction('apply ICR changes', async () =>
-        this.sdk.rewardsDistributor.applyICRChange(indexer),
-      );
+    const applyICRChange = async () => {
+      if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
+        return this.sendTransaction('apply ICR changes', async () =>
+          this.sdk.rewardsDistributor.applyICRChange(indexer),
+        );
+      }
+    };
 
     // apply stake changes
-    const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
-    const applyStakeChanges = () =>
-      this.sendTransaction('apply stake changes', async () =>
-        this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
-      );
+    const applyStakeChanges = async () => {
+      const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
+      if (stakers.length > 0 && lastSettledEra.lt(lastClaimedEra)) {
+        return this.sendTransaction('apply stake changes', async () =>
+          this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
+        );
+      }
+    };
 
     return [updateEraNumber, collectAndDistributeRewards, applyICRChange, applyStakeChanges];
   }
