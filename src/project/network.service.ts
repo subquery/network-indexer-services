@@ -23,7 +23,7 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
-  ) {}
+  ) { }
 
   onApplicationBootstrap() {
     this.periodicUpdateNetwrok();
@@ -82,7 +82,7 @@ export class NetworkService implements OnApplicationBootstrap {
     try {
       getLogger('netwrok').info(`Sending Transaction: ${actionName}`);
       const tx = await txFun();
-      await tx.wait(5);
+      await tx.wait(2);
       getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
       return;
     } catch (e) {
@@ -155,14 +155,14 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async getInterval() {
     const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return 1000 * 60;
+    if (!isContractReady) return 1000 * 3600;
 
     const eraPeriod = await this.sdk.eraManager.eraPeriod();
-    return Number(eraPeriod.toString());
+    return eraPeriod.toNumber() / 2;
   }
 
   periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 3);
+    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 30);
     setInterval(async () => {
       const isContractReady = await this.syncContractConfig();
       if (!isContractReady) return;
