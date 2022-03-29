@@ -94,9 +94,9 @@ export class ProjectService {
     const isDBExist = await this.docker.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
     if (
+      isDBExist &&
       project.networkEndpoint === networkEndpoint &&
-      canContainersRestart(id, containers) &&
-      isDBExist
+      canContainersRestart(id, containers)
     ) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
