@@ -15,6 +15,9 @@ export class Project {
   @Column()
   networkEndpoint: string;
 
+  @Column({ default: '' })
+  networkDictionary: string;
+
   @Column()
   nodeEndpoint: string; // endpoint of indexer service
 
@@ -32,6 +35,9 @@ export class ProjectType {
 
   @Field()
   networkEndpoint: string;
+
+  @Field()
+  networkDictionary: string;
 
   @Field()
   nodeEndpoint: string;

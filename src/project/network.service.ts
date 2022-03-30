@@ -127,10 +127,7 @@ export class NetworkService implements OnApplicationBootstrap {
     ]);
     const collectAndDistributeRewards = async () => {
       getLogger('transaction').info(
-        `try to collectAndDistributeRewards: currentEra: \ 
-        ${currentEra.toNumber()} | \
-        lastClaimedEra: ${lastClaimedEra.toNumber()} \
-        | lastSettledEra: ${lastSettledEra.toNumber()}`,
+        `try to collectAndDistributeRewards: currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`,
       );
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
         return this.sendTransaction('collect and distribute rewards', () =>

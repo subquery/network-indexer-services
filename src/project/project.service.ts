@@ -131,6 +131,7 @@ export class ProjectService {
     project = {
       id,
       networkEndpoint,
+      networkDictionary,
       queryEndpoint: queryEndpoint(id, servicePort),
       nodeEndpoint: nodeEndpoint(id, servicePort),
       status: IndexingStatus.INDEXING,
