@@ -30,7 +30,7 @@ services:
     restart: always
     environment:
       DOCKER_DB: coordinator_db
-      TRANSACTION_INTERVAL: 8
+      TRANSACTION_INTERVAL: 2
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock

@@ -41,6 +41,10 @@ export class ContractService {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
   }
 
+  privateToAdress(key: string) {
+    return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
+  }
+
   async indexerToController(indexer: string) {
     const controller = await this.sdk.indexerRegistry.indexerToController(indexer);
     return controller ? controller.toLowerCase() : '';
@@ -65,19 +69,20 @@ export class ContractService {
 
     const validAccounts = accounts
       .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
-      .filter(async ({ controllerKey }) => this.isPrivateKeyValid(controllerKey));
+      .filter(({ controllerKey }) => this.isPrivateKeyValid(controllerKey));
 
     if (!this.sdk) {
-      await this.createSDK(validAccounts[0].controllerKey);
+      const key = validAccounts[0].controllerKey;
+      if (!key) getLogger('contract').error('controller key can not be empty');
+      if (key) await this.createSDK(key);
     }
 
     const controller = await this.indexerToController(indexer);
-    accounts.forEach(async ({ id, controller: controllerKey }) => {
+    validAccounts.forEach(async ({ id, controllerKey }) => {
       try {
-        if (isEmpty(controllerKey)) return;
-        const keyBuffer = toBuffer(decrypt(controllerKey));
-        const controllerAddress = bufferToHex(privateToAddress(keyBuffer)).toLowerCase();
+        const controllerAddress = this.privateToAdress(controllerKey);
         if (controllerAddress !== controller) {
+          getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
           await this.accountService.deleteAccount(id);
           return;
         }
