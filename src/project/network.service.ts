@@ -80,13 +80,13 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async sendTransaction(actionName: string, txFun: () => Promise<ContractTransaction>) {
     try {
-      getLogger('netwrok').info(`Sending Transaction: ${actionName}`);
+      getLogger('transaction').info(`Sending Transaction: ${actionName}`);
       const tx = await txFun();
       await tx.wait(2);
-      getLogger('netwrok').info(`Transaction Succeed: ${actionName}`);
+      getLogger('transaction').info(`Transaction Succeed: ${actionName}`);
       return;
     } catch (e) {
-      getLogger('netwrok').warn(`Transaction Failed: ${actionName}`);
+      getLogger('transaction').warn(`Transaction Failed: ${actionName}`);
     }
   }
 
@@ -109,10 +109,9 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.eraManager.eraNumber(),
     ]);
     const updateEraNumber = async () => {
-      getLogger('tx').info(
-        `try update era number: eraStartTime ${eraStartTime.toNumber()} | eraPeriod: ${eraPeriod.toNumber()}`,
-      );
-      if (new Date().getTime() / 1000 - eraStartTime.toNumber() > eraPeriod.toNumber()) {
+      const currentTime = new Date().getTime() / 1000;
+      const canUpdateEra = currentTime - eraStartTime.toNumber() > eraPeriod.toNumber();
+      if (canUpdateEra) {
         return this.sendTransaction('update era number', () =>
           this.sdk.eraManager.safeUpdateAndGetEra(),
         );
@@ -127,8 +126,11 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
     const collectAndDistributeRewards = async () => {
-      getLogger('tx').info(
-        `collectAndDistributeRewards: currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`,
+      getLogger('transaction').info(
+        `try to collectAndDistributeRewards: currentEra: \ 
+        ${currentEra.toNumber()} | \
+        lastClaimedEra: ${lastClaimedEra.toNumber()} \
+        | lastSettledEra: ${lastSettledEra.toNumber()}`,
       );
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
         return this.sendTransaction('collect and distribute rewards', () =>
@@ -149,7 +151,7 @@ export class NetworkService implements OnApplicationBootstrap {
     // apply stake changes
     const applyStakeChanges = async () => {
       const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
-      getLogger('tx').info(`try apply stake change: stakers ${stakers}`);
+      getLogger('transaction').info(`try to apply stake change: stakers ${stakers}`);
       if (stakers.length > 0 && lastSettledEra.lt(lastClaimedEra)) {
         return this.sendTransaction('apply stake changes', async () =>
           this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
@@ -169,10 +171,11 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * (Number(process.env.TRANSACTION_INTERVAL) ?? 2);
+    const interval = 1000 * 60 * Number(process.env.TRANSACTION_INTERVAL ?? 2);
+
     setInterval(async () => {
       const isContractReady = await this.syncContractConfig();
-      getLogger('tx').info(`contract ready: ${isContractReady}`);
+      getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
       if (!isContractReady) return;
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();

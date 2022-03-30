@@ -2973,10 +2973,10 @@
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
-"@subql/indexer-admin@0.0.1-26":
-  version "0.0.1-26"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-26.tgz#5aaae31c13aa5dadafac86253f8a76f7cb0953f2"
-  integrity sha512-ClANjOQqT0NsHN3AuvO3ZCA80wU8iNcMXS/yhCxeka7gmoB4ITY3RlFdytr4pL5NH+rqKbiPs5uhwdd4HEjisA==
+"@subql/indexer-admin@0.0.1-28":
+  version "0.0.1-28"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-28.tgz#314f4abc7c995c8832bd2fd55e7bd3a7e5211b91"
+  integrity sha512-abznpdUgu7rfw2VJkObdRw8xLNATvZHmiU0AwSW0TSynks1NEi/+mNYKgasy1rlgjMJ5M/ZffjuIwcouoUAfkg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -2991,6 +2991,7 @@
     "@web3-react/core" "^6.1.9"
     "@web3-react/injected-connector" "^6.0.7"
     "@web3-react/network-connector" "^6.1.9"
+    animate.css "^4.1.1"
     antd "^4.17.2"
     axios "^0.26.0"
     ethereumjs-util "^7.1.3"
@@ -3004,6 +3005,7 @@
     react-dom "^17.0.2"
     react-jazzicon "^0.1.3"
     react-modal "^3.14.4"
+    react-notifications-component "^3.4.1"
     react-router-dom "^5.3.0"
     react-scripts "4.0.3"
     serve "^13.0.2"
@@ -4350,6 +4352,11 @@ alphanum-sort@^1.0.0:
   version "1.0.2"
   resolved "https://registry.npmjs.org/alphanum-sort/-/alphanum-sort-1.0.2.tgz"
   integrity sha1-l6ERlkmyEa0zaR2fn0hqjsn74KM=
+
+animate.css@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/animate.css/-/animate.css-4.1.1.tgz#614ec5a81131d7e4dc362a58143f7406abd68075"
+  integrity sha512-+mRmCTv6SbCmtYJCN4faJMNFVNN5EuCTTprDTAo7YzIGji2KADmakjVA3+8mVDkZ2Bf09vayB35lSQIex2+QaQ==
 
 ansi-align@^3.0.0:
   version "3.0.1"
@@ -14086,6 +14093,11 @@ react-native-fetch-api@^2.0.0:
   integrity sha512-GOA8tc1EVYLnHvma/TU9VTgLOyralO7eATRuCDchQveXW9Fr9vXygyq9iwqmM7YRZ8qRJfEt9xOS7OYMdJvRFw==
   dependencies:
     p-defer "^3.0.0"
+
+react-notifications-component@^3.4.1:
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/react-notifications-component/-/react-notifications-component-3.4.1.tgz#3670aa17210a4e63ba3b4f553853bd99ab6a0150"
+  integrity sha512-vS/RLdz+VlXZz0dbK+LCcdhgUdUPi1BvSo7mVp58AQDpixI9emGwI0uISXhiTSjqFn/cPibPlJOJQ8kcvgmUrQ==
 
 react-refresh@^0.8.3:
   version "0.8.3"
