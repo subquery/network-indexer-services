@@ -70,7 +70,7 @@ export class NetworkService implements OnApplicationBootstrap {
   async syncContractConfig(): Promise<boolean> {
     try {
       await this.contractService.updateContractSDK();
-      this.sdk = await this.contractService.getSdk().isReady;
+      this.sdk = this.contractService.getSdk();
 
       return !!this.sdk;
     } catch {
@@ -96,7 +96,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
     return indexingProjects.map(
       ({ id }) =>
-        async () =>
+        () =>
           this.reportIndexingService(id),
     );
   }
@@ -109,8 +109,8 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.eraManager.eraNumber(),
     ]);
     const updateEraNumber = async () => {
-      const currentTime = new Date().getTime() / 1000;
-      const canUpdateEra = currentTime - eraStartTime.toNumber() > eraPeriod.toNumber();
+      const blockTime = await this.contractService.getBlockTime();
+      const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
         return this.sendTransaction('update era number', () =>
           this.sdk.eraManager.safeUpdateAndGetEra(),
@@ -171,16 +171,20 @@ export class NetworkService implements OnApplicationBootstrap {
     const interval = 1000 * 60 * Number(process.env.TRANSACTION_INTERVAL ?? 2);
 
     setInterval(async () => {
-      const isContractReady = await this.syncContractConfig();
-      getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
-      if (!isContractReady) return;
+      try {
+        const isContractReady = await this.syncContractConfig();
+        getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
+        if (!isContractReady) return;
 
-      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
-      const networkActions = await this.networkActions();
-      const actions = [...networkActions, ...reportIndexingServiceActions];
+        const reportIndexingServiceActions = await this.reportIndexingServiceActions();
+        const networkActions = await this.networkActions();
+        const actions = [...networkActions, ...reportIndexingServiceActions];
 
-      for (let i = 0; i < actions.length; i++) {
-        await actions[i]();
+        for (let i = 0; i < actions.length; i++) {
+          await actions[i]();
+        }
+      } catch (e) {
+        getLogger('contract').error(`failed to update network periodically: ${e}`);
       }
     }, interval);
   }
