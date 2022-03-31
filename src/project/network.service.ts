@@ -17,6 +17,7 @@ import { QueryService } from './query.service';
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
+  private retryCount: number;
 
   constructor(
     private projectService: ProjectService,
@@ -160,32 +161,49 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getInterval() {
-    const isContractReady = await this.syncContractConfig();
-    if (!isContractReady) return 1000 * 3600;
+    const interval = 1000 * 1800;
+    try {
+      const isContractReady = await this.syncContractConfig();
+      if (!isContractReady) return interval;
 
-    const eraPeriod = await this.sdk.eraManager.eraPeriod();
-    return eraPeriod.toNumber() / 2;
+      const eraPeriod = await this.sdk.eraManager.eraPeriod();
+      return eraPeriod.toNumber() / 3;
+    } catch {
+      return interval;
+    }
   }
 
-  periodicUpdateNetwrok() {
-    const interval = 1000 * 60 * Number(process.env.TRANSACTION_INTERVAL ?? 2);
+  async sendTxs() {
+    try {
+      const isContractReady = await this.syncContractConfig();
+      getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
+      if (!isContractReady) return;
+
+      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
+      const networkActions = await this.networkActions();
+      const actions = [...networkActions, ...reportIndexingServiceActions];
+
+      for (let i = 0; i < actions.length; i++) {
+        await actions[i]();
+      }
+    } catch (e) {
+      getLogger('contract').error(`failed to update network: ${e}`);
+      getLogger('transaction').info(`retry to send transactions`);
+
+      if (this.retryCount !== 0) {
+        await this.sendTxs();
+        this.retryCount--;
+      }
+    }
+  }
+
+  async periodicUpdateNetwrok() {
+    const defaultInterval = await this.getInterval();
+    const interval = 1000 * 60 * Number(process.env.TRANSACTION_INTERVAL ?? defaultInterval);
 
     setInterval(async () => {
-      try {
-        const isContractReady = await this.syncContractConfig();
-        getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
-        if (!isContractReady) return;
-
-        const reportIndexingServiceActions = await this.reportIndexingServiceActions();
-        const networkActions = await this.networkActions();
-        const actions = [...networkActions, ...reportIndexingServiceActions];
-
-        for (let i = 0; i < actions.length; i++) {
-          await actions[i]();
-        }
-      } catch (e) {
-        getLogger('contract').error(`failed to update network periodically: ${e}`);
-      }
+      this.retryCount = 5;
+      await this.sendTxs();
     }, interval);
   }
 }

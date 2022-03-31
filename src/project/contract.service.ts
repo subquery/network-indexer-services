@@ -71,6 +71,11 @@ export class ContractService {
       .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
       .filter(({ controllerKey }) => this.isPrivateKeyValid(controllerKey));
 
+    if (isEmpty(validAccounts)) {
+      getLogger('contract').warn('no valid controller account config in service');
+      return;
+    }
+
     if (!this.sdk) {
       const key = validAccounts[0].controllerKey;
       if (!key) getLogger('contract').error('controller key can not be empty');
@@ -100,10 +105,15 @@ export class ContractService {
     const indexer = await this.accountService.getIndexer();
     if (!this.sdk || !indexer) return IndexingStatus.NOTINDEXING;
 
-    const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
-      cidToBytes32(id),
-      indexer,
-    );
-    return status as IndexingStatus;
+    try {
+      const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+        cidToBytes32(id),
+        indexer,
+      );
+      return status as IndexingStatus;
+    } catch {
+      getLogger('contract').error(`failed to get indexing status for project: ${id}`);
+      return IndexingStatus.NOTINDEXING;
+    }
   }
 }
