@@ -18,6 +18,8 @@ import { QueryService } from './query.service';
 export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
   private retryCount: number;
+  private interval: number;
+  private intervalTimer: NodeJS.Timer;
 
   constructor(
     private projectService: ProjectService,
@@ -127,9 +129,8 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
     const collectAndDistributeRewards = async () => {
-      getLogger('transaction').info(
-        `try to collectAndDistributeRewards: currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`,
-      );
+      const values = `${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`;
+      getLogger('transaction').info(`try to collectAndDistributeRewards: currentEra: ${values}`);
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
         return this.sendTransaction('collect and distribute rewards', () =>
           this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
@@ -160,19 +161,6 @@ export class NetworkService implements OnApplicationBootstrap {
     return [updateEraNumber, collectAndDistributeRewards, applyICRChange, applyStakeChanges];
   }
 
-  async getInterval() {
-    const interval = 1000 * 1800;
-    try {
-      const isContractReady = await this.syncContractConfig();
-      if (!isContractReady) return interval;
-
-      const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return eraPeriod.toNumber() / 3;
-    } catch {
-      return interval;
-    }
-  }
-
   async sendTxs() {
     try {
       const isContractReady = await this.syncContractConfig();
@@ -197,13 +185,48 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  async periodicUpdateNetwrok() {
-    const defaultInterval = await this.getInterval();
-    const interval = 1000 * 60 * Number(process.env.TRANSACTION_INTERVAL ?? defaultInterval);
+  async getInterval() {
+    if (process.env.TRANSACTION_INTERVAL) {
+      return 1000 * Number(process.env.TRANSACTION_INTERVAL);
+    }
 
-    setInterval(async () => {
+    const defaultInterval = 1000 * 1800;
+    try {
+      const isContractReady = await this.syncContractConfig();
+      if (!isContractReady) return defaultInterval;
+
+      const eraPeriod = await this.sdk.eraManager.eraPeriod();
+      return (eraPeriod.toNumber() * 1000) / 30;
+    } catch {
+      return defaultInterval;
+    }
+  }
+
+  async updateInterval() {
+    const interval = await this.getInterval();
+    if (interval !== this.interval && this.intervalTimer) {
+      clearInterval(this.intervalTimer);
+      this.intervalTimer = undefined;
+
+      getLogger('transaction').info(
+        `transactions interval change from ${this.interval} to ${interval}`,
+      );
+
+      this.interval = interval;
+      await this.periodicUpdateNetwrok();
+    }
+  }
+
+  async periodicUpdateNetwrok() {
+    if (!this.interval) {
+      this.interval = await this.getInterval();
+      getLogger('transaction').info(`transaction interval: ${this.interval}`);
+    }
+
+    this.intervalTimer = setInterval(async () => {
       this.retryCount = 5;
+      await this.updateInterval();
       await this.sendTxs();
-    }, interval);
+    }, this.interval);
   }
 }
