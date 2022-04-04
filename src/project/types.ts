@@ -1,6 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { ContractTransaction } from 'ethers';
+
 export enum IndexingStatus {
   NOTINDEXING,
   INDEXING,
@@ -27,4 +29,12 @@ export declare type MetaData = {
   queryNodeVersion: string;
   indexerStatus: string;
   queryStatus: string;
+};
+
+export type TxFun = () => Promise<ContractTransaction>;
+
+export type Transaction = {
+  name: string;
+  txFun: TxFun;
+  desc?: string;
 };

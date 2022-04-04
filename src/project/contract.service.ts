@@ -37,11 +37,11 @@ export class ContractService {
       const block = await this.provider.getBlock(blockNumber);
       return block.timestamp;
     } catch {
-      return new Date().getTime() / 1000;
+      return Math.floor(new Date().getTime() / 1000);
     }
   }
 
-  isPrivateKeyValid(key: string) {
+  isValidPrivateKey(key: string) {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
   }
 
@@ -73,7 +73,7 @@ export class ContractService {
 
     const validAccounts = accounts
       .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
-      .filter(({ controllerKey }) => this.isPrivateKeyValid(controllerKey));
+      .filter(({ controllerKey }) => this.isValidPrivateKey(controllerKey));
 
     if (isEmpty(validAccounts)) {
       getLogger('contract').warn('no valid controller account config in service');

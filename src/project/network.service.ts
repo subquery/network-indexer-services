@@ -5,12 +5,11 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 
 import { ProjectService } from './project.service';
-import { getLogger } from 'src/utils/logger';
+import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { ContractService } from './contract.service';
-import { IndexingStatus } from './types';
+import { IndexingStatus, Transaction, TxFun } from './types';
 import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
-import { ContractTransaction } from 'ethers';
 import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 
@@ -20,6 +19,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private retryCount: number;
   private interval: number;
   private intervalTimer: NodeJS.Timer;
+  private failedTransactions: Transaction[];
 
   private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
@@ -29,7 +29,9 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
-  ) { }
+  ) {
+    this.failedTransactions = [];
+  }
 
   onApplicationBootstrap() {
     this.periodicUpdateNetwrok();
@@ -51,28 +53,6 @@ export class NetworkService implements OnApplicationBootstrap {
     );
   }
 
-  async reportIndexingService(id: string) {
-    // TODO: extract `mmrRoot` should get from query endpoint `_por`;
-    const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
-    const metadata = await this.queryService.getQueryMetaData(id);
-    if (!metadata) return;
-
-    const timestamp = await this.contractService.getBlockTime();
-
-    await this.sendTransaction(
-      `report status for project ${id} | time: ${timestamp} | block height: ${metadata.lastProcessedHeight}`,
-      async () => {
-        const tx = await this.sdk.queryRegistry.reportIndexingStatus(
-          cidToBytes32(id),
-          metadata.lastProcessedHeight,
-          mmrRoot,
-          timestamp,
-        );
-        return tx;
-      },
-    );
-  }
-
   async syncContractConfig(): Promise<boolean> {
     try {
       await this.contractService.updateContractSDK();
@@ -84,16 +64,50 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  async sendTransaction(actionName: string, txFun: () => Promise<ContractTransaction>) {
+  async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
     try {
-      getLogger('transaction').info(`Sending Transaction: ${actionName}`);
+      getLogger('transaction').info(
+        `${colorText(actionName)}: ${colorText('PROCESSING', TextColor.CYAN)} ${desc}`,
+      );
+
       const tx = await txFun();
       await tx.wait(2);
-      getLogger('transaction').info(`Transaction Succeed: ${actionName}`);
+
+      getLogger('transaction').info(
+        `${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`,
+      );
+
       return;
     } catch (e) {
-      getLogger('transaction').warn(`Transaction Failed: ${actionName}`);
+      this.failedTransactions.push({ name: actionName, txFun, desc });
+      getLogger('transaction').warn(
+        `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`,
+      );
     }
+  }
+
+  async reportIndexingService(id: string) {
+    // TODO: extract `mmrRoot` should get from query endpoint `_por`;
+    const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
+    const metadata = await this.queryService.getQueryMetaData(id);
+    if (!metadata) return;
+
+    const timestamp = await this.contractService.getBlockTime();
+    const desc = `| project ${id} | time: ${timestamp} | block height: ${metadata.lastProcessedHeight}`;
+
+    await this.sendTransaction(
+      `report project status`,
+      async () => {
+        const tx = await this.sdk.queryRegistry.reportIndexingStatus(
+          cidToBytes32(id),
+          metadata.lastProcessedHeight,
+          mmrRoot,
+          timestamp,
+        );
+        return tx;
+      },
+      desc,
+    );
   }
 
   async reportIndexingServiceActions() {
@@ -132,8 +146,8 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
     const collectAndDistributeRewards = async () => {
-      const values = `${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`;
-      getLogger('transaction').info(`try to collectAndDistributeRewards: currentEra: ${values}`);
+      const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`;
+      getLogger('network').info(`${values}`);
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
         return this.sendTransaction('collect and distribute rewards', () =>
           this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
@@ -154,7 +168,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const applyStakeChanges = async () => {
       const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
       if (stakers.length > 0 && lastSettledEra.lt(lastClaimedEra)) {
-        getLogger('transaction').info(`try to apply stake change: stakers ${stakers}`);
+        getLogger('network').info(`new stakers ${stakers}`);
         return this.sendTransaction('apply stake changes', async () =>
           this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
         );
@@ -177,9 +191,23 @@ export class NetworkService implements OnApplicationBootstrap {
       for (let i = 0; i < actions.length; i++) {
         await actions[i]();
       }
+
+      const txCount = this.failedTransactions.length;
+      if (txCount > 0) {
+        getLogger('network').info('resend failed transactions');
+      }
+
+      for (let i = 0; i < txCount; i++) {
+        const { name, txFun, desc } = this.failedTransactions[i];
+        await this.sendTransaction(name, txFun, desc);
+      }
+
+      this.failedTransactions = [];
     } catch (e) {
-      getLogger('contract').error(`failed to update network: ${e}`);
-      getLogger('transaction').info(`retry to send transactions`);
+      getLogger('network').error(`failed to update network: ${e}`);
+      getLogger('network').info(`retry to send transactions`);
+
+      this.failedTransactions = [];
 
       if (this.retryCount !== 0) {
         await this.sendTxs();
@@ -195,7 +223,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
     try {
       const isContractReady = await this.syncContractConfig();
-      if (!isContractReady) return this.defaultInterval;
+      if (!isContractReady) return this.interval ?? this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
       return (eraPeriod.toNumber() * 1000) / 3;
@@ -210,7 +238,7 @@ export class NetworkService implements OnApplicationBootstrap {
       clearInterval(this.intervalTimer);
       this.intervalTimer = undefined;
 
-      getLogger('transaction').info(
+      getLogger('network').info(
         `transactions interval change from ${this.interval} to ${interval}`,
       );
 
@@ -224,7 +252,7 @@ export class NetworkService implements OnApplicationBootstrap {
       this.interval = await this.getInterval();
     }
 
-    getLogger('transaction').info(`transaction interval: ${this.interval}`);
+    getLogger('network').info(`transaction interval: ${this.interval}`);
 
     this.intervalTimer = setInterval(async () => {
       this.retryCount = this.defaultRetryCount;
