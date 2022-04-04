@@ -52,7 +52,6 @@ export class ProjectService {
     return this.projectRepo.find();
   }
 
-  // FIXME: filter alive project with status
   async getAliveProjects(): Promise<Project[]> {
     return this.projectRepo.find({
       where: {
@@ -116,8 +115,8 @@ export class ProjectService {
       networkEndpoint,
       servicePort,
       dictionary: networkDictionary,
-      nodeVersion: 'v0.29.1', // TODO: image versions will be included in the manifest
-      queryVersion: 'v0.12.0', // file in the future version of subqul sdk
+      nodeVersion: 'v0.31.1', // TODO: image versions will be included in the manifest
+      queryVersion: 'v0.13.0', // file in the future version of subqul sdk
     };
 
     try {

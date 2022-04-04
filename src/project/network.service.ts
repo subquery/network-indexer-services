@@ -21,6 +21,9 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
 
+  private defaultInterval = 1000 * 1800;
+  private defaultRetryCount = 5;
+
   constructor(
     private projectService: ProjectService,
     private contractService: ContractService,
@@ -150,8 +153,8 @@ export class NetworkService implements OnApplicationBootstrap {
     // apply stake changes
     const applyStakeChanges = async () => {
       const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
-      getLogger('transaction').info(`try to apply stake change: stakers ${stakers}`);
       if (stakers.length > 0 && lastSettledEra.lt(lastClaimedEra)) {
+        getLogger('transaction').info(`try to apply stake change: stakers ${stakers}`);
         return this.sendTransaction('apply stake changes', async () =>
           this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
         );
@@ -190,15 +193,14 @@ export class NetworkService implements OnApplicationBootstrap {
       return 1000 * Number(process.env.TRANSACTION_INTERVAL);
     }
 
-    const defaultInterval = 1000 * 1800;
     try {
       const isContractReady = await this.syncContractConfig();
-      if (!isContractReady) return defaultInterval;
+      if (!isContractReady) return this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
       return (eraPeriod.toNumber() * 1000) / 30;
     } catch {
-      return defaultInterval;
+      return this.defaultInterval;
     }
   }
 
@@ -220,11 +222,12 @@ export class NetworkService implements OnApplicationBootstrap {
   async periodicUpdateNetwrok() {
     if (!this.interval) {
       this.interval = await this.getInterval();
-      getLogger('transaction').info(`transaction interval: ${this.interval}`);
     }
 
+    getLogger('transaction').info(`transaction interval: ${this.interval}`);
+
     this.intervalTimer = setInterval(async () => {
-      this.retryCount = 5;
+      this.retryCount = this.defaultRetryCount;
       await this.updateInterval();
       await this.sendTxs();
     }, this.interval);
