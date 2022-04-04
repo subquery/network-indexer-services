@@ -198,7 +198,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!isContractReady) return this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return (eraPeriod.toNumber() * 1000) / 30;
+      return (eraPeriod.toNumber() * 1000) / 3;
     } catch {
       return this.defaultInterval;
     }

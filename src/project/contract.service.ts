@@ -32,9 +32,13 @@ export class ContractService {
   }
 
   async getBlockTime() {
-    const blockNumber = await this.provider.getBlockNumber();
-    const block = await this.provider.getBlock(blockNumber);
-    return block.timestamp;
+    try {
+      const blockNumber = await this.provider.getBlockNumber();
+      const block = await this.provider.getBlock(blockNumber);
+      return block.timestamp;
+    } catch {
+      return new Date().getTime() / 1000;
+    }
   }
 
   isPrivateKeyValid(key: string) {
