@@ -37,7 +37,7 @@ export class ContractService {
       const block = await this.provider.getBlock(blockNumber);
       return block.timestamp;
     } catch {
-      return Math.floor(new Date().getTime() / 1000);
+      return Math.floor((new Date().getTime() - 60000) / 1000);
     }
   }
 

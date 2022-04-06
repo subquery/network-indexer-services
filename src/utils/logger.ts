@@ -19,7 +19,7 @@ export enum TextColor {
   CYAN,
 }
 
-export function colorText(text: string, color = TextColor.BLUE): string {
+export function colorText(text: string, color = TextColor.CYAN): string {
   return `\u001b[${color}m${text}\u001b[39m`;
 }
 

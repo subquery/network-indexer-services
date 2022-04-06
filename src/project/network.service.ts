@@ -67,7 +67,7 @@ export class NetworkService implements OnApplicationBootstrap {
   async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
     try {
       getLogger('transaction').info(
-        `${colorText(actionName)}: ${colorText('PROCESSING', TextColor.CYAN)} ${desc}`,
+        `${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`,
       );
 
       const tx = await txFun();
