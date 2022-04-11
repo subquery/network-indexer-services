@@ -189,11 +189,12 @@ export class ProjectService {
   }
 
   async removeProject(id: string): Promise<Project[]> {
+    const projectID = projectId(id);
+    await this.docker.dropDB(`db_${projectID}`);
+
+    // TODO: remove mmr_root folder
     const project = await this.getProject(id);
     return this.projectRepo.remove([project]);
-
-    // TODO: 1. remove project from db
-    // 2. remove related project db and mmr_root folder
   }
 
   async logs(container: string): Promise<LogType> {

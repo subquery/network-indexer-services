@@ -94,6 +94,19 @@ export class DockerService {
     );
   }
 
+  async dropDB(name: string): Promise<string> {
+    const isDBExist = await this.checkDBExist(name);
+    if (!isDBExist) {
+      getLogger('docker').info(`db: ${name} is not exist`);
+      return;
+    }
+
+    getLogger('docker').info(`drop db: ${name}`);
+    return this.execute(
+      `docker exec -i ${this.dbDocker} psql -U postgres -c "drop database ${name}"`,
+    );
+  }
+
   execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
