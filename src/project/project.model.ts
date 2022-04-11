@@ -23,6 +23,15 @@ export class Project {
 
   @Column()
   queryEndpoint: string; // endpoint of query service
+
+  @Column({ default: '' })
+  nodeVersion: string;
+
+  @Column({ default: '' })
+  queryVersion: string;
+
+  @Column({ default: false })
+  poiEnabled: boolean;
 }
 
 @ObjectType('Project')
@@ -44,6 +53,15 @@ export class ProjectType {
 
   @Field()
   queryEndpoint: string;
+
+  @Field()
+  nodeVersion: string;
+
+  @Field()
+  queryVersion: string;
+
+  @Field()
+  poiEnabled: boolean;
 }
 
 @ObjectType('Log')

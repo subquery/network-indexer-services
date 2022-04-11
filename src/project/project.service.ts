@@ -22,6 +22,7 @@ import {
 } from 'src/utils/docker';
 import { SubscriptionService } from './subscription.service';
 import { ProjectEvent } from 'src/utils/subscription';
+import { projectConfigChanged } from 'src/utils/project';
 
 @Injectable()
 export class ProjectService {
@@ -83,40 +84,65 @@ export class ProjectService {
     id: string,
     networkEndpoint: string,
     networkDictionary: string,
+    nodeVersion: string,
+    queryVersion: string,
+    poiEnabled: boolean,
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
 
-    // restart the project if project already exist and network endpoint keep same
     const isDBExist = await this.docker.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
-    if (
-      isDBExist &&
-      project.networkEndpoint === networkEndpoint &&
-      canContainersRestart(id, containers)
-    ) {
+    const isConfigChanged = projectConfigChanged(project, {
+      networkEndpoint,
+      networkDictionary,
+      nodeVersion,
+      queryVersion,
+      poiEnabled,
+    });
+
+    if (isDBExist && !isConfigChanged && canContainersRestart(id, containers)) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
     }
 
-    const startedProject = await this.createAndStartProject(id, networkEndpoint, networkDictionary);
+    const startedProject = await this.createAndStartProject(
+      id,
+      networkEndpoint,
+      networkDictionary,
+      nodeVersion,
+      queryVersion,
+      poiEnabled,
+    );
+
     return startedProject;
   }
 
-  async createAndStartProject(id: string, networkEndpoint: string, networkDictionary: string) {
+  async createAndStartProject(
+    id: string,
+    networkEndpoint: string,
+    networkDictionary: string,
+    nodeVersion: string,
+    queryVersion: string,
+    poiEnabled: boolean,
+  ) {
     let project = await this.getProject(id);
     const projectID = projectId(id);
     const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
+    const nodeImageVersion = nodeVersion ?? 'v0.31.1';
+    const queryImageVersion = queryVersion ?? 'v0.13.0';
+
     const item: TemplateType = {
       deploymentID: id,
       projectID,
       networkEndpoint,
       servicePort,
       dictionary: networkDictionary,
-      nodeVersion: 'v0.31.1', // TODO: image versions will be included in the manifest
-      queryVersion: 'v0.13.0', // file in the future version of subqul sdk
+      queryVersion: queryImageVersion,
+      nodeVersion: nodeImageVersion,
+      poiEnabled,
     };
 
     try {
@@ -134,6 +160,9 @@ export class ProjectService {
       queryEndpoint: queryEndpoint(id, servicePort),
       nodeEndpoint: nodeEndpoint(id, servicePort),
       status: IndexingStatus.INDEXING,
+      nodeVersion: nodeImageVersion,
+      queryVersion,
+      poiEnabled,
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
@@ -162,11 +191,9 @@ export class ProjectService {
   async removeProject(id: string): Promise<Project[]> {
     const project = await this.getProject(id);
     return this.projectRepo.remove([project]);
-  }
 
-  async removeProjects(): Promise<Project[]> {
-    const projects = await this.getProjects();
-    return this.projectRepo.remove(projects);
+    // TODO: 1. remove project from db
+    // 2. remove related project db and mmr_root folder
   }
 
   async logs(container: string): Promise<LogType> {

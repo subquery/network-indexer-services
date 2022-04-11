@@ -14,6 +14,7 @@ export type TemplateType = {
   nodeVersion: string;
   queryVersion: string;
   servicePort: number;
+  poiEnabled: boolean;
   dictionary?: string;
 };
 
