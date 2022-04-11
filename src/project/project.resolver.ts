@@ -57,8 +57,18 @@ export class ProjectResolver {
     @Args('id') id: string,
     @Args('networkEndpoint') networkEndpoint: string,
     @Args('networkDictionary') networkDictionary: string,
+    @Args('nodeVersion') nodeVersion: string,
+    @Args('queryVersion') queryVersion: string,
+    @Args('poiEnabled') poiEnabled: boolean,
   ) {
-    return this.projectService.startProject(id, networkEndpoint, networkDictionary);
+    return this.projectService.startProject(
+      id,
+      networkEndpoint,
+      networkDictionary,
+      nodeVersion,
+      queryVersion,
+      poiEnabled,
+    );
   }
 
   @Mutation(() => ProjectType)

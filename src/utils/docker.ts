@@ -14,6 +14,7 @@ export type TemplateType = {
   nodeVersion: string;
   queryVersion: string;
   servicePort: number;
+  poiEnabled: boolean;
   dictionary?: string;
 };
 
@@ -35,6 +36,10 @@ export function queryEndpoint(cid: string, port: number): string {
 
 export function getComposeFileDirectory(cid: string): string {
   return join('/var/tmp', `composeFiles/${cid}`);
+}
+
+export function getMmrFile(cid: string): string {
+  return join('/var/tmp', `composeFiles/${cid}/.mmr`);
 }
 
 export function getComposeFilePath(cid: string): string {

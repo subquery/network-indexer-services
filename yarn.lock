@@ -2973,10 +2973,10 @@
     dotenv "^10.0.0"
     fs "^0.0.1-security"
 
-"@subql/indexer-admin@0.0.1-32":
-  version "0.0.1-32"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.0.1-32.tgz#9064b3fab3ba707ef4f164ba154fb43de561f7be"
-  integrity sha512-7+wImiOdt8vBN39neL6P9c1ovPf81uMN347A9fwif9G21gmGrKHMLPXnpycjsjb+sBPu7Ho4Um3yTmidXq9wkw==
+"@subql/indexer-admin@0.1.1-0":
+  version "0.1.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-0.tgz#bd7051860a1c009b46cd09ca848ae18bf264cc87"
+  integrity sha512-JPwgh19lpw6T5oFypeo1odR/Clb2Vzjv6A3KRIGm/OuiQ3lL+uOW5ZgktvyzNW5Dq57x4hhFNDQrzhECCqzpww==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
