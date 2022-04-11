@@ -13,6 +13,7 @@ import {
   canContainersRestart,
   dbName,
   generateDockerComposeFile,
+  getMmrFile,
   getServicePort,
   nodeEndpoint,
   projectContainers,
@@ -150,7 +151,7 @@ export class ProjectService {
       generateDockerComposeFile(item);
       await this.docker.up(item.deploymentID);
     } catch (e) {
-      getLogger('docker').error(`start project failed: ${e}`);
+      getLogger('project').info(`start project: ${e}`);
     }
 
     project = {
@@ -172,27 +173,32 @@ export class ProjectService {
   async stopProject(id: string) {
     const project = await this.getProject(id);
     if (!project) {
-      getLogger('docker').error(`project not exist: ${id}`);
+      getLogger('project').error(`project not exist: ${id}`);
       return;
     }
 
-    getLogger('docker').info(`stop project: ${id}`);
+    getLogger('project').info(`stop project: ${id}`);
     this.docker.stop(projectContainers(id));
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.updateProjectStatus(id, IndexingStatus.NOTINDEXING);
   }
 
   async restartProject(id: string) {
-    getLogger('docker').info(`restart project: ${id}`);
+    getLogger('project').info(`restart project: ${id}`);
     this.docker.start(projectContainers(id));
     return this.updateProjectStatus(id, IndexingStatus.INDEXING);
   }
 
   async removeProject(id: string): Promise<Project[]> {
+    getLogger('project').info(`remove project: ${id}`);
+
     const projectID = projectId(id);
     await this.docker.dropDB(`db_${projectID}`);
+    await this.docker.rm(projectContainers(id));
 
-    // TODO: remove mmr_root folder
+    const mmrFile = getMmrFile(id);
+    await this.docker.deleteFile(mmrFile);
+
     const project = await this.getProject(id);
     return this.projectRepo.remove([project]);
   }

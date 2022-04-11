@@ -38,6 +38,10 @@ export function getComposeFileDirectory(cid: string): string {
   return join('/var/tmp', `composeFiles/${cid}`);
 }
 
+export function getMmrFile(cid: string): string {
+  return join('/var/tmp', `composeFiles/${cid}/.mmr`);
+}
+
 export function getComposeFilePath(cid: string): string {
   return join(getComposeFileDirectory(cid), 'docker-compose.yml');
 }

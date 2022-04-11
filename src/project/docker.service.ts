@@ -107,6 +107,15 @@ export class DockerService {
     );
   }
 
+  async deleteFile(path: string) {
+    try {
+      await this.execute(`rm -rf ${path}`);
+      getLogger('docker').info(`delete: ${path}`);
+    } catch {
+      getLogger('docker').info(`failed to delete: ${path}`);
+    }
+  }
+
   execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
