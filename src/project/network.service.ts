@@ -24,6 +24,8 @@ export class NetworkService implements OnApplicationBootstrap {
   private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
 
+  private expiredAgreements;
+
   constructor(
     private projectService: ProjectService,
     private contractService: ContractService,
@@ -51,6 +53,23 @@ export class NetworkService implements OnApplicationBootstrap {
       ({ queryEndpoint, status }) =>
         !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status),
     );
+  }
+
+  async updateExpiredAgreements() {
+    try {
+      const indexer = await this.accountService.getIndexer();
+      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
+      for (let i = 0; i < agreementCount.toNumber(); i++) {
+        const agreement = await this.sdk.serviceAgreementRegistry.getServiceAgreements(indexer, i);
+        // TODO: add this back after sdk upgraded
+        // const agreementExpired = await serviceAgreementRegistry.serviceAgreementExpired(agreementContract);
+        if (agreement) {
+          Object.assign(this.expiredAgreements, { [agreement]: agreement });
+        }
+      }
+    } catch {
+      getLogger('network').info('failed to update expired service agreements');
+    }
   }
 
   async syncContractConfig(): Promise<boolean> {
@@ -84,6 +103,36 @@ export class NetworkService implements OnApplicationBootstrap {
         `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`,
       );
     }
+  }
+
+  async removeExpiredAgreements() {
+    if (Object.keys(this.expiredAgreements).length === 0) return;
+
+    try {
+      const indexer = await this.accountService.getIndexer();
+      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
+      for (let i = 0; i < agreementCount.toNumber(); i++) {
+        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreements(
+          indexer,
+          i,
+        );
+
+        if (this.expiredAgreements[agreementContract]) {
+          await this.sendTransaction(
+            'remove expired service agreement',
+            () => this.sdk.serviceAgreementRegistry.clearEndedAgreements(indexer, i),
+            `service agreement: ${agreementContract}`,
+          );
+
+          delete this.expiredAgreements[agreementContract];
+          break;
+        }
+      }
+    } catch {
+      getLogger('network').info('failed to remove expired service agreements');
+    }
+
+    await this.removeExpiredAgreements();
   }
 
   async reportIndexingService(id: string) {
@@ -192,6 +241,9 @@ export class NetworkService implements OnApplicationBootstrap {
         await actions[i]();
       }
 
+      await this.updateExpiredAgreements();
+      await this.removeExpiredAgreements();
+
       const txCount = this.failedTransactions.length;
       if (txCount > 0) {
         getLogger('network').info('resend failed transactions');
@@ -226,7 +278,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!isContractReady) return this.interval ?? this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return (eraPeriod.toNumber() * 1000) / 4;
+      return (eraPeriod.toNumber() * 1000) / 6;
     } catch {
       return this.defaultInterval;
     }
