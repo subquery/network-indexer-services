@@ -60,10 +60,11 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreement = await this.sdk.serviceAgreementRegistry.getServiceAgreements(indexer, i);
-        // TODO: add this back after sdk upgraded
-        // const agreementExpired = await serviceAgreementRegistry.serviceAgreementExpired(agreementContract);
-        if (agreement) {
+        const agreement = await this.sdk.serviceAgreementRegistry.getServiceAgreement(indexer, i);
+        const agreementExpired = await this.sdk.serviceAgreementRegistry.serviceAgreementExpired(
+          agreement,
+        );
+        if (agreementExpired) {
           Object.assign(this.expiredAgreements, { [agreement]: agreement });
         }
       }
@@ -112,7 +113,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreements(
+        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreement(
           indexer,
           i,
         );
@@ -120,7 +121,7 @@ export class NetworkService implements OnApplicationBootstrap {
         if (this.expiredAgreements[agreementContract]) {
           await this.sendTransaction(
             'remove expired service agreement',
-            () => this.sdk.serviceAgreementRegistry.clearEndedAgreements(indexer, i),
+            () => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i),
             `service agreement: ${agreementContract}`,
           );
 
