@@ -46,6 +46,10 @@ export function getComposeFilePath(cid: string): string {
   return join(getComposeFileDirectory(cid), 'docker-compose.yml');
 }
 
+export function composeFileExist(cid: string): boolean {
+  return fs.existsSync(getComposeFilePath(cid));
+}
+
 export function nodeContainer(cid: string): string {
   return `node_${projectId(cid)}`;
 }

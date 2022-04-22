@@ -11,6 +11,7 @@ import { getLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
 import {
   canContainersRestart,
+  composeFileExist,
   dbName,
   generateDockerComposeFile,
   getMmrFile,
@@ -104,7 +105,12 @@ export class ProjectService {
       poiEnabled,
     });
 
-    if (isDBExist && !isConfigChanged && canContainersRestart(id, containers)) {
+    if (
+      isDBExist &&
+      composeFileExist(id) &&
+      !isConfigChanged &&
+      canContainersRestart(id, containers)
+    ) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
     }

@@ -20,11 +20,10 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
+  private expiredAgreements: string[];
 
   private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
-
-  private expiredAgreements;
 
   constructor(
     private projectService: ProjectService,
