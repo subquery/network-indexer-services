@@ -7,14 +7,21 @@ import { ProjectService } from './project.service';
 import { LogType, MetadataType, ProjectType } from './project.model';
 import { ProjectEvent } from 'src/utils/subscription';
 import { QueryService } from './query.service';
+import { DockerRegistry, DockerRegistryService } from './docker.registry.service';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
   constructor(
     private projectService: ProjectService,
     private queryService: QueryService,
+    private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService,
   ) { }
+
+  @Query(() => [String])
+  getRegistryVersions(@Args('registry') registry: string, @Args('range') range: string) {
+    return this.dockerRegistry.getRegistryVersions(registry as DockerRegistry, range);
+  }
 
   @Query(() => MetadataType)
   queryMetadata(@Args('id') id: string) {
