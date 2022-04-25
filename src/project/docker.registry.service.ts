@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable, OnModuleInit } from '@nestjs/common';
-// import { Cache } from 'cache-manager';
-import semver from 'semver';
+import LRU from 'lru-cache';
+import * as semver from 'semver';
 import axios from 'axios';
 
 export enum DockerRegistry {
@@ -13,58 +13,46 @@ export enum DockerRegistry {
 
 @Injectable()
 export class DockerRegistryService implements OnModuleInit {
-  // constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) { }
+  private cache: LRU<string, string[]>;
 
   public onModuleInit() {
-    // this.deleteCache(DockerRegistry.query);
-    // this.deleteCache(DockerRegistry.node);
+    const options = { max: 50, ttl: 1000 * 3600 };
+    this.cache = new LRU(options);
   }
 
-  public async getRegistryVersions(
-    registry: DockerRegistry,
-    range: semver.Range,
-  ): Promise<string[]> {
+  public async getRegistryVersions(registry: DockerRegistry, range: string): Promise<string[]> {
     const tags = await this.getTags(registry);
     return this.filterRegistryVersions(tags, range);
   }
 
-  private tokenUrl(registry: DockerRegistry) {
-    return `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${registry}:pull`;
+  private getCacheKey(registry: DockerRegistry): string {
+    return `indexer-coordinator/registry/${registry}`;
   }
-
-  private tagsUrl(registry: DockerRegistry) {
-    return `https://registry-1.docker.io/v2/${registry}/tags/list`;
-  }
-
-  // private deleteCache(registry: DockerRegistry) {
-  //   this.cache.del(this.getCacheKey(registry));
-  // }
-
-  // private getCacheKey(registry: DockerRegistry): string {
-  //   return `indexer-coordinator/registry/${registry}`;
-  // }
 
   private async getTags(registry: DockerRegistry): Promise<string[]> {
-    // const cacheKey = this.getCacheKey(registry);
-    // const cacheTags = await this.cache.get<string[]>(cacheKey);
-    // if (cacheTags) return cacheTags;
+    const cacheKey = this.getCacheKey(registry);
+    const cacheTags = this.cache.get(cacheKey);
+    if (!!cacheTags) return cacheTags;
 
-    const token = await axios.get(this.tokenUrl(registry)).then((r) => r.data.token);
+    const tokenUrl = `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${registry}:pull`;
+    const tagsUrl = `https://registry-1.docker.io/v2/${registry}/tags/list`;
+
+    const token = await axios.get(tokenUrl).then((r) => r.data.token);
     const headers = { Authorization: `Bearer ${token}` };
-    const tags = await axios.get(this.tagsUrl(registry), { headers }).then((r) => r.data.tags);
-    // await this.cache.set(cacheKey, tags, { ttl: 30 * 60 });
+    const tags = await axios.get(tagsUrl, { headers }).then((r) => r.data.tags);
+    this.cache.set(cacheKey, tags);
 
     return tags;
   }
 
-  private filterRegistryVersions(tags: string[], range: semver.Range) {
+  private filterRegistryVersions(tags: string[], range: string) {
     if (!semver.validRange(range)) return tags;
 
     const result = tags
       .filter((t) => {
         // TODO: need to confirm whether support prerelease version
         if (semver.prerelease(t)) return false;
-        if (semver.prerelease(range)) {
+        if (semver.prerelease(semver.validRange(range))) {
           return semver.satisfies(t, range);
         } else {
           return semver.satisfies(semver.coerce(t), range);
