@@ -144,15 +144,24 @@ export class NetworkService implements OnApplicationBootstrap {
     const metadata = await this.queryService.getQueryMetaData(id);
     if (!metadata) return;
 
+    const indexer = await this.accountService.getIndexer();
+    const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+      cidToBytes32(id),
+      indexer,
+    );
+
+    const lastHeight = metadata.lastProcessedHeight;
+    if (lastHeight === 0 || indexingStatus.blockHeight.gt(lastHeight)) return;
+
     const timestamp = await this.contractService.getBlockTime();
-    const desc = `| project ${id} | time: ${timestamp} | block height: ${metadata.lastProcessedHeight}`;
+    const desc = `| project ${id} | time: ${timestamp} | block height: ${lastHeight}`;
 
     await this.sendTransaction(
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           cidToBytes32(id),
-          metadata.lastProcessedHeight,
+          lastHeight,
           mmrRoot,
           timestamp,
         );
