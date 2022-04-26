@@ -55,7 +55,7 @@ services:
       timeout: 5s
       retries: 5
   proxy-server:
-    image: onfinality/subql-indexer-proxy:v0.1.3
+    image: onfinality/subql-indexer-proxy:v0.1.5
     container_name: coordinator_proxy
     ports:
       - 8001:8001

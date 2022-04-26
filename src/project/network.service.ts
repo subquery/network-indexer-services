@@ -269,10 +269,6 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getInterval() {
-    if (process.env.TRANSACTION_INTERVAL) {
-      return 1000 * Number(process.env.TRANSACTION_INTERVAL);
-    }
-
     try {
       const isContractReady = await this.syncContractConfig();
       if (!isContractReady) return this.interval ?? this.defaultInterval;
