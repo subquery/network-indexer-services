@@ -66,6 +66,16 @@ export function projectContainers(cid: string) {
   return [nodeContainer(cid), queryContainer(cid)];
 }
 
+export function getImageVersion(containerInfo: string) {
+  const info = containerInfo.split(/\b\s+/);
+  if (info.length < 2) return '';
+
+  const imageInfo = info[1].split(':');
+  if (imageInfo.length < 2) return '';
+
+  return imageInfo[1];
+}
+
 export function generateDockerComposeFile(data: TemplateType) {
   const directory = getComposeFileDirectory(data.deploymentID);
   if (!fs.existsSync(directory)) {
