@@ -13,11 +13,11 @@ export class MetricsService implements OnModuleInit {
   constructor(private docker: DockerService, private accountService: AccountService) { }
 
   public onModuleInit() {
-    this.gateway = new client.Pushgateway('https://pushgateway-test.onfinality.me');
-    this.sendQueryCount();
+    this.gateway = new client.Pushgateway('https://pushgateway.subquery.network');
+    this.pushServiceInfo();
   }
 
-  public async sendQueryCount() {
+  public async pushServiceInfo() {
     const coordinatorVersion = await this.docker.imageVersion('coordinator_service');
     const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
     const indexer = await this.accountService.getIndexer();
