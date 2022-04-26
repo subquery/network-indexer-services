@@ -12,7 +12,7 @@ import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
-import { Config } from 'src/configure/configure.module';
+import { debugLogger } from '../utils/logger';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -31,7 +31,6 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
-    private config: Config,
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
@@ -243,10 +242,7 @@ export class NetworkService implements OnApplicationBootstrap {
   async sendTxs() {
     try {
       const isContractReady = await this.syncContractConfig();
-      if (this.config.debug) {
-        getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
-      }
-
+      debugLogger('contract', `contract sdk ready: ${isContractReady}`);
       if (!isContractReady) return;
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
