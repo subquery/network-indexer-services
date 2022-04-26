@@ -3046,10 +3046,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.1.1-2":
-  version "0.1.1-2"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-2.tgz#c2b05fc0f168fb4d7d344e7931dc46a0a6a42ac7"
-  integrity sha512-xthTGIRR9WkKOSrNCVUuiZVKbzt+CQcFAnL5otPQbSjj1aaV6bmy4wgdlxMZUJQf6HhMwXKh3sL+qIpaMs40bg==
+"@subql/indexer-admin@0.1.1-4":
+  version "0.1.1-4"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-4.tgz#b00f868b0ac5a3229188daf543837b8512efc7a3"
+  integrity sha512-5hYqYkjWuQLUwz5+KWbm4f3yV9qclQ/bX1diC80xcbDlw8GsFPuIt7e2MIGBu9aE1NKW4MQMbltlHjRb/Axilg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3074,6 +3074,7 @@
     formik "^2.2.9"
     graphql "^16.0.1"
     ipfs-http-client "^54.0.2"
+    js-yaml "^4.1.0"
     lodash "^4.17.21"
     react "^17.0.2"
     react-device-detect "^2.1.2"

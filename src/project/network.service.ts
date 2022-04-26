@@ -23,7 +23,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: string]: string };
 
-  private defaultInterval = 1000 * 60;
+  private defaultInterval = 1000 * 300;
   private defaultRetryCount = 5;
 
   constructor(
@@ -207,9 +207,10 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
     const collectAndDistributeRewards = async () => {
-      const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`;
-      getLogger('network').info(`${values}`);
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
+        const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
+        getLogger('network').info(`${values}`);
+
         return this.sendTransaction('collect and distribute rewards', () =>
           this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
         );
