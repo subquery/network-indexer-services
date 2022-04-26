@@ -21,9 +21,14 @@ export class MetricsService implements OnModuleInit {
     const coordinatorVersion = await this.docker.imageVersion('coordinator_service');
     const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
     const indexer = await this.accountService.getIndexer();
+
     this.gateway.pushAdd({
-      jobName: 'indexer_service',
-      groupings: { coordinator_version: coordinatorVersion, proxy_version: proxyVersion, indexer },
+      jobName: 'subql_indexer_service',
+      groupings: {
+        subql_coordinator_version: coordinatorVersion,
+        subql_proxy_version: proxyVersion,
+        subql_indexer: indexer,
+      },
     });
   }
 }

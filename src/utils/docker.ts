@@ -67,7 +67,7 @@ export function projectContainers(cid: string) {
 }
 
 export function getImageVersion(containerInfo: string) {
-  const info = containerInfo.split(' ');
+  const info = containerInfo.split(/\b\s+/);
   if (info.length < 2) return '';
 
   const imageInfo = info[1].split(':');
