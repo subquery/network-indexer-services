@@ -20,11 +20,10 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
+  private expiredAgreements: string[];
 
   private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
-
-  private expiredAgreements;
 
   constructor(
     private projectService: ProjectService,
@@ -270,10 +269,6 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getInterval() {
-    if (process.env.TRANSACTION_INTERVAL) {
-      return 1000 * Number(process.env.TRANSACTION_INTERVAL);
-    }
-
     try {
       const isContractReady = await this.syncContractConfig();
       if (!isContractReady) return this.interval ?? this.defaultInterval;

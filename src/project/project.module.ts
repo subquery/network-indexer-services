@@ -12,6 +12,7 @@ import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { SubscriptionService } from './subscription.service';
 import { QueryService } from './query.service';
+import { DockerRegistryService } from './docker.registry.service';
 
 @Module({
   imports: [AccountModule, TypeOrmModule.forFeature([Project])],
@@ -23,6 +24,7 @@ import { QueryService } from './query.service';
     DockerService,
     SubscriptionService,
     QueryService,
+    DockerRegistryService,
   ],
   exports: [ProjectService],
 })
