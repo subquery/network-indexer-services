@@ -10,12 +10,14 @@ import { DockerService } from './docker.service';
 @Injectable()
 export class MetricsService implements OnModuleInit {
   private gateway: client.Pushgateway;
+  private prefix: string;
 
   constructor(private docker: DockerService, private accountService: AccountService) { }
 
   public onModuleInit() {
-    this.gateway = new client.Pushgateway('https://pushgateway.subquery.network');
+    this.gateway = new client.Pushgateway('https://pushgateway-test.onfinality.me');
     this.pushServiceInfo();
+    this.prefix = 'subql_network';
   }
 
   public async pushServiceInfo() {
@@ -27,9 +29,9 @@ export class MetricsService implements OnModuleInit {
       await this.gateway.pushAdd({
         jobName: 'subql_indexer_service',
         groupings: {
-          subql_coordinator_version: coordinatorVersion,
-          subql_proxy_version: proxyVersion,
-          subql_indexer: indexer,
+          [`${this.prefix}_coordinator_version`]: coordinatorVersion,
+          [`${this.prefix}_proxy_version`]: proxyVersion,
+          [`${this.prefix}_indexer`]: indexer,
         },
       });
     } catch {
