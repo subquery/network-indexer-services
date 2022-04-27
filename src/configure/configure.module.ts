@@ -10,6 +10,7 @@ export interface IConfig {
   readonly network: Network;
   readonly wsEndpoint: string;
   readonly port: number;
+  readonly debug: boolean;
 }
 
 export class Config implements IConfig {
@@ -20,6 +21,7 @@ export class Config implements IConfig {
       network: argv['network'] as Network,
       wsEndpoint: argv['ws-endpoint'],
       port: argv['port'] as number,
+      debug: argv['debug'] as boolean,
     });
   }
 
@@ -35,6 +37,10 @@ export class Config implements IConfig {
 
   get port(): number {
     return this._config.port;
+  }
+
+  get debug(): boolean {
+    return this._config.debug;
   }
 }
 

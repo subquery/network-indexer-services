@@ -25,6 +25,7 @@ import {
 import { SubscriptionService } from './subscription.service';
 import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
+import { MetricsService } from './metrics.service';
 
 @Injectable()
 export class ProjectService {
@@ -33,6 +34,7 @@ export class ProjectService {
     @InjectRepository(Project) private projectRepo: Repository<Project>,
     private pubSub: SubscriptionService,
     private docker: DockerService,
+    private metrics: MetricsService,
   ) {
     this.getLatestPort().then((port) => {
       this.port = port;
@@ -71,6 +73,9 @@ export class ProjectService {
       nodeEndpoint: '',
       queryEndpoint: '',
     });
+
+    // TODO: better place to trigger this
+    this.metrics.pushServiceInfo();
 
     return this.projectRepo.save(project);
   }

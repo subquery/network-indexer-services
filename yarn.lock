@@ -3046,10 +3046,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.1.1-2":
-  version "0.1.1-2"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-2.tgz#c2b05fc0f168fb4d7d344e7931dc46a0a6a42ac7"
-  integrity sha512-xthTGIRR9WkKOSrNCVUuiZVKbzt+CQcFAnL5otPQbSjj1aaV6bmy4wgdlxMZUJQf6HhMwXKh3sL+qIpaMs40bg==
+"@subql/indexer-admin@0.1.1-4":
+  version "0.1.1-4"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-4.tgz#b00f868b0ac5a3229188daf543837b8512efc7a3"
+  integrity sha512-5hYqYkjWuQLUwz5+KWbm4f3yV9qclQ/bX1diC80xcbDlw8GsFPuIt7e2MIGBu9aE1NKW4MQMbltlHjRb/Axilg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3074,6 +3074,7 @@
     formik "^2.2.9"
     graphql "^16.0.1"
     ipfs-http-client "^54.0.2"
+    js-yaml "^4.1.0"
     lodash "^4.17.21"
     react "^17.0.2"
     react-device-detect "^2.1.2"
@@ -5294,6 +5295,11 @@ bindings@^1.5.0:
   integrity sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==
   dependencies:
     file-uri-to-path "1.0.0"
+
+bintrees@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/bintrees/-/bintrees-1.0.1.tgz#0e655c9b9c2435eaab68bf4027226d2b55a34524"
+  integrity sha1-DmVcm5wkNeqraL9AJyJtK1WjRSQ=
 
 bl@^4.1.0:
   version "4.1.0"
@@ -13436,6 +13442,13 @@ progress@^2.0.0:
   resolved "https://registry.npmjs.org/progress/-/progress-2.0.3.tgz"
   integrity sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==
 
+prom-client@^14.0.1:
+  version "14.0.1"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.0.1.tgz#bdd9583e02ec95429677c0e013712d42ef1f86a8"
+  integrity sha512-HxTArb6fkOntQHoRGvv4qd/BkorjliiuO2uSWC2KC17MUTKYttWdDoXX/vxOhQdkoECEM9BBH0pj2l8G8kev6w==
+  dependencies:
+    tdigest "^0.1.1"
+
 promise-inflight@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/promise-inflight/-/promise-inflight-1.0.1.tgz"
@@ -15880,6 +15893,13 @@ tar@^6.0.2:
     minizlib "^2.1.1"
     mkdirp "^1.0.3"
     yallist "^4.0.0"
+
+tdigest@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/tdigest/-/tdigest-0.1.1.tgz#2e3cb2c39ea449e55d1e6cd91117accca4588021"
+  integrity sha1-Ljyyw56kSeVdHmzZEReszKRYgCE=
+  dependencies:
+    bintrees "1.0.1"
 
 temp-dir@^1.0.0:
   version "1.0.0"

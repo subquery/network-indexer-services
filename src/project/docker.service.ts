@@ -5,7 +5,12 @@ import * as fs from 'fs';
 import { exec } from 'child_process';
 import { Injectable } from '@nestjs/common';
 import { getLogger } from 'src/utils/logger';
-import { getComposeFilePath, projectContainers, projectId } from 'src/utils/docker';
+import {
+  getComposeFilePath,
+  getImageVersion,
+  projectContainers,
+  projectId,
+} from 'src/utils/docker';
 
 @Injectable()
 export class DockerService {
@@ -62,6 +67,15 @@ export class DockerService {
       );
       return result;
     } catch (_) {
+      return '';
+    }
+  }
+
+  async imageVersion(container: string) {
+    try {
+      const info = await this.ps([container]);
+      return getImageVersion(info);
+    } catch {
       return '';
     }
   }

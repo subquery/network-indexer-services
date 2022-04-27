@@ -12,6 +12,7 @@ import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
+import { debugLogger } from '../utils/logger';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -20,9 +21,9 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
-  private expiredAgreements: string[];
+  private expiredAgreements: { [key: string]: string };
 
-  private defaultInterval = 1000 * 1800;
+  private defaultInterval = 1000 * 300;
   private defaultRetryCount = 5;
 
   constructor(
@@ -32,6 +33,7 @@ export class NetworkService implements OnApplicationBootstrap {
     private queryService: QueryService,
   ) {
     this.failedTransactions = [];
+    this.expiredAgreements = {};
   }
 
   onApplicationBootstrap() {
@@ -141,15 +143,24 @@ export class NetworkService implements OnApplicationBootstrap {
     const metadata = await this.queryService.getQueryMetaData(id);
     if (!metadata) return;
 
+    const indexer = await this.accountService.getIndexer();
+    const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+      cidToBytes32(id),
+      indexer,
+    );
+
+    const lastHeight = metadata.lastProcessedHeight;
+    if (lastHeight === 0 || indexingStatus.blockHeight.gt(lastHeight)) return;
+
     const timestamp = await this.contractService.getBlockTime();
-    const desc = `| project ${id} | time: ${timestamp} | block height: ${metadata.lastProcessedHeight}`;
+    const desc = `| project ${id} | time: ${timestamp} | block height: ${lastHeight}`;
 
     await this.sendTransaction(
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           cidToBytes32(id),
-          metadata.lastProcessedHeight,
+          lastHeight,
           mmrRoot,
           timestamp,
         );
@@ -195,9 +206,10 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
     const collectAndDistributeRewards = async () => {
-      const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} lastSettledEra: ${lastSettledEra.toNumber()}`;
-      getLogger('network').info(`${values}`);
       if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
+        const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
+        getLogger('network').info(`${values}`);
+
         return this.sendTransaction('collect and distribute rewards', () =>
           this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
         );
@@ -230,7 +242,7 @@ export class NetworkService implements OnApplicationBootstrap {
   async sendTxs() {
     try {
       const isContractReady = await this.syncContractConfig();
-      getLogger('contract').info(`contract sdk ready: ${isContractReady}`);
+      debugLogger('contract', `contract sdk ready: ${isContractReady}`);
       if (!isContractReady) return;
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
@@ -274,7 +286,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!isContractReady) return this.interval ?? this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return (eraPeriod.toNumber() * 1000) / 6;
+      return Math.min((eraPeriod.toNumber() * 1000) / 6, this.defaultInterval);
     } catch {
       return this.defaultInterval;
     }
@@ -301,6 +313,8 @@ export class NetworkService implements OnApplicationBootstrap {
     }
 
     getLogger('network').info(`transaction interval: ${this.interval}`);
+
+    await this.sendTxs();
 
     this.intervalTimer = setInterval(async () => {
       this.retryCount = this.defaultRetryCount;

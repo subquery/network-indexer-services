@@ -4,6 +4,11 @@
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
 
+export enum Groups {
+  coordinator = 'Indexer Coordinator',
+  postgres = 'Postgres',
+}
+
 export enum PostgresKeys {
   host = 'postgres-host',
   port = 'postgres-port',
@@ -20,49 +25,55 @@ export function getYargsOption() {
       type: 'string',
       choices: ['local', 'testnet', 'mainnet'],
       default: 'local',
-      group: 'Indexer Coordinator',
+      group: Groups.coordinator,
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      group: 'Indexer Coordinator',
+      group: Groups.coordinator,
     },
     port: {
       type: 'number',
       describe: 'Port the service will listen on',
       default: 8000,
-      group: 'Indexer Coordinator',
+      group: Groups.coordinator,
+    },
+    debug: {
+      type: 'boolean',
+      describe: 'Enable debug mode',
+      default: false,
+      group: Groups.postgres,
     },
     [PostgresKeys.host]: {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      group: 'Postgres',
+      group: Groups.postgres,
     },
     [PostgresKeys.port]: {
       type: 'number',
       describe: 'Postgres port',
       default: 5432,
-      group: 'Postgres',
+      group: Groups.postgres,
     },
     [PostgresKeys.username]: {
       type: 'string',
       describe: 'Postgres username',
       default: 'postgres',
-      group: 'Postgres',
+      group: Groups.postgres,
     },
     [PostgresKeys.password]: {
       type: 'string',
       describe: 'Postgres password',
       default: 'postgres',
-      group: 'Postgres',
+      group: Groups.postgres,
     },
     [PostgresKeys.database]: {
       type: 'string',
       describe: 'Postgres database name',
       demandOption: true,
-      group: 'Postgres',
+      group: Groups.postgres,
     },
   });
 }
