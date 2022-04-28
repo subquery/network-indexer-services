@@ -131,7 +131,7 @@ export class QueryService {
       const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
       const pois = data.data._pois;
-      if (isEmpty(pois)) return this.emptyPoi;
+      if (isEmpty(pois) || !pois[0].mmrRoot) return this.emptyPoi;
 
       const blockHeight = pois[0].id;
       const mmrRoot = pois[0].mmrRoot.replace('\\', '0').substring(0, 66);
@@ -142,6 +142,11 @@ export class QueryService {
   }
 
   public async getReportPoi(id: string, blockHeight: number): Promise<Poi> {
+    const project = await this.projectService.getProject(id);
+    if (!project.poiEnabled) {
+      return { blockHeight, mmrRoot: ZERO_BYTES32 };
+    }
+
     const mmrRoot = await this.getMmrRoot(id, blockHeight);
     if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
 

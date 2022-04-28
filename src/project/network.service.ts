@@ -13,6 +13,7 @@ import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
+import { ZERO_BYTES32 } from 'src/utils/project';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -136,11 +137,18 @@ export class NetworkService implements OnApplicationBootstrap {
     const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(cidToBytes32(id), indexer);
 
     const { blockHeight, mmrRoot } = await this.queryService.getReportPoi(id, metadata.lastProcessedHeight);
-    if (indexingStatus.blockHeight.gte(blockHeight)) return;
+    if (indexingStatus.blockHeight.gte(blockHeight)) {
+      debugLogger(
+        'report',
+        `network block height: ${indexingStatus.blockHeight.toNumber()} larger than block height ${blockHeight} mmrRoot: ${mmrRoot}`,
+      );
+      return;
+    }
+
+    const mmrRootLog = mmrRoot !== ZERO_BYTES32 ? `| mmrRoot: ${mmrRoot}` : '';
+    const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} ${mmrRootLog}`;
 
     const timestamp = await this.contractService.getBlockTime();
-    const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} | mmrRoot: ${mmrRoot}`;
-
     await this.sendTransaction(
       `report project status`,
       async () => {
@@ -252,7 +260,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       this.failedTransactions = [];
     } catch (e) {
-      getLogger('network').error(`failed to update network: ${e}`);
+      debugLogger('network', `failed to update network: ${e}`);
       getLogger('network').info(`retry to send transactions`);
 
       this.failedTransactions = [];

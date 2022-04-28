@@ -14,10 +14,7 @@ import { Config } from '../configure/configure.module';
 export class AccountService {
   private indexer: string;
 
-  constructor(
-    @InjectRepository(Account) private accountRepo: Repository<Account>,
-    private config: Config,
-  ) { }
+  constructor(@InjectRepository(Account) private accountRepo: Repository<Account>, private config: Config) { }
 
   addIndexer(indexer: string): Promise<Account> {
     if (indexer === this.indexer) {

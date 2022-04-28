@@ -110,12 +110,7 @@ export class ProjectService {
       poiEnabled,
     });
 
-    if (
-      isDBExist &&
-      composeFileExist(id) &&
-      !isConfigChanged &&
-      canContainersRestart(id, containers)
-    ) {
+    if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
     }
