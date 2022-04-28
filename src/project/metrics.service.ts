@@ -15,7 +15,7 @@ export class MetricsService implements OnModuleInit {
   constructor(private docker: DockerService, private accountService: AccountService) { }
 
   public onModuleInit() {
-    this.gateway = new client.Pushgateway('https://pushgateway-test.onfinality.me');
+    this.gateway = new client.Pushgateway('https://pushgateway-dev.onfinality.me');
     this.pushServiceInfo();
     this.prefix = 'subql_network';
   }
