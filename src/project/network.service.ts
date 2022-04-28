@@ -140,7 +140,7 @@ export class NetworkService implements OnApplicationBootstrap {
     if (indexingStatus.blockHeight.gte(blockHeight)) {
       debugLogger(
         'report',
-        `network block height: ${indexingStatus.blockHeight.toNumber()} larger than block height ${blockHeight} mmrRoot: ${mmrRoot}`,
+        `project: ${id} | network block height: ${indexingStatus.blockHeight.toNumber()} larger than block height ${blockHeight} mmrRoot: ${mmrRoot}`,
       );
       return;
     }
