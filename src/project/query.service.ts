@@ -12,6 +12,8 @@ import { ServiceStatus, MetaData } from './types';
 
 @Injectable()
 export class QueryService {
+  private ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
   constructor(private projectService: ProjectService, private docker: DockerService) { }
 
   serviceStatus(info: string): ServiceStatus {
@@ -33,9 +35,6 @@ export class QueryService {
     const indexerStatus = this.serviceStatus(indexerInfo);
     const queryStatus = this.serviceStatus(queryInfo);
 
-    const project = await this.projectService.getProject(id);
-    const { queryEndpoint } = project;
-
     const queryBody = JSON.stringify({
       query: `{
         _metadata {
@@ -52,6 +51,9 @@ export class QueryService {
     });
 
     try {
+      const project = await this.projectService.getProject(id);
+      const { queryEndpoint } = project;
+
       const response = await fetch(`${queryEndpoint}/graphql`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -84,7 +86,6 @@ export class QueryService {
   }
 
   public async getPoi(id: string, blockHeight: number): Promise<string> {
-    const project = await this.projectService.getProject(id);
     const queryBody = JSON.stringify({
       query: `{
         _poi(id: ${blockHeight}) {
@@ -95,6 +96,7 @@ export class QueryService {
     });
 
     try {
+      const project = await this.projectService.getProject(id);
       const response = await fetch(`${project.queryEndpoint}/graphql`, {
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -102,12 +104,12 @@ export class QueryService {
       });
 
       const data = await response.json();
-      if (!data.data._poi) return '';
+      if (!data.data._poi) return this.ZERO_BYTES32;
 
       const mmrRoot = data.data._poi.mmrRoot;
       return mmrRoot.replace('\\', '0').substring(0, 66);
     } catch {
-      return '';
+      return this.ZERO_BYTES32;
     }
   }
 }

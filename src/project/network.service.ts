@@ -139,7 +139,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async reportIndexingService(id: string) {
     const metadata = await this.queryService.getQueryMetaData(id);
-    if (!metadata) return;
+    if (!metadata || metadata.lastProcessedHeight === 0) return;
 
     const indexer = await this.accountService.getIndexer();
     const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(
