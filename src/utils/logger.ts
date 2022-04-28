@@ -34,7 +34,7 @@ export function getLogger(category: string): Pino.Logger {
 export function debugLogger(category: string, msg: string) {
   const { argv } = getYargsOption();
   if (argv['debug']) {
-    getLogger(category).debug(msg);
+    getLogger(category).info(msg);
   }
 }
 
