@@ -21,7 +21,7 @@ services:
       - --db-schema=app_{{deploymentID}}
       - --port={{servicePort}}
       - --proof-of-index={{poiEnabled}}
-      - -m=.mmr/{{deploymentID}}/.mmr
+      - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
     healthcheck:
       test:
         [

@@ -205,6 +205,7 @@ export class ProjectService {
 
     const projectID = projectId(id);
     await this.docker.dropDB(`db_${projectID}`);
+    await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
 
     const mmrFile = getMmrFile(id);

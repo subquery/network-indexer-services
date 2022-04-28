@@ -50,7 +50,6 @@ export class DockerRegistryService implements OnModuleInit {
 
     const result = tags
       .filter((t) => {
-        // TODO: need to confirm whether support prerelease version
         if (semver.prerelease(t)) return false;
         if (semver.prerelease(semver.validRange(range))) {
           return semver.satisfies(t, range);
