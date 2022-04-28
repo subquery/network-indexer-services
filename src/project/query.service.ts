@@ -27,7 +27,7 @@ export class QueryService {
     return ServiceStatus.UnHealthy;
   }
 
-  async getQueryMetaData(id: string): Promise<MetaData> {
+  public async getQueryMetaData(id: string): Promise<MetaData> {
     const indexerInfo = await this.docker.ps([nodeContainer(id)]);
     const queryInfo = await this.docker.ps([queryContainer(id)]);
     const indexerStatus = this.serviceStatus(indexerInfo);
@@ -80,6 +80,38 @@ export class QueryService {
         indexerStatus,
         queryStatus,
       };
+    }
+  }
+
+  private formatMmr(mmrRoot: string) {
+    mmrRoot.replace('\\', '0').substring(0, 66);
+  }
+
+  public async getPoi(id: string, blockHeight: number): Promise<string> {
+    const project = await this.projectService.getProject(id);
+    const queryBody = JSON.stringify({
+      query: `{
+        _poi(id: ${blockHeight}) {
+          id
+          mmrRoot
+        }
+      }`,
+    });
+
+    try {
+      const response = await fetch(`${project.queryEndpoint}/graphql`, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        body: queryBody,
+      });
+
+      const data = await response.json();
+      if (!data.data._poi) return '';
+
+      const mmrRoot = data.data._poi.mmrRoot;
+      return mmrRoot.replace('\\', '0').substring(0, 66);
+    } catch {
+      return '';
     }
   }
 }

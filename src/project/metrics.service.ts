@@ -27,7 +27,7 @@ export class MetricsService implements OnModuleInit {
 
     try {
       await this.gateway.pushAdd({
-        jobName: 'subql_indexer_service',
+        jobName: `${this.prefix}_indexer_service`,
         groupings: {
           [`${this.prefix}_coordinator_version`]: coordinatorVersion,
           [`${this.prefix}_proxy_version`]: proxyVersion,

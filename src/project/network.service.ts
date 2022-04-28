@@ -138,8 +138,6 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async reportIndexingService(id: string) {
-    // TODO: extract `mmrRoot` should get from query endpoint `_por`;
-    const mmrRoot = '0xab3921276c8067fe0c82def3e5ecfd8447f1961bc85768c2a56e6bd26d3c0c55';
     const metadata = await this.queryService.getQueryMetaData(id);
     if (!metadata) return;
 
@@ -149,18 +147,19 @@ export class NetworkService implements OnApplicationBootstrap {
       indexer,
     );
 
-    const lastHeight = metadata.lastProcessedHeight;
-    if (lastHeight === 0 || indexingStatus.blockHeight.gt(lastHeight)) return;
+    const height = metadata.lastProcessedHeight;
+    if (height === 0 || indexingStatus.blockHeight.gt(height)) return;
 
+    const mmrRoot = await this.queryService.getPoi(id, height);
     const timestamp = await this.contractService.getBlockTime();
-    const desc = `| project ${id} | time: ${timestamp} | block height: ${lastHeight}`;
+    const desc = `| project ${id.substring(0, 15)} | block height: ${height} | mmrRoot: ${mmrRoot}`;
 
     await this.sendTransaction(
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           cidToBytes32(id),
-          lastHeight,
+          height,
           mmrRoot,
           timestamp,
         );
