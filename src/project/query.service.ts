@@ -131,9 +131,13 @@ export class QueryService {
       const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
       const pois = data.data._pois;
-      if (isEmpty(pois) || !pois[0].mmrRoot) return this.emptyPoi;
+      if (isEmpty(pois)) return this.emptyPoi;
 
       const blockHeight = pois[0].id;
+      if (!pois[0].mmrRoot) {
+        return { blockHeight, mmrRoot: ZERO_BYTES32 };
+      }
+
       const mmrRoot = pois[0].mmrRoot.replace('\\', '0').substring(0, 66);
       return { blockHeight, mmrRoot };
     } catch {
