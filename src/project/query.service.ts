@@ -3,20 +3,25 @@
 
 import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { nodeContainer, queryContainer } from 'src/utils/docker';
+import { ZERO_BYTES32 } from 'src/utils/project';
 import { DockerService } from './docker.service';
 
 import { ProjectService } from './project.service';
-import { ServiceStatus, MetaData } from './types';
+import { ServiceStatus, MetaData, Poi } from './types';
 
 @Injectable()
 export class QueryService {
-  private ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-  constructor(private projectService: ProjectService, private docker: DockerService) { }
+  private emptyPoi: Poi;
 
-  serviceStatus(info: string): ServiceStatus {
+  constructor(private projectService: ProjectService, private docker: DockerService) {
+    this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
+  }
+
+
+  private serviceStatus(info: string): ServiceStatus {
     if (isEmpty(info)) {
       return ServiceStatus.NotStarted;
     } else if (info.includes('starting')) {
@@ -27,6 +32,17 @@ export class QueryService {
       return ServiceStatus.Terminated;
     }
     return ServiceStatus.UnHealthy;
+  }
+
+  private async queryRequest(id: string, body: string): Promise<Response> {
+    const project = await this.projectService.getProject(id);
+    const { queryEndpoint } = project;
+
+    return fetch(`${queryEndpoint}/graphql`, {
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: body,
+    });
   }
 
   public async getQueryMetaData(id: string): Promise<MetaData> {
@@ -51,15 +67,7 @@ export class QueryService {
     });
 
     try {
-      const project = await this.projectService.getProject(id);
-      const { queryEndpoint } = project;
-
-      const response = await fetch(`${queryEndpoint}/graphql`, {
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-        body: queryBody,
-      });
-
+      const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
@@ -85,7 +93,7 @@ export class QueryService {
     }
   }
 
-  public async getPoi(id: string, blockHeight: number): Promise<string> {
+  public async getMmrRoot(id: string, blockHeight: number): Promise<string> {
     const queryBody = JSON.stringify({
       query: `{
         _poi(id: ${blockHeight}) {
@@ -96,20 +104,47 @@ export class QueryService {
     });
 
     try {
-      const project = await this.projectService.getProject(id);
-      const response = await fetch(`${project.queryEndpoint}/graphql`, {
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-        body: queryBody,
-      });
-
+      const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
-      if (!data.data._poi) return this.ZERO_BYTES32;
+      if (!data.data._poi) return ZERO_BYTES32;
 
       const mmrRoot = data.data._poi.mmrRoot;
       return mmrRoot.replace('\\', '0').substring(0, 66);
     } catch {
-      return this.ZERO_BYTES32;
+      return ZERO_BYTES32;
     }
+  }
+
+  public async getLastPoi(id: string): Promise<Poi> {
+    const queryBody = JSON.stringify({
+      query: `{
+        _pois(last: 1) {
+          nodes {
+            id
+            mmrRoot
+          }
+        }
+      }`,
+    });
+
+    try {
+      const response = await this.queryRequest(id, queryBody);
+      const data = await response.json();
+      const pois = data.data._pois;
+      if (isEmpty(pois)) return this.emptyPoi;
+
+      const blockHeight = pois[0].id;
+      const mmrRoot = pois[0].mmrRoot.replace('\\', '0').substring(0, 66);
+      return { blockHeight, mmrRoot };
+    } catch {
+      return this.emptyPoi;
+    }
+  }
+
+  public async getReportPoi(id: string, blockHeight: number): Promise<Poi> {
+    const mmrRoot = await this.getMmrRoot(id, blockHeight);
+    if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
+
+    return this.getLastPoi(id);
   }
 }

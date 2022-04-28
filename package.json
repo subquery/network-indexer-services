@@ -27,7 +27,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
     "start:help": "yarn start:prod --help",
-    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://sqtn.api.onfinality.io/public' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --port 8000",
+    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://sqtn.api.onfinality.io/public' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --port 8007",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up"
   },
@@ -40,7 +40,7 @@
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^0.13.0",
     "@subql/contract-sdk": "0.5.0",
-    "@subql/indexer-admin": "0.1.1-4",
+    "@subql/indexer-admin": "0.1.1-5",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",
     "axios": "^0.26.1",

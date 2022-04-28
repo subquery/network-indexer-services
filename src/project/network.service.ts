@@ -62,9 +62,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
         const agreement = await this.sdk.serviceAgreementRegistry.getServiceAgreement(indexer, i);
-        const agreementExpired = await this.sdk.serviceAgreementRegistry.serviceAgreementExpired(
-          agreement,
-        );
+        const agreementExpired = await this.sdk.serviceAgreementRegistry.serviceAgreementExpired(agreement);
         if (agreementExpired) {
           Object.assign(this.expiredAgreements, { [agreement]: agreement });
         }
@@ -94,16 +92,12 @@ export class NetworkService implements OnApplicationBootstrap {
       const tx = await txFun();
       await tx.wait(2);
 
-      getLogger('transaction').info(
-        `${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`,
-      );
+      getLogger('transaction').info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
       return;
     } catch (e) {
       this.failedTransactions.push({ name: actionName, txFun, desc });
-      getLogger('transaction').warn(
-        `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`,
-      );
+      getLogger('transaction').warn(`${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`);
     }
   }
 
@@ -114,10 +108,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreement(
-          indexer,
-          i,
-        );
+        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreement(indexer, i);
 
         if (this.expiredAgreements[agreementContract]) {
           await this.sendTransaction(
@@ -139,27 +130,23 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async reportIndexingService(id: string) {
     const metadata = await this.queryService.getQueryMetaData(id);
-    if (!metadata || metadata.lastProcessedHeight === 0) return;
+    if (!metadata) return;
 
     const indexer = await this.accountService.getIndexer();
-    const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(
-      cidToBytes32(id),
-      indexer,
-    );
+    const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(cidToBytes32(id), indexer);
 
-    const height = metadata.lastProcessedHeight;
-    if (height === 0 || indexingStatus.blockHeight.gt(height)) return;
+    const { blockHeight, mmrRoot } = await this.queryService.getReportPoi(id, metadata.lastProcessedHeight);
+    if (indexingStatus.blockHeight.gte(blockHeight)) return;
 
-    const mmrRoot = await this.queryService.getPoi(id, height);
     const timestamp = await this.contractService.getBlockTime();
-    const desc = `| project ${id.substring(0, 15)} | block height: ${height} | mmrRoot: ${mmrRoot}`;
+    const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} | mmrRoot: ${mmrRoot}`;
 
     await this.sendTransaction(
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           cidToBytes32(id),
-          height,
+          blockHeight,
           mmrRoot,
           timestamp,
         );
@@ -191,9 +178,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const blockTime = await this.contractService.getBlockTime();
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        return this.sendTransaction('update era number', () =>
-          this.sdk.eraManager.safeUpdateAndGetEra(),
-        );
+        return this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
       }
     };
 
@@ -297,9 +282,7 @@ export class NetworkService implements OnApplicationBootstrap {
       clearInterval(this.intervalTimer);
       this.intervalTimer = undefined;
 
-      getLogger('network').info(
-        `transactions interval change from ${this.interval} to ${interval}`,
-      );
+      getLogger('network').info(`transactions interval change from ${this.interval} to ${interval}`);
 
       this.interval = interval;
       await this.periodicUpdateNetwrok();

@@ -76,9 +76,11 @@ export class AccountService {
     return this.accountRepo.delete(id);
   }
 
-  async removeAccounts(): Promise<Account[]> {
+  async removeAccounts(): Promise<string> {
     this.indexer = undefined;
     const accounts = await this.getAccounts();
-    return this.accountRepo.remove(accounts);
+    await this.accountRepo.remove(accounts);
+
+    return '';
   }
 }

@@ -29,7 +29,7 @@ export class AccountResolver {
     return this.accountService.addController(controller);
   }
 
-  @Mutation(() => [AccountType])
+  @Mutation(() => String)
   removeAccounts() {
     return this.accountService.removeAccounts();
   }

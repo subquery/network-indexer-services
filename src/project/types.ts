@@ -38,3 +38,8 @@ export type Transaction = {
   txFun: TxFun;
   desc?: string;
 };
+
+export type Poi = {
+  blockHeight: number;
+  mmrRoot: string;
+};

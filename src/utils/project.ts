@@ -20,3 +20,5 @@ export function projectConfigChanged(project: Project, config: ProjectConfig): b
     project.poiEnabled !== config.poiEnabled
   );
 }
+
+export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
