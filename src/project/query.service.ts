@@ -83,10 +83,6 @@ export class QueryService {
     }
   }
 
-  private formatMmr(mmrRoot: string) {
-    mmrRoot.replace('\\', '0').substring(0, 66);
-  }
-
   public async getPoi(id: string, blockHeight: number): Promise<string> {
     const project = await this.projectService.getProject(id);
     const queryBody = JSON.stringify({
