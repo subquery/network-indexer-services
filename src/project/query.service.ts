@@ -130,7 +130,7 @@ export class QueryService {
     try {
       const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
-      const pois = data.data._pois;
+      const pois = data.data._pois.nodes;
       if (isEmpty(pois)) return this.emptyPoi;
 
       const blockHeight = pois[0].id;
