@@ -10,14 +10,22 @@ import { DockerService } from './docker.service';
 @Injectable()
 export class MetricsService implements OnModuleInit {
   private gateway: client.Pushgateway;
+  private gauge: client.Gauge<string>;
   private prefix: string;
 
   constructor(private docker: DockerService, private accountService: AccountService) { }
 
   public onModuleInit() {
-    this.gateway = new client.Pushgateway('https://pushgateway-dev.onfinality.me');
+    this.prefix = 'subquery_indexer';
+
+    this.gateway = new client.Pushgateway('https://pushgateway-kong-dev.onfinality.me');
+    this.gauge = new client.Gauge({
+      name: `${this.prefix}_coordinator_info`,
+      help: 'coordiantor information',
+      labelNames: ['coordinator_version', 'proxy_version', 'indexer'],
+    });
+
     this.pushServiceInfo();
-    this.prefix = 'subql_network';
   }
 
   public async pushServiceInfo() {
@@ -26,19 +34,17 @@ export class MetricsService implements OnModuleInit {
     const indexer = await this.accountService.getIndexer();
 
     try {
-      await this.gateway.pushAdd({
-        jobName: `${this.prefix}_indexer_service`,
-        groupings: {
-          [`${this.prefix}_coordinator_version`]: coordinatorVersion,
-          [`${this.prefix}_proxy_version`]: proxyVersion,
-          [`${this.prefix}_indexer`]: indexer,
-        },
-      });
+      this.gauge
+        .labels({
+          coordinator_version: coordinatorVersion,
+          proxy_version: proxyVersion,
+          indexer,
+        })
+        .set(1);
+
+      await this.gateway.pushAdd({ jobName: `${this.prefix}_service` });
     } catch {
-      debugLogger(
-        'metrics',
-        `failed to send service info ${coordinatorVersion} ${proxyVersion} ${indexer}`,
-      );
+      debugLogger('metrics', `failed to send service info ${coordinatorVersion} ${proxyVersion} ${indexer}`);
     }
   }
 }

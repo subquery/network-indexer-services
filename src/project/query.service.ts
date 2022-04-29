@@ -116,9 +116,10 @@ export class QueryService {
   }
 
   public async getLastPoi(id: string): Promise<Poi> {
+    // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
-        _pois(last: 1) {
+        _pois(last: 1000) {
           nodes {
             id
             mmrRoot
@@ -130,16 +131,17 @@ export class QueryService {
     try {
       const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
-      const pois = data.data._pois.nodes;
+      const pois = data.data._pois.nodes as Poi[];
       if (isEmpty(pois)) return this.emptyPoi;
 
-      const blockHeight = pois[0].id;
-      if (!pois[0].mmrRoot) {
+      const poi = pois.find((v) => !!v.mmrRoot);
+      if (!poi) {
+        const blockHeight = pois[pois.length - 1].blockHeight;
         return { blockHeight, mmrRoot: ZERO_BYTES32 };
       }
 
-      const mmrRoot = pois[0].mmrRoot.replace('\\', '0').substring(0, 66);
-      return { blockHeight, mmrRoot };
+      const mmrRoot = poi.mmrRoot.replace('\\', '0').substring(0, 66);
+      return { blockHeight: poi.blockHeight, mmrRoot };
     } catch {
       return this.emptyPoi;
     }
