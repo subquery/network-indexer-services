@@ -11,7 +11,7 @@ import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 
 import { ProjectService } from './project.service';
-import { ServiceStatus, MetaData, Poi } from './types';
+import { ServiceStatus, MetaData, Poi, PoiItem } from './types';
 
 @Injectable()
 export class QueryService {
@@ -135,14 +135,14 @@ export class QueryService {
     try {
       const response = await this.queryRequest(id, queryBody);
       const data = await response.json();
-      const pois = data.data._pois.nodes as Poi[];
+      const pois = data.data._pois.nodes as PoiItem[];
       if (isEmpty(pois)) return this.emptyPoi;
 
       const poi = pois.reverse().find((v) => !!v.mmrRoot);
       if (!poi) return this.emptyPoi;
 
       const mmrRoot = poi.mmrRoot.replace('\\', '0').substring(0, 66);
-      return { blockHeight: poi.blockHeight, mmrRoot };
+      return { blockHeight: poi.id, mmrRoot };
     } catch {
       return this.emptyPoi;
     }

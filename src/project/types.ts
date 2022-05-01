@@ -44,6 +44,11 @@ export type Transaction = {
   desc?: string;
 };
 
+export type PoiItem = {
+  id: number;
+  mmrRoot: string;
+};
+
 export type Poi = {
   blockHeight: number;
   mmrRoot: string;
