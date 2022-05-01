@@ -123,7 +123,7 @@ export class QueryService {
     // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
-        _pois(last: 1000, orderBy: "PRIMARY_KEY_DESC") {
+        _pois(last: 1000) {
           nodes {
             id
             mmrRoot
@@ -138,7 +138,7 @@ export class QueryService {
       const pois = data.data._pois.nodes as Poi[];
       if (isEmpty(pois)) return this.emptyPoi;
 
-      const poi = pois.find((v) => !!v.mmrRoot);
+      const poi = pois.reverse().find((v) => !!v.mmrRoot);
       if (!poi) return this.emptyPoi;
 
       const mmrRoot = poi.mmrRoot.replace('\\', '0').substring(0, 66);
