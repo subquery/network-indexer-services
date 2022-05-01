@@ -7,7 +7,7 @@ import { isEmpty } from 'lodash';
 import { ProjectService } from './project.service';
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { ContractService } from './contract.service';
-import { IndexingStatus, Transaction, TxFun } from './types';
+import { IndexingStatus, Poi, Transaction, TxFun } from './types';
 import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
@@ -24,7 +24,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: string]: string };
 
-  private defaultInterval = 1000 * 300;
+  private defaultInterval = 1000 * 120;
   private defaultRetryCount = 5;
 
   constructor(
@@ -45,7 +45,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const projects = await this.projectService.getProjects();
     const indexingProjects = await Promise.all(
       projects.map(async ({ id }) => {
-        const status = await this.contractService.deploymentStatusByIndexer(id);
+        const { status } = await this.contractService.deploymentStatusByIndexer(id);
         const project = await this.projectService.updateProjectStatus(id, status);
         return project;
       }),
@@ -130,21 +130,10 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async reportIndexingService(id: string) {
-    const metadata = await this.queryService.getQueryMetaData(id);
-    if (!metadata) return;
+    const poi = await this.queryService.getReportPoi(id);
+    if (poi.blockHeight === 0) return;
 
-    const indexer = await this.accountService.getIndexer();
-    const indexingStatus = await this.sdk.queryRegistry.deploymentStatusByIndexer(cidToBytes32(id), indexer);
-
-    const { blockHeight, mmrRoot } = await this.queryService.getReportPoi(id, metadata.lastProcessedHeight);
-    if (indexingStatus.blockHeight.gte(blockHeight)) {
-      debugLogger(
-        'report',
-        `project: ${id} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
-      );
-      return;
-    }
-
+    const { blockHeight, mmrRoot } = poi;
     const mmrRootLog = mmrRoot !== ZERO_BYTES32 ? `| mmrRoot: ${mmrRoot}` : '';
     const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} ${mmrRootLog}`;
 
@@ -266,8 +255,8 @@ export class NetworkService implements OnApplicationBootstrap {
       this.failedTransactions = [];
 
       if (this.retryCount !== 0) {
-        await this.sendTxs();
         this.retryCount--;
+        await this.sendTxs();
       }
     }
   }

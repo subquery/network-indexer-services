@@ -1,13 +1,18 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ContractTransaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 
 export enum IndexingStatus {
   NOTINDEXING,
   INDEXING,
   READY,
 }
+
+export type DeploymentStatus = {
+  status: IndexingStatus;
+  blockHeight: BigNumber;
+};
 
 export enum ServiceStatus {
   Starting = 'STARTING',

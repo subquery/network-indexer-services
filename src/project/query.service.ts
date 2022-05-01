@@ -5,7 +5,9 @@ import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 import { nodeContainer, queryContainer } from 'src/utils/docker';
+import { debugLogger } from 'src/utils/logger';
 import { ZERO_BYTES32 } from 'src/utils/project';
+import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 
 import { ProjectService } from './project.service';
@@ -13,13 +15,15 @@ import { ServiceStatus, MetaData, Poi } from './types';
 
 @Injectable()
 export class QueryService {
-
   private emptyPoi: Poi;
 
-  constructor(private projectService: ProjectService, private docker: DockerService) {
+  constructor(
+    private projectService: ProjectService,
+    private docker: DockerService,
+    private contract: ContractService,
+  ) {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
-
 
   private serviceStatus(info: string): ServiceStatus {
     if (isEmpty(info)) {
@@ -147,15 +151,37 @@ export class QueryService {
     }
   }
 
-  public async getReportPoi(id: string, blockHeight: number): Promise<Poi> {
+  async getValidPoi(id: string): Promise<Poi> {
+    const metadata = await this.getQueryMetaData(id);
+    const blockHeight = metadata.lastProcessedHeight;
+    if (blockHeight === 0) return this.emptyPoi;
+
     const project = await this.projectService.getProject(id);
-    if (!project.poiEnabled) {
-      return { blockHeight, mmrRoot: ZERO_BYTES32 };
-    }
+    if (!project.poiEnabled) return { blockHeight, mmrRoot: ZERO_BYTES32 };
 
     const mmrRoot = await this.getMmrRoot(id, blockHeight);
     if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
 
     return this.getLastPoi(id);
+  }
+
+  public async getReportPoi(id: string): Promise<Poi> {
+    try {
+      const poi = await this.getValidPoi(id);
+      const { blockHeight, mmrRoot } = poi;
+      if (blockHeight === 0) return poi;
+
+      const indexingStatus = await this.contract.deploymentStatusByIndexer(id);
+      if (indexingStatus.blockHeight.lt(blockHeight)) return poi;
+
+      debugLogger(
+        'report',
+        `project: ${id} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
+      );
+    } catch (e) {
+      debugLogger('report', `failed to get report poi: ${e}`);
+    }
+
+    return this.emptyPoi;
   }
 }

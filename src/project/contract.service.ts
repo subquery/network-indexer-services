@@ -11,7 +11,7 @@ import { AccountService } from 'src/account/account.service';
 import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
 import { decrypt } from '../utils/encrypto';
 import { Config } from '../configure/configure.module';
-import { IndexingStatus } from './types';
+import { DeploymentStatus, IndexingStatus } from './types';
 import { getLogger } from 'src/utils/logger';
 
 @Injectable()
@@ -20,11 +20,13 @@ export class ContractService {
   private provider: JsonRpcProvider;
   private chainID: number;
   private sdk: ContractSDK;
+  private emptyDeploymentStatus;
 
   constructor(private accountService: AccountService, private config: Config) {
     const ws = this.config.wsEndpoint;
     this.chainID = chainIds[this.config.network];
     this.provider = new ethers.providers.StaticJsonRpcProvider(ws, this.chainID);
+    this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
   }
 
   getSdk() {
@@ -105,19 +107,19 @@ export class ContractService {
     });
   }
 
-  async deploymentStatusByIndexer(id: string): Promise<IndexingStatus> {
+  async deploymentStatusByIndexer(id: string): Promise<DeploymentStatus> {
     const indexer = await this.accountService.getIndexer();
-    if (!this.sdk || !indexer) return IndexingStatus.NOTINDEXING;
+    if (!this.sdk || !indexer) return this.emptyDeploymentStatus;
 
     try {
-      const { status } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+      const { status, blockHeight } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
         cidToBytes32(id),
         indexer,
       );
-      return status as IndexingStatus;
+      return { status, blockHeight };
     } catch {
       getLogger('contract').error(`failed to get indexing status for project: ${id}`);
-      return IndexingStatus.NOTINDEXING;
+      return this.emptyDeploymentStatus;
     }
   }
 }
