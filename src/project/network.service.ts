@@ -7,7 +7,7 @@ import { isEmpty } from 'lodash';
 import { ProjectService } from './project.service';
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { ContractService } from './contract.service';
-import { IndexingStatus, Poi, Transaction, TxFun } from './types';
+import { IndexingStatus, Transaction, TxFun } from './types';
 import { cidToBytes32 } from 'src/utils/contractSDK';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';

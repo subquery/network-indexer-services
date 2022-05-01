@@ -199,9 +199,9 @@ export class ProjectService {
     getLogger('project').info(`remove project: ${id}`);
 
     const projectID = projectId(id);
-    await this.docker.dropDB(`db_${projectID}`);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
+    await this.docker.dropDB(`db_${projectID}`);
 
     const mmrFile = getMmrFile(id);
     await this.docker.deleteFile(mmrFile);
