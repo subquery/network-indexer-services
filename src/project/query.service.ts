@@ -123,7 +123,7 @@ export class QueryService {
     // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
-        _pois(last: 1000) {
+        _pois(last: 100) {
           nodes {
             id
             mmrRoot
@@ -171,9 +171,10 @@ export class QueryService {
       const indexingStatus = await this.contract.deploymentStatusByIndexer(id);
       if (indexingStatus.blockHeight.lt(blockHeight)) return poi;
 
+      const shortId = id.substring(0, 15);
       debugLogger(
         'report',
-        `project: ${id} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
+        `project: ${shortId} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
       );
     } catch (e) {
       debugLogger('report', `failed to get report poi: ${e}`);
