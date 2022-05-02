@@ -49,12 +49,21 @@ export class QueryService {
     });
   }
 
-  public async getQueryMetaData(id: string): Promise<MetaData> {
-    const indexerInfo = await this.docker.ps([nodeContainer(id)]);
-    const queryInfo = await this.docker.ps([queryContainer(id)]);
-    const indexerStatus = this.serviceStatus(indexerInfo);
-    const queryStatus = this.serviceStatus(queryInfo);
+  private async servicesStatus(id: string): Promise<{ indexerStatus: string; queryStatus: string }> {
+    try {
+      const indexerInfo = await this.docker.ps([nodeContainer(id)]);
+      const queryInfo = await this.docker.ps([queryContainer(id)]);
+      const indexerStatus = this.serviceStatus(indexerInfo);
+      const queryStatus = this.serviceStatus(queryInfo);
 
+      return { indexerStatus, queryStatus };
+    } catch {
+      return { indexerStatus: ServiceStatus.Starting, queryStatus: ServiceStatus.Starting };
+    }
+  }
+
+  public async getQueryMetaData(id: string): Promise<MetaData> {
+    const { indexerStatus, queryStatus } = await this.servicesStatus(id);
     const queryBody = JSON.stringify({
       query: `{
         _metadata {

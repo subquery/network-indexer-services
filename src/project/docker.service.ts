@@ -5,12 +5,7 @@ import * as fs from 'fs';
 import { exec } from 'child_process';
 import { Injectable } from '@nestjs/common';
 import { getLogger } from 'src/utils/logger';
-import {
-  getComposeFilePath,
-  getImageVersion,
-  projectContainers,
-  projectId,
-} from 'src/utils/docker';
+import { getComposeFilePath, getImageVersion, projectContainers, projectId } from 'src/utils/docker';
 
 @Injectable()
 export class DockerService {
@@ -24,9 +19,7 @@ export class DockerService {
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       await this.rm(projectContainers(fileName));
-      const result = await this.execute(
-        `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`,
-      );
+      const result = await this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').error(`file: ${filePath} not exist`);
@@ -62,9 +55,7 @@ export class DockerService {
 
   async ps(containers: string[]): Promise<string> {
     try {
-      const result = await this.execute(
-        `docker container ps -a | grep -E '${containers.join('|')}'`,
-      );
+      const result = await this.execute(`docker container ps -a | grep -E '${containers.join('|')}'`);
       return result;
     } catch (_) {
       return '';
@@ -103,9 +94,7 @@ export class DockerService {
     }
 
     getLogger('docker').info(`create new db: ${name}`);
-    return this.execute(
-      `docker exec -i ${this.dbDocker} psql -U postgres -c "create database ${name}"`,
-    );
+    return this.execute(`docker exec -i ${this.dbDocker} psql -U postgres -c "create database ${name}"`);
   }
 
   async dropDB(name: string): Promise<string> {
@@ -116,9 +105,7 @@ export class DockerService {
     }
 
     getLogger('docker').info(`drop db: ${name}`);
-    return this.execute(
-      `docker exec -i ${this.dbDocker} psql -U postgres -c "drop database ${name}"`,
-    );
+    return this.execute(`docker exec -i ${this.dbDocker} psql -U postgres -c "drop database ${name}"`);
   }
 
   async deleteFile(path: string) {

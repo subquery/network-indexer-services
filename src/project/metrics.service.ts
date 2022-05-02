@@ -27,7 +27,7 @@ export class MetricsService implements OnModuleInit {
     this.gauge = new client.Gauge({
       name: `${this.prefix}_coordinator_info`,
       help: 'coordiantor information',
-      labelNames: ['coordinator_version', 'proxy_version', 'indexer'],
+      labelNames: ['coordinator_version', 'proxy_version'],
     });
 
     this.pushServiceInfo();
@@ -44,11 +44,10 @@ export class MetricsService implements OnModuleInit {
         .labels({
           coordinator_version: coordinatorVersion,
           proxy_version: proxyVersion,
-          indexer,
         })
         .set(1);
 
-      await this.gateway.pushAdd({ jobName: `${this.prefix}_service` });
+      await this.gateway.pushAdd({ jobName: `${this.prefix}_service`, groupings: { instance: indexer } });
     } catch {
       debugLogger('metrics', `failed to send service info ${coordinatorVersion} ${proxyVersion} ${indexer}`);
     }
