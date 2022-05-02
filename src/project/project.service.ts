@@ -26,6 +26,7 @@ import { SubscriptionService } from './subscription.service';
 import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
 import { MetricsService } from './metrics.service';
+import { Config } from 'src/configure/configure.module';
 
 @Injectable()
 export class ProjectService {
@@ -35,6 +36,7 @@ export class ProjectService {
     private pubSub: SubscriptionService,
     private docker: DockerService,
     private metrics: MetricsService,
+    private config: Config,
   ) {
     this.getLatestPort().then((port) => {
       this.port = port;
@@ -140,6 +142,7 @@ export class ProjectService {
     const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
     const nodeImageVersion = nodeVersion ?? 'v0.31.1';
     const queryImageVersion = queryVersion ?? 'v0.13.0';
+    const postgres = this.config.postgres;
 
     const item: TemplateType = {
       deploymentID: id,
@@ -150,6 +153,7 @@ export class ProjectService {
       queryVersion: queryImageVersion,
       nodeVersion: nodeImageVersion,
       poiEnabled,
+      postgres,
     };
 
     try {

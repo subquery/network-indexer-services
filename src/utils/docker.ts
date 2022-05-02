@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { join } from 'path';
 import * as handlebars from 'handlebars';
 import { getLogger } from 'src/utils/logger';
+import { Postgres } from 'src/configure/configure.module';
 
 // move to types folder
 export type TemplateType = {
@@ -16,6 +17,7 @@ export type TemplateType = {
   servicePort: number;
   poiEnabled: boolean;
   dictionary?: string;
+  postgres: Postgres;
 };
 
 export function projectId(cid: string): string {

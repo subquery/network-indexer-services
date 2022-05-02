@@ -6,11 +6,11 @@ services:
     container_name: node_{{projectID}}
     restart: always
     environment:
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: {{postgres.user}}
+      DB_PASS: {{postgres.pass}}
       DB_DATABASE: db_{{projectID}}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: {{postgres.host}}
+      DB_PORT: {{postgres.port}}
     volumes:
       - /var/tmp/composeFiles/{{deploymentID}}:/var/tmp/composeFiles/{{deploymentID}}
     command:
@@ -44,11 +44,11 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: {{postgres.user}}
+      DB_PASS: {{postgres.pass}}
       DB_DATABASE: db_{{projectID}}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: {{postgres.host}}
+      DB_PORT: {{postgres.port}}
     command:
       - --name=app_{{deploymentID}}
       - --playground

@@ -2,26 +2,41 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { getYargsOption } from '../yargs';
+import { getYargsOption, PostgresKeys } from '../yargs';
 
 type Network = 'local' | 'dev' | 'prod';
 
+export type Postgres = {
+  user: string;
+  pass: string;
+  host: string;
+  port: number;
+};
 export interface IConfig {
   readonly network: Network;
   readonly wsEndpoint: string;
   readonly port: number;
   readonly debug: boolean;
+  readonly postgres: Postgres;
 }
 
 export class Config implements IConfig {
   public static fromArgs(): Config {
     const { argv } = getYargsOption();
 
+    const postgres = {
+      user: argv[PostgresKeys.username],
+      host: argv[PostgresKeys.host],
+      port: argv[PostgresKeys.port],
+      pass: argv[PostgresKeys.password],
+    };
+
     return new Config({
       network: argv['network'] as Network,
       wsEndpoint: argv['ws-endpoint'],
       port: argv['port'] as number,
       debug: argv['debug'] as boolean,
+      postgres,
     });
   }
 
@@ -37,6 +52,10 @@ export class Config implements IConfig {
 
   get port(): number {
     return this._config.port;
+  }
+
+  get postgres(): Postgres {
+    return this._config.postgres;
   }
 
   get debug(): boolean {

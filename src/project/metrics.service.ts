@@ -13,7 +13,7 @@ export class MetricsService implements OnModuleInit {
   private gauge: client.Gauge<string>;
   private prefix: string;
 
-  constructor(private docker: DockerService, private accountService: AccountService) { }
+  constructor(private docker: DockerService, private accountService: AccountService) {}
 
   public onModuleInit() {
     this.prefix = 'subquery_indexer';
@@ -32,6 +32,7 @@ export class MetricsService implements OnModuleInit {
     const coordinatorVersion = await this.docker.imageVersion('coordinator_service');
     const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
     const indexer = await this.accountService.getIndexer();
+    if (!indexer) return;
 
     try {
       this.gauge
