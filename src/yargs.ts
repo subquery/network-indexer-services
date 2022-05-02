@@ -7,6 +7,7 @@ import yargs from 'yargs';
 export enum Groups {
   coordinator = 'Indexer Coordinator',
   postgres = 'Postgres',
+  metrics = 'Metrics',
 }
 
 export enum PostgresKeys {
@@ -74,6 +75,12 @@ export function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       group: Groups.postgres,
+    },
+    pushgateway: {
+      type: 'string',
+      describe: 'Pushgateway endpoint',
+      default: '',
+      group: Groups.metrics,
     },
   });
 }

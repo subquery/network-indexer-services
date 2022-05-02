@@ -4,6 +4,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import client from 'prom-client';
 import { AccountService } from 'src/account/account.service';
+import { Config } from 'src/configure/configure.module';
 import { debugLogger } from 'src/utils/logger';
 import { DockerService } from './docker.service';
 
@@ -13,12 +14,16 @@ export class MetricsService implements OnModuleInit {
   private gauge: client.Gauge<string>;
   private prefix: string;
 
-  constructor(private docker: DockerService, private accountService: AccountService) {}
+  constructor(
+    private docker: DockerService,
+    private accountService: AccountService,
+    private config: Config,
+  ) {}
 
   public onModuleInit() {
     this.prefix = 'subquery_indexer';
 
-    this.gateway = new client.Pushgateway('https://pushgateway-kong-dev.onfinality.me');
+    this.gateway = new client.Pushgateway(this.config.pushgateway);
     this.gauge = new client.Gauge({
       name: `${this.prefix}_coordinator_info`,
       help: 'coordiantor information',
