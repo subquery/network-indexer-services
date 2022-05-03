@@ -6,6 +6,7 @@ import client from 'prom-client';
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
 import { debugLogger } from 'src/utils/logger';
+import { PUSHGATEWAY_DEV, PUSHGATEWAY_PROD } from './constant';
 import { DockerService } from './docker.service';
 
 @Injectable()
@@ -23,7 +24,7 @@ export class MetricsService implements OnModuleInit {
   public onModuleInit() {
     this.prefix = 'subquery_indexer';
 
-    this.gateway = new client.Pushgateway(this.config.pushgateway);
+    this.gateway = new client.Pushgateway(this.pushgatewayUrl());
     this.gauge = new client.Gauge({
       name: `${this.prefix}_coordinator_info`,
       help: 'coordiantor information',
@@ -31,6 +32,10 @@ export class MetricsService implements OnModuleInit {
     });
 
     this.pushServiceInfo();
+  }
+
+  private pushgatewayUrl() {
+    return this.config.dev ? PUSHGATEWAY_DEV : PUSHGATEWAY_PROD;
   }
 
   public async pushServiceInfo() {

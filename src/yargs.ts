@@ -44,7 +44,13 @@ export function getYargsOption() {
       type: 'boolean',
       describe: 'Enable debug mode',
       default: false,
-      group: Groups.postgres,
+      group: Groups.coordinator,
+    },
+    dev: {
+      type: 'boolean',
+      describe: 'Enable dev mode',
+      default: false,
+      group: Groups.coordinator,
     },
     [PostgresKeys.host]: {
       type: 'string',
@@ -75,12 +81,6 @@ export function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       group: Groups.postgres,
-    },
-    pushgateway: {
-      type: 'string',
-      describe: 'Pushgateway endpoint',
-      default: '',
-      group: Groups.metrics,
     },
   });
 }

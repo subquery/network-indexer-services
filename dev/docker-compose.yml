@@ -41,6 +41,7 @@ services:
       - --postgres-port=5432
       - --port=8000
       - --debug
+      - --dev
     healthcheck:
       test:
         [
