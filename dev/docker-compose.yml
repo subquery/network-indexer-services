@@ -57,7 +57,7 @@ services:
       timeout: 5s
       retries: 5
   proxy-server:
-    image: onfinality/subql-indexer-proxy:v0.1.7
+    image: dev4mz/test4mz:0.1.6-4
     container_name: coordinator_proxy
     ports:
       - 8001:8001
@@ -69,6 +69,7 @@ services:
       - --port=8001
       - --host=0.0.0.0
       - --dev
+      - --auth
       - --secret-key=qmbyd5hwac2jdcu
       - --service-url=http://coordinator-service:8000/graphql
 networks:

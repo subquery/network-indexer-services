@@ -34,6 +34,12 @@ export function getYargsOption() {
       demandOption: true,
       group: Groups.coordinator,
     },
+    ipfs: {
+      type: 'string',
+      describe: 'Specify ipfs endpoint for this network',
+      default: 'https://interipfs.thechaindata.com/ipfs/api/v0',
+      group: Groups.coordinator,
+    },
     port: {
       type: 'number',
       describe: 'Port the service will listen on',
