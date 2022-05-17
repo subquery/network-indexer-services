@@ -14,6 +14,7 @@ import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from 'src/utils/project';
+import { BigNumber } from 'ethers';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -26,6 +27,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   private defaultInterval = 1000 * 30;
   private defaultRetryCount = 5;
+  private batchSize = 20;
 
   constructor(
     private projectService: ProjectService,
@@ -102,6 +104,7 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
+  // TODO: remove expired ca with batch transaction
   async removeExpiredAgreements() {
     if (Object.keys(this.expiredAgreements).length === 0) return;
 
@@ -164,6 +167,24 @@ export class NetworkService implements OnApplicationBootstrap {
     );
   }
 
+  collectAndDistributeRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber) {
+    return async () => {
+      if (currentEra.eq(lastClaimedEra.add(1)) && lastSettledEra.eq(lastClaimedEra)) return;
+
+      const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
+      getLogger('network').info(`${values}`);
+
+      const indexer = await this.accountService.getIndexer();
+      const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
+
+      for (let i = 0; i < count; i++) {
+        await this.sendTransaction('collect and distribute rewards', () =>
+          this.sdk.rewardsDistributor.batchCollectAndDistributeRewards(indexer, this.batchSize),
+        );
+      }
+    };
+  }
+
   async networkActions() {
     const [eraStartTime, eraPeriod, currentEra] = await Promise.all([
       this.sdk.eraManager.eraStartTime(),
@@ -185,16 +206,13 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsDistributor.getLastSettledEra(indexer),
       this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
     ]);
-    const collectAndDistributeRewards = async () => {
-      if (currentEra.gt(lastClaimedEra.add(1)) && lastSettledEra.gte(lastClaimedEra)) {
-        const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
-        getLogger('network').info(`${values}`);
 
-        return this.sendTransaction('collect and distribute rewards', () =>
-          this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
-        );
-      }
-    };
+    // collect and distribute rewards
+    const collectAndDistributeRewards = this.collectAndDistributeRewards(
+      currentEra,
+      lastClaimedEra,
+      lastSettledEra,
+    );
 
     // apply ICR change
     const applyICRChange = async () => {
