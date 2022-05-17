@@ -3046,10 +3046,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/contract-sdk@0.5.1-6":
-  version "0.5.1-6"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.5.1-6.tgz#26dd08cabfdc56bd7f110c0009552d4d0b570f15"
-  integrity sha512-l/HvvjvqtdqhwcYFBfSVThvA6Gtn7YOjkZMGdCZ5DKNWal2jAOtlucjVZUriBJPdR3SFGAsGOTxsAyE3vOHSzQ==
+"@subql/contract-sdk@0.5.1-8":
+  version "0.5.1-8"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.5.1-8.tgz#aabab2a3faa3ab00632062f0b77dfbd9c47cc413"
+  integrity sha512-S1op3xZ/DNZAzkV3bUYq8PRFLJADLzDu/ty9ztux6hN+x8QYudYkvoWvtUmRfQdmTWrwUmjgC4iSVSivgjNX1w==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
