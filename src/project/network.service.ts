@@ -24,7 +24,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: string]: string };
 
-  private defaultInterval = 1000 * 300;
+  private defaultInterval = 1000 * 30;
   private defaultRetryCount = 5;
 
   constructor(
@@ -164,7 +164,6 @@ export class NetworkService implements OnApplicationBootstrap {
     );
   }
 
-  // TODO: check wallet balances before sending the transaction
   async networkActions() {
     const [eraStartTime, eraPeriod, currentEra] = await Promise.all([
       this.sdk.eraManager.eraStartTime(),
@@ -225,6 +224,12 @@ export class NetworkService implements OnApplicationBootstrap {
       const isContractReady = await this.syncContractConfig();
       debugLogger('contract', `contract sdk ready: ${isContractReady}`);
       if (!isContractReady) return;
+
+      const isBalanceSufficient = await this.contractService.hasSufficientBalance();
+      if (!isBalanceSufficient) {
+        getLogger('contract').warn('insufficient balance for the controller account');
+        return;
+      }
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
       const networkActions = await this.networkActions();
