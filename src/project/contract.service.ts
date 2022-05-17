@@ -6,6 +6,7 @@ import { bufferToHex, isValidPrivate, privateToAddress, toBuffer } from 'ethereu
 import { Wallet, ethers } from 'ethers';
 import { isEmpty } from 'lodash';
 import { JsonRpcProvider } from '@ethersproject/providers';
+import { formatUnits } from '@ethersproject/units';
 import { ContractSDK } from '@subql/contract-sdk';
 import { AccountService } from 'src/account/account.service';
 import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
@@ -21,12 +22,14 @@ export class ContractService {
   private chainID: number;
   private sdk: ContractSDK;
   private emptyDeploymentStatus;
+  private existentialBalance: number;
 
   constructor(private accountService: AccountService, private config: Config) {
     const ws = this.config.wsEndpoint;
     this.chainID = chainIds[this.config.network];
     this.provider = new ethers.providers.StaticJsonRpcProvider(ws, this.chainID);
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
+    this.existentialBalance = 0.1;
   }
 
   getSdk() {
@@ -40,6 +43,20 @@ export class ContractService {
       return block.timestamp;
     } catch {
       return Math.floor((new Date().getTime() - 60000) / 1000);
+    }
+  }
+
+  async getBalance() {
+    const balance = await this.wallet.getBalance();
+    return Number(formatUnits(balance, 18));
+  }
+
+  async hasSufficientBalance() {
+    try {
+      const balance = await this.getBalance();
+      return balance > this.existentialBalance;
+    } catch {
+      return false;
     }
   }
 

@@ -3046,17 +3046,17 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/contract-sdk@0.5.1-2":
-  version "0.5.1-2"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.5.1-2.tgz#953d1551e50f67f04fefdea3e8ddf41a7585f7d9"
-  integrity sha512-aOF/WFOBSe42tULWEImB0xBtkNxhPWH1QhT1d4ZhbonQCs4w86uX+vhFSxGer05ZIy04wNA26DU7h0ZvBBkf2w==
+"@subql/contract-sdk@0.5.1-8":
+  version "0.5.1-8"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.5.1-8.tgz#aabab2a3faa3ab00632062f0b77dfbd9c47cc413"
+  integrity sha512-S1op3xZ/DNZAzkV3bUYq8PRFLJADLzDu/ty9ztux6hN+x8QYudYkvoWvtUmRfQdmTWrwUmjgC4iSVSivgjNX1w==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.1.1-5":
-  version "0.1.1-5"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-5.tgz#802089cfb0c1acaad0d0a87e5ab483fa82dd12d4"
-  integrity sha512-GKQF9YGXX8quY/DtGOU5mhS8WEHZ8nJW9DS7k1LseuPKINbA1PvNQBHYCDik2vjtwBisO3h6QBb8CAh40rgh6w==
+"@subql/indexer-admin@0.1.1-7":
+  version "0.1.1-7"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-7.tgz#55cf967016500fe285b4e74d1239fe0cd812791f"
+  integrity sha512-Cd7NkiKKIObVp1LeOecMcSD4qEvtcL9pY1BKY/9dC+/Ni6JO5le0gxRyK4K11sxN5iNHL9Djk1veQx+qkpBGkA==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"

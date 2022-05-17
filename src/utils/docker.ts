@@ -90,9 +90,7 @@ export function generateDockerComposeFile(data: TemplateType) {
     fs.writeFileSync(getComposeFilePath(data.deploymentID), template(data));
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
-    getLogger('docker').error(
-      `fail to generate new docker compose file for ${data.deploymentID}: ${e} `,
-    );
+    getLogger('docker').error(`fail to generate new docker compose file for ${data.deploymentID}: ${e} `);
   }
 }
 

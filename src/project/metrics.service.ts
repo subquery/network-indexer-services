@@ -9,17 +9,22 @@ import { debugLogger } from 'src/utils/logger';
 import { PUSHGATEWAY_DEV, PUSHGATEWAY_PROD } from './constant';
 import { DockerService } from './docker.service';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version } = require('../../package.json');
+
 @Injectable()
 export class MetricsService implements OnModuleInit {
   private gateway: client.Pushgateway;
   private gauge: client.Gauge<string>;
   private prefix: string;
 
+  private interval = 1000 * 60 * 60 * 6;
+
   constructor(
     private docker: DockerService,
     private accountService: AccountService,
     private config: Config,
-  ) {}
+  ) { }
 
   public onModuleInit() {
     this.prefix = 'subquery_indexer';
@@ -32,6 +37,7 @@ export class MetricsService implements OnModuleInit {
     });
 
     this.pushServiceInfo();
+    this.periodicPushServiceInfo();
   }
 
   private pushgatewayUrl() {
@@ -39,7 +45,6 @@ export class MetricsService implements OnModuleInit {
   }
 
   public async pushServiceInfo() {
-    const coordinatorVersion = await this.docker.imageVersion('coordinator_service');
     const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
     const indexer = await this.accountService.getIndexer();
     if (!indexer) return;
@@ -47,14 +52,20 @@ export class MetricsService implements OnModuleInit {
     try {
       this.gauge
         .labels({
-          coordinator_version: coordinatorVersion,
+          coordinator_version: version,
           proxy_version: proxyVersion,
         })
         .set(1);
 
       await this.gateway.pushAdd({ jobName: `${this.prefix}_service`, groupings: { instance: indexer } });
     } catch {
-      debugLogger('metrics', `failed to send service info ${coordinatorVersion} ${proxyVersion} ${indexer}`);
+      debugLogger('metrics', `failed to send service info ${version} ${proxyVersion} ${indexer}`);
     }
+  }
+
+  async periodicPushServiceInfo() {
+    setInterval(async () => {
+      await this.pushServiceInfo();
+    }, this.interval);
   }
 }
