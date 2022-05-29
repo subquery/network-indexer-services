@@ -35,7 +35,7 @@ export class AccountService {
     const accounts = await this.getAccounts();
     let account;
     if (!isEmpty(accounts)) {
-      account = accounts[0];
+      account = accounts[accounts.length-1];
     }
     const indexer = account?.indexer || '';
     const controller = account?.controller || '';
@@ -50,7 +50,7 @@ export class AccountService {
       where: { controller: '' },
     });
     if (isEmpty(accounts)) return undefined;
-    return accounts[0];
+    return accounts[accounts.length-1];
   }
 
   async getIndexer(): Promise<string> {
