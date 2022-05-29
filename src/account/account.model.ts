@@ -34,6 +34,9 @@ export class AccountMetaDataType {
   indexer: string;
 
   @Field()
+  controller: string;
+
+  @Field()
   network: string;
 
   @Field()

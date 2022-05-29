@@ -31,12 +31,18 @@ export class AccountService {
     return this.accountRepo.save(account);
   }
 
-  async getMetadata(): Promise<{ indexer: string; network: string; wsEndpoint: string }> {
-    const indexer = await this.getIndexer();
+  async getMetadata(): Promise<{ indexer: string; controller: string, network: string; wsEndpoint: string }> {
+    const accounts = await this.getAccounts();
+    let account;
+    if (!isEmpty(accounts)) {
+      account = accounts[0];
+    }
+    const indexer = account?.indexer || '';
+    const controller = account?.controller || '';
     const network = this.config.network;
     const wsEndpoint = this.config.wsEndpoint;
 
-    return { indexer, network, wsEndpoint };
+    return { indexer, controller, network, wsEndpoint };
   }
 
   async getIndexerAccount(): Promise<Account | undefined> {
