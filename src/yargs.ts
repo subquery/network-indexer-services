@@ -32,6 +32,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
+      default: 'https://sqtn.api.onfinality.io/public',
       group: Groups.coordinator,
     },
     ipfs: {
@@ -62,6 +63,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
+      default: '127.0.0.1',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {
@@ -86,6 +88,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres database name',
       demandOption: true,
+      default: 'postgres',
       group: Groups.postgres,
     },
   });
