@@ -27,6 +27,7 @@ import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
 import { MetricsService } from './metrics.service';
 import { Config } from 'src/configure/configure.module';
+import { DB } from 'src/db/db.module';
 
 @Injectable()
 export class ProjectService {
@@ -37,6 +38,7 @@ export class ProjectService {
     private docker: DockerService,
     private metrics: MetricsService,
     private config: Config,
+    private db: DB,
   ) {
     this.getLatestPort().then((port) => {
       this.port = port;
@@ -102,7 +104,7 @@ export class ProjectService {
       project = await this.addProject(id);
     }
 
-    const isDBExist = await this.docker.checkDBExist(dbName(id));
+    const isDBExist = await this.db.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
     const isConfigChanged = projectConfigChanged(project, {
       networkEndpoint,
@@ -157,7 +159,7 @@ export class ProjectService {
     };
 
     try {
-      await this.docker.createDB(`db_${projectID}`);
+      await this.db.createDB(`db_${projectID}`);
       generateDockerComposeFile(item);
       await this.docker.up(item.deploymentID);
     } catch (e) {
@@ -205,7 +207,7 @@ export class ProjectService {
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
-    await this.docker.dropDB(`db_${projectID}`);
+    await this.db.dropDB(`db_${projectID}`);
 
     const mmrFile = getMmrFile(id);
     await this.docker.deleteFile(mmrFile);
