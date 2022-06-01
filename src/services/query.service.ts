@@ -4,13 +4,14 @@
 import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
+
 import { nodeContainer, queryContainer } from 'src/utils/docker';
 import { debugLogger } from 'src/utils/logger';
 import { ZERO_BYTES32 } from 'src/utils/project';
+import { Project } from 'src/project/project.model';
+
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
-
-import { ProjectService } from './project.service';
 import { ServiceStatus, MetaData, Poi, PoiItem } from './types';
 
 @Injectable()
@@ -18,7 +19,6 @@ export class QueryService {
   private emptyPoi: Poi;
 
   constructor(
-    private projectService: ProjectService,
     private docker: DockerService,
     private contract: ContractService,
   ) {
@@ -38,10 +38,7 @@ export class QueryService {
     return ServiceStatus.UnHealthy;
   }
 
-  private async queryRequest(id: string, body: string): Promise<Response> {
-    const project = await this.projectService.getProject(id);
-    const { queryEndpoint } = project;
-
+  private async queryRequest(queryEndpoint: string, body: string): Promise<Response> {
     return fetch(`${queryEndpoint}/graphql`, {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
@@ -62,7 +59,7 @@ export class QueryService {
     }
   }
 
-  public async getQueryMetaData(id: string): Promise<MetaData> {
+  public async getQueryMetaData(id: string, endpoint: string): Promise<MetaData> {
     const { indexerStatus, queryStatus } = await this.servicesStatus(id);
     const queryBody = JSON.stringify({
       query: `{
@@ -80,7 +77,7 @@ export class QueryService {
     });
 
     try {
-      const response = await this.queryRequest(id, queryBody);
+      const response = await this.queryRequest(endpoint, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
@@ -106,7 +103,7 @@ export class QueryService {
     }
   }
 
-  public async getMmrRoot(id: string, blockHeight: number): Promise<string> {
+  public async getMmrRoot(id: string, endpoint: string, blockHeight: number): Promise<string> {
     const queryBody = JSON.stringify({
       query: `{
         _poi(id: ${blockHeight}) {
@@ -117,7 +114,7 @@ export class QueryService {
     });
 
     try {
-      const response = await this.queryRequest(id, queryBody);
+      const response = await this.queryRequest(endpoint, queryBody);
       const data = await response.json();
       if (!data.data._poi) return ZERO_BYTES32;
 
@@ -128,7 +125,7 @@ export class QueryService {
     }
   }
 
-  public async getLastPoi(id: string): Promise<Poi> {
+  public async getLastPoi(id: string, endpoint: string): Promise<Poi> {
     // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
@@ -142,7 +139,7 @@ export class QueryService {
     });
 
     try {
-      const response = await this.queryRequest(id, queryBody);
+      const response = await this.queryRequest(endpoint, queryBody);
       const data = await response.json();
       const pois = data.data._pois.nodes as PoiItem[];
       if (isEmpty(pois)) return this.emptyPoi;
@@ -157,23 +154,24 @@ export class QueryService {
     }
   }
 
-  async getValidPoi(id: string): Promise<Poi> {
-    const metadata = await this.getQueryMetaData(id);
+  async getValidPoi(project: Project): Promise<Poi> {
+    const { id, queryEndpoint, poiEnabled } = project;
+    const metadata = await this.getQueryMetaData(id, queryEndpoint);
     const blockHeight = metadata.lastProcessedHeight;
     if (blockHeight === 0) return this.emptyPoi;
 
-    const project = await this.projectService.getProject(id);
-    if (!project.poiEnabled) return { blockHeight, mmrRoot: ZERO_BYTES32 };
+    if (!poiEnabled) return { blockHeight, mmrRoot: ZERO_BYTES32 };
 
-    const mmrRoot = await this.getMmrRoot(id, blockHeight);
+    const mmrRoot = await this.getMmrRoot(id, queryEndpoint, blockHeight);
     if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
 
-    return this.getLastPoi(id);
+    return this.getLastPoi(id, queryEndpoint);
   }
 
-  public async getReportPoi(id: string): Promise<Poi> {
+  public async getReportPoi(project: Project): Promise<Poi> {
+    const { id } = project;
     try {
-      const poi = await this.getValidPoi(id);
+      const poi = await this.getValidPoi(project);
       const { blockHeight, mmrRoot } = poi;
       if (blockHeight === 0) return poi;
 

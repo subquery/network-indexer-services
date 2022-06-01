@@ -5,10 +5,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 
-import { LogType, Project } from './project.model';
-import { IndexingStatus } from './types';
+import { Config } from 'src/configure/configure.module';
 import { getLogger } from 'src/utils/logger';
-import { DockerService } from './docker.service';
 import {
   canContainersRestart,
   composeFileExist,
@@ -22,11 +20,14 @@ import {
   queryEndpoint,
   TemplateType,
 } from 'src/utils/docker';
-import { SubscriptionService } from './subscription.service';
 import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
-import { MetricsService } from './metrics.service';
-import { Config } from 'src/configure/configure.module';
+import { IndexingStatus } from 'src/services/types';
+import { DockerService } from 'src/services/docker.service';
+import { SubscriptionService } from 'src/services/subscription.service';
+import { MetricsService } from 'src/services/metrics.service';
+
+import { LogType, Project } from './project.model';
 
 @Injectable()
 export class ProjectService {

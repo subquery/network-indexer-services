@@ -6,11 +6,14 @@ import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProjectModule } from './project/project.module';
-import { AccountModule } from './account/account.module';
+
 import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
+import { ServicesModule } from './services/services.module'
+import { AccountModule } from './account/account.module';
+import { ProjectModule } from './project/project.module';
+import { PaygModule } from './payg/payg.module';
 
 @Module({
   imports: [
@@ -31,8 +34,10 @@ import { AdminController } from './admin.controller';
       },
       cors: { origin: true, credentials: true },
     }),
+    ServicesModule,
     ProjectModule,
     AccountModule,
+    PaygModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],

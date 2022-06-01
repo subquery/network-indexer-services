@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
-import { SubscriptionService } from './subscription.service';
-import { ProjectService } from './project.service';
-import { LogType, MetadataType, ProjectType } from './project.model';
+
 import { ProjectEvent } from 'src/utils/subscription';
-import { QueryService } from './query.service';
-import { DockerRegistry, DockerRegistryService } from './docker.registry.service';
+import { SubscriptionService } from 'src/services/subscription.service';
+import { QueryService } from 'src/services/query.service';
+import { DockerRegistry, DockerRegistryService } from 'src/services/docker.registry.service';
+
+import { LogType, MetadataType, ProjectType } from './project.model';
+import { ProjectService } from './project.service';
 
 @Resolver(() => ProjectType)
 export class ProjectResolver {
@@ -24,8 +26,10 @@ export class ProjectResolver {
   }
 
   @Query(() => MetadataType)
-  queryMetadata(@Args('id') id: string) {
-    return this.queryService.getQueryMetaData(id);
+  async queryMetadata(@Args('id') id: string) {
+    const project = await this.projectService.getProject(id);
+    const { queryEndpoint } = project;
+    return this.queryService.getQueryMetaData(id, queryEndpoint);
   }
 
   @Query(() => ProjectType)

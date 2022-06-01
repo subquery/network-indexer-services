@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { isEmpty } from 'lodash';
+import { BigNumber } from 'ethers';
+import { ContractSDK } from '@subql/contract-sdk';
 
-import { ProjectService } from './project.service';
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
+import { cidToBytes32 } from 'src/utils/contractSDK';
+import { AccountService } from 'src/account/account.service';
+import { ZERO_BYTES32 } from 'src/utils/project';
+import { Project } from 'src/project/project.model';
+
 import { ContractService } from './contract.service';
 import { IndexingStatus, Transaction, TxFun } from './types';
-import { cidToBytes32 } from 'src/utils/contractSDK';
-import { ContractSDK } from '@subql/contract-sdk';
-import { AccountService } from 'src/account/account.service';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
-import { ZERO_BYTES32 } from 'src/utils/project';
-import { BigNumber } from 'ethers';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -30,7 +33,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private batchSize = 20;
 
   constructor(
-    private projectService: ProjectService,
+    @InjectRepository(Project) private projectRepo: Repository<Project>,
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
@@ -44,12 +47,12 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getIndexingProjects() {
-    const projects = await this.projectService.getProjects();
+    const projects = await this.projectRepo.find();
     const indexingProjects = await Promise.all(
-      projects.map(async ({ id }) => {
-        const { status } = await this.contractService.deploymentStatusByIndexer(id);
-        const project = await this.projectService.updateProjectStatus(id, status);
-        return project;
+      projects.map(async (project) => {
+        const { status } = await this.contractService.deploymentStatusByIndexer(project.id);
+        project.status = status;
+        return await this.projectRepo.save(project);
       }),
     );
 
@@ -132,8 +135,9 @@ export class NetworkService implements OnApplicationBootstrap {
     await this.removeExpiredAgreements();
   }
 
-  async reportIndexingService(id: string) {
-    const poi = await this.queryService.getReportPoi(id);
+  async reportIndexingService(project: Project) {
+    const { id } = project;
+    const poi = await this.queryService.getReportPoi(project);
     if (poi.blockHeight === 0) return;
 
     const { blockHeight, mmrRoot } = poi;
@@ -161,9 +165,9 @@ export class NetworkService implements OnApplicationBootstrap {
     if (isEmpty(indexingProjects)) return [];
 
     return indexingProjects.map(
-      ({ id }) =>
+      (project) =>
         () =>
-          this.reportIndexingService(id),
+          this.reportIndexingService(project),
     );
   }
 

@@ -8,12 +8,14 @@ import { isEmpty } from 'lodash';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK } from '@subql/contract-sdk';
+
 import { AccountService } from 'src/account/account.service';
 import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
-import { decrypt } from '../utils/encrypto';
-import { Config } from '../configure/configure.module';
-import { DeploymentStatus, IndexingStatus } from './types';
+import { decrypt } from 'src/utils/encrypt';
+import { Config } from 'src/configure/configure.module';
 import { getLogger } from 'src/utils/logger';
+
+import { DeploymentStatus, IndexingStatus } from './types';
 
 @Injectable()
 export class ContractService {

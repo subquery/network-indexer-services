@@ -7,7 +7,7 @@ import { isEmpty } from 'lodash';
 const algorithm = 'aes-256-ctr';
 const iv = randomBytes(16);
 
-export const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
+export const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3'; // length = 32
 
 export function encrypt(value: string, key = secretKey): string {
   const cipher = createCipheriv(algorithm, key, iv);

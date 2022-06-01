@@ -3,31 +3,18 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { NetworkService } from 'src/services/network.service';
+//import { ContractService } from 'src/services/contract.service';
+//import { QueryService } from 'src/services/contract.service';
+
 import { ProjectService } from './project.service';
 import { ProjectResolver } from './project.resolver';
 import { Project } from './project.model';
-import { AccountModule } from 'src/account/account.module';
-import { NetworkService } from './network.service';
-import { ContractService } from './contract.service';
-import { DockerService } from './docker.service';
-import { SubscriptionService } from './subscription.service';
-import { QueryService } from './query.service';
-import { DockerRegistryService } from './docker.registry.service';
-import { MetricsService } from './metrics.service';
 
 @Module({
-  imports: [AccountModule, TypeOrmModule.forFeature([Project])],
-  providers: [
-    ProjectService,
-    ProjectResolver,
-    NetworkService,
-    ContractService,
-    DockerService,
-    SubscriptionService,
-    QueryService,
-    DockerRegistryService,
-    MetricsService,
-  ],
+  imports: [NetworkService, TypeOrmModule.forFeature([Project])],
+  providers: [ProjectService,ProjectResolver],
   exports: [ProjectService],
 })
 export class ProjectModule { }
