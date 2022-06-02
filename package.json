@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "0.1.10",
+  "version": "0.1.12-0",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -27,11 +27,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
     "start:help": "yarn start:prod --help",
-    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://sqtn.api.onfinality.io/public' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --debug --dev --port 8007",
+    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://tc7-eth.aca-dev.network' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --debug --dev --port 8007",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up"
   },
   "dependencies": {
+    "@acala-network/eth-providers": "^2.4.12",
     "@nestjs/common": "^8.0.0",
     "@nestjs/core": "^8.0.0",
     "@nestjs/graphql": "^9.1.1",
@@ -39,8 +40,8 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^1.0.0",
-    "@subql/contract-sdk": "0.5.1-8",
-    "@subql/indexer-admin": "0.1.1-7",
+    "@subql/contract-sdk": "0.6.1-2",
+    "@subql/indexer-admin": "0.1.1-8",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",
