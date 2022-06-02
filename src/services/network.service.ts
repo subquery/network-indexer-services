@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
@@ -32,14 +31,18 @@ export class NetworkService implements OnApplicationBootstrap {
   private defaultRetryCount = 5;
   private batchSize = 20;
 
+  private projectRepo: Repository<Project>;
+
   constructor(
-    @InjectRepository(Project) private projectRepo: Repository<Project>,
+    private connection: Connection,
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
+
+    this.projectRepo = connection.getRepository(Project);
   }
 
   onApplicationBootstrap() {

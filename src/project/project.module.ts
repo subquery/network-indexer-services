@@ -4,16 +4,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { NetworkService } from 'src/services/network.service';
-//import { ContractService } from 'src/services/contract.service';
-//import { QueryService } from 'src/services/contract.service';
+import { ServicesModule } from 'src/services/services.module';
 
 import { ProjectService } from './project.service';
 import { ProjectResolver } from './project.resolver';
 import { Project } from './project.model';
 
 @Module({
-  imports: [NetworkService, TypeOrmModule.forFeature([Project])],
+  imports: [ServicesModule, TypeOrmModule.forFeature([Project])],
   providers: [ProjectService,ProjectResolver],
   exports: [ProjectService],
 })
