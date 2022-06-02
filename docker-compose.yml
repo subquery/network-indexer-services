@@ -67,4 +67,4 @@ services:
       - --service-url=http://coordinator-service:8000/graphql
 networks:
   default:
-    name: cooridnator-service
+    name: coordinator-service

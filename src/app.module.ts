@@ -11,6 +11,7 @@ import { AccountModule } from './account/account.module';
 import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
+import { DBModule } from './db/db.module';
 
 @Module({
   imports: [
@@ -33,11 +34,12 @@ import { AdminController } from './admin.controller';
     }),
     ProjectModule,
     AccountModule,
+    ConfigureModule.register(),
+    DBModule.register(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),
-    ConfigureModule.register(),
   ],
   controllers: [AdminController],
 })

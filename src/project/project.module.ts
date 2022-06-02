@@ -14,9 +14,10 @@ import { SubscriptionService } from './subscription.service';
 import { QueryService } from './query.service';
 import { DockerRegistryService } from './docker.registry.service';
 import { MetricsService } from './metrics.service';
+import { DBModule } from 'src/db/db.module';
 
 @Module({
-  imports: [AccountModule, TypeOrmModule.forFeature([Project])],
+  imports: [AccountModule, DBModule, TypeOrmModule.forFeature([Project])],
   providers: [
     ProjectService,
     ProjectResolver,
