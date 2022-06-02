@@ -18,4 +18,4 @@ services:
 
 networks:
   default:
-    name: cooridnator-service
+    name: coordinator-service
