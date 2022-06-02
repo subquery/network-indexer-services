@@ -4,14 +4,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { NetworkService } from 'src/services/network.service';
+import { ServicesModule } from 'src/services/services.module';
 
 import { PaygService } from './payg.service';
 import { PaygResolver } from './payg.resolver';
 import { Channel, QueryState, ChannelStatus } from './payg.model';
 
 @Module({
-  imports: [NetworkService, TypeOrmModule.forFeature([Channel])],
+  imports: [ServicesModule, TypeOrmModule.forFeature([Channel])],
   providers: [
     PaygService,
     PaygResolver,
