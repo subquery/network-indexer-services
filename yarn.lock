@@ -3474,13 +3474,6 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.5.0.tgz#e1dad1018bba9874e2bef1a73ca9f3dd7924236e"
-  integrity sha512-4HlTtX6KyS/iPzbq4+7bGVK/pFxETrlzAnY6cBwkrGySmgXz84NW/jFV4lgXCW4IeL/OwtKPKdyxRCSvw9Kp/A==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-
 "@subql/contract-sdk@0.6.1-2":
   version "0.6.1-2"
   resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.6.1-2.tgz#75f46c780ec778081c74f99f95a55836b3d62515"
@@ -3488,10 +3481,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.1.1-8":
-  version "0.1.1-8"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-8.tgz#cfb199121262a6c3bd24c99235173bc0dba7d72f"
-  integrity sha512-LC9I+6WbWcFGK96c/zdDyuxLzi3EwkrnroSr/yaTx38X8gzLptcK76dBnUdr09Wqd8fwtvr3GDxfbJHYA/3IpQ==
+"@subql/indexer-admin@0.1.1-9":
+  version "0.1.1-9"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-9.tgz#b9d1374ecdaa1fe7cb080c778f6bc44afaf291a6"
+  integrity sha512-F72MTwcE8n0p/9UwqxDQbW/BVV/YOOwcxLcS5qiio9kiAcPgGl9PgHwRSmSFCCkTVxe005ofjxfLwuJjLfBTKw==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3500,7 +3493,7 @@
     "@patternfly/react-log-viewer" "^4.43.19"
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
-    "@subql/contract-sdk" "0.5.0"
+    "@subql/contract-sdk" "0.6.1-2"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
