@@ -4,7 +4,7 @@
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import { EvmRpcProvider, calcEthereumTransactionParams } from '@acala-network/eth-providers';
-import { Signer, utils } from 'ethers';
+import { BigNumber, Signer, utils } from 'ethers';
 
 const deployments = {
   local: testnetDeployment,
@@ -50,7 +50,7 @@ export function cidToBytes32(cid: string): string {
 export const substrateUrl =
   'wss://node-6870830370282213376.rz.onfinality.io/ws?apikey=0f273197-e4d5-45e2-b23e-03b015cb7000';
 
-export async function getOverrides() {
+export async function getOverrides(): Promise<{ gasLimit: BigNumber; gasPrice: BigNumber; type: number }> {
   const provider = EvmRpcProvider.from(substrateUrl);
   const txFeePerGas = '199999946752';
   const storageByteDeposit = '100000000000000';
