@@ -98,6 +98,7 @@ export class ProjectService {
     nodeVersion: string,
     queryVersion: string,
     poiEnabled: boolean,
+    forceEnabled: boolean,
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
@@ -112,6 +113,7 @@ export class ProjectService {
       nodeVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     });
 
     if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
@@ -126,6 +128,7 @@ export class ProjectService {
       nodeVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     );
 
     return startedProject;
@@ -138,6 +141,7 @@ export class ProjectService {
     nodeVersion: string,
     queryVersion: string,
     poiEnabled: boolean,
+    forceEnabled: boolean,
   ) {
     let project = await this.getProject(id);
     const projectID = projectId(id);
@@ -176,6 +180,7 @@ export class ProjectService {
       nodeVersion: nodeImageVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });

@@ -9,10 +9,12 @@ type ProjectConfig = {
   nodeVersion: string;
   queryVersion: string;
   poiEnabled: boolean;
+  forceEnabled: boolean;
 };
 
 export function projectConfigChanged(project: Project, config: ProjectConfig): boolean {
   return (
+    config.forceEnabled ||
     project.networkEndpoint !== config.networkEndpoint ||
     project.networkDictionary !== config.networkDictionary ||
     project.nodeVersion !== config.nodeVersion ||
