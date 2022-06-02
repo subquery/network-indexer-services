@@ -67,6 +67,7 @@ export class ProjectResolver {
     @Args('nodeVersion') nodeVersion: string,
     @Args('queryVersion') queryVersion: string,
     @Args('poiEnabled') poiEnabled: boolean,
+    @Args('forceEnabled') forceEnabled: boolean,
   ) {
     return this.projectService.startProject(
       id,
@@ -75,6 +76,7 @@ export class ProjectResolver {
       nodeVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     );
   }
 

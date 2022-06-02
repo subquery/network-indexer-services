@@ -32,6 +32,9 @@ export class Project {
 
   @Column({ default: false })
   poiEnabled: boolean;
+
+  @Column({ default: false })
+  forceEnabled: boolean;
 }
 
 @ObjectType('Project')
@@ -62,6 +65,9 @@ export class ProjectType {
 
   @Field()
   poiEnabled: boolean;
+
+  @Field()
+  forceEnabled: boolean;
 }
 
 @ObjectType('Log')
