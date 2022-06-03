@@ -32,7 +32,9 @@ export class PaygService {
     indexer: string,
     consumer: string,
     balance: number,
-    expirationAt: number
+    expirationAt: number,
+    lastIndexerSign: string,
+    lastConsumerSign: string,
   ): Promise<Channel> {
     const channel = this.channelRepo.create({
       id,
@@ -40,6 +42,8 @@ export class PaygService {
       consumer,
       balance,
       expirationAt,
+      lastIndexerSign,
+      lastConsumerSign,
       status: 0,
       currentCount: 0,
       onchainCount: 0,
@@ -47,11 +51,19 @@ export class PaygService {
       challengeAt: 0,
       lastFinal: false,
       lastPrice: 10, // TODO add price to project.
-      lastIndexerSign: '',
-      lastConsumerSign: '',
     });
 
     // TODO send to blockchain.
+    // let tx = await this.network.getSdk().stateChannel.open(
+    //   channelId,
+    //   indexer,
+    //   consumer,
+    //   balance,
+    //   expirationAt,
+    //   lastIndexerSign,
+    //   lastConsumerSign
+    // );
+    // console.log(tx);
 
     return this.channelRepo.save(channel);
   }

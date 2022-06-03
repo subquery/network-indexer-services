@@ -45,6 +45,10 @@ export class NetworkService implements OnApplicationBootstrap {
     this.projectRepo = connection.getRepository(Project);
   }
 
+  getSdk() {
+    return this.sdk;
+  }
+
   onApplicationBootstrap() {
     this.periodicUpdateNetwrok();
   }

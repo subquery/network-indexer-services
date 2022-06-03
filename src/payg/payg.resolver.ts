@@ -29,8 +29,18 @@ export class PaygResolver {
     @Args('consumer') consumer: string,
     @Args('balance') balance: number,
     @Args('expiration') expiration: number,
+    @Args('lastIndexerSign') lastIndexerSign: string,
+    @Args('lastConsumerSign') lastConsumerSign: string,
   ) {
-    return this.paygService.open(id, indexer, consumer, balance, expiration);
+    return this.paygService.open(
+      id,
+      indexer,
+      consumer,
+      balance,
+      expiration,
+      lastIndexerSign,
+      lastConsumerSign
+    );
   }
 
   @Mutation(() => [QueryType])
