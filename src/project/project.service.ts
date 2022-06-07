@@ -26,6 +26,7 @@ import { IndexingStatus } from 'src/services/types';
 import { DockerService } from 'src/services/docker.service';
 import { SubscriptionService } from 'src/services/subscription.service';
 import { MetricsService } from 'src/services/metrics.service';
+import { DB } from 'src/db/db.module';
 
 import { LogType, Project } from './project.model';
 
@@ -38,6 +39,7 @@ export class ProjectService {
     private docker: DockerService,
     private metrics: MetricsService,
     private config: Config,
+    private db: DB,
   ) {
     this.getLatestPort().then((port) => {
       this.port = port;
@@ -97,13 +99,14 @@ export class ProjectService {
     nodeVersion: string,
     queryVersion: string,
     poiEnabled: boolean,
+    forceEnabled: boolean,
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
 
-    const isDBExist = await this.docker.checkDBExist(dbName(id));
+    const isDBExist = await this.db.checkDBExist(dbName(id));
     const containers = await this.docker.ps(projectContainers(id));
     const isConfigChanged = projectConfigChanged(project, {
       networkEndpoint,
@@ -111,6 +114,7 @@ export class ProjectService {
       nodeVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     });
 
     if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
@@ -125,6 +129,7 @@ export class ProjectService {
       nodeVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     );
 
     return startedProject;
@@ -137,6 +142,7 @@ export class ProjectService {
     nodeVersion: string,
     queryVersion: string,
     poiEnabled: boolean,
+    forceEnabled: boolean,
   ) {
     let project = await this.getProject(id);
     const projectID = projectId(id);
@@ -158,7 +164,7 @@ export class ProjectService {
     };
 
     try {
-      await this.docker.createDB(`db_${projectID}`);
+      await this.db.createDB(`db_${projectID}`);
       generateDockerComposeFile(item);
       await this.docker.up(item.deploymentID);
     } catch (e) {
@@ -175,6 +181,7 @@ export class ProjectService {
       nodeVersion: nodeImageVersion,
       queryVersion,
       poiEnabled,
+      forceEnabled,
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
@@ -206,7 +213,7 @@ export class ProjectService {
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
-    await this.docker.dropDB(`db_${projectID}`);
+    await this.db.dropDB(`db_${projectID}`);
 
     const mmrFile = getMmrFile(id);
     await this.docker.deleteFile(mmrFile);

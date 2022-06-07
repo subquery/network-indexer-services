@@ -10,10 +10,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
+
 import { ServicesModule } from './services/services.module'
 import { AccountModule } from './account/account.module';
 import { ProjectModule } from './project/project.module';
 import { PaygModule } from './payg/payg.module';
+import { DBModule } from './db/db.module';
 
 @Module({
   imports: [
@@ -38,11 +40,12 @@ import { PaygModule } from './payg/payg.module';
     ProjectModule,
     AccountModule,
     PaygModule,
+    ConfigureModule.register(),
+    DBModule.register(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),
-    ConfigureModule.register(),
   ],
   controllers: [AdminController],
 })

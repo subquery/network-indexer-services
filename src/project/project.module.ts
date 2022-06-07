@@ -5,14 +5,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ServicesModule } from 'src/services/services.module';
+import { DBModule } from 'src/db/db.module';
 
 import { ProjectService } from './project.service';
 import { ProjectResolver } from './project.resolver';
 import { Project } from './project.model';
 
 @Module({
-  imports: [ServicesModule, TypeOrmModule.forFeature([Project])],
-  providers: [ProjectService,ProjectResolver],
+  imports: [ServicesModule, DBModule, TypeOrmModule.forFeature([Project])],
+  providers: [ProjectService, ProjectResolver],
   exports: [ProjectService],
 })
 export class ProjectModule { }

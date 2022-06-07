@@ -76,39 +76,6 @@ export class DockerService {
     return this.execute(`docker logs -n 30 ${container}`);
   }
 
-  async checkDBExist(name: string): Promise<boolean> {
-    try {
-      const result = await this.execute(
-        `docker exec -i ${this.dbDocker} psql -U postgres  -l | grep '${name}'`,
-      );
-      return !!result;
-    } catch {
-      return false;
-    }
-  }
-
-  async createDB(name: string): Promise<string> {
-    const isDBExist = await this.checkDBExist(name);
-    if (isDBExist) {
-      getLogger('docker').info(`db: ${name} already exist`);
-      return;
-    }
-
-    getLogger('docker').info(`create new db: ${name}`);
-    return this.execute(`docker exec -i ${this.dbDocker} psql -U postgres -c "create database ${name}"`);
-  }
-
-  async dropDB(name: string): Promise<string> {
-    const isDBExist = await this.checkDBExist(name);
-    if (!isDBExist) {
-      getLogger('docker').info(`db: ${name} is not exist`);
-      return;
-    }
-
-    getLogger('docker').info(`drop db: ${name}`);
-    return this.execute(`docker exec -i ${this.dbDocker} psql -U postgres -c "drop database ${name}"`);
-  }
-
   async deleteFile(path: string) {
     try {
       await this.execute(`rm -rf ${path}`);

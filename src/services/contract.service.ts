@@ -3,16 +3,16 @@
 
 import { Injectable } from '@nestjs/common';
 import { bufferToHex, isValidPrivate, privateToAddress, toBuffer } from 'ethereumjs-util';
-import { Wallet, ethers } from 'ethers';
+import { Wallet } from 'ethers';
 import { isEmpty } from 'lodash';
-import { JsonRpcProvider } from '@ethersproject/providers';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK } from '@subql/contract-sdk';
+import { EvmRpcProvider } from '@acala-network/eth-providers';
 
 import { AccountService } from 'src/account/account.service';
-import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
-import { decrypt } from 'src/utils/encrypt';
 import { Config } from 'src/configure/configure.module';
+import { chainIds, cidToBytes32, initContractSDK, substrateUrl } from 'src/utils/contractSDK';
+import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
@@ -20,16 +20,15 @@ import { DeploymentStatus, IndexingStatus } from './types';
 @Injectable()
 export class ContractService {
   private wallet: Wallet;
-  private provider: JsonRpcProvider;
+  private provider: EvmRpcProvider;
   private chainID: number;
   private sdk: ContractSDK;
   private emptyDeploymentStatus;
   private existentialBalance: number;
 
   constructor(private accountService: AccountService, private config: Config) {
-    const ws = this.config.wsEndpoint;
     this.chainID = chainIds[this.config.network];
-    this.provider = new ethers.providers.StaticJsonRpcProvider(ws, this.chainID);
+    this.provider = EvmRpcProvider.from(substrateUrl);
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = 0.1;
   }

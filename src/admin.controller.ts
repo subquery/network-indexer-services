@@ -14,7 +14,7 @@ export class AdminController {
       NETWORK: `${argv('network')}`, // local | mainnet | testnet
       COORDINATOR_SERVICE_PORT: argv('port'),
       IPFS_GATEWAY: argv('ipfs'),
-      REGISTRY_PROJECT: 'https://api.subquery.network/sq/subquery/subquery-network-query-registry',
+      REGISTRY_PROJECT: 'https://api.subquery.network/sq/subquery/subquery-network-subql-project',
     };
 
     return `window.env = ${JSON.stringify(config)};`;

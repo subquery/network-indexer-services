@@ -58,4 +58,4 @@ services:
 networks:
   default:
     external:
-      name: cooridnator-service
+      name: coordinator-service
