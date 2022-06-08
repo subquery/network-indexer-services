@@ -40,7 +40,7 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^1.0.0",
-    "@subql/contract-sdk": "0.6.1-2",
+    "@subql/contract-sdk": "0.6.1-7",
     "@subql/indexer-admin": "0.1.1-9",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",

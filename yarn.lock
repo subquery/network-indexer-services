@@ -3481,6 +3481,13 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
+"@subql/contract-sdk@0.6.1-7":
+  version "0.6.1-7"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.6.1-7.tgz#97543128abd84d7c0b397e792b54c0d055bf9412"
+  integrity sha512-72zOsW4vDnYzb3GEdHG1t4xccZFYvgLN1hwIrN4qQtN1WmHnn69SaJ1x9S/bx4rNmbYup8r/NzitvplvXulhPA==
+  dependencies:
+    "@openzeppelin/contracts-upgradeable" "^4.5.2"
+
 "@subql/indexer-admin@0.1.1-9":
   version "0.1.1-9"
   resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-9.tgz#b9d1374ecdaa1fe7cb080c778f6bc44afaf291a6"
