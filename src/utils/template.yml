@@ -1,0 +1,61 @@
+version: "3"
+
+services:
+  node_{{projectID}}:
+    image: onfinality/subql-node:{{nodeVersion}}
+    container_name: node_{{projectID}}
+    restart: always
+    environment:
+      DB_USER: {{postgres.user}}
+      DB_PASS: {{postgres.pass}}
+      DB_DATABASE: db_{{projectID}}
+      DB_HOST: {{postgres.host}}
+      DB_PORT: {{postgres.port}}
+    volumes:
+      - /var/tmp/composeFiles/{{deploymentID}}:/var/tmp/composeFiles/{{deploymentID}}
+    command:
+      - -f=ipfs://{{deploymentID}}
+      - -d={{dictionary}}
+      - --ipfs=https://ipfs.subquery.network/ipfs/api/v0
+      - --network-endpoint={{networkEndpoint}}
+      - --db-schema=app_{{deploymentID}}
+      - --port={{servicePort}}
+      - --proof-of-index={{poiEnabled}}
+      - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://node_{{projectID}}:{{servicePort}}/ready"
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 100
+
+  query_{{projectID}}:
+    image: onfinality/subql-query:{{queryVersion}}
+    container_name: query_{{projectID}}
+    ports:
+      - {{servicePort}}:{{servicePort}}
+    depends_on:
+      "node_{{projectID}}":
+        condition: service_healthy
+    restart: always
+    environment:
+      DB_USER: {{postgres.user}}
+      DB_PASS: {{postgres.pass}}
+      DB_DATABASE: db_{{projectID}}
+      DB_HOST: {{postgres.host}}
+      DB_PORT: {{postgres.port}}
+    command:
+      - --name=app_{{deploymentID}}
+      - --playground
+      - --indexer=http://node_{{projectID}}:{{servicePort}}
+      - --port={{servicePort}}
+
+networks:
+  default:
+    external:
+      name: coordinator-service
