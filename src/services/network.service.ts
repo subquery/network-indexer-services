@@ -171,11 +171,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const indexingProjects = await this.getIndexingProjects();
     if (isEmpty(indexingProjects)) return [];
 
-    return indexingProjects.map(
-      (project) =>
-        () =>
-          this.reportIndexingService(project),
-    );
+    return indexingProjects.map((project) => () => this.reportIndexingService(project));
   }
 
   collectAndDistributeRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber) {

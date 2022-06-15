@@ -17,6 +17,8 @@ import { getLogger } from 'src/utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
 
+// TODO: move contract service to a separate moduel
+
 @Injectable()
 export class ContractService {
   private wallet: Wallet;
@@ -47,16 +49,40 @@ export class ContractService {
     }
   }
 
-  async getBalance() {
-    const balance = await this.wallet.getBalance();
-    return Number(formatUnits(balance, 18));
-  }
-
   async hasSufficientBalance() {
     try {
-      const balance = await this.getBalance();
-      return balance > this.existentialBalance;
+      const balance = await this.wallet.getBalance();
+      const value = Number(formatUnits(balance, 18));
+      return value > this.existentialBalance;
     } catch {
+      return false;
+    }
+  }
+
+  async isEmpytAccount(account: string) {
+    try {
+      const balance = await this.provider.getBalance(account);
+      // TODO: should comparing with a small amount other than 0
+      return balance.eq(0);
+    } catch {
+      return false;
+    }
+  }
+
+  async withdrawAll(): Promise<boolean> {
+    try {
+      const indexer = await this.accountService.getIndexer();
+      const gasPrice = await this.provider.getGasPrice();
+      const txFee = gasPrice.mul(21000);
+      const balance = await this.provider.getBalance(this.wallet.address);
+      const value = balance.sub(txFee);
+      const res = await this.wallet.sendTransaction({ from: this.wallet.address, to: indexer, value });
+      await res.wait(2);
+      getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
+
+      return true;
+    } catch (e) {
+      getLogger('contract').info(`Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
@@ -107,8 +133,10 @@ export class ContractService {
       try {
         const controllerAddress = this.accountService.privateToAdress(controllerKey);
         if (controllerAddress !== controller) {
-          getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
-          await this.accountService.deleteAccount(id);
+          if (await this.isEmpytAccount(controllerAddress)) {
+            getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
+            await this.accountService.deleteAccount(id);
+          }
           return;
         }
 

@@ -11,6 +11,7 @@ import { DockerService } from './docker.service';
 import { MetricsService } from './metrics.service';
 import { NetworkService } from './network.service';
 import { QueryService } from './query.service';
+import { ServiceResolver } from './service.resolver';
 import { SubscriptionService } from './subscription.service';
 
 @Module({
@@ -23,6 +24,7 @@ import { SubscriptionService } from './subscription.service';
     NetworkService,
     QueryService,
     SubscriptionService,
+    ServiceResolver,
   ],
   exports: [
     ContractService,
