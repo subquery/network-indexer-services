@@ -28,7 +28,6 @@ export class DB {
     const query = `SELECT * FROM pg_database WHERE lower(datname) = lower('${name}');`;
     try {
       const r = await this.dbClient.query(query);
-      console.log('check db exit:', r.rowCount, r.rows);
       return r.rowCount > 0;
     } catch {
       return false;
@@ -44,8 +43,7 @@ export class DB {
 
     getLogger('docker').info(`create new db: ${name}`);
     const query = `CREATE DATABASE ${name}`;
-    const r = await this.dbClient.query(query);
-    console.log('create db result:', r);
+    await this.dbClient.query(query);
   }
 
   public async dropDB(name: string) {

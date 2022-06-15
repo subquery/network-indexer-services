@@ -18,10 +18,7 @@ import { ServiceStatus, MetaData, Poi, PoiItem } from './types';
 export class QueryService {
   private emptyPoi: Poi;
 
-  constructor(
-    private docker: DockerService,
-    private contract: ContractService,
-  ) {
+  constructor(private docker: DockerService, private contract: ContractService) {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
 
