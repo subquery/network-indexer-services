@@ -24,9 +24,9 @@ export class AccountResolver {
     return this.accountService.getMetadata();
   }
 
-  @Mutation(() => AccountType)
-  updateController(@Args('controller') controller: string) {
-    return this.accountService.addController(controller);
+  @Mutation(() => String)
+  updateController() {
+    return this.accountService.addController();
   }
 
   @Mutation(() => String)

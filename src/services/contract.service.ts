@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { bufferToHex, isValidPrivate, privateToAddress, toBuffer } from 'ethereumjs-util';
+import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { Wallet } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
@@ -65,10 +65,6 @@ export class ContractService {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
   }
 
-  privateToAdress(key: string) {
-    return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
-  }
-
   async indexerToController(indexer: string) {
     const controller = await this.sdk.indexerRegistry.indexerToController(indexer);
     return controller ? controller.toLowerCase() : '';
@@ -109,7 +105,7 @@ export class ContractService {
     const controller = await this.indexerToController(indexer);
     validAccounts.forEach(async ({ id, controllerKey }) => {
       try {
-        const controllerAddress = this.privateToAdress(controllerKey);
+        const controllerAddress = this.accountService.privateToAdress(controllerKey);
         if (controllerAddress !== controller) {
           getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
           await this.accountService.deleteAccount(id);

@@ -3,7 +3,11 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { v4 as uuid } from 'uuid';
+import crypto from 'crypto';
+import { Wallet } from 'ethers';
+
 import { encrypt } from '../utils/encrypt';
 import { DeleteResult, Repository } from 'typeorm';
 import { Account } from './account.model';
@@ -14,7 +18,16 @@ import { Config } from '../configure/configure.module';
 export class AccountService {
   private indexer: string;
 
-  constructor(@InjectRepository(Account) private accountRepo: Repository<Account>, private config: Config) { }
+  constructor(@InjectRepository(Account) private accountRepo: Repository<Account>, private config: Config) {}
+
+  privateToAdress(key: string) {
+    return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
+  }
+
+  generateControllerWallet(): Wallet {
+    const pk = `0x${crypto.randomBytes(32).toString('hex')}`;
+    return new Wallet(pk);
+  }
 
   addIndexer(indexer: string): Promise<Account> {
     if (indexer === this.indexer) {
@@ -31,11 +44,11 @@ export class AccountService {
     return this.accountRepo.save(account);
   }
 
-  async getMetadata(): Promise<{ indexer: string; controller: string, network: string; wsEndpoint: string }> {
+  async getMetadata(): Promise<{ indexer: string; controller: string; network: string; wsEndpoint: string }> {
     const accounts = await this.getAccounts();
     let account;
     if (!isEmpty(accounts)) {
-      account = accounts[accounts.length-1];
+      account = accounts[accounts.length - 1];
     }
     const indexer = account?.indexer || '';
     const controller = account?.controller || '';
@@ -50,7 +63,7 @@ export class AccountService {
       where: { controller: '' },
     });
     if (isEmpty(accounts)) return undefined;
-    return accounts[accounts.length-1];
+    return accounts[accounts.length - 1];
   }
 
   async getIndexer(): Promise<string> {
@@ -59,8 +72,9 @@ export class AccountService {
     return account?.indexer || '';
   }
 
-  async addController(controller: string): Promise<Account> {
-    const encryptedController = encrypt(controller);
+  async addController(): Promise<string> {
+    const controller = this.generateControllerWallet();
+    const encryptedController = encrypt(controller.privateKey);
     const indexer = await this.getIndexer();
     const account = this.accountRepo.create({
       id: uuid(),
@@ -68,7 +82,8 @@ export class AccountService {
       controller: encryptedController,
     });
 
-    return this.accountRepo.save(account);
+    await this.accountRepo.save(account);
+    return controller.address;
   }
 
   async getAccounts(): Promise<Account[]> {

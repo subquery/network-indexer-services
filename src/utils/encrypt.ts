@@ -22,10 +22,7 @@ export function decrypt(value: string, key = secretKey): string {
   if (isEmpty(value)) return value;
   const hash = JSON.parse(value);
   const decipher = createDecipheriv(algorithm, key, Buffer.from(hash.iv, 'hex'));
-  const decrpyted = Buffer.concat([
-    decipher.update(Buffer.from(hash.content, 'hex')),
-    decipher.final(),
-  ]);
+  const decrpyted = Buffer.concat([decipher.update(Buffer.from(hash.content, 'hex')), decipher.final()]);
 
   return decrpyted.toString();
 }
