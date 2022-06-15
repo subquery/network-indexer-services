@@ -4,10 +4,12 @@ WORKDIR /app
 
 COPY . .
 
+RUN apk add --no-cache tini git curl docker-cli docker-compose grep
+RUN apk add --no-cache python3 g++ make
+
 RUN npm install -g @nestjs/cli
-RUN npm install
+RUN npm install --production
 RUN npm run build
 RUN npm cache clean --force
 
-RUN apk add --no-cache tini git curl docker-cli docker-compose grep
 ENTRYPOINT ["/sbin/tini", "--", "/app/bin/run"]
