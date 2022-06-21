@@ -90,6 +90,12 @@ export class AccountService {
     return this.accountRepo.find();
   }
 
+  async getAccount(id: string): Promise<Account | undefined> {
+    const accounts = await this.accountRepo.find({ where: { id } });
+    if (isEmpty(accounts)) return undefined;
+    return accounts[accounts.length - 1];
+  }
+
   async getControllers(): Promise<ControllerType[]> {
     const accounts = await this.getAccounts();
     const controllers = accounts.filter((a) => !!a.controller);
@@ -101,10 +107,10 @@ export class AccountService {
   }
 
   async deleteAccount(id: string): Promise<Account> {
-    const accounts = await this.accountRepo.find({ where: { id } });
+    const account = await this.getAccount(id);
     await this.accountRepo.delete(id);
 
-    return accounts[accounts.length - 1];
+    return account;
   }
 
   async removeAccounts(): Promise<string> {

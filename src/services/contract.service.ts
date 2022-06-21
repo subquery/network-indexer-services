@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
-import { Wallet } from 'ethers';
+import { Wallet, utils } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK } from '@subql/contract-sdk';
@@ -69,20 +69,39 @@ export class ContractService {
     }
   }
 
-  async withdrawAll(): Promise<boolean> {
+  async withdrawAll(id: string): Promise<boolean> {
     try {
       const indexer = await this.accountService.getIndexer();
       const gasPrice = await this.provider.getGasPrice();
       const txFee = gasPrice.mul(21000);
-      const balance = await this.provider.getBalance(this.wallet.address);
+
+      const account = await this.accountService.getAccount(id);
+      if (!account) {
+        getLogger('contract').warn(`Account: ${id} not exist`);
+        return;
+      }
+
+      const pk = decrypt(account.controller);
+      const wallet = new Wallet(toBuffer(pk), this.provider);
+
+      const balance = await this.provider.getBalance(wallet.address);
+      if (balance.lt(txFee)) {
+        getLogger('contract').warn(
+          `Insufficient balance ${utils.formatEther(balance)} to pay the transaction fee: ${utils.formatEther(
+            txFee,
+          )}`,
+        );
+        return false;
+      }
+
       const value = balance.sub(txFee);
-      const res = await this.wallet.sendTransaction({ from: this.wallet.address, to: indexer, value });
+      const res = await wallet.sendTransaction({ from: this.wallet.address, to: indexer, value });
       await res.wait(2);
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
 
       return true;
     } catch (e) {
-      getLogger('contract').info(`Fail to transfer all funds from controller to indexer`);
+      getLogger('contract').warn(`Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
@@ -130,17 +149,8 @@ export class ContractService {
     }
 
     const controller = await this.indexerToController(indexer);
-    validAccounts.forEach(async ({ id, controllerKey }) => {
+    validAccounts.forEach(async ({ controllerKey }) => {
       try {
-        // const controllerAddress = this.accountService.privateToAdress(controllerKey);
-        // if (controllerAddress !== controller) {
-        //   if (await this.isEmpytAccount(controllerAddress)) {
-        //     getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
-        //     await this.accountService.deleteAccount(id);
-        //   }
-        //   return;
-        // }
-
         if (this.wallet.address.toLowerCase() !== controller) {
           await this.createSDK(controllerKey);
         }
