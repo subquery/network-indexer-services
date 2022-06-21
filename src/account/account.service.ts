@@ -8,9 +8,9 @@ import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 import { Wallet } from 'ethers';
 
-import { encrypt } from '../utils/encrypt';
+import { decrypt, encrypt } from '../utils/encrypt';
 import { DeleteResult, Repository } from 'typeorm';
-import { Account } from './account.model';
+import { Account, ControllerType } from './account.model';
 import { isEmpty } from 'lodash';
 import { Config } from '../configure/configure.module';
 
@@ -90,8 +90,21 @@ export class AccountService {
     return this.accountRepo.find();
   }
 
-  deleteAccount(id: string): Promise<DeleteResult> {
-    return this.accountRepo.delete(id);
+  async getControllers(): Promise<ControllerType[]> {
+    const accounts = await this.getAccounts();
+    const controllers = accounts.filter((a) => !!a.controller);
+
+    return controllers.map((c) => ({
+      address: this.privateToAdress(decrypt(c.controller)),
+      id: c.id,
+    }));
+  }
+
+  async deleteAccount(id: string): Promise<Account> {
+    const accounts = await this.accountRepo.find({ where: { id } });
+    await this.accountRepo.delete(id);
+
+    return accounts[accounts.length - 1];
   }
 
   async removeAccounts(): Promise<string> {

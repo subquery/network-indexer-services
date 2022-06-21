@@ -113,6 +113,7 @@ export class ContractService {
       if (this.wallet.address.toLowerCase() === controller) return;
     }
 
+    // TODO: move to account repo
     const validAccounts = accounts
       .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
       .filter(({ controllerKey }) => this.isValidPrivateKey(controllerKey));
@@ -131,14 +132,14 @@ export class ContractService {
     const controller = await this.indexerToController(indexer);
     validAccounts.forEach(async ({ id, controllerKey }) => {
       try {
-        const controllerAddress = this.accountService.privateToAdress(controllerKey);
-        if (controllerAddress !== controller) {
-          if (await this.isEmpytAccount(controllerAddress)) {
-            getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
-            await this.accountService.deleteAccount(id);
-          }
-          return;
-        }
+        // const controllerAddress = this.accountService.privateToAdress(controllerKey);
+        // if (controllerAddress !== controller) {
+        //   if (await this.isEmpytAccount(controllerAddress)) {
+        //     getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
+        //     await this.accountService.deleteAccount(id);
+        //   }
+        //   return;
+        // }
 
         if (this.wallet.address.toLowerCase() !== controller) {
           await this.createSDK(controllerKey);

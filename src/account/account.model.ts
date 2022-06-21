@@ -28,6 +28,15 @@ export class AccountType {
   controller: string;
 }
 
+@ObjectType('Controller')
+export class ControllerType {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  address: string;
+}
+
 @ObjectType('AccountMetadata')
 export class AccountMetaDataType {
   @Field(() => ID)
