@@ -11,7 +11,8 @@ import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
 
-import { ServicesModule } from './services/services.module'
+import { ServicesModule } from './services/services.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { AccountModule } from './account/account.module';
 import { ProjectModule } from './project/project.module';
 import { PaygModule } from './payg/payg.module';
@@ -39,6 +40,7 @@ import { DBModule } from './db/db.module';
     ServicesModule,
     ProjectModule,
     AccountModule,
+    MetricsModule,
     PaygModule,
     ConfigureModule.register(),
     DBModule.register(),

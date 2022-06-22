@@ -25,7 +25,6 @@ import { projectConfigChanged } from 'src/utils/project';
 import { IndexingStatus } from 'src/services/types';
 import { DockerService } from 'src/services/docker.service';
 import { SubscriptionService } from 'src/services/subscription.service';
-import { MetricsService } from 'src/services/metrics.service';
 import { DB } from 'src/db/db.module';
 
 import { LogType, Project } from './project.model';
@@ -37,7 +36,6 @@ export class ProjectService {
     @InjectRepository(Project) private projectRepo: Repository<Project>,
     private pubSub: SubscriptionService,
     private docker: DockerService,
-    private metrics: MetricsService,
     private config: Config,
     private db: DB,
   ) {
@@ -78,9 +76,6 @@ export class ProjectService {
       nodeEndpoint: '',
       queryEndpoint: '',
     });
-
-    // TODO: better place to trigger this
-    this.metrics.pushServiceInfo();
 
     return this.projectRepo.save(project);
   }

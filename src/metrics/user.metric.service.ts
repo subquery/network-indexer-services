@@ -6,16 +6,16 @@ import client from 'prom-client';
 
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
+import { DockerService } from 'src/services/docker.service';
 import { debugLogger } from 'src/utils/logger';
 
 import { PUSHGATEWAY_DEV, PUSHGATEWAY_PROD } from './constant';
-import { DockerService } from './docker.service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version } = require('../../package.json');
 
 @Injectable()
-export class MetricsService implements OnModuleInit {
+export class UserMetricsService implements OnModuleInit {
   private gateway: client.Pushgateway;
   private gauge: client.Gauge<string>;
   private prefix: string;
