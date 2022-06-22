@@ -32,7 +32,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'https://sqtn.api.onfinality.io/public',
+      default: 'https://tc7-eth.aca-dev.network',
       group: Groups.coordinator,
     },
     ipfs: {
