@@ -94,14 +94,15 @@ export class ContractService {
         return false;
       }
 
+      // FIXME: sned tx failed with `to: {}`
       const value = balance.sub(txFee);
-      const res = await wallet.sendTransaction({ from: this.wallet.address, to: indexer, value });
-      await res.wait(2);
+      const res = await wallet.sendTransaction({ to: indexer, value });
+      await res.wait(1);
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
 
       return true;
     } catch (e) {
-      getLogger('contract').warn(`Fail to transfer all funds from controller to indexer`);
+      getLogger('contract').warn(`Fail to transfer all funds from controller to indexer ${e}`);
       return false;
     }
   }
