@@ -72,9 +72,6 @@ export class ContractService {
   async withdrawAll(id: string): Promise<boolean> {
     try {
       const indexer = await this.accountService.getIndexer();
-      const gasPrice = await this.provider.getGasPrice();
-      const txFee = gasPrice.mul(21000);
-
       const account = await this.accountService.getAccount(id);
       if (!account) {
         getLogger('contract').warn(`Account: ${id} not exist`);
@@ -83,19 +80,9 @@ export class ContractService {
 
       const pk = decrypt(account.controller);
       const wallet = new Wallet(toBuffer(pk), this.provider);
-
       const balance = await this.provider.getBalance(wallet.address);
-      if (balance.lt(txFee)) {
-        getLogger('contract').warn(
-          `Insufficient balance ${utils.formatEther(balance)} to pay the transaction fee: ${utils.formatEther(
-            txFee,
-          )}`,
-        );
-        return false;
-      }
 
-      // FIXME: sned tx failed with `to: {}`
-      const value = balance.sub(txFee);
+      const value = balance.sub(utils.parseEther('0.1'));
       const res = await wallet.sendTransaction({ to: indexer, value });
       await res.wait(1);
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
