@@ -28,8 +28,7 @@ export class ProjectResolver {
   @Query(() => MetadataType)
   async queryMetadata(@Args('id') id: string) {
     const project = await this.projectService.getProject(id);
-    const { queryEndpoint } = project;
-    return this.queryService.getQueryMetaData(id, queryEndpoint);
+    return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
   }
 
   @Query(() => ProjectType)

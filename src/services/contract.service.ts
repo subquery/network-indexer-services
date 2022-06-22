@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { bufferToHex, isValidPrivate, privateToAddress, toBuffer } from 'ethereumjs-util';
-import { Wallet } from 'ethers';
+import { isValidPrivate, toBuffer } from 'ethereumjs-util';
+import { Wallet, utils } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK } from '@subql/contract-sdk';
@@ -16,6 +16,8 @@ import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
+
+// TODO: move contract service to a separate moduel
 
 @Injectable()
 export class ContractService {
@@ -47,26 +49,66 @@ export class ContractService {
     }
   }
 
-  async getBalance() {
-    const balance = await this.wallet.getBalance();
-    return Number(formatUnits(balance, 18));
-  }
-
   async hasSufficientBalance() {
     try {
-      const balance = await this.getBalance();
-      return balance > this.existentialBalance;
+      const balance = await this.wallet.getBalance();
+      const value = Number(formatUnits(balance, 18));
+      return value > this.existentialBalance;
     } catch {
+      return false;
+    }
+  }
+
+  async isEmpytAccount(account: string) {
+    try {
+      const balance = await this.provider.getBalance(account);
+      // TODO: should comparing with a small amount other than 0
+      return balance.eq(0);
+    } catch {
+      return false;
+    }
+  }
+
+  async withdrawAll(id: string): Promise<boolean> {
+    try {
+      const indexer = await this.accountService.getIndexer();
+      const gasPrice = await this.provider.getGasPrice();
+      const txFee = gasPrice.mul(21000);
+
+      const account = await this.accountService.getAccount(id);
+      if (!account) {
+        getLogger('contract').warn(`Account: ${id} not exist`);
+        return;
+      }
+
+      const pk = decrypt(account.controller);
+      const wallet = new Wallet(toBuffer(pk), this.provider);
+
+      const balance = await this.provider.getBalance(wallet.address);
+      if (balance.lt(txFee)) {
+        getLogger('contract').warn(
+          `Insufficient balance ${utils.formatEther(balance)} to pay the transaction fee: ${utils.formatEther(
+            txFee,
+          )}`,
+        );
+        return false;
+      }
+
+      // FIXME: sned tx failed with `to: {}`
+      const value = balance.sub(txFee);
+      const res = await wallet.sendTransaction({ to: indexer, value });
+      await res.wait(1);
+      getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
+
+      return true;
+    } catch (e) {
+      getLogger('contract').warn(`Fail to transfer all funds from controller to indexer ${e}`);
       return false;
     }
   }
 
   isValidPrivateKey(key: string) {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
-  }
-
-  privateToAdress(key: string) {
-    return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
   }
 
   async indexerToController(indexer: string) {
@@ -91,6 +133,7 @@ export class ContractService {
       if (this.wallet.address.toLowerCase() === controller) return;
     }
 
+    // TODO: move to account repo
     const validAccounts = accounts
       .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
       .filter(({ controllerKey }) => this.isValidPrivateKey(controllerKey));
@@ -107,15 +150,8 @@ export class ContractService {
     }
 
     const controller = await this.indexerToController(indexer);
-    validAccounts.forEach(async ({ id, controllerKey }) => {
+    validAccounts.forEach(async ({ controllerKey }) => {
       try {
-        const controllerAddress = this.privateToAdress(controllerKey);
-        if (controllerAddress !== controller) {
-          getLogger('contract').info(`remove invalid controller account: ${controllerAddress}`);
-          await this.accountService.deleteAccount(id);
-          return;
-        }
-
         if (this.wallet.address.toLowerCase() !== controller) {
           await this.createSDK(controllerKey);
         }

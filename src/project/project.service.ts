@@ -145,6 +145,8 @@ export class ProjectService {
     forceEnabled: boolean,
   ) {
     let project = await this.getProject(id);
+    if (!project) await this.addProject(id);
+
     const projectID = projectId(id);
     const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
     const nodeImageVersion = nodeVersion ?? 'v0.31.1';
@@ -210,6 +212,9 @@ export class ProjectService {
   async removeProject(id: string): Promise<Project[]> {
     getLogger('project').info(`remove project: ${id}`);
 
+    const project = await this.getProject(id);
+    if (!project) return [];
+
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
@@ -218,7 +223,6 @@ export class ProjectService {
     const mmrFile = getMmrFile(id);
     await this.docker.deleteFile(mmrFile);
 
-    const project = await this.getProject(id);
     return this.projectRepo.remove([project]);
   }
 
