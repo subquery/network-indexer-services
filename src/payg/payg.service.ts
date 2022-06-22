@@ -33,6 +33,7 @@ export class PaygService {
     consumer: string,
     balance: number,
     expirationAt: number,
+    callback: string,
     lastIndexerSign: string,
     lastConsumerSign: string,
   ): Promise<Channel> {
@@ -60,6 +61,7 @@ export class PaygService {
       consumer,
       balance,
       expirationAt,
+      callback,
       lastIndexerSign,
       lastConsumerSign
     );
