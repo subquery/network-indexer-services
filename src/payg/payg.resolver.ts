@@ -29,8 +29,6 @@ export class PaygResolver {
     @Args('consumer') consumer: string,
     @Args('balance') balance: number,
     @Args('expiration') expiration: number,
-    @Args('deploymentId') deploymentId: string,
-    @Args('callback') callback: string,
     @Args('lastIndexerSign') lastIndexerSign: string,
     @Args('lastConsumerSign') lastConsumerSign: string,
   ) {
@@ -40,8 +38,6 @@ export class PaygResolver {
       consumer,
       balance,
       expiration,
-      deploymentId,
-      callback,
       lastIndexerSign,
       lastConsumerSign
     );
