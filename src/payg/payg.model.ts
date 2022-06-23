@@ -51,6 +51,9 @@ export class Channel {
   @Column()
   challengeAt: number;
 
+  @Column()
+  deploymentId: string;
+
   @Column({ default: false })
   lastFinal: boolean;
 
@@ -95,6 +98,9 @@ export class ChannelType {
 
   @Field()
   challengeAt: number;
+
+  @Field()
+  deploymentId: string;
 
   @Field()
   lastFinal: boolean;

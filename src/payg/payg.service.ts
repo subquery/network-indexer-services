@@ -33,6 +33,8 @@ export class PaygService {
     consumer: string,
     balance: number,
     expirationAt: number,
+    deploymentId: string,
+    callback: string,
     lastIndexerSign: string,
     lastConsumerSign: string,
   ): Promise<Channel> {
@@ -42,6 +44,7 @@ export class PaygService {
       consumer,
       balance,
       expirationAt,
+      deploymentId,
       lastIndexerSign,
       lastConsumerSign,
       status: 0,
@@ -50,7 +53,7 @@ export class PaygService {
       remoteCount: 0,
       challengeAt: 0,
       lastFinal: false,
-      lastPrice: 10, // TODO add price to project.
+      lastPrice: 10, // TODO add price to project with deployment id.
     });
 
     // send to blockchain.
@@ -60,6 +63,8 @@ export class PaygService {
       consumer,
       balance,
       expirationAt,
+      deploymentId,
+      callback,
       lastIndexerSign,
       lastConsumerSign
     );
