@@ -35,7 +35,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
-      - --ws-endpoint=https://sqtn.api.onfinality.io/public
+      - --ws-endpoint=https://tc7-eth.aca-dev.network
       - --postgres-host=postgres
       - --postgres-database=postgres
       - --postgres-port=5432

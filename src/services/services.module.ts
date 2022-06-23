@@ -8,7 +8,6 @@ import { AccountModule } from 'src/account/account.module';
 import { ContractService } from './contract.service';
 import { DockerRegistryService } from './docker.registry.service';
 import { DockerService } from './docker.service';
-import { MetricsService } from './metrics.service';
 import { NetworkService } from './network.service';
 import { QueryService } from './query.service';
 import { ServiceResolver } from './service.resolver';
@@ -20,7 +19,6 @@ import { SubscriptionService } from './subscription.service';
     ContractService,
     DockerRegistryService,
     DockerService,
-    MetricsService,
     NetworkService,
     QueryService,
     SubscriptionService,
@@ -30,10 +28,9 @@ import { SubscriptionService } from './subscription.service';
     ContractService,
     DockerRegistryService,
     DockerService,
-    MetricsService,
     NetworkService,
     QueryService,
-    SubscriptionService
+    SubscriptionService,
   ],
 })
 export class ServicesModule { }
