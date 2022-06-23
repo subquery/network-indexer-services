@@ -5,11 +5,9 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import client from 'prom-client';
 
 import { AccountService } from 'src/account/account.service';
-import { Config } from 'src/configure/configure.module';
 import { DockerService } from 'src/services/docker.service';
 import { debugLogger } from 'src/utils/logger';
-
-import { PUSHGATEWAY_DEV, PUSHGATEWAY_PROD } from './constant';
+import { getYargsOption } from 'src/yargs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version } = require('../../package.json');
@@ -22,16 +20,15 @@ export class UserMetricsService implements OnModuleInit {
 
   private interval = 1000 * 60 * 60 * 6;
 
-  constructor(
-    private docker: DockerService,
-    private accountService: AccountService,
-    private config: Config,
-  ) { }
+  constructor(private docker: DockerService, private accountService: AccountService) {}
 
   public onModuleInit() {
-    this.prefix = 'subquery_indexer';
+    const { argv } = getYargsOption();
+    const pushgatewayUrl = argv['pushgateway'];
+    if (!pushgatewayUrl) return;
 
-    this.gateway = new client.Pushgateway(this.pushgatewayUrl());
+    this.prefix = 'subquery_network';
+    this.gateway = new client.Pushgateway(pushgatewayUrl);
     this.gauge = new client.Gauge({
       name: `${this.prefix}_coordinator_info`,
       help: 'coordiantor information',
@@ -40,10 +37,6 @@ export class UserMetricsService implements OnModuleInit {
 
     this.pushServiceInfo();
     this.periodicPushServiceInfo();
-  }
-
-  private pushgatewayUrl() {
-    return this.config.dev ? PUSHGATEWAY_DEV : PUSHGATEWAY_PROD;
   }
 
   public async pushServiceInfo() {
@@ -59,7 +52,7 @@ export class UserMetricsService implements OnModuleInit {
         })
         .set(1);
 
-      await this.gateway.pushAdd({ jobName: `${this.prefix}_service`, groupings: { instance: indexer } });
+      await this.gateway.pushAdd({ jobName: `${this.prefix}_services`, groupings: { instance: indexer } });
     } catch {
       debugLogger('metrics', `failed to send service info ${version} ${proxyVersion} ${indexer}`);
     }

@@ -57,5 +57,4 @@ services:
 
 networks:
   default:
-    external:
-      name: coordinator-service
+    name: coordinator-service
