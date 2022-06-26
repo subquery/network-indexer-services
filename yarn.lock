@@ -3875,24 +3875,17 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.6.1-2":
-  version "0.6.1-2"
-  resolved "https://registry.npmjs.org/@subql/contract-sdk/-/contract-sdk-0.6.1-2.tgz"
-  integrity sha512-TBS0pb+HoXz4yLXClBD2a4x0HcOcbmpkc1ZcbAm0VMnWZQq6ov7WcZ/JecdZdsY7Xt8w7OKKINPKcckOPkHddg==
+"@subql/contract-sdk@0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.7.0.tgz#548dc641421b67852807b42225497a42c5fccb26"
+  integrity sha512-dRfvIF0pJNzco31Y1rFkG+NkU5yY/A52OKIPYJNJ8u3niWcS8lwwTfwOEZ1GOVHiBgbOLqEbyKPoUAr2QlB8uQ==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/contract-sdk@0.6.1-8":
-  version "0.6.1-8"
-  resolved "https://registry.npmjs.org/@subql/contract-sdk/-/contract-sdk-0.6.1-8.tgz"
-  integrity sha512-44naxQAo3JdYqR8fMwQYc15Mj/xyW3AYeDhEGFmT3P5N/QvP2whCeb2VYoMJePfKIm3Zm/6K1FrFezc3UHheOg==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-
-"@subql/indexer-admin@0.1.1-14":
-  version "0.1.1-14"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-14.tgz#cc921dbc488f7833d6d2b53d78dad7d62fa9f8f1"
-  integrity sha512-aO4Lr4ekZy95P+GIKBS3S3zYu71evADN2U490gPp+F3YVSiNo3cB5x1FTEFG31R1h1Tw+vXKS2/Vxy862OBXNg==
+"@subql/indexer-admin@0.1.1-15":
+  version "0.1.1-15"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-15.tgz#cf0d493e3e8c0691df009169174afa73df40c0e4"
+  integrity sha512-ou6tnQsrVOvpDeEzXBBy3TcBiWxNsTuFqJK3VROH6ChoR7FfJSJrclMl37AHtIUwl/iNhK/h9lU/PfUgY2JrFQ==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3901,8 +3894,8 @@
     "@patternfly/react-log-viewer" "^4.43.19"
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
-    "@subql/contract-sdk" "0.6.1-2"
-    "@subql/network-clients" "0.1.1-7"
+    "@subql/contract-sdk" "0.7.0"
+    "@subql/network-clients" "0.1.1-8"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3934,10 +3927,10 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.1.1-7":
-  version "0.1.1-7"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-7.tgz#3456e6849b070cc4f0ef4f4acf12601e067f60f8"
-  integrity sha512-XwV0k8dQ2bvHBLBBDGncizY7msf5gOvknB4MSz71RC6mLnThV4KPTJWTRtUQCcOCsNty8vYIo9CBdgOmrauAFw==
+"@subql/network-clients@0.1.1-8":
+  version "0.1.1-8"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-8.tgz#ff75104528fdf742f53c1f3a413997a43823e36b"
+  integrity sha512-tLWjIZpf7kFC7dBURt2qOXDN/3ZXC+rb4+otMznGBeb1UaKdPUwwROjGFQsCEa5wzmMiCMlfOBAxsWPwQx0Wuw==
   dependencies:
     axios "^0.27.2"
     buffer "^6.0.3"

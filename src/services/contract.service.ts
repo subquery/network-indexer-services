@@ -6,7 +6,8 @@ import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { Wallet, utils } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
-import { ContractSDK } from '@subql/contract-sdk';
+import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
+import { SQToken } from '@subql/contract-sdk/publish/testnet.json';
 import { EvmRpcProvider } from '@acala-network/eth-providers';
 
 import { AccountService } from 'src/account/account.service';
@@ -80,11 +81,19 @@ export class ContractService {
 
       const pk = decrypt(account.controller);
       const wallet = new Wallet(toBuffer(pk), this.provider);
-      const balance = await this.provider.getBalance(wallet.address);
 
+      // send ACA
+      const balance = await this.provider.getBalance(wallet.address);
       const value = balance.sub(utils.parseEther('0.1'));
       const res = await wallet.sendTransaction({ to: indexer, value });
       await res.wait(1);
+
+      // send SQT
+      const sqtToken = ERC20__factory.connect(SQToken.address, wallet);
+      const sqtBalance = await sqtToken.balanceOf(wallet.address);
+      const tx = await sqtToken.transfer(indexer, sqtBalance);
+      await tx.wait(1);
+
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
 
       return true;
