@@ -88,14 +88,14 @@ enum ChainTypes {
   polkadot = 'polkadot',
   kusama = 'kusama',
   avalanche = 'avalanche',
-  cosmos = 'cosmos',
+  juno = 'juno',
 }
 
 // TODO: use manifest -> datasource -> runtime to indentify chain type
 function getChainType(endpoint: string): NodeTypes {
   if (endpoint.includes(ChainTypes.avalanche)) {
     return NodeTypes.avalanche;
-  } else if (endpoint.includes(ChainTypes.cosmos)) {
+  } else if (endpoint.includes(ChainTypes.juno)) {
     return NodeTypes.cosmos;
   }
   return NodeTypes.substrate;
@@ -108,10 +108,10 @@ export function generateDockerComposeFile(data: TemplateType) {
   }
 
   try {
-    const chainType = getChainType(data.networkEndpoint);
+    const chainType = getChainType(data.networkEndpoint).toString();
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
-    fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ data, chainType }));
+    fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ ...data, chainType }));
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(`fail to generate new docker compose file for ${data.deploymentID}: ${e} `);
