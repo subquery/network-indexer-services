@@ -2,7 +2,7 @@ version: "3"
 
 services:
   node_{{projectID}}:
-    image: onfinality/subql-node:{{nodeVersion}}
+    image: onfinality/subql-{{chainType}}:{{nodeVersion}}
     container_name: node_{{projectID}}
     restart: always
     environment:
