@@ -33,7 +33,7 @@ export class ContractService {
     this.chainID = chainIds[this.config.network];
     this.provider = EvmRpcProvider.from(substrateUrl);
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
-    this.existentialBalance = 0.1;
+    this.existentialBalance = 0.5;
   }
 
   getSdk() {

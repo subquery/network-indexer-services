@@ -59,12 +59,6 @@ export function getYargsOption() {
       default: false,
       group: Groups.coordinator,
     },
-    pushgateway: {
-      type: 'string',
-      describe: 'Prometheus pushgateway url',
-      default: 'http://localhost:9091',
-      group: Groups.metrics,
-    },
     [PostgresKeys.host]: {
       type: 'string',
       describe: 'Postgres host',
