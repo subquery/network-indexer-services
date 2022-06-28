@@ -2,7 +2,7 @@ version: "3"
 
 services:
   node_{{projectID}}:
-    image: onfinality/subql-{{chainType}}:{{nodeVersion}}
+    image: onfinality/subql-{{nodeType}}:{{nodeVersion}}
     container_name: node_{{projectID}}
     restart: always
     environment:
@@ -22,6 +22,7 @@ services:
       - --port={{servicePort}}
       - --proof-of-index={{poiEnabled}}
       - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
+      - --disable-historical={{disableHistorical}}
     healthcheck:
       test:
         [
