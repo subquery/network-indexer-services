@@ -18,7 +18,7 @@ services:
       - -d={{dictionary}}
       - --ipfs=https://ipfs.subquery.network/ipfs/api/v0
       - --network-endpoint={{networkEndpoint}}
-      - --db-schema=app_{{deploymentID}}
+      - --db-schema={{dbSchema}}
       - --port={{servicePort}}
       - --proof-of-index={{poiEnabled}}
       - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr

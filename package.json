@@ -29,7 +29,7 @@
     "start:help": "yarn start:prod --help",
     "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'https://tc7-eth.aca-dev.network' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --debug --dev --port 8007",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
-    "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up"
+    "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up -d"
   },
   "dependencies": {
     "@acala-network/eth-providers": "^2.4.12",

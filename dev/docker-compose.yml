@@ -8,10 +8,8 @@ services:
       - 5432:5432
     volumes:
       - .data/postgres:/var/lib/postgresql/data
-      - ./init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
     environment:
-      POSTGRES_PASSWORD: pos_8_Tgres # replace with you own password
-      POSTGRES_USER: You_Db_uSer_NaMe # replace with you own db user
+      POSTGRES_PASSWORD: postgres
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -30,8 +28,6 @@ services:
       "postgres":
         condition: service_healthy
     restart: always
-    environment:
-      DOCKER_DB: coordinator_db
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock
@@ -39,9 +35,7 @@ services:
       - --network=testnet
       - --ws-endpoint=https://tc7-eth.aca-dev.network
       - --postgres-host=postgres
-      - --postgres-database=postgres
-      - --postgres-username=You_Db_uSer_NaMe # use the same user in the db config
-      - --postgres-password=pos_8_Tgres      # use the same password in the db config
+      - --postgres-database=postgres      # use the same password in the db config
       - --postgres-port=5432
       - --port=8000
       - --debug
