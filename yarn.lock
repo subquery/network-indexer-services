@@ -3882,10 +3882,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.1.1-19":
-  version "0.1.1-19"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-19.tgz#8bf587772ef099ab115d80124184edaaac641a31"
-  integrity sha512-GIgRYhOksWE8BWzJmDQYRYzqY9xaT6m36g8n7HrY0Ex9oMvv3BTstUXL/FVTnH8NrCzDZRLM/kUXrLtgg7Dgtg==
+"@subql/indexer-admin@0.1.1-20":
+  version "0.1.1-20"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.1.1-20.tgz#8fd478354264fadbd1cff1f190404c76e082545c"
+  integrity sha512-YZhBoRWxJPU6jVZ9mOkoqlWaeAUuRGA8R6CsPkCocgnOWyhJJIsKN6F1akeevCep4OMnQ86JeNZ1pdVJ+kTYnQ==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3895,7 +3895,7 @@
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
     "@subql/contract-sdk" "0.7.0"
-    "@subql/network-clients" "0.1.1-8"
+    "@subql/network-clients" "0.1.1-10"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3927,10 +3927,10 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.1.1-8":
-  version "0.1.1-8"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-8.tgz#ff75104528fdf742f53c1f3a413997a43823e36b"
-  integrity sha512-tLWjIZpf7kFC7dBURt2qOXDN/3ZXC+rb4+otMznGBeb1UaKdPUwwROjGFQsCEa5wzmMiCMlfOBAxsWPwQx0Wuw==
+"@subql/network-clients@0.1.1-10":
+  version "0.1.1-10"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-10.tgz#320c42dd5d3559d4c15d5ec0e08b613c595b29f3"
+  integrity sha512-WAwbhK1muL/cV4I2xQUIJYaWFH/37HJo/URUvH/Jn7M07zC3uS4VxtgkZszURVK+KnoK1QANCQzYxHU1etEHEA==
   dependencies:
     axios "^0.27.2"
     buffer "^6.0.3"
