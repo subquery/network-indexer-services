@@ -10,11 +10,6 @@ import { getComposeFilePath, getImageVersion, projectContainers, projectId } fro
 
 @Injectable()
 export class DockerService {
-  private dbDocker: string;
-  constructor() {
-    this.dbDocker = process.env.DOCKER_DB ?? 'coordinator_db';
-  }
-
   async up(fileName: string) {
     const filePath = getComposeFilePath(fileName);
     if (fs.existsSync(filePath)) {

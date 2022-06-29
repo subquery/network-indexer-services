@@ -17,6 +17,7 @@ export type TemplateType = {
   servicePort: number;
   poiEnabled: boolean;
   dictionary?: string;
+  dbSchema: string;
   postgres: Postgres;
 };
 
@@ -60,8 +61,8 @@ export function queryContainer(cid: string): string {
   return `query_${projectId(cid)}`;
 }
 
-export function dbName(cid: string): string {
-  return `db_${projectId(cid)}`;
+export function schemaName(cid: string): string {
+  return `schema_${projectId(cid)}`;
 }
 
 export function projectContainers(cid: string) {

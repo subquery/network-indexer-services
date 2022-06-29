@@ -8,7 +8,7 @@ services:
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
-      DB_DATABASE: db_{{projectID}}
+      DB_DATABASE: {{postgres.db}}
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
@@ -18,7 +18,7 @@ services:
       - -d={{dictionary}}
       - --ipfs=https://ipfs.subquery.network/ipfs/api/v0
       - --network-endpoint={{networkEndpoint}}
-      - --db-schema=app_{{deploymentID}}
+      - --db-schema={{dbSchema}}
       - --port={{servicePort}}
       - --proof-of-index={{poiEnabled}}
       - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
@@ -47,11 +47,11 @@ services:
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
-      DB_DATABASE: db_{{projectID}}
+      DB_DATABASE: {{postgres.db}}
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     command:
-      - --name=app_{{deploymentID}}
+      - --name={{dbSchema}}
       - --playground
       - --indexer=http://node_{{projectID}}:{{servicePort}}
       - --port={{servicePort}}

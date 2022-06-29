@@ -11,6 +11,7 @@ export type Postgres = {
   pass: string;
   host: string;
   port: number;
+  db: string;
 };
 
 export interface IConfig {
@@ -33,6 +34,7 @@ export class Config implements IConfig {
       host: argv[PostgresKeys.host],
       port: argv[PostgresKeys.port],
       pass: argv[PostgresKeys.password],
+      db: argv[PostgresKeys.database],
     };
 
     return new Config({

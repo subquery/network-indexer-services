@@ -10,7 +10,7 @@ import { getLogger } from 'src/utils/logger';
 import {
   canContainersRestart,
   composeFileExist,
-  dbName,
+  schemaName,
   generateDockerComposeFile,
   getMmrFile,
   getServicePort,
@@ -101,7 +101,7 @@ export class ProjectService {
       project = await this.addProject(id);
     }
 
-    const isDBExist = await this.db.checkDBExist(dbName(id));
+    const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
     const isConfigChanged = projectConfigChanged(project, {
       networkEndpoint,
@@ -156,12 +156,13 @@ export class ProjectService {
       dictionary: networkDictionary,
       queryVersion: queryImageVersion,
       nodeVersion: nodeImageVersion,
+      dbSchema: schemaName(id),
       poiEnabled,
       postgres,
     };
 
     try {
-      await this.db.createDB(`db_${projectID}`);
+      await this.db.createDBSchema(schemaName(projectID));
       generateDockerComposeFile(item);
       await this.docker.up(item.deploymentID);
     } catch (e) {
@@ -213,7 +214,7 @@ export class ProjectService {
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
-    await this.db.dropDB(`db_${projectID}`);
+    await this.db.dropDBSchema(schemaName(projectID));
 
     const mmrFile = getMmrFile(id);
     await this.docker.deleteFile(mmrFile);
