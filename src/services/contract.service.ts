@@ -82,17 +82,19 @@ export class ContractService {
       const pk = decrypt(account.controller);
       const wallet = new Wallet(toBuffer(pk), this.provider);
 
+      // send SQT
+      const sqtToken = ERC20__factory.connect(SQToken.address, wallet);
+      const sqtBalance = await sqtToken.balanceOf(wallet.address);
+      if (!sqtBalance.eq(0)) {
+        const tx = await sqtToken.transfer(indexer, sqtBalance);
+        await tx.wait(1);
+      }
+
       // send ACA
       const balance = await this.provider.getBalance(wallet.address);
       const value = balance.sub(utils.parseEther('0.1'));
       const res = await wallet.sendTransaction({ to: indexer, value });
       await res.wait(1);
-
-      // send SQT
-      const sqtToken = ERC20__factory.connect(SQToken.address, wallet);
-      const sqtBalance = await sqtToken.balanceOf(wallet.address);
-      const tx = await sqtToken.transfer(indexer, sqtBalance);
-      await tx.wait(1);
 
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
 
