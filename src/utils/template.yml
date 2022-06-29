@@ -8,7 +8,7 @@ services:
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
-      DB_DATABASE: db_{{projectID}}
+      DB_DATABASE: {{postgres.db}}
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
@@ -47,11 +47,11 @@ services:
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
-      DB_DATABASE: db_{{projectID}}
+      DB_DATABASE: {{postgres.db}}
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     command:
-      - --name=app_{{deploymentID}}
+      - --name={{dbSchema}}
       - --playground
       - --indexer=http://node_{{projectID}}:{{servicePort}}
       - --port={{servicePort}}
