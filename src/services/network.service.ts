@@ -176,7 +176,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   collectAndDistributeRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber) {
     return async () => {
-      if (currentEra.eq(lastClaimedEra.add(1)) && lastSettledEra.eq(lastClaimedEra)) return;
+      if (currentEra.eq(lastClaimedEra.add(1)) && lastClaimedEra.gt(lastSettledEra)) return;
 
       const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
       getLogger('network').info(`${values}`);
