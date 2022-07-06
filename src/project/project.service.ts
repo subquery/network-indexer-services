@@ -58,14 +58,26 @@ export class ProjectService {
     const maxPort = Math.max(...this.ports);
     let port = maxPort + 1;
     for (let i = 3000; i < maxPort; i++) {
-      const p = this.ports.find((p) => p !== i);
-      if (!p) continue;
-      port = p;
+      const p = this.ports.find((p) => p === i);
+      if (p) continue;
+      port = i;
       break;
     }
 
+    getLogger('project').info(`current ports: ${this.ports}`);
+    getLogger('project').info(`next port: ${port}`);
+
     this.ports.push(port);
     return port;
+  }
+
+  async removePort(port: number) {
+    if (!port) return;
+
+    const index = this.ports.indexOf(port);
+    if (index >= 0) {
+      this.ports.splice(index, 1);
+    }
   }
 
   async getProject(id: string): Promise<Project> {
@@ -228,6 +240,10 @@ export class ProjectService {
 
     const project = await this.getProject(id);
     if (!project) return [];
+
+    // release port
+    const port = getServicePort(project.queryEndpoint);
+    this.removePort(port);
 
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));

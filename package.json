@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "0.3.4-0",
+  "version": "0.3.5",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -41,7 +41,7 @@
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^1.0.0",
     "@subql/contract-sdk": "0.7.0",
-    "@subql/indexer-admin": "0.1.1-21",
+    "@subql/indexer-admin": "0.1.1-22",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",

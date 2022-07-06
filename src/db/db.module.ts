@@ -25,7 +25,7 @@ export class DB {
   }
 
   public async checkSchemaExist(name: string): Promise<boolean> {
-    const query = `SELECT exists(select schema_name FROM information_schema.schemata WHERE schema_name = '${name}'`;
+    const query = `SELECT schema_name FROM information_schema.schemata WHERE schema_name = '${name}'`;
     try {
       const r = await this.dbClient.query(query);
       return r.rowCount > 0;
@@ -35,27 +35,15 @@ export class DB {
   }
 
   public async createDBSchema(name: string) {
-    const dbExist = await this.checkSchemaExist(name);
-    if (dbExist) {
-      getLogger('db').info(`db schema: ${name} already exist`);
-      return;
-    }
-
-    getLogger('docker').info(`create new db schema: ${name}`);
     await this.dbClient.query(`CREATE SCHEMA IF NOT EXISTS ${name}`);
     await this.dbClient.query(`CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA ${name}`);
+    getLogger('docker').info(`create new db schema: ${name}`);
   }
 
   public async dropDBSchema(name: string) {
-    const dbExist = await this.checkSchemaExist(name);
-    if (!dbExist) {
-      getLogger('docker').info(`db schema: ${name} is not exist`);
-      return;
-    }
-
-    getLogger('docker').info(`drop db schema: ${name}`);
-    const query = `DROP SCHEMA IF EXISTS ${name}`;
+    const query = `DROP SCHEMA IF EXISTS ${name} CASCADE`;
     await this.dbClient.query(query);
+    getLogger('docker').info(`drop db schema: ${name}`);
   }
 }
 
