@@ -35,7 +35,7 @@ export class DockerService {
       const result = await this.execute(`docker stop ${containers.join(' ')}`);
       return result;
     } catch (e) {
-      getLogger('docker').error(`failed to stop the containers: ${e}`);
+      getLogger('docker').warn(`failed to stop the containers: ${e}`);
     }
   }
 

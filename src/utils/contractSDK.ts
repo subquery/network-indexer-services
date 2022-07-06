@@ -3,8 +3,7 @@
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import { EvmRpcProvider, calcEthereumTransactionParams } from '@acala-network/eth-providers';
-import { BigNumber, Signer, utils } from 'ethers';
+import { Signer, utils } from 'ethers';
 
 const deployments = {
   local: testnetDeployment,

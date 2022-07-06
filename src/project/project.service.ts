@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
+import { isEmpty } from 'lodash';
 
 import { Config } from 'src/configure/configure.module';
 import { getLogger } from 'src/utils/logger';
@@ -31,7 +32,7 @@ import { LogType, Project } from './project.model';
 
 @Injectable()
 export class ProjectService {
-  private port: number;
+  private ports: number[];
   constructor(
     @InjectRepository(Project) private projectRepo: Repository<Project>,
     private pubSub: SubscriptionService,
@@ -39,17 +40,44 @@ export class ProjectService {
     private config: Config,
     private db: DB,
   ) {
-    this.getLatestPort().then((port) => {
-      this.port = port;
+    this.getUsedPorts().then((ports) => {
+      this.ports = ports;
     });
   }
 
-  async getLatestPort(): Promise<number> {
+  async getUsedPorts(): Promise<number[]> {
     const projects = await this.getProjects();
-    if (projects.length === 0) return 3000;
+    if (projects.length === 0) return [];
 
-    const ports = projects.map(({ queryEndpoint }) => getServicePort(queryEndpoint) ?? 3000);
-    return Math.max(...ports);
+    return projects.map(({ queryEndpoint }) => getServicePort(queryEndpoint));
+  }
+
+  async getAvailablePort(): Promise<number> {
+    if (isEmpty(this.ports)) return 3000;
+
+    const maxPort = Math.max(...this.ports);
+    let port = maxPort + 1;
+    for (let i = 3000; i < maxPort; i++) {
+      const p = this.ports.find((p) => p === i);
+      if (p) continue;
+      port = i;
+      break;
+    }
+
+    getLogger('project').info(`current ports: ${this.ports}`);
+    getLogger('project').info(`next port: ${port}`);
+
+    this.ports.push(port);
+    return port;
+  }
+
+  async removePort(port: number) {
+    if (!port) return;
+
+    const index = this.ports.indexOf(port);
+    if (index >= 0) {
+      this.ports.splice(index, 1);
+    }
   }
 
   async getProject(id: string): Promise<Project> {
@@ -142,10 +170,12 @@ export class ProjectService {
     let project = await this.getProject(id);
     if (!project) await this.addProject(id);
 
+    const port = await this.getAvailablePort();
+    const servicePort = getServicePort(project.queryEndpoint) ?? port;
+
     const projectID = projectId(id);
-    const servicePort = getServicePort(project.queryEndpoint) ?? ++this.port;
-    const nodeImageVersion = nodeVersion ?? 'v0.31.1';
-    const queryImageVersion = queryVersion ?? 'v0.13.0';
+    const nodeImageVersion = nodeVersion;
+    const queryImageVersion = queryVersion;
     const postgres = this.config.postgres;
 
     const item: TemplateType = {
@@ -210,6 +240,10 @@ export class ProjectService {
 
     const project = await this.getProject(id);
     if (!project) return [];
+
+    // release port
+    const port = getServicePort(project.queryEndpoint);
+    this.removePort(port);
 
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
