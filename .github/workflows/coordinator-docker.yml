@@ -42,7 +42,7 @@ jobs:
           push: true
           platforms: arm64,amd64
           file: ./Dockerfile
-          tags: onfinality/subql-coordinator:v0.3.3
+          tags: onfinality/subql-coordinator:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
 
       - name: Build and push
@@ -52,7 +52,7 @@ jobs:
           push: true
           platforms: arm64,amd64
           file: ./Dockerfile
-          tags: onfinality/subql-coordinator:v0.3.3,onfinality/subql-coordinator:latest
+          tags: onfinality/subql-coordinator:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }},onfinality/subql-coordinator:latest
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
 
       - name: Image digest
