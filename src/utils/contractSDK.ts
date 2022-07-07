@@ -44,5 +44,3 @@ export async function initContractSDK(provider: Signer, chainID: ChainID): Promi
 export function cidToBytes32(cid: string): string {
   return `0x${Buffer.from(utils.base58.decode(cid)).slice(2).toString('hex')}`;
 }
-
-export const substrateUrl = 'wss://mandala-tc7-rpcnode.aca-dev.network/ws';

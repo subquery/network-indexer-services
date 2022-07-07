@@ -12,7 +12,7 @@ import { EvmRpcProvider } from '@acala-network/eth-providers';
 
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
-import { chainIds, cidToBytes32, initContractSDK, substrateUrl } from 'src/utils/contractSDK';
+import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
 import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
@@ -30,8 +30,8 @@ export class ContractService {
   private existentialBalance: number;
 
   constructor(private accountService: AccountService, private config: Config) {
-    this.chainID = chainIds[this.config.network];
-    this.provider = EvmRpcProvider.from(substrateUrl);
+    this.chainID = chainIds[config.network];
+    this.provider = EvmRpcProvider.from(config.wsEndpoint);
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = 0.5;
   }
