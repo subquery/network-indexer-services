@@ -6,6 +6,7 @@ import { join } from 'path';
 import * as handlebars from 'handlebars';
 import { getLogger } from 'src/utils/logger';
 import { Postgres } from 'src/configure/configure.module';
+import { nodeConfigs } from './project';
 
 // move to types folder
 export type TemplateType = {
@@ -79,45 +80,22 @@ export function getImageVersion(containerInfo: string) {
   return imageInfo[1];
 }
 
-enum NodeTypes {
-  substrate = 'node',
-  avalanche = 'node-avalanche',
-  cosmos = 'node-cosmos',
+async function configsWithNode(data: TemplateType) {
+  const { chainType, dockerRegistry } = await nodeConfigs(data.deploymentID);
+  const poiEnabled = chainType === 'substrate' ? data.poiEnabled : false;
+  const disableHistorical = chainType === 'avalanche';
+
+  return { poiEnabled, disableHistorical, dockerRegistry };
 }
 
-enum ChainTypes {
-  polkadot = 'polkadot',
-  kusama = 'kusama',
-  avalanche = 'avalanche',
-  juno = 'juno',
-}
-
-// TODO: use manifest -> datasource -> runtime to indentify chain type
-function getNodeType(endpoint: string): NodeTypes {
-  if (endpoint.includes(ChainTypes.avalanche)) {
-    return NodeTypes.avalanche;
-  } else if (endpoint.includes(ChainTypes.juno)) {
-    return NodeTypes.cosmos;
-  }
-  return NodeTypes.substrate;
-}
-
-function configsWithNode(data: TemplateType) {
-  const nodeType = getNodeType(data.networkEndpoint).toString();
-  const poiEnabled = nodeType === NodeTypes.substrate ? data.poiEnabled : false;
-  const disableHistorical = nodeType === NodeTypes.avalanche;
-
-  return { nodeType, poiEnabled, disableHistorical };
-}
-
-export function generateDockerComposeFile(data: TemplateType) {
+export async function generateDockerComposeFile(data: TemplateType) {
   const directory = getComposeFileDirectory(data.deploymentID);
   if (!fs.existsSync(directory)) {
     fs.mkdirSync(directory, { recursive: true });
   }
 
   try {
-    const config = configsWithNode(data);
+    const config = await configsWithNode(data);
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
     fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ ...data, ...config }));

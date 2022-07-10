@@ -7,7 +7,7 @@ import { Repository, Not } from 'typeorm';
 import { isEmpty } from 'lodash';
 
 import { Config } from 'src/configure/configure.module';
-import { getLogger } from 'src/utils/logger';
+import { getLogger, debugLogger } from 'src/utils/logger';
 import {
   canContainersRestart,
   composeFileExist,
@@ -42,6 +42,7 @@ export class ProjectService {
   ) {
     this.getUsedPorts().then((ports) => {
       this.ports = ports;
+      debugLogger('project', `initial ports: ${this.ports}`);
     });
   }
 
@@ -53,19 +54,20 @@ export class ProjectService {
   }
 
   async getAvailablePort(): Promise<number> {
-    if (isEmpty(this.ports)) return 3000;
+    if (isEmpty(this.ports)) return 3100;
 
     const maxPort = Math.max(...this.ports);
-    let port = maxPort + 1;
-    for (let i = 3000; i < maxPort; i++) {
-      const p = this.ports.find((p) => p === i);
-      if (p) continue;
-      port = i;
-      break;
-    }
+    const port = maxPort + 1;
+    // FIXME: dynamic port allocation
+    // for (let i = 3000; i < maxPort; i++) {
+    //   const p = this.ports.find((p) => p === i);
+    //   if (p) continue;
+    //   port = i;
+    //   break;
+    // }
 
-    getLogger('project').info(`current ports: ${this.ports}`);
-    getLogger('project').info(`next port: ${port}`);
+    debugLogger('project', `current ports: ${this.ports}`);
+    debugLogger('project', `next port: ${port}`);
 
     this.ports.push(port);
     return port;

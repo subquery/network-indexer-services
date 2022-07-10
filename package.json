@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "0.3.7-1",
+  "version": "0.3.8",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -27,7 +27,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
     "start:help": "yarn start:prod --help",
-    "start:testnet": "yarn start:prod --network testnet --ws-endpoint 'wss://mandala-tc7-rpcnode.aca-dev.network/ws' --postgres-host localhost --postgres-database postgres --postgres-port 5432 --debug --dev --port 8007",
+    "start:testnet": "yarn start:prod --network testnet --postgres-port 5432 --debug --dev --port 8007",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up -d"
   },
@@ -42,6 +42,7 @@
     "@subql/common": "^1.0.0",
     "@subql/contract-sdk": "0.7.0",
     "@subql/indexer-admin": "0.1.1-24",
+    "@subql/network-clients": "0.1.1-13",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",
@@ -53,6 +54,8 @@
     "graphql-subscriptions": "^2.0.0",
     "graphql-tools": "^8.2.0",
     "handlebars": "^4.7.7",
+    "ipfs-http-client": "^53.0.1",
+    "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "lru-cache": "^7.8.1",
     "node-fetch": "2.6.1",
