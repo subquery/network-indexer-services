@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "0.3.10",
+  "version": "0.3.10-1",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -42,7 +42,7 @@
     "@subql/common": "^1.0.0",
     "@subql/contract-sdk": "0.7.0",
     "@subql/indexer-admin": "0.1.1-24",
-    "@subql/network-clients": "0.1.1-13",
+    "@subql/network-clients": "0.1.1-14",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",
     "apollo-server-express": "^3.5.0",
