@@ -3,9 +3,10 @@
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Repository, Connection } from 'typeorm';
-import { isEmpty } from 'lodash';
+import { has, isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
+import { getEthGas } from '@subql/network-clients';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { cidToBytes32 } from 'src/utils/contractSDK';
@@ -27,7 +28,8 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: string]: string };
 
-  private defaultInterval = 1000 * 1800;
+  // TODO: set back to 1800
+  private defaultInterval = 1000 * 60;
   private defaultRetryCount = 5;
   private batchSize = 20;
 
@@ -114,7 +116,6 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  // TODO: remove expired ca with batch transaction
   async removeExpiredAgreements() {
     if (Object.keys(this.expiredAgreements).length === 0) return;
 
@@ -174,29 +175,71 @@ export class NetworkService implements OnApplicationBootstrap {
     return indexingProjects.map((project) => () => this.reportIndexingService(project));
   }
 
-  collectAndDistributeRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber) {
-    return async () => {
-      if (currentEra.eq(lastClaimedEra.add(1)) && lastClaimedEra.gt(lastSettledEra)) return;
+  async hasPendingChanges(indexer: string) {
+    const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
+    const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
+    return !isEmpty(stakers) || !icrChangEra.eq(0);
+  }
 
+  async geEraConfig() {
+    const indexer = await this.accountService.getIndexer();
+    const [currentEra, lastClaimedEra, lastSettledEra] = await Promise.all([
+      this.sdk.eraManager.eraNumber(),
+      this.sdk.rewardsDistributor.getLastClaimEra(indexer),
+      this.sdk.rewardsDistributor.getLastSettledEra(indexer),
+    ]);
+
+    return { currentEra, lastClaimedEra, lastSettledEra };
+  }
+
+  async canCollectRewards(): Promise<boolean> {
+    const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+    return lastClaimedEra.gt(0) && lastClaimedEra.lt(currentEra.sub(1)) && lastClaimedEra.lte(lastSettledEra);
+  }
+
+  async collectAndDistributeReward(indexer: string) {
+    await this.sendTransaction('collect and distribute rewards', () =>
+      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
+    );
+  }
+
+  async batchCollectAndDistributeRewards(indexer: string, currentEra: BigNumber, lastClaimedEra: BigNumber) {
+    const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
+    for (let i = 0; i < count; i++) {
+      const canCollectRewards = await this.canCollectRewards();
+      if (!canCollectRewards) return;
+
+      const gasConfig = await getEthGas();
+      await this.sendTransaction('batch collect and distribute rewards', () =>
+        this.sdk.rewardsDistributor.batchCollectAndDistributeRewards(indexer, this.batchSize, gasConfig),
+      );
+    }
+  }
+
+  collectAndDistributeRewardsAction() {
+    return async () => {
+      const canCollectRewards = await this.canCollectRewards();
+      if (!canCollectRewards) return;
+
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
       const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
       getLogger('network').info(`${values}`);
 
       const indexer = await this.accountService.getIndexer();
-      const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
-
-      for (let i = 0; i < count; i++) {
-        await this.sendTransaction('collect and distribute rewards', () =>
-          this.sdk.rewardsDistributor.batchCollectAndDistributeRewards(indexer, this.batchSize),
-        );
+      const hasPendingChanges = await this.hasPendingChanges(indexer);
+      if (hasPendingChanges) {
+        await this.collectAndDistributeReward(indexer);
+        return;
       }
+
+      await this.batchCollectAndDistributeRewards(indexer, currentEra, lastClaimedEra);
     };
   }
 
   async networkActions() {
-    const [eraStartTime, eraPeriod, currentEra] = await Promise.all([
+    const [eraStartTime, eraPeriod] = await Promise.all([
       this.sdk.eraManager.eraStartTime(),
       this.sdk.eraManager.eraPeriod(),
-      this.sdk.eraManager.eraNumber(),
     ]);
     const updateEraNumber = async () => {
       const blockTime = await this.contractService.getBlockTime();
@@ -208,18 +251,11 @@ export class NetworkService implements OnApplicationBootstrap {
 
     // collect and distribute rewards
     const indexer = await this.accountService.getIndexer();
-    const [lastClaimedEra, lastSettledEra, icrChangEra] = await Promise.all([
-      this.sdk.rewardsDistributor.getLastClaimEra(indexer),
-      this.sdk.rewardsDistributor.getLastSettledEra(indexer),
-      this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer),
-    ]);
+    const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
+    const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
 
     // collect and distribute rewards
-    const collectAndDistributeRewards = this.collectAndDistributeRewards(
-      currentEra,
-      lastClaimedEra,
-      lastSettledEra,
-    );
+    const collectAndDistributeRewards = this.collectAndDistributeRewardsAction();
 
     // apply ICR change
     const applyICRChange = async () => {
@@ -233,7 +269,7 @@ export class NetworkService implements OnApplicationBootstrap {
     // apply stake changes
     const applyStakeChanges = async () => {
       const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
-      if (stakers.length > 0 && lastSettledEra.lt(lastClaimedEra)) {
+      if (stakers.length > 0 && lastSettledEra.lte(lastClaimedEra)) {
         getLogger('network').info(`new stakers ${stakers}`);
         return this.sendTransaction('apply stake changes', async () =>
           this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),

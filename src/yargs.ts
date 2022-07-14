@@ -32,7 +32,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'wss://acala-mandala-adapter.api.onfinality.io/public-ws',
+      default: 'wss://mandala-tc7-rpcnode.aca-dev.network/ws',
       group: Groups.coordinator,
     },
     ipfs: {

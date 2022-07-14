@@ -3862,6 +3862,15 @@
     buffer "^6.0.3"
     ethers "^5.6.8"
 
+"@subql/network-clients@0.1.1-14":
+  version "0.1.1-14"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-14.tgz#ef12b1d21d6f4ffc30e309b2e82d94ca4ea4c08c"
+  integrity sha512-rG+WP6a0/DDQMmpsTJAOtWfLwhG9MnKn9wnD6NzXx0GY8sgroMQrYYqQSNX4CVy2Fw80Fm7x63MsxS22Ml5B5w==
+  dependencies:
+    axios "^0.27.2"
+    buffer "^6.0.3"
+    ethers "^5.6.8"
+
 "@subql/react-ui@^1.0.1-21":
   version "1.0.1-21"
   resolved "https://registry.npmjs.org/@subql/react-ui/-/react-ui-1.0.1-21.tgz"
