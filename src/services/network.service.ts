@@ -105,7 +105,7 @@ export class NetworkService implements OnApplicationBootstrap {
       );
 
       const tx = await txFun();
-      await tx.wait(2);
+      await tx.wait(1);
 
       getLogger('transaction').info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
@@ -236,48 +236,60 @@ export class NetworkService implements OnApplicationBootstrap {
     };
   }
 
-  async networkActions() {
-    const [eraStartTime, eraPeriod] = await Promise.all([
-      this.sdk.eraManager.eraStartTime(),
-      this.sdk.eraManager.eraPeriod(),
-    ]);
-    const updateEraNumber = async () => {
-      const blockTime = await this.contractService.getBlockTime();
-      const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
-      if (canUpdateEra) {
-        return this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
+  applyStakeChangesAction() {
+    return async () => {
+      const indexer = await this.accountService.getIndexer();
+      const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
+      const { lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+
+      if (stakers.length === 0 || lastSettledEra.gt(lastClaimedEra)) return;
+
+      getLogger('network').info(`new stakers ${stakers}`);
+      const count = stakers.length / 5 + 1;
+      const gasConfig = await getEthGas();
+
+      for (let i = 0; i < count; i++) {
+        await this.sendTransaction('apply stake changes', async () =>
+          this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers, gasConfig),
+        );
       }
     };
+  }
 
-    // collect and distribute rewards
-    const indexer = await this.accountService.getIndexer();
-    const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
-    const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+  applyICRChangeAction() {
+    return async () => {
+      const indexer = await this.accountService.getIndexer();
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+      const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
 
-    // collect and distribute rewards
-    const collectAndDistributeRewards = this.collectAndDistributeRewardsAction();
-
-    // apply ICR change
-    const applyICRChange = async () => {
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
-        return this.sendTransaction('apply ICR changes', async () =>
+        await this.sendTransaction('apply ICR changes', async () =>
           this.sdk.rewardsDistributor.applyICRChange(indexer),
         );
       }
     };
+  }
 
-    // apply stake changes
-    const applyStakeChanges = async () => {
-      const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
-      if (stakers.length > 0 && lastSettledEra.lte(lastClaimedEra)) {
-        getLogger('network').info(`new stakers ${stakers}`);
-        return this.sendTransaction('apply stake changes', async () =>
-          this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers),
-        );
+  updateEraNumberAction() {
+    return async () => {
+      const eraStartTime = await this.sdk.eraManager.eraStartTime();
+      const eraPeriod = await this.sdk.eraManager.eraPeriod();
+      const blockTime = await this.contractService.getBlockTime();
+
+      const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
+      if (canUpdateEra) {
+        await this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
       }
     };
+  }
 
-    return [updateEraNumber, collectAndDistributeRewards, applyICRChange, applyStakeChanges];
+  networkActions() {
+    return [
+      this.updateEraNumberAction(),
+      this.collectAndDistributeRewardsAction(),
+      this.applyICRChangeAction(),
+      this.applyStakeChangesAction(),
+    ];
   }
 
   async sendTxs() {
@@ -288,12 +300,14 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const isBalanceSufficient = await this.contractService.hasSufficientBalance();
       if (!isBalanceSufficient) {
-        getLogger('contract').warn('insufficient balance for the controller account');
+        getLogger('contract').warn(
+          'insufficient balance for the controller account, please top up your controller account ASAP.',
+        );
         return;
       }
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
-      const networkActions = await this.networkActions();
+      const networkActions = this.networkActions();
       const actions = [...networkActions, ...reportIndexingServiceActions];
 
       for (let i = 0; i < actions.length; i++) {
