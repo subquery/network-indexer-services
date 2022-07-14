@@ -3,7 +3,7 @@
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Repository, Connection } from 'typeorm';
-import { has, isEmpty } from 'lodash';
+import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { getEthGas } from '@subql/network-clients';
@@ -29,7 +29,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private expiredAgreements: { [key: string]: string };
 
   // TODO: set back to 1800
-  private defaultInterval = 1000 * 60;
+  private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
   private batchSize = 20;
 
