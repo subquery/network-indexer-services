@@ -20,6 +20,7 @@ import {
   projectId,
   queryEndpoint,
   TemplateType,
+  configsWithNode,
 } from 'src/utils/docker';
 import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
@@ -44,13 +45,17 @@ export class ProjectService {
       this.ports = ports;
       debugLogger('project', `initial ports: ${this.ports}`);
     });
+
+    this.updateProjectConfig();
   }
 
   async getUsedPorts(): Promise<number[]> {
     const projects = await this.getProjects();
     if (projects.length === 0) return [];
 
-    return projects.map(({ queryEndpoint }) => getServicePort(queryEndpoint));
+    return projects
+      .map(({ queryEndpoint }) => getServicePort(queryEndpoint))
+      .filter((p) => typeof p === 'number');
   }
 
   async getAvailablePort(): Promise<number> {
@@ -80,6 +85,15 @@ export class ProjectService {
     if (index >= 0) {
       this.ports.splice(index, 1);
     }
+  }
+
+  async updateProjectConfig() {
+    const projects = await this.getProjects();
+    projects.map(async (p) => {
+      const { id } = p;
+      const { chainType, poiEnabled } = await configsWithNode({ id, poiEnabled: p.poiEnabled });
+      await this.projectRepo.save({ ...p, chainType, poiEnabled });
+    });
   }
 
   async getProject(id: string): Promise<Project> {
@@ -201,6 +215,7 @@ export class ProjectService {
       getLogger('project').info(`start project: ${e}`);
     }
 
+    const config = await configsWithNode({ id, poiEnabled });
     project = {
       id,
       networkEndpoint,
@@ -210,7 +225,8 @@ export class ProjectService {
       status: IndexingStatus.INDEXING,
       nodeVersion: nodeImageVersion,
       queryVersion,
-      poiEnabled,
+      chainType: config.chainType,
+      poiEnabled: config.poiEnabled,
       forceEnabled,
     };
 

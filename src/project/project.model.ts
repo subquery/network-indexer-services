@@ -12,6 +12,9 @@ export class Project {
   @Column()
   status: number;
 
+  @Column({ default: '' })
+  chainType: string;
+
   @Column()
   networkEndpoint: string;
 

@@ -65,8 +65,6 @@ export class QueryService {
           lastProcessedTimestamp
           targetHeight
           chain
-          specName
-          genesisHash
           indexerHealthy
           indexerNodeVersion
           queryNodeVersion
@@ -83,7 +81,7 @@ export class QueryService {
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
-    } catch {
+    } catch (e) {
       return {
         lastProcessedHeight: 0,
         lastProcessedTimestamp: 0,
@@ -170,7 +168,7 @@ export class QueryService {
     try {
       const poi = await this.getValidPoi(project);
       const { blockHeight, mmrRoot } = poi;
-      debugLogger('poi:', `project: ${project.id} | ${poi.blockHeight} | ${poi.mmrRoot}`);
+      debugLogger('poi', `project: ${project.id} | ${poi.blockHeight} | ${poi.mmrRoot}`);
       if (blockHeight === 0) return poi;
 
       const indexingStatus = await this.contract.deploymentStatusByIndexer(id);

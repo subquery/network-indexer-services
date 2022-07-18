@@ -80,12 +80,19 @@ export function getImageVersion(containerInfo: string) {
   return imageInfo[1];
 }
 
-async function configsWithNode(data: TemplateType) {
-  const { chainType, dockerRegistry } = await nodeConfigs(data.deploymentID);
-  const poiEnabled = chainType === 'substrate' ? data.poiEnabled : false;
-  const disableHistorical = chainType === 'avalanche';
+export function getPoiEnable(chainType: string, poiEnabled: boolean): boolean {
+  return chainType === 'substrate' ? poiEnabled : false;
+}
 
-  return { poiEnabled, disableHistorical, dockerRegistry };
+export async function configsWithNode({ id, poiEnabled }: { id: string; poiEnabled: boolean }) {
+  const { chainType, dockerRegistry } = await nodeConfigs(id);
+  const disableHistorical = chainType === 'avalanche';
+  return {
+    poiEnabled: getPoiEnable(chainType, poiEnabled),
+    chainType,
+    disableHistorical,
+    dockerRegistry,
+  };
 }
 
 export async function generateDockerComposeFile(data: TemplateType) {
@@ -95,7 +102,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
   }
 
   try {
-    const config = await configsWithNode(data);
+    const config = await configsWithNode({ id: data.deploymentID, poiEnabled: data.poiEnabled });
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
     fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ ...data, ...config }));
