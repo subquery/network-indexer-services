@@ -6,10 +6,9 @@ import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
-import { getEthGas } from '@subql/network-clients';
+import { cidToBytes32, getEthGas } from '@subql/network-clients';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
-import { cidToBytes32 } from 'src/utils/contractSDK';
 import { AccountService } from 'src/account/account.service';
 import { ZERO_BYTES32 } from 'src/utils/project';
 import { Project } from 'src/project/project.model';
@@ -29,7 +28,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private expiredAgreements: { [key: string]: string };
 
   // TODO: set back to 1800
-  private defaultInterval = 1000 * 1800;
+  private defaultInterval = 1000 * 60;
   private defaultRetryCount = 5;
   private batchSize = 20;
 
@@ -157,7 +156,7 @@ export class NetworkService implements OnApplicationBootstrap {
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
-          cidToBytes32(id),
+          cidToBytes32(id.trim()),
           blockHeight,
           mmrRoot,
           timestamp,
@@ -245,14 +244,10 @@ export class NetworkService implements OnApplicationBootstrap {
       if (stakers.length === 0 || lastSettledEra.gt(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers}`);
-      const count = stakers.length / 5 + 1;
       const gasConfig = await getEthGas();
-
-      for (let i = 0; i < count; i++) {
-        await this.sendTransaction('apply stake changes', async () =>
-          this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers, gasConfig),
-        );
-      }
+      await this.sendTransaction('apply stake changes', async () =>
+        this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers, gasConfig),
+      );
     };
   }
 

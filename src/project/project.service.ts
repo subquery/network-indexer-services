@@ -100,7 +100,7 @@ export class ProjectService {
 
   async addProject(id: string): Promise<Project> {
     const project = this.projectRepo.create({
-      id,
+      id: id.trim(),
       status: 0,
       networkEndpoint: '',
       nodeEndpoint: '',

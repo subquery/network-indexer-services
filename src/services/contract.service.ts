@@ -9,10 +9,11 @@ import { formatUnits } from '@ethersproject/units';
 import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
 import { SQToken } from '@subql/contract-sdk/publish/testnet.json';
 import { EvmRpcProvider } from '@acala-network/eth-providers';
+import { cidToBytes32 } from '@subql/network-clients';
 
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
-import { chainIds, cidToBytes32, initContractSDK } from 'src/utils/contractSDK';
+import { chainIds, initContractSDK } from 'src/utils/contractSDK';
 import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
@@ -165,12 +166,12 @@ export class ContractService {
 
     try {
       const { status, blockHeight } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
-        cidToBytes32(id),
+        cidToBytes32(id.trim()),
         indexer,
       );
       return { status, blockHeight };
-    } catch {
-      getLogger('contract').error(`failed to get indexing status for project: ${id}`);
+    } catch (e) {
+      getLogger('contract').error(`failed to get indexing status for project: ${id} ${e}`);
       return this.emptyDeploymentStatus;
     }
   }

@@ -3,7 +3,7 @@
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import { Signer, utils } from 'ethers';
+import { Signer } from 'ethers';
 
 const deployments = {
   local: testnetDeployment,
@@ -39,8 +39,4 @@ const options = {
 export async function initContractSDK(provider: Signer, chainID: ChainID): Promise<ContractSDK> {
   const sdk = await ContractSDK.create(provider, options[chainID]);
   return sdk;
-}
-
-export function cidToBytes32(cid: string): string {
-  return `0x${Buffer.from(utils.base58.decode(cid)).slice(2).toString('hex')}`;
 }

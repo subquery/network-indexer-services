@@ -170,6 +170,7 @@ export class QueryService {
     try {
       const poi = await this.getValidPoi(project);
       const { blockHeight, mmrRoot } = poi;
+      debugLogger('poi:', `project: ${project.id} | ${poi.blockHeight} | ${poi.mmrRoot}`);
       if (blockHeight === 0) return poi;
 
       const indexingStatus = await this.contract.deploymentStatusByIndexer(id);
