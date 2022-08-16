@@ -27,8 +27,10 @@ export class PaygResolver {
     @Args('id') id: string,
     @Args('indexer') indexer: string,
     @Args('consumer') consumer: string,
-    @Args('balance') balance: number,
+    @Args('total') balance: number,
     @Args('expiration') expiration: number,
+    @Args('deploymentId') deploymentId: string,
+    @Args('callback') callback: string,
     @Args('lastIndexerSign') lastIndexerSign: string,
     @Args('lastConsumerSign') lastConsumerSign: string,
   ) {
@@ -38,6 +40,8 @@ export class PaygResolver {
       consumer,
       balance,
       expiration,
+      deploymentId,
+      callback,
       lastIndexerSign,
       lastConsumerSign
     );
@@ -46,13 +50,12 @@ export class PaygResolver {
   @Mutation(() => [QueryType])
   channelUpdate(
     @Args('id') id: string,
-    @Args('count') count: number,
+    @Args('spent') spent: number,
     @Args('isFinal') isFinal: boolean,
-    @Args('price') price: number,
     @Args('indexerSign') indexerSign: string,
     @Args('consumerSign') consumerSign: string,
   ) {
-    return this.paygService.update(id, count, isFinal, price, indexerSign, consumerSign);
+    return this.paygService.update(id, spent, isFinal, indexerSign, consumerSign);
   }
 
   @Mutation(() => [ChannelType])

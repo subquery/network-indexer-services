@@ -12,9 +12,8 @@ export enum ChannelStatus {
 
 export class QueryState {
   id: string;
-  count: number;
+  spent: number;
   isFinal: boolean;
-  price: number;
   indexerSign: string;
   consumerSign: string;
 }
@@ -28,22 +27,28 @@ export class Channel {
   status: ChannelStatus;
 
   @Column()
+  deploymentId: string;
+
+  @Column()
   indexer: string;
 
   @Column()
   consumer: string;
 
   @Column()
-  currentCount: number;
+  total: number;
 
   @Column()
-  onchainCount: number;
+  spent: number;
 
   @Column()
-  remoteCount: number;
+  onchain: number;
 
   @Column()
-  balance: number;
+  remote: number;
+
+  @Column({ default: 0 })
+  price: number;
 
   @Column()
   expirationAt: number;
@@ -53,9 +58,6 @@ export class Channel {
 
   @Column({ default: false })
   lastFinal: boolean;
-
-  @Column({ default: 0 })
-  lastPrice: number;
 
   @Column({ default: '' })
   lastIndexerSign: string;
@@ -73,22 +75,28 @@ export class ChannelType {
   status: number;
 
   @Field()
+  deploymentId: string;
+
+  @Field()
   indexer: string;
 
   @Field()
   consumer: string;
 
   @Field()
-  currentCount: number;
+  total: number;
 
   @Field()
-  onchainCount: number;
+  spent: number;
 
   @Field()
-  remoteCount: number;
+  onchain: number;
 
   @Field()
-  balance: number;
+  remote: number;
+
+  @Field()
+  price: number;
 
   @Field()
   expirationAt: number;
@@ -98,9 +106,6 @@ export class ChannelType {
 
   @Field()
   lastFinal: boolean;
-
-  @Field()
-  lastPrice: number;
 
   @Field()
   lastIndexerSign: string;
@@ -115,13 +120,10 @@ export class QueryType {
   id: string;
 
   @Field()
-  count: number;
+  spent: number;
 
   @Field()
   isFinal: boolean;
-
-  @Field()
-  price: number;
 
   @Field()
   indexerSign: string;
