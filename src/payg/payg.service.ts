@@ -31,26 +31,29 @@ export class PaygService {
     id: string,
     indexer: string,
     consumer: string,
-    balance: number,
+    total: number,
     expirationAt: number,
+    deploymentId: string,
+    callback: string,
     lastIndexerSign: string,
     lastConsumerSign: string,
   ): Promise<Channel> {
     const channel = this.channelRepo.create({
       id,
+      deploymentId,
       indexer,
       consumer,
-      balance,
+      total,
       expirationAt,
       lastIndexerSign,
       lastConsumerSign,
       status: 0,
-      currentCount: 0,
-      onchainCount: 0,
-      remoteCount: 0,
+      spent: 0,
+      onchain: 0,
+      remote: 0,
       challengeAt: 0,
       lastFinal: false,
-      lastPrice: 10, // TODO add price to project.
+      price: 10, // TODO add price to project.
     });
 
     // send to blockchain.
@@ -58,8 +61,10 @@ export class PaygService {
       id,
       indexer,
       consumer,
-      balance,
+      total,
       expirationAt,
+      deploymentId,
+      callback,
       lastIndexerSign,
       lastConsumerSign
     );
@@ -70,34 +75,33 @@ export class PaygService {
 
   async update(
     id: string,
-    count: number,
+    spent: number,
     isFinal: boolean,
-    price: number,
     indexerSign: string,
     consumerSign: string
   ): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
-    if (channel.currentCount != count - 1 || channel.lastPrice != price) {
+    if (channel.spent + channel.price < spent) {
       // invalid count TODO more.
     }
-    channel.currentCount = count;
+    channel.spent = spent;
+    channel.remote = spent;
     channel.lastFinal = isFinal;
-    channel.lastPrice = price;
     channel.lastIndexerSign = indexerSign;
     channel.lastConsumerSign = consumerSign;
 
     // TODO threshold value for checkpoint and spawn to other promise.
-    if (count % 5 == 0) {
+    if ((channel.spent - channel.onchain) / channel.price > 5) {
       // send to blockchain.
       let tx = await this.network.getSdk().stateChannel.checkpoint({
         channelId: id,
         isFinal: isFinal,
-        count: count,
-        price: price,
+        spent: spent,
         indexerSign: indexerSign,
         consumerSign: consumerSign
       });
       console.log(tx);
+      channel.onchain = channel.spent;
     }
 
     return this.channelRepo.save(channel);
@@ -110,14 +114,13 @@ export class PaygService {
     let tx = await this.network.getSdk().stateChannel.checkpoint({
       channelId: channel.id,
       isFinal: channel.lastFinal,
-      count: channel.currentCount,
-      price: channel.lastPrice,
+      spent: channel.spent,
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign
     });
     console.log(tx);
 
-    channel.onchainCount = channel.currentCount;
+    channel.onchain = channel.spent;
     return this.channelRepo.save(channel);
   }
 
@@ -128,14 +131,13 @@ export class PaygService {
     let tx = await this.network.getSdk().stateChannel.challenge({
       channelId: channel.id,
       isFinal: channel.lastFinal,
-      count: channel.currentCount,
-      price: channel.lastPrice,
+      spent: channel.spent,
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign
     });
     console.log(tx);
 
-    channel.onchainCount = channel.currentCount;
+    channel.onchain = channel.spent;
     return this.channelRepo.save(channel);
   }
 
@@ -146,14 +148,13 @@ export class PaygService {
     let tx = await this.network.getSdk().stateChannel.respond({
       channelId: channel.id,
       isFinal: channel.lastFinal,
-      count: channel.currentCount,
-      price: channel.lastPrice,
+      spent: channel.spent,
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign
     });
     console.log(tx);
 
-    channel.onchainCount = channel.currentCount;
+    channel.onchain = channel.spent;
     return this.channelRepo.save(channel);
   }
 }

@@ -25,7 +25,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
-  private expiredAgreements: { [key: string]: string };
+  private expiredAgreements: { [key: number]: number };
 
   // TODO: set back to 1800
   private defaultInterval = 1000 * 1800;
@@ -73,12 +73,12 @@ export class NetworkService implements OnApplicationBootstrap {
   async updateExpiredAgreements() {
     try {
       const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
+      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreement = await this.sdk.serviceAgreementRegistry.getServiceAgreement(indexer, i);
-        const agreementExpired = await this.sdk.serviceAgreementRegistry.serviceAgreementExpired(agreement);
+        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
         if (agreementExpired) {
-          Object.assign(this.expiredAgreements, { [agreement]: agreement });
+          Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
         }
       }
     } catch {
@@ -120,18 +120,17 @@ export class NetworkService implements OnApplicationBootstrap {
 
     try {
       const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerSaLength(indexer);
+      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementContract = await this.sdk.serviceAgreementRegistry.getServiceAgreement(indexer, i);
-
-        if (this.expiredAgreements[agreementContract]) {
+        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        if (this.expiredAgreements[agreementId]) {
           await this.sendTransaction(
             'remove expired service agreement',
             () => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i),
-            `service agreement: ${agreementContract}`,
+            `service agreement: ${agreementId}`,
           );
 
-          delete this.expiredAgreements[agreementContract];
+          delete this.expiredAgreements[agreementId];
           break;
         }
       }
@@ -184,7 +183,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const indexer = await this.accountService.getIndexer();
     const [currentEra, lastClaimedEra, lastSettledEra] = await Promise.all([
       this.sdk.eraManager.eraNumber(),
-      this.sdk.rewardsDistributor.getLastClaimEra(indexer),
+      (await this.sdk.rewardsDistributor.getRewardInfo(indexer)).lastClaimEra,
       this.sdk.rewardsDistributor.getLastSettledEra(indexer),
     ]);
 
@@ -208,9 +207,8 @@ export class NetworkService implements OnApplicationBootstrap {
       const canCollectRewards = await this.canCollectRewards();
       if (!canCollectRewards) return;
 
-      const gasConfig = await getEthGas();
       await this.sendTransaction('batch collect and distribute rewards', () =>
-        this.sdk.rewardsDistributor.batchCollectAndDistributeRewards(indexer, this.batchSize, gasConfig),
+        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize),
       );
     }
   }
@@ -244,9 +242,8 @@ export class NetworkService implements OnApplicationBootstrap {
       if (stakers.length === 0 || lastSettledEra.gt(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers}`);
-      const gasConfig = await getEthGas();
       await this.sendTransaction('apply stake changes', async () =>
-        this.sdk.rewardsDistributor.applyStakeChanges(indexer, stakers, gasConfig),
+        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers),
       );
     };
   }
