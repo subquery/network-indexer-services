@@ -31,7 +31,7 @@ export const chainIds: Record<string, number> = {
 };
 
 const options = {
-  [ChainID.local]: createContractOptions('local'),
+  //[ChainID.local]: createContractOptions('local'),
   [ChainID.testnet]: createContractOptions('testnet'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };

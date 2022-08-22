@@ -3986,26 +3986,18 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.1.tgz#12f2fe2b6b44d7c4f05bda691c0c4a00b02f8dd3"
-  integrity sha512-UN8HmUyU7Cm1692g7gJ6El03j7J4jI19GBivrpY3IQhdSh5TrlRVkwBlkeafIECFlCK9WrONzDqP0DsfMzmt3g==
+"@subql/contract-sdk@0.10.2-8":
+  version "0.10.2-8"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-8.tgz#9f93619090d1dc1dea5387d8d1b1afc6cf08b39e"
+  integrity sha512-HBYT3+jEkrtOZcHjCPiPhb3ukOV7tzemT/IVEvLLdRMgRhFy/mk+aED0kPodUCR6RzRHbHrhnszRiEIuWezxdg==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     "@polkadot/ui-keyring" "^2.9.4"
 
-"@subql/contract-sdk@0.10.1-1":
-  version "0.10.1-1"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.1-1.tgz#b0f9a9093ce5938ca585c82e0453675b345c4fa5"
-  integrity sha512-EqQWiLiMmN91wzy/j/5NIRGVT77Lys4sf7Zbj5muTmDddnD+ReYy+w6P/1OR+DQJbU/ymIAbSTy+FAlFuh3Mxw==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-    "@polkadot/ui-keyring" "^2.9.4"
-
-"@subql/indexer-admin@0.2.1-0":
-  version "0.2.1-0"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-0.tgz#6f34005f09f68b4de0388953d7ef61dc4c4858e9"
-  integrity sha512-avHMAYwM8QlCD+vWYM08blrG9i2k6yIiyxYQi3wxeOA+DhicmfkxrMhdHuMoa6FGw/mDmteEuKV1clgeC6W2Tw==
+"@subql/indexer-admin@0.2.1-1":
+  version "0.2.1-1"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-1.tgz#5f65d23fde4eaeecccf1ec298b940600abc59faf"
+  integrity sha512-L3fxixxYOGFNPlCP1AUjuLTyM1CBV/4DYeBKndBoKZnziAUOAyfBEWWokvsZwf+td5+7WWdKM0P/sOCnzwomqQ==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -4014,7 +4006,7 @@
     "@patternfly/react-log-viewer" "^4.43.19"
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
-    "@subql/contract-sdk" "0.10.1-1"
+    "@subql/contract-sdk" "0.10.2-8"
     "@subql/network-clients" "0.1.1-13"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
