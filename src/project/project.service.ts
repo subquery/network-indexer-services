@@ -228,6 +228,7 @@ export class ProjectService {
       chainType: config.chainType,
       poiEnabled: config.poiEnabled,
       forceEnabled,
+      paygPrice: '', // default is none
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
