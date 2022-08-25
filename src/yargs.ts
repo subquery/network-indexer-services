@@ -24,15 +24,15 @@ export function getYargsOption() {
       demandOption: false,
       describe: 'Network type for the service',
       type: 'string',
-      choices: ['local', 'testnet', 'mainnet'],
-      default: 'local',
+      choices: ['moonbase', 'testnet', 'mainnet'],
+      default: 'moonbase',
       group: Groups.coordinator,
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'wss://mandala-tc7-rpcnode.aca-dev.network/ws',
+      default: 'https://rpc.api.moonbase.moonbeam.network',
       group: Groups.coordinator,
     },
     ipfs: {

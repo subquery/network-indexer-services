@@ -27,7 +27,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
     "start:help": "yarn start:prod --help",
-    "start:testnet": "yarn start:prod --network testnet --postgres-port 5432 --debug --dev --port 8007",
+    "start:testnet": "yarn start:prod --network moonbase --postgres-port 5432 --debug --dev --port 8007",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up -d"
   },
@@ -41,7 +41,7 @@
     "@nestjs/typeorm": "^8.0.2",
     "@subql/common": "^1.0.0",
     "@subql/contract-sdk": "0.10.2-8",
-    "@subql/indexer-admin": "0.2.1-1",
+    "@subql/indexer-admin": "0.2.1-2",
     "@subql/network-clients": "0.1.1-14",
     "@subql/utils": "^1.0.0",
     "apollo-server-core": "^3.5.0",

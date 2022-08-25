@@ -3994,10 +3994,10 @@
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     "@polkadot/ui-keyring" "^2.9.4"
 
-"@subql/indexer-admin@0.2.1-1":
-  version "0.2.1-1"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-1.tgz#5f65d23fde4eaeecccf1ec298b940600abc59faf"
-  integrity sha512-L3fxixxYOGFNPlCP1AUjuLTyM1CBV/4DYeBKndBoKZnziAUOAyfBEWWokvsZwf+td5+7WWdKM0P/sOCnzwomqQ==
+"@subql/indexer-admin@0.2.1-2":
+  version "0.2.1-2"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-2.tgz#d9863989286b9107e748d4dd1311ab211ad56b0b"
+  integrity sha512-Ru8xwSPFBgAzhdSyTCKDoSe1R1OvOEiSmnKraQ7lsxg8nuiwRdzMRNSXCGQK9TILBfAC7o/47+HQS0rl/Law8w==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"

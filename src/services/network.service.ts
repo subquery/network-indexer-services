@@ -6,7 +6,7 @@ import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
-import { cidToBytes32, getEthGas } from '@subql/network-clients';
+import { cidToBytes32 } from '@subql/network-clients';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
