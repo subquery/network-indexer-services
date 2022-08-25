@@ -6,7 +6,7 @@ import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
-import { cidToBytes32, getEthGas } from '@subql/network-clients';
+import { cidToBytes32 } from '@subql/network-clients';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
@@ -76,7 +76,9 @@ export class NetworkService implements OnApplicationBootstrap {
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
         const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
-        const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
+        const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
+          agreementId,
+        );
         if (agreementExpired) {
           Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
         }
@@ -175,7 +177,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async hasPendingChanges(indexer: string) {
     const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
-    const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
+    const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
     return !isEmpty(stakers) || !icrChangEra.eq(0);
   }
 
@@ -236,7 +238,7 @@ export class NetworkService implements OnApplicationBootstrap {
   applyStakeChangesAction() {
     return async () => {
       const indexer = await this.accountService.getIndexer();
-      const stakers = await this.sdk.rewardsDistributor.getPendingStakers(indexer);
+      const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
       const { lastClaimedEra, lastSettledEra } = await this.geEraConfig();
 
       if (stakers.length === 0 || lastSettledEra.gt(lastClaimedEra)) return;

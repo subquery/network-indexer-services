@@ -8,9 +8,7 @@ import { ChannelType, QueryState, QueryType } from './payg.model';
 
 @Resolver(() => ChannelType)
 export class PaygResolver {
-  constructor(
-    private paygService: PaygService,
-  ) { }
+  constructor(private paygService: PaygService) {}
 
   @Query(() => ChannelType)
   channel(@Args('id') id: string) {
@@ -27,12 +25,13 @@ export class PaygResolver {
     @Args('id') id: string,
     @Args('indexer') indexer: string,
     @Args('consumer') consumer: string,
-    @Args('total') balance: number,
+    @Args('total') balance: string,
     @Args('expiration') expiration: number,
     @Args('deploymentId') deploymentId: string,
     @Args('callback') callback: string,
     @Args('lastIndexerSign') lastIndexerSign: string,
     @Args('lastConsumerSign') lastConsumerSign: string,
+    @Args('price') price: string,
   ) {
     return this.paygService.open(
       id,
@@ -43,14 +42,15 @@ export class PaygResolver {
       deploymentId,
       callback,
       lastIndexerSign,
-      lastConsumerSign
+      lastConsumerSign,
+      price,
     );
   }
 
   @Mutation(() => [QueryType])
   channelUpdate(
     @Args('id') id: string,
-    @Args('spent') spent: number,
+    @Args('spent') spent: string,
     @Args('isFinal') isFinal: boolean,
     @Args('indexerSign') indexerSign: string,
     @Args('consumerSign') consumerSign: string,

@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
+import { AgreementController } from './agreement.controller';
 
 import { ServicesModule } from './services/services.module';
 import { MetricsModule } from './metrics/metrics.module';
@@ -49,6 +50,6 @@ import { DBModule } from './db/db.module';
       exclude: ['/env.js', '/graphql*'],
     }),
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AgreementController],
 })
-export class AppModule { }
+export class AppModule {}

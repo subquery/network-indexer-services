@@ -3,16 +3,17 @@
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
+import moonbaseDeployment from '@subql/contract-sdk/publish/moonbase.json';
 import { Signer } from 'ethers';
 
 const deployments = {
-  local: testnetDeployment,
+  moonbase: moonbaseDeployment,
   testnet: testnetDeployment,
   mainnet: testnetDeployment,
 };
 
 export enum ChainID {
-  local = 1281,
+  moonbase = 1287,
   testnet = 595,
   mainnet = 1285,
 }
@@ -25,13 +26,13 @@ function createContractOptions(network: SubqueryNetwork): SdkOptions {
 }
 
 export const chainIds: Record<string, number> = {
-  local: ChainID.local,
+  moonbase: ChainID.moonbase,
   testnet: ChainID.testnet,
   mainnet: ChainID.mainnet,
 };
 
 const options = {
-  [ChainID.local]: createContractOptions('local'),
+  [ChainID.moonbase]: createContractOptions('moonbase'),
   [ChainID.testnet]: createContractOptions('testnet'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
