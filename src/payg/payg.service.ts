@@ -11,6 +11,9 @@ import { Config } from 'src/configure/configure.module';
 
 import { Channel, ChannelStatus } from './payg.model';
 
+const MAX = BigInt(5);
+const THRESHOLD = BigInt(1000);
+
 @Injectable()
 export class PaygService {
   constructor(
@@ -83,69 +86,80 @@ export class PaygService {
     indexerSign: string,
     consumerSign: string,
   ): Promise<Channel> {
-    let channel = await this.channelRepo.findOne({ id });
-    if (channel.spent + channel.price < spent) {
-      // invalid count TODO more.
+    const channel = await this.channelRepo.findOne({ id });
+    const current_remote = BigInt(spent);
+    const prev_spent = BigInt(channel.spent);
+    const prev_remote = BigInt(channel.remote);
+    const price = BigInt(channel.price);
+    if (prev_remote + price < current_remote) {
+      return null;
     }
-    channel.spent = spent;
+    if (prev_spent > prev_remote + price * MAX) {
+      return null;
+    }
+
+    channel.spent = (prev_spent + (current_remote - prev_remote)).toString();
     channel.remote = spent;
     channel.lastFinal = isFinal;
     channel.lastIndexerSign = indexerSign;
     channel.lastConsumerSign = consumerSign;
 
-    // TODO threshold value for checkpoint and spawn to other promise.
-    if ((BigInt(channel.spent) - BigInt(channel.onchain)) / BigInt(channel.price) > 5) {
+    // TODO  threshold value for checkpoint and spawn to other promise.
+    if ((current_remote - BigInt(channel.onchain)) / price > THRESHOLD) {
       // send to blockchain.
       const tx = await this.network.getSdk().stateChannel.checkpoint({
         channelId: id,
         isFinal: isFinal,
-        spent: spent,
+        spent: channel.remote,
         indexerSign: indexerSign,
         consumerSign: consumerSign,
       });
       console.log(tx);
-      channel.onchain = channel.spent;
+      channel.onchain = channel.remote;
+      channel.spent = channel.remote;
     }
 
     return this.channelRepo.save(channel);
   }
 
   async checkpoint(id: string): Promise<Channel> {
-    let channel = await this.channelRepo.findOne({ id });
+    const channel = await this.channelRepo.findOne({ id });
 
     // checkpoint
     const tx = await this.network.getSdk().stateChannel.checkpoint({
       channelId: channel.id,
       isFinal: channel.lastFinal,
-      spent: channel.spent,
+      spent: channel.remote,
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign,
     });
     console.log(tx);
 
-    channel.onchain = channel.spent;
+    channel.onchain = channel.remote;
+    channel.spent = channel.remote;
     return this.channelRepo.save(channel);
   }
 
   async challenge(id: string): Promise<Channel> {
-    let channel = await this.channelRepo.findOne({ id });
+    const channel = await this.channelRepo.findOne({ id });
 
     // challenge
     const tx = await this.network.getSdk().stateChannel.challenge({
       channelId: channel.id,
       isFinal: channel.lastFinal,
-      spent: channel.spent,
+      spent: channel.remote,
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign,
     });
     console.log(tx);
 
-    channel.onchain = channel.spent;
+    channel.onchain = channel.remote;
+    channel.spent = channel.remote;
     return this.channelRepo.save(channel);
   }
 
   async respond(id: string): Promise<Channel> {
-    let channel = await this.channelRepo.findOne({ id });
+    const channel = await this.channelRepo.findOne({ id });
 
     // challenge
     const tx = await this.network.getSdk().stateChannel.respond({
@@ -158,6 +172,7 @@ export class PaygService {
     console.log(tx);
 
     channel.onchain = channel.spent;
+    channel.spent = channel.remote;
     return this.channelRepo.save(channel);
   }
 }
