@@ -12,7 +12,7 @@ export enum ChannelStatus {
 
 export class QueryState {
   id: string;
-  spent: number;
+  spent: string;
   isFinal: boolean;
   indexerSign: string;
   consumerSign: string;
@@ -35,20 +35,20 @@ export class Channel {
   @Column()
   consumer: string;
 
-  @Column()
-  total: number;
+  @Column({ default: '' })
+  total: string;
 
-  @Column()
-  spent: number;
+  @Column({ default: '' })
+  spent: string;
 
-  @Column()
-  onchain: number;
+  @Column({ default: '' })
+  onchain: string;
 
-  @Column()
-  remote: number;
+  @Column({ default: '' })
+  remote: string;
 
-  @Column({ default: 0 })
-  price: number;
+  @Column({ default: '' })
+  price: string;
 
   @Column()
   expirationAt: number;
@@ -84,19 +84,19 @@ export class ChannelType {
   consumer: string;
 
   @Field()
-  total: number;
+  total: string;
 
   @Field()
-  spent: number;
+  spent: string;
 
   @Field()
-  onchain: number;
+  onchain: string;
 
   @Field()
-  remote: number;
+  remote: string;
 
   @Field()
-  price: number;
+  price: string;
 
   @Field()
   expirationAt: number;
@@ -120,7 +120,7 @@ export class QueryType {
   id: string;
 
   @Field()
-  spent: number;
+  spent: string;
 
   @Field()
   isFinal: boolean;

@@ -28,6 +28,9 @@ export class Project {
   queryEndpoint: string; // endpoint of query service
 
   @Column({ default: '' })
+  paygPrice: string; // price of PAYG
+
+  @Column({ default: '' })
   nodeVersion: string;
 
   @Column({ default: '' })
@@ -59,6 +62,9 @@ export class ProjectType {
 
   @Field()
   queryEndpoint: string;
+
+  @Field()
+  paygPrice: string;
 
   @Field()
   nodeVersion: string;
