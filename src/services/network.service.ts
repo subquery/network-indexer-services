@@ -28,7 +28,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private expiredAgreements: { [key: number]: number };
 
   // TODO: set back to 1800
-  private defaultInterval = 1000 * 1800;
+  private defaultInterval = 1000 * 900;
   private defaultRetryCount = 5;
   private batchSize = 20;
 
