@@ -18,7 +18,7 @@ export class ProjectResolver {
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService,
-  ) { }
+  ) {}
 
   @Query(() => [String])
   getRegistryVersions(@Args('registry') registry: string, @Args('range') range: string) {
@@ -86,6 +86,11 @@ export class ProjectResolver {
   @Mutation(() => ProjectType)
   stopProject(@Args('id') id: string) {
     return this.projectService.stopProject(id);
+  }
+
+  @Mutation(() => ProjectType)
+  paygProject(@Args('id') id: string, @Args('paygPrice') paygPrice: string) {
+    return this.projectService.paygProject(id, paygPrice);
   }
 
   @Subscription(() => ProjectType)

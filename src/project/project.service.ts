@@ -275,6 +275,17 @@ export class ProjectService {
     return this.projectRepo.remove([project]);
   }
 
+  async paygProject(id: string, paygPrice: string) {
+    const project = await this.getProject(id);
+    if (!project) {
+      getLogger('project').error(`project not exist: ${id}`);
+      return;
+    }
+    // TODO more check with price
+    project.paygPrice = paygPrice;
+    return this.projectRepo.save(project);
+  }
+
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);
     return { log };
