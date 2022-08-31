@@ -89,8 +89,13 @@ export class ProjectResolver {
   }
 
   @Mutation(() => ProjectType)
-  paygProject(@Args('id') id: string, @Args('paygPrice') paygPrice: string) {
-    return this.projectService.paygProject(id, paygPrice);
+  paygProject(
+    @Args('id') id: string,
+    @Args('paygPrice') paygPrice: string,
+    @Args('paygThreshold') paygThreshold: number,
+    @Args('paygOverflow') paygOverflow: number,
+  ) {
+    return this.projectService.paygProject(id, paygPrice, paygThreshold, paygOverflow);
   }
 
   @Subscription(() => ProjectType)

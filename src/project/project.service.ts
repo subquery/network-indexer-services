@@ -229,6 +229,8 @@ export class ProjectService {
       poiEnabled: config.poiEnabled,
       forceEnabled,
       paygPrice: '', // default is none
+      paygThreshold: 1000,
+      paygOverflow: 5,
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
@@ -275,7 +277,7 @@ export class ProjectService {
     return this.projectRepo.remove([project]);
   }
 
-  async paygProject(id: string, paygPrice: string) {
+  async paygProject(id: string, paygPrice: string, paygThreshold: number, paygOverflow: number) {
     const project = await this.getProject(id);
     if (!project) {
       getLogger('project').error(`project not exist: ${id}`);
@@ -283,6 +285,8 @@ export class ProjectService {
     }
     // TODO more check with price
     project.paygPrice = paygPrice;
+    project.paygThreshold = paygThreshold;
+    project.paygOverflow = paygOverflow;
     return this.projectRepo.save(project);
   }
 

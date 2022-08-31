@@ -28,9 +28,6 @@ export class Project {
   queryEndpoint: string; // endpoint of query service
 
   @Column({ default: '' })
-  paygPrice: string; // price of PAYG
-
-  @Column({ default: '' })
   nodeVersion: string;
 
   @Column({ default: '' })
@@ -41,6 +38,15 @@ export class Project {
 
   @Column({ default: false })
   forceEnabled: boolean;
+
+  @Column({ default: '' })
+  paygPrice: string; // price of PAYG
+
+  @Column({ default: 1000 })
+  paygThreshold: number; // Threshold of PAYG
+
+  @Column({ default: 5 })
+  paygOverflow: number; // Overflow max conflict of PAYG
 }
 
 @ObjectType('Project')
@@ -64,9 +70,6 @@ export class ProjectType {
   queryEndpoint: string;
 
   @Field()
-  paygPrice: string;
-
-  @Field()
   nodeVersion: string;
 
   @Field()
@@ -77,6 +80,15 @@ export class ProjectType {
 
   @Field()
   forceEnabled: boolean;
+
+  @Field()
+  paygPrice: string;
+
+  @Field()
+  paygThreshold: number;
+
+  @Field()
+  paygOverflow: number;
 }
 
 @ObjectType('Log')
