@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
+import { cidToBytes32 } from '@subql/network-clients';
 
 import { NetworkService } from 'src/services/network.service';
 import { getLogger } from 'src/utils/logger';
@@ -58,8 +59,8 @@ export class PaygService {
       lastFinal: false,
       price,
     });
-
     // send to blockchain.
+    const rawDeployment = cidToBytes32(deploymentId);
     const tx = await this.network
       .getSdk()
       .stateChannel.open(
@@ -68,7 +69,7 @@ export class PaygService {
         consumer,
         total,
         expirationAt,
-        deploymentId,
+        rawDeployment,
         callback,
         lastIndexerSign,
         lastConsumerSign,
