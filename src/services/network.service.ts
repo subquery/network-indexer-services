@@ -176,7 +176,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async hasPendingChanges(indexer: string) {
-    const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
+    const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
     const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
     return !isEmpty(stakers) || !icrChangEra.eq(0);
   }
@@ -186,7 +186,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const [currentEra, lastClaimedEra, lastSettledEra] = await Promise.all([
       this.sdk.eraManager.eraNumber(),
       (await this.sdk.rewardsDistributor.getRewardInfo(indexer)).lastClaimEra,
-      this.sdk.rewardsDistributor.getLastSettledEra(indexer),
+      this.sdk.rewardsStaking.getLastSettledEra(indexer),
     ]);
 
     return { currentEra, lastClaimedEra, lastSettledEra };
@@ -254,11 +254,11 @@ export class NetworkService implements OnApplicationBootstrap {
     return async () => {
       const indexer = await this.accountService.getIndexer();
       const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
-      const icrChangEra = await this.sdk.rewardsDistributor.getCommissionRateChangedEra(indexer);
+      const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
         await this.sendTransaction('apply ICR changes', async () =>
-          this.sdk.rewardsDistributor.applyICRChange(indexer),
+          this.sdk.rewardsStaking.applyICRChange(indexer),
         );
       }
     };
