@@ -4,20 +4,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
+import { cidToBytes32 } from '@subql/network-clients';
 
 import { NetworkService } from 'src/services/network.service';
 import { getLogger } from 'src/utils/logger';
 import { Config } from 'src/configure/configure.module';
+import { Project } from 'src/project/project.model';
 
 import { Channel, ChannelStatus } from './payg.model';
-
-const MAX = BigInt(5);
-const THRESHOLD = BigInt(1000);
 
 @Injectable()
 export class PaygService {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
+    @InjectRepository(Project) private projectRepo: Repository<Project>,
     private config: Config,
     private network: NetworkService,
   ) {}
@@ -59,8 +59,8 @@ export class PaygService {
       lastFinal: false,
       price,
     });
-
     // send to blockchain.
+    const rawDeployment = cidToBytes32(deploymentId);
     const tx = await this.network
       .getSdk()
       .stateChannel.open(
@@ -69,7 +69,7 @@ export class PaygService {
         consumer,
         total,
         expirationAt,
-        deploymentId,
+        rawDeployment,
         callback,
         lastIndexerSign,
         lastConsumerSign,
@@ -87,14 +87,22 @@ export class PaygService {
     consumerSign: string,
   ): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
+    const project = await this.projectRepo.findOne({ id: channel.deploymentId });
+    if (!channel || !project) {
+      getLogger('channel or project').error(`channel or project not exist: ${id}`);
+      return;
+    }
+
     const current_remote = BigInt(spent);
     const prev_spent = BigInt(channel.spent);
     const prev_remote = BigInt(channel.remote);
     const price = BigInt(channel.price);
+    const max = BigInt(project.paygOverflow);
+    const threshold = BigInt(project.paygThreshold);
     if (prev_remote + price < current_remote) {
       return null;
     }
-    if (prev_spent > prev_remote + price * MAX) {
+    if (prev_spent > prev_remote + price * max) {
       return null;
     }
 
@@ -104,8 +112,8 @@ export class PaygService {
     channel.lastIndexerSign = indexerSign;
     channel.lastConsumerSign = consumerSign;
 
-    // TODO  threshold value for checkpoint and spawn to other promise.
-    if ((current_remote - BigInt(channel.onchain)) / price > THRESHOLD) {
+    // threshold value for checkpoint and spawn to other promise.
+    if ((current_remote - BigInt(channel.onchain)) / price > threshold) {
       // send to blockchain.
       const tx = await this.network.getSdk().stateChannel.checkpoint({
         channelId: id,
