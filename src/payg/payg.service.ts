@@ -125,14 +125,15 @@ export class PaygService {
     // threshold value for checkpoint and spawn to other promise.
     if ((current_remote - BigInt(channel.onchain)) / price > threshold) {
       // send to blockchain.
-      const tx = await this.network.getSdk().stateChannel.checkpoint({
-        channelId: id,
-        isFinal: isFinal,
-        spent: channel.remote,
-        indexerSign: indexerSign,
-        consumerSign: consumerSign,
+      this.network.getSdk().stateChannel.checkpoint({
+          channelId: id,
+          isFinal: isFinal,
+          spent: channel.remote,
+          indexerSign: indexerSign,
+          consumerSign: consumerSign,
+      }).then(function (tx) {
+        console.log(tx);
       });
-      console.log(tx);
       channel.onchain = channel.remote;
       channel.spent = channel.remote;
     }
