@@ -287,6 +287,7 @@ export class ProjectService {
     project.paygPrice = paygPrice;
     project.paygThreshold = paygThreshold;
     project.paygOverflow = paygOverflow;
+    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);
   }
 
