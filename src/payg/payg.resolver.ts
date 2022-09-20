@@ -72,4 +72,9 @@ export class PaygResolver {
   channelRespond(@Args('id') id: string) {
     return this.paygService.checkpoint(id);
   }
+
+  @Mutation(() => ChannelType)
+  channelClose(@Args('id') id: string) {
+    return this.paygService.close(id);
+  }
 }

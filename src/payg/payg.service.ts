@@ -93,6 +93,10 @@ export class PaygService {
       return;
     }
 
+    if (channel.lastFinal) {
+      return null;
+    }
+
     const current_remote = BigInt(spent);
     const prev_spent = BigInt(channel.spent);
     const prev_remote = BigInt(channel.remote);
@@ -196,6 +200,31 @@ export class PaygService {
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;
+    return this.channelRepo.save(channel);
+  }
+
+  async close(id: string): Promise<Channel> {
+    const channel = await this.channelRepo.findOne({ id });
+    if (!channel) {
+      getLogger('channel').error(`channel not exist: ${id}`);
+      return;
+    }
+
+    // checkpoint
+    if (channel.onchain < channel.remote) {
+      const tx = await this.network.getSdk().stateChannel.checkpoint({
+        channelId: channel.id,
+        isFinal: channel.lastFinal,
+        spent: channel.remote,
+        indexerSign: channel.lastIndexerSign,
+        consumerSign: channel.lastConsumerSign,
+      });
+
+      channel.onchain = channel.remote;
+      channel.spent = channel.remote;
+    }
+
+    channel.lastFinal = true;
     return this.channelRepo.save(channel);
   }
 }
