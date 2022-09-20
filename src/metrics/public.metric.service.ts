@@ -26,7 +26,7 @@ export class PublicMetricsService implements OnModuleInit {
     private docker: DockerService,
     private accountService: AccountService,
     private config: Config,
-  ) { }
+  ) {}
 
   public onModuleInit() {
     this.prefix = 'subquery_indexer';

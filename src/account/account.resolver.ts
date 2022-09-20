@@ -7,7 +7,7 @@ import { AccountMetaDataType, AccountType, ControllerType } from './account.mode
 
 @Resolver(() => AccountType)
 export class AccountResolver {
-  constructor(private accountService: AccountService) { }
+  constructor(private accountService: AccountService) {}
 
   // TODO: can remove this if not use by other projects
   @Query(() => [AccountType])
