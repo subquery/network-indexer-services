@@ -3,3 +3,4 @@
 Cargo.lock
 *.key
 history.txt
+.env

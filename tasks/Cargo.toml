@@ -10,6 +10,7 @@ path = "src/state-channel.rs"
 [dependencies]
 ethers = { version = "0.17", features = ["abigen", "ws", "openssl"] }
 bs58 = "0.4"
+dotenv = "0.15"
 hex = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls", "postgres" ] }

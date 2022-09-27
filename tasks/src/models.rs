@@ -1,7 +1,6 @@
 use ethers::types::{Address, Bytes, U256};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
-use std::env;
 use tokio::sync::OnceCell;
 
 pub static DB: OnceCell<PgPool> = OnceCell::const_new();
@@ -12,7 +11,7 @@ pub fn db<'a>() -> &'a PgPool {
 
 pub async fn setup_db() {
     // setup database connection
-    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
     let db = PgPoolOptions::new()
         .max_connections(5)
         .connect(&db_url)

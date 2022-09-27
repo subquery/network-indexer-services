@@ -78,9 +78,9 @@ struct ChannelLabor {
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
-    let client = Provider::<Ws>::connect("wss://moonbeam-alpha.api.onfinality.io/public-ws")
-        .await
-        .unwrap();
+    dotenv::dotenv().ok();
+    let endpoint = std::env::var("ENDPOINT_WS").expect("ENDPOINT_WS is not set in .env file");
+    let client = Provider::<Ws>::connect(endpoint).await.unwrap();
 
     models::setup_db().await;
     let last_block = models::init_chain_block().await;
