@@ -1,4 +1,4 @@
-use ethers::types::{Address, Bytes, U256};
+use ethers::types::{Address, H256, U256};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
@@ -95,7 +95,7 @@ pub async fn channel_finalize(id: U256, total: U256, remain: U256) {
     .await;
 }
 
-pub async fn channel_labor(deployment_id: Bytes, indexer: Address, amount: U256, time: u64) {
+pub async fn channel_labor(deployment_id: H256, indexer: Address, amount: U256, time: u64) {
     let deployment_string = deployment_cid(&deployment_id);
     let indexer_string = format!("{:?}", indexer);
     let total_string = format!("{}", amount);
@@ -121,7 +121,7 @@ pub async fn init_chain_block() -> u64 {
     if let Ok(res) = res {
         res.value.parse::<u64>().unwrap()
     } else {
-        let _ = query!("INSERT INTO chain_info(name,value) VALUES ('0', 'block')")
+        let _ = query!("INSERT INTO chain_info(name,value) VALUES ('block', '0')")
             .execute(db())
             .await;
         0
@@ -137,16 +137,13 @@ pub async fn update_chain_block(block: u64) {
     .await;
 }
 
-fn deployment_cid(deployment: &[u8]) -> String {
-    if deployment.len() != 32 {
-        return "".to_owned();
-    }
+fn deployment_cid(deployment: &H256) -> String {
     // Add our default ipfs values for first 2 bytes:
     // function:0x12=sha2, size:0x20=256 bits
     // and cut off leading "0x"
     let mut bytes = [0u8; 34];
     bytes[0] = 18;
     bytes[1] = 32;
-    bytes[2..].copy_from_slice(deployment);
+    bytes[2..].copy_from_slice(deployment.as_bytes());
     bs58::encode(&bytes).into_string()
 }
