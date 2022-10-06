@@ -4031,15 +4031,7 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.10.2-22":
-  version "0.10.2-22"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-22.tgz#786af9acd1910ecd65c919055ba9c89d7684189e"
-  integrity sha512-aL00pHc+QSmoS9l2bL52dSomL/7E7UMsD+LIpvRWSJ3Fh3UGwkAVlU/HFtbtgcHQgPArH6WdMKRsCqD7bC/gBQ==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-    "@polkadot/ui-keyring" "^2.9.4"
-
-"@subql/contract-sdk@0.10.2-34":
+"@subql/contract-sdk@0.10.2-34", "@subql/contract-sdk@^0.10.2-34":
   version "0.10.2-34"
   resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-34.tgz#087ee20b9f4dec21d736f7ee4ecd227724b3dc6e"
   integrity sha512-rpqmJpPPJV+sm+Md8HywuMStFe9RjKJnuxNBs9k+FZw1AVZQzPdprbxAABV8G3Soh/B8kA2WWyKV3WWgQwecqg==
@@ -4048,10 +4040,10 @@
     "@polkadot/ui-keyring" "^2.9.4"
     solidity-docgen "^0.6.0-beta.25"
 
-"@subql/indexer-admin@0.2.1-4":
-  version "0.2.1-4"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-4.tgz#a6e0470d336c332663c0a8acd44fedcd87b8d4da"
-  integrity sha512-3+cPGMwyAKyqdCq96jiPZsNeTmbJNOanzVt8dhmcEXBUerQRLJsFAZFcwh+BuM350tJoKaQgI0OZeqVbYfa15w==
+"@subql/indexer-admin@0.2.1-5":
+  version "0.2.1-5"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-5.tgz#2a905ff7197a207975ad983f173b39ad1bbe9600"
+  integrity sha512-XCrAApy8q0WybTkxBpXj6gk9C4s/RviTmUcS8zmtxxddvPUvi9VNKaz3GWWbGJPxcxvtes8EzxH4f7Sxs8wlEw==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -4060,8 +4052,7 @@
     "@patternfly/react-log-viewer" "^4.43.19"
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
-    "@subql/contract-sdk" "0.10.2-22"
-    "@subql/network-clients" "0.1.1-13"
+    "@subql/contract-sdk" "^0.10.2-34"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -4092,15 +4083,6 @@
     typescript "^4.1.2"
     web-vitals "^1.0.1"
     yup "^0.32.11"
-
-"@subql/network-clients@0.1.1-13":
-  version "0.1.1-13"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-13.tgz#b04255a27b624fbd7e6b1d48be2ec38c2a6382ba"
-  integrity sha512-8gMAE2YPxRhBpTx9Nv4aoMl8y2nu7JMpaqBGDH6yje7O8d5qQSDqbcZ9qLlHLAa215HKnmsZ1LMIRSvjtt+upw==
-  dependencies:
-    axios "^0.27.2"
-    buffer "^6.0.3"
-    ethers "^5.6.8"
 
 "@subql/network-clients@0.2.1-9":
   version "0.2.1-9"
