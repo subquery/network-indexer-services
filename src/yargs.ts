@@ -38,7 +38,7 @@ export function getYargsOption() {
     ipfs: {
       type: 'string',
       describe: 'Specify ipfs endpoint for this network',
-      default: 'https://interipfs.thechaindata.com/ipfs/api/v0',
+      default: 'https://unauthipfs.subquery.net/ipfs/api/v0',
       group: Groups.coordinator,
     },
     port: {
