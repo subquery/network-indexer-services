@@ -62,8 +62,8 @@ export enum NodeDockerRegistry {
 
 export type ChainType = 'cosmos' | 'avalanche' | 'substrate';
 
-export const IPFS_PROJECT_CLIENT = create({ url: 'https://ipfs.subquery.network/ipfs/api/v0' });
-const clientSDK = IPFSClient.create(IPFS_PROJECT_CLIENT);
+export const IPFS_URL = 'https://authipfs.subquery.network/ipfs/api/v0';
+const clientSDK = new IPFSClient(IPFS_URL);
 
 // TODO: migrate these logic to client sdk
 export async function getManifest(cid: string) {

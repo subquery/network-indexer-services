@@ -163,6 +163,25 @@
     tslib "^2.3.0"
     zen-observable-ts "^1.2.0"
 
+"@apollo/client@^3.7.0":
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.7.0.tgz#1c26a04488f45b3a4779fa2562e4b706402cb876"
+  integrity sha512-hp4OvrH1ZIQACRYcIrh/C0WFnY7IM7G6nlTpC8DSTEWxfZQ2kvpvDY0I/hYmCs0oAVrg26g3ANEdOzGWTcYbPg==
+  dependencies:
+    "@graphql-typed-document-node/core" "^3.1.1"
+    "@wry/context" "^0.7.0"
+    "@wry/equality" "^0.5.0"
+    "@wry/trie" "^0.3.0"
+    graphql-tag "^2.12.6"
+    hoist-non-react-statics "^3.3.2"
+    optimism "^0.16.1"
+    prop-types "^15.7.2"
+    response-iterator "^0.2.6"
+    symbol-observable "^4.0.0"
+    ts-invariant "^0.10.3"
+    tslib "^2.3.0"
+    zen-observable-ts "^1.2.5"
+
 "@apollo/client@~3.2.5 || ~3.3.0 || ~3.4.0":
   version "3.4.17"
   resolved "https://registry.npmjs.org/@apollo/client/-/client-3.4.17.tgz"
@@ -1841,6 +1860,15 @@
     "@ethersproject/logger" "^5.6.0"
     bn.js "^5.2.1"
 
+"@ethersproject/bignumber@^5.7.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@ethersproject/bignumber/-/bignumber-5.7.0.tgz#e2f03837f268ba655ffba03a57853e18a18dc9c2"
+  integrity sha512-n1CAdIHRWjSucQO3MC1zPSVgV/6dy/fjL9pMrPP9peL+QxEg9wOsVqwD4+818B6LUEtaXzVHQiuivzRoxPxUGw==
+  dependencies:
+    "@ethersproject/bytes" "^5.7.0"
+    "@ethersproject/logger" "^5.7.0"
+    bn.js "^5.2.1"
+
 "@ethersproject/bytes@5.5.0", "@ethersproject/bytes@^5.5.0", "@ethersproject/bytes@~5.5.0":
   version "5.5.0"
   resolved "https://registry.npmjs.org/@ethersproject/bytes/-/bytes-5.5.0.tgz"
@@ -1854,6 +1882,13 @@
   integrity sha512-NwQt7cKn5+ZE4uDn+X5RAXLp46E1chXoaMmrxAyA0rblpxz8t58lVkrHXoRIn0lz1joQElQ8410GqhTqMOwc6g==
   dependencies:
     "@ethersproject/logger" "^5.6.0"
+
+"@ethersproject/bytes@^5.7.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@ethersproject/bytes/-/bytes-5.7.0.tgz#a00f6ea8d7e7534d6d87f47188af1148d71f155d"
+  integrity sha512-nsbxwgFXWh9NyYWo+U8atvmMsSdKJprTcICAkvbBffT75qDocbuggBU0SJiVK2MuTrp0q+xvLkTnGMPK1+uA9A==
+  dependencies:
+    "@ethersproject/logger" "^5.7.0"
 
 "@ethersproject/constants@5.5.0", "@ethersproject/constants@^5.5.0", "@ethersproject/constants@~5.5.0":
   version "5.5.0"
@@ -2028,6 +2063,11 @@
   version "5.6.0"
   resolved "https://registry.yarnpkg.com/@ethersproject/logger/-/logger-5.6.0.tgz#d7db1bfcc22fd2e4ab574cba0bb6ad779a9a3e7a"
   integrity sha512-BiBWllUROH9w+P21RzoxJKzqoqpkyM1pRnEKG69bulE9TSQD8SAIvTQqIMZmmCO8pUNkgLP1wndX1gKghSpBmg==
+
+"@ethersproject/logger@^5.7.0":
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/@ethersproject/logger/-/logger-5.7.0.tgz#6ce9ae168e74fecf287be17062b590852c311892"
+  integrity sha512-0odtFdXu/XHtjQXJYA3u9G0G8btm0ND5Cu8M7i5vhEcE8/HmF4Lbdqanwyv4uQTr2tx6b7fQRmgLrsnpQlmnig==
 
 "@ethersproject/networks@5.5.0", "@ethersproject/networks@^5.5.0", "@ethersproject/networks@~5.5.0":
   version "5.5.0"
@@ -2496,6 +2536,11 @@
   version "3.1.0"
   resolved "https://registry.npmjs.org/@graphql-typed-document-node/core/-/core-3.1.0.tgz"
   integrity sha512-wYn6r8zVZyQJ6rQaALBEln5B1pzxb9shV5Ef97kTvn6yVGrqyXVnDqnU24MXnFubR+rZjBY9NWuxX3FB2sTsjg==
+
+"@graphql-typed-document-node/core@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.1.1.tgz#076d78ce99822258cf813ecc1e7fa460fa74d052"
+  integrity sha512-NQ17ii0rK1b34VZonlmT2QMJFI70m0TRwbknO/ihlbatXyaktDhN/98vBiUU6kNBPljqGqyIrl2T4nY2RpFANg==
 
 "@hapi/address@2.x.x":
   version "2.1.4"
@@ -3986,18 +4031,19 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.10.2-22":
-  version "0.10.2-22"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-22.tgz#786af9acd1910ecd65c919055ba9c89d7684189e"
-  integrity sha512-aL00pHc+QSmoS9l2bL52dSomL/7E7UMsD+LIpvRWSJ3Fh3UGwkAVlU/HFtbtgcHQgPArH6WdMKRsCqD7bC/gBQ==
+"@subql/contract-sdk@0.10.2-34", "@subql/contract-sdk@^0.10.2-34":
+  version "0.10.2-34"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-34.tgz#087ee20b9f4dec21d736f7ee4ecd227724b3dc6e"
+  integrity sha512-rpqmJpPPJV+sm+Md8HywuMStFe9RjKJnuxNBs9k+FZw1AVZQzPdprbxAABV8G3Soh/B8kA2WWyKV3WWgQwecqg==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
     "@polkadot/ui-keyring" "^2.9.4"
+    solidity-docgen "^0.6.0-beta.25"
 
-"@subql/indexer-admin@0.2.1-4":
-  version "0.2.1-4"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-4.tgz#a6e0470d336c332663c0a8acd44fedcd87b8d4da"
-  integrity sha512-3+cPGMwyAKyqdCq96jiPZsNeTmbJNOanzVt8dhmcEXBUerQRLJsFAZFcwh+BuM350tJoKaQgI0OZeqVbYfa15w==
+"@subql/indexer-admin@0.2.1-5":
+  version "0.2.1-5"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.1-5.tgz#2a905ff7197a207975ad983f173b39ad1bbe9600"
+  integrity sha512-XCrAApy8q0WybTkxBpXj6gk9C4s/RviTmUcS8zmtxxddvPUvi9VNKaz3GWWbGJPxcxvtes8EzxH4f7Sxs8wlEw==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -4006,8 +4052,7 @@
     "@patternfly/react-log-viewer" "^4.43.19"
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
-    "@subql/contract-sdk" "0.10.2-22"
-    "@subql/network-clients" "0.1.1-13"
+    "@subql/contract-sdk" "^0.10.2-34"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -4039,23 +4084,19 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.1.1-13":
-  version "0.1.1-13"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-13.tgz#b04255a27b624fbd7e6b1d48be2ec38c2a6382ba"
-  integrity sha512-8gMAE2YPxRhBpTx9Nv4aoMl8y2nu7JMpaqBGDH6yje7O8d5qQSDqbcZ9qLlHLAa215HKnmsZ1LMIRSvjtt+upw==
+"@subql/network-clients@0.2.1-10":
+  version "0.2.1-10"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-10.tgz#bdaba27a45a9f9f320c71fdeaf6c6539bd7f65f8"
+  integrity sha512-OI+qjbtxkQgMCr6o0U4vxQCeDWzVluPudeKcjxwKrxD0AC5UCKx7b1SqDuvdqSeNSQldji1EXl9KjfMual6FpQ==
   dependencies:
+    "@apollo/client" "^3.7.0"
+    "@ethersproject/bignumber" "^5.7.0"
     axios "^0.27.2"
     buffer "^6.0.3"
+    cross-fetch "^3.1.5"
     ethers "^5.6.8"
-
-"@subql/network-clients@0.1.1-14":
-  version "0.1.1-14"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.1.1-14.tgz#ef12b1d21d6f4ffc30e309b2e82d94ca4ea4c08c"
-  integrity sha512-rG+WP6a0/DDQMmpsTJAOtWfLwhG9MnKn9wnD6NzXx0GY8sgroMQrYYqQSNX4CVy2Fw80Fm7x63MsxS22Ml5B5w==
-  dependencies:
-    axios "^0.27.2"
-    buffer "^6.0.3"
-    ethers "^5.6.8"
+    graphql "^16.5.0"
+    yup "^0.32.11"
 
 "@subql/react-ui@^1.0.1-21":
   version "1.0.1-21"
@@ -5291,6 +5332,13 @@
   version "0.6.1"
   resolved "https://registry.npmjs.org/@wry/context/-/context-0.6.1.tgz"
   integrity sha512-LOmVnY1iTU2D8tv4Xf6MVMZZ+juIJ87Kt/plMijjN20NMAXGmH4u8bS1t0uT74cZ5gwpocYueV58YwyI8y+GKw==
+  dependencies:
+    tslib "^2.3.0"
+
+"@wry/context@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@wry/context/-/context-0.7.0.tgz#be88e22c0ddf62aeb0ae9f95c3d90932c619a5c8"
+  integrity sha512-LcDAiYWRtwAoSOArfk7cuYvFXytxfVrdX7yxoUmK7pPITLk5jYh2F8knCwS7LjgYL8u1eidPlKKV6Ikqq0ODqQ==
   dependencies:
     tslib "^2.3.0"
 
@@ -7490,7 +7538,7 @@ create-require@^1.1.0:
   resolved "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-cross-fetch@^3.0.6:
+cross-fetch@^3.0.6, cross-fetch@^3.1.5:
   version "3.1.5"
   resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.1.5.tgz"
   integrity sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==
@@ -9937,6 +9985,11 @@ graphql@^16.0.1:
   version "16.3.0"
   resolved "https://registry.npmjs.org/graphql/-/graphql-16.3.0.tgz"
   integrity sha512-xm+ANmA16BzCT5pLjuXySbQVFwH3oJctUVdy81w1sV0vBU0KgDdBGtxQOUd5zqOBk/JayAFeG8Dlmeq74rjm/A==
+
+graphql@^16.5.0:
+  version "16.6.0"
+  resolved "https://registry.yarnpkg.com/graphql/-/graphql-16.6.0.tgz#c2dcffa4649db149f6282af726c8c83f1c7c5fdb"
+  integrity sha512-KPIBPDlW7NxrbT/eh4qPXz5FiFdL5UbaA0XUNz2Rp3Z3hqBSkbj0GVjwFDztsWVauZUWsbKHgMg++sk8UX0bkw==
 
 graphql@~16.0.1:
   version "16.0.1"
@@ -16057,6 +16110,11 @@ resolve@^2.0.0-next.3:
     is-core-module "^2.2.0"
     path-parse "^1.0.6"
 
+response-iterator@^0.2.6:
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/response-iterator/-/response-iterator-0.2.6.tgz#249005fb14d2e4eeb478a3f735a28fd8b4c9f3da"
+  integrity sha512-pVzEEzrsg23Sh053rmDUvLSkGXluZio0qu8VT6ukrYuvtjVfCbDZH9d6PGXb8HZfzdNZt8feXv/jvUzlhRgLnw==
+
 restore-cursor@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npmjs.org/restore-cursor/-/restore-cursor-3.1.0.tgz"
@@ -16706,6 +16764,19 @@ sockjs@^0.3.21:
     faye-websocket "^0.11.3"
     uuid "^8.3.2"
     websocket-driver "^0.7.4"
+
+solidity-ast@^0.4.31:
+  version "0.4.35"
+  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.35.tgz#82e064b14dc989338123264bde2235cad751f128"
+  integrity sha512-F5bTDLh3rmDxRmLSrs3qt3nvxJprWSEkS7h2KmuXDx7XTfJ6ZKVTV1rtPIYCqJAuPsU/qa8YUeFn7jdOAZcTPA==
+
+solidity-docgen@^0.6.0-beta.25:
+  version "0.6.0-beta.29"
+  resolved "https://registry.yarnpkg.com/solidity-docgen/-/solidity-docgen-0.6.0-beta.29.tgz#90f0382091b56f103b185b2fbf869ff399b2d361"
+  integrity sha512-63p3w6wj1WFhhC8pXTI3bz5qUTFuGmLNHFnwwpjZ6Qv8dF2WGDt0pg1rbA6c3bL/A4d0ATN66Mte1saGKVWdHg==
+  dependencies:
+    handlebars "^4.7.7"
+    solidity-ast "^0.4.31"
 
 sonic-boom@^1.0.2:
   version "1.4.1"
@@ -17630,6 +17701,13 @@ tryer@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/tryer/-/tryer-1.0.1.tgz"
   integrity sha512-c3zayb8/kWWpycWYg87P71E1S1ZL6b6IJxfb5fvsUgsf0S2MVGaDhDXXjDMpdCpfWXqptc+4mXwmiy1ypXqRAA==
+
+ts-invariant@^0.10.3:
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/ts-invariant/-/ts-invariant-0.10.3.tgz#3e048ff96e91459ffca01304dbc7f61c1f642f6c"
+  integrity sha512-uivwYcQaxAucv1CzRp2n/QdYPo4ILf9VXgH19zEIjFx2EJufV16P0JtJVpYHy89DItG6Kwj2oIUjrcK5au+4tQ==
+  dependencies:
+    tslib "^2.1.0"
 
 ts-invariant@^0.9.0:
   version "0.9.3"
@@ -18944,6 +19022,13 @@ zen-observable-ts@^1.2.0:
   version "1.2.3"
   resolved "https://registry.npmjs.org/zen-observable-ts/-/zen-observable-ts-1.2.3.tgz"
   integrity sha512-hc/TGiPkAWpByykMwDcem3SdUgA4We+0Qb36bItSuJC9xD0XVBZoFHYoadAomDSNf64CG8Ydj0Qb8Od8BUWz5g==
+  dependencies:
+    zen-observable "0.8.15"
+
+zen-observable-ts@^1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/zen-observable-ts/-/zen-observable-ts-1.2.5.tgz#6c6d9ea3d3a842812c6e9519209365a122ba8b58"
+  integrity sha512-QZWQekv6iB72Naeake9hS1KxHlotfRpe+WGNbNx5/ta+R3DNjVO2bswf63gXlWDcs+EMd7XY8HfVQyP1X6T4Zg==
   dependencies:
     zen-observable "0.8.15"
 
