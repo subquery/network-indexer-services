@@ -4084,10 +4084,10 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.2.1-9":
-  version "0.2.1-9"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-9.tgz#7c9726654dd6f6f88112d92d157bd0acb3ea23b9"
-  integrity sha512-xLXgdSRTENA/Cm3NUUSRWTzK5mdJcOHHSJR5x031hOs8UwcN0jcaS+cws3bUrevb6wy6mMPKibyfBf97nwvZzg==
+"@subql/network-clients@0.2.1-10":
+  version "0.2.1-10"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-10.tgz#bdaba27a45a9f9f320c71fdeaf6c6539bd7f65f8"
+  integrity sha512-OI+qjbtxkQgMCr6o0U4vxQCeDWzVluPudeKcjxwKrxD0AC5UCKx7b1SqDuvdqSeNSQldji1EXl9KjfMual6FpQ==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
