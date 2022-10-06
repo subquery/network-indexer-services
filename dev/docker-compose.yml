@@ -33,7 +33,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
-      - --ws-endpoint=wss://acala-mandala-adapter.api.onfinality.io/public-ws
+      - --ws-endpoint=wss://moonbeam-alpha.api.onfinality.io/public-ws
       - --postgres-host=postgres
       - --postgres-database=postgres      # use the same password in the db config
       - --postgres-port=5432
