@@ -92,10 +92,11 @@ export class ProjectResolver {
   paygProject(
     @Args('id') id: string,
     @Args('paygPrice') paygPrice: string,
+    @Args('paygExpiration') paygExpiration: number,
     @Args('paygThreshold') paygThreshold: number,
     @Args('paygOverflow') paygOverflow: number,
   ) {
-    return this.projectService.paygProject(id, paygPrice, paygThreshold, paygOverflow);
+    return this.projectService.paygProject(id, paygPrice, paygExpiration, paygThreshold, paygOverflow);
   }
 
   @Subscription(() => ProjectType)

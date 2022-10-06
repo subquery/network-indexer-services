@@ -12,4 +12,4 @@ import { Account } from './account.model';
   providers: [AccountService, AccountResolver],
   exports: [AccountService],
 })
-export class AccountModule { }
+export class AccountModule {}

@@ -47,7 +47,7 @@ export class PaygResolver {
     );
   }
 
-  @Mutation(() => [QueryType])
+  @Mutation(() => QueryType)
   channelUpdate(
     @Args('id') id: string,
     @Args('spent') spent: string,
@@ -58,18 +58,23 @@ export class PaygResolver {
     return this.paygService.update(id, spent, isFinal, indexerSign, consumerSign);
   }
 
-  @Mutation(() => [ChannelType])
+  @Mutation(() => ChannelType)
   channelCheckpoint(@Args('id') id: string) {
     return this.paygService.checkpoint(id);
   }
 
-  @Mutation(() => [ChannelType])
+  @Mutation(() => ChannelType)
   channelChallenge(@Args('id') id: string) {
     return this.paygService.challenge(id);
   }
 
-  @Mutation(() => [ChannelType])
+  @Mutation(() => ChannelType)
   channelRespond(@Args('id') id: string) {
     return this.paygService.checkpoint(id);
+  }
+
+  @Mutation(() => ChannelType)
+  channelClose(@Args('id') id: string) {
+    return this.paygService.close(id);
   }
 }
