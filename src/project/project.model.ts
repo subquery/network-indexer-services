@@ -43,7 +43,7 @@ export class Project {
   paygPrice: string; // price of PAYG
 
   @Column({ default: 3600 })
-  paygExpiration: number; // min expiration time of PAYG
+  paygExpiration: number; // max expiration time of PAYG
 
   @Column({ default: 1000 })
   paygThreshold: number; // Threshold of PAYG
