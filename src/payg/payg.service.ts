@@ -93,16 +93,26 @@ export class PaygService {
       return;
     }
 
+    if (channel.lastFinal) {
+      return null;
+    }
+
     const current_remote = BigInt(spent);
     const prev_spent = BigInt(channel.spent);
     const prev_remote = BigInt(channel.remote);
     const price = BigInt(channel.price);
     const max = BigInt(project.paygOverflow);
     const threshold = BigInt(project.paygThreshold);
-    if (prev_remote + price < current_remote) {
+    if (prev_remote + price > current_remote) {
+      getLogger('StateChannel').warn('Price invalid');
       return null;
     }
     if (prev_spent > prev_remote + price * max) {
+      getLogger('StateChannel').warn('overflow the conflict');
+      return null;
+    }
+    if (current_remote >= BigInt(channel.total) + price) {
+      getLogger('StateChannel').warn('overflow the total');
       return null;
     }
 
@@ -115,14 +125,15 @@ export class PaygService {
     // threshold value for checkpoint and spawn to other promise.
     if ((current_remote - BigInt(channel.onchain)) / price > threshold) {
       // send to blockchain.
-      const tx = await this.network.getSdk().stateChannel.checkpoint({
-        channelId: id,
-        isFinal: isFinal,
-        spent: channel.remote,
-        indexerSign: indexerSign,
-        consumerSign: consumerSign,
+      this.network.getSdk().stateChannel.checkpoint({
+          channelId: id,
+          isFinal: isFinal,
+          spent: channel.remote,
+          indexerSign: indexerSign,
+          consumerSign: consumerSign,
+      }).then(function (tx) {
+        console.log(tx);
       });
-      console.log(tx);
       channel.onchain = channel.remote;
       channel.spent = channel.remote;
     }
@@ -132,6 +143,9 @@ export class PaygService {
 
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
+    if (channel.onchain == channel.remote) {
+      return null;
+    }
 
     // checkpoint
     const tx = await this.network.getSdk().stateChannel.checkpoint({
@@ -150,6 +164,9 @@ export class PaygService {
 
   async challenge(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
+    if (channel.onchain == channel.remote) {
+      return null;
+    }
 
     // challenge
     const tx = await this.network.getSdk().stateChannel.challenge({
@@ -168,6 +185,9 @@ export class PaygService {
 
   async respond(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
+    if (channel.onchain == channel.remote) {
+      return null;
+    }
 
     // challenge
     const tx = await this.network.getSdk().stateChannel.respond({
@@ -181,6 +201,31 @@ export class PaygService {
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;
+    return this.channelRepo.save(channel);
+  }
+
+  async close(id: string): Promise<Channel> {
+    const channel = await this.channelRepo.findOne({ id });
+    if (!channel) {
+      getLogger('channel').error(`channel not exist: ${id}`);
+      return;
+    }
+
+    // checkpoint
+    if (channel.onchain < channel.remote) {
+      const tx = await this.network.getSdk().stateChannel.checkpoint({
+        channelId: channel.id,
+        isFinal: channel.lastFinal,
+        spent: channel.remote,
+        indexerSign: channel.lastIndexerSign,
+        consumerSign: channel.lastConsumerSign,
+      });
+
+      channel.onchain = channel.remote;
+      channel.spent = channel.remote;
+    }
+
+    channel.lastFinal = true;
     return this.channelRepo.save(channel);
   }
 }

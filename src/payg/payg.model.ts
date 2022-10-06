@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum ChannelStatus {
   FINALIZED,
@@ -130,4 +130,64 @@ export class QueryType {
 
   @Field()
   consumerSign: string;
+}
+
+@Entity()
+export class ChannelLabor {
+  @PrimaryGeneratedColumn()
+  id: number
+
+  @Column()
+  deploymentId: string;
+
+  @Column()
+  indexer: string;
+
+  @Column()
+  total: string;
+
+  @Column()
+  createdAt: number;
+}
+
+@ObjectType('ChannelLabor')
+export class ChannelLaborType {
+  @Field(() => ID)
+  id: number;
+
+  @Field()
+  deploymentId: string;
+
+  @Field()
+  indexer: string;
+
+  @Field()
+  total: string;
+
+  @Field()
+  createdAt: number;
+}
+
+@Entity()
+export class ChainInfo {
+  @PrimaryGeneratedColumn()
+  id: number
+
+  @Column()
+  name: string;
+
+  @Column()
+  value: string;
+}
+
+@ObjectType('ChainInfo')
+export class ChainInfoType {
+  @Field(() => ID)
+  id: number;
+
+  @Field()
+  name: string;
+
+  @Field()
+  value: string;
 }

@@ -17,4 +17,4 @@ import { MetricsModule } from 'src/metrics/metrics.module';
   providers: [ProjectService, ProjectResolver],
   exports: [ProjectService],
 })
-export class ProjectModule { }
+export class ProjectModule {}

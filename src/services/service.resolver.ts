@@ -6,7 +6,7 @@ import { ContractService } from './contract.service';
 
 @Resolver()
 export class ServiceResolver {
-  constructor(private contract: ContractService) { }
+  constructor(private contract: ContractService) {}
 
   @Query(() => Boolean)
   withrawController(@Args('id') id: string) {

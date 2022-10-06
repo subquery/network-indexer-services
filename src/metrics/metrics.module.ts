@@ -12,4 +12,4 @@ import { PublicMetricsService } from './public.metric.service';
   providers: [PublicMetricsService],
   exports: [PublicMetricsService],
 })
-export class MetricsModule { }
+export class MetricsModule {}

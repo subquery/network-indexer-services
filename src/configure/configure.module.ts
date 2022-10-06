@@ -47,7 +47,7 @@ export class Config implements IConfig {
     });
   }
 
-  constructor(private readonly _config: IConfig) { }
+  constructor(private readonly _config: IConfig) {}
 
   get network(): Network {
     return this._config.network;

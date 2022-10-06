@@ -9,10 +9,16 @@ import { Project } from 'src/project/project.model';
 
 import { PaygService } from './payg.service';
 import { PaygResolver } from './payg.resolver';
-import { Channel } from './payg.model';
+import { ChainInfo, Channel, ChannelLabor } from './payg.model';
 
 @Module({
-  imports: [ServicesModule, TypeOrmModule.forFeature([Channel]), TypeOrmModule.forFeature([Project])],
+  imports: [
+    ServicesModule,
+    TypeOrmModule.forFeature([Channel]),
+    TypeOrmModule.forFeature([ChannelLabor]),
+    TypeOrmModule.forFeature([ChainInfo]),
+    TypeOrmModule.forFeature([Project])
+  ],
   providers: [PaygService, PaygResolver],
   exports: [PaygService],
 })

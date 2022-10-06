@@ -33,4 +33,4 @@ import { SubscriptionService } from './subscription.service';
     SubscriptionService,
   ],
 })
-export class ServicesModule { }
+export class ServicesModule {}
