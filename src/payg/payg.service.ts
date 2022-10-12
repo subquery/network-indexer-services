@@ -11,13 +11,14 @@ import { getLogger } from 'src/utils/logger';
 import { Config } from 'src/configure/configure.module';
 import { Project } from 'src/project/project.model';
 
-import { Channel, ChannelStatus } from './payg.model';
+import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
 
 @Injectable()
 export class PaygService {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(Project) private projectRepo: Repository<Project>,
+    @InjectRepository(ChannelLabor) private laborRepo: Repository<ChannelLabor>,
     private config: Config,
     private network: NetworkService,
   ) {}
@@ -227,5 +228,87 @@ export class PaygService {
 
     channel.lastFinal = true;
     return this.channelRepo.save(channel);
+  }
+
+  async sync_open(
+    id: string,
+    indexer: string,
+    consumer: string,
+    total: string,
+    expirationAt: number,
+    deploymentId: string,
+  ){
+    const channel = this.channelRepo.create({
+      id,
+      deploymentId,
+      indexer,
+      consumer,
+      total,
+      expirationAt,
+      lastIndexerSign: '',
+      lastConsumerSign: '',
+      status: ChannelStatus.OPEN,
+      spent: '0',
+      onchain: '0',
+      remote: '0',
+      challengeAt: 0,
+      lastFinal: false,
+      price: '',
+    });
+    this.channelRepo.save(channel);
+  }
+
+  async sync_extend(id: string,  expirationAt: number){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.expirationAt = expirationAt;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_fund(id: string,  total: string){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.total = total;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_checkpoint(id: string, onchain: string){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.onchain = onchain;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_challenge(id: string, onchain: string){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.onchain = onchain;
+    channel.status = ChannelStatus.CHALLENGE;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_respond(id: string, onchain: string){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.onchain = onchain;
+    channel.status = ChannelStatus.OPEN;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_finalize(id: string, total: number, remain: number){
+    const channel = await this.channelRepo.findOne({ id });
+    channel.onchain = (total - remain).toString();
+    channel.status = ChannelStatus.FINALIZED;
+    this.channelRepo.save(channel);
+  }
+
+  async sync_labor(
+    deploymentId: string,
+    indexer: string,
+    total: string,
+    createdAt: number
+  ){
+    const labor = this.laborRepo.create({
+      deploymentId: deploymentId,
+      indexer: indexer,
+      total: total,
+      createdAt: createdAt,
+    })
+    this.laborRepo.save(labor);
   }
 }

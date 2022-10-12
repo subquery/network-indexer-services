@@ -3,6 +3,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { sync } from './sync'
 import { getLogger, LogCategory, NestLogger } from './utils/logger';
 import { argv } from './yargs';
 
@@ -13,6 +14,7 @@ async function bootstrap() {
     await app.listen(port);
     getLogger(LogCategory.coordinator).info('coordinator service started');
     getLogger(LogCategory.admin).info('indexer admin app started');
+    sync(app);
   } catch (e) {
     getLogger(LogCategory.coordinator).error(e, 'coordinator service failed');
   }
