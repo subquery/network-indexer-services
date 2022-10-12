@@ -68,13 +68,12 @@ export async function sync(app: INestApplication) {
             start = end;
             let db_block = Math.min(chain_last_block, last_block);
             await chainService.updateBlock(db_block.toString());
+        }
+        chain_last_block = await contractService.getLastBlockNumber();
 
-            chain_last_block = await contractService.getLastBlockNumber();
-
-            if(chain_last_block <= last_block) {
-                last_block = chain_last_block;
-                break;
-            }
+        if(chain_last_block <= last_block) {
+            last_block = chain_last_block;
+            break;
         }
     }
 
