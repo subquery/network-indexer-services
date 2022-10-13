@@ -83,7 +83,7 @@ export class PaygService {
     }
 
     if (channel.lastFinal) {
-      return null;
+      return;
     }
 
     const current_remote = BigInt(spent);
@@ -92,17 +92,17 @@ export class PaygService {
     const price = BigInt(channel.price);
     const max = BigInt(project.paygOverflow);
     const threshold = BigInt(project.paygThreshold);
-    if (prev_remote + price > current_remote) {
+    if (prev_remote < current_remote && prev_remote + price > current_remote) {
       getLogger('StateChannel').warn('Price invalid');
-      return null;
+      return;
     }
     if (prev_spent > prev_remote + price * max) {
       getLogger('StateChannel').warn('overflow the conflict');
-      return null;
+      return;
     }
     if (current_remote >= BigInt(channel.total) + price) {
       getLogger('StateChannel').warn('overflow the total');
-      return null;
+      return;
     }
 
     channel.spent = (prev_spent + (current_remote - prev_remote)).toString();
@@ -133,7 +133,7 @@ export class PaygService {
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
     if (channel.onchain == channel.remote) {
-      return null;
+      return;
     }
 
     // checkpoint
@@ -154,7 +154,7 @@ export class PaygService {
   async terminate(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
     if (channel.onchain == channel.remote) {
-      return null;
+      return;
     }
 
     // terminate
@@ -176,7 +176,7 @@ export class PaygService {
   async respond(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
     if (channel.onchain == channel.remote) {
-      return null;
+      return;
     }
 
     // respond to chain
