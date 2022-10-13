@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ServicesModule } from 'src/services/services.module';
 import { Project } from 'src/project/project.model';
-import { AccountService } from 'src/account/account.service';
+import { AccountModule } from 'src/account/account.module';
 
 import { PaygService } from './payg.service';
 import { PaygResolver } from './payg.resolver';
@@ -15,7 +15,7 @@ import { ChainInfo, Channel, ChannelLabor } from './payg.model';
 @Module({
   imports: [
     ServicesModule,
-    AccountService,
+    AccountModule,
     TypeOrmModule.forFeature([Channel]),
     TypeOrmModule.forFeature([ChannelLabor]),
     TypeOrmModule.forFeature([ChainInfo]),
