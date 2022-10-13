@@ -64,17 +64,12 @@ export class PaygResolver {
   }
 
   @Mutation(() => ChannelType)
-  channelChallenge(@Args('id') id: string) {
-    return this.paygService.challenge(id);
+  channelTerminate(@Args('id') id: string) {
+    return this.paygService.terminate(id);
   }
 
   @Mutation(() => ChannelType)
   channelRespond(@Args('id') id: string) {
-    return this.paygService.checkpoint(id);
-  }
-
-  @Mutation(() => ChannelType)
-  channelClose(@Args('id') id: string) {
-    return this.paygService.close(id);
+    return this.paygService.respond(id);
   }
 }

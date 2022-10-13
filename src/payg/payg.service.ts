@@ -10,6 +10,7 @@ import { NetworkService } from 'src/services/network.service';
 import { getLogger } from 'src/utils/logger';
 import { Config } from 'src/configure/configure.module';
 import { Project } from 'src/project/project.model';
+import { AccountService } from 'src/account/account.service';
 
 import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
 
@@ -21,6 +22,7 @@ export class PaygService {
     @InjectRepository(ChannelLabor) private laborRepo: Repository<ChannelLabor>,
     private config: Config,
     private network: NetworkService,
+    private account: AccountService,
   ) {}
 
   async channel(id: string): Promise<Channel> {
@@ -36,7 +38,7 @@ export class PaygService {
     indexer: string,
     consumer: string,
     total: string,
-    expirationAt: number,
+    expiration: number,
     deploymentId: string,
     callback: string,
     lastIndexerSign: string,
@@ -49,34 +51,20 @@ export class PaygService {
       indexer,
       consumer,
       total,
-      expirationAt,
+      expiredAt: expiration,
       lastIndexerSign,
       lastConsumerSign,
       status: ChannelStatus.OPEN,
       spent: '0',
       onchain: '0',
       remote: '0',
-      challengeAt: 0,
-      lastFinal: false,
+      terminatedAt: 0,
+      terminateByIndexer: false,
+      lastFinal: true, // until receive open event.
       price,
     });
     // send to blockchain.
     const rawDeployment = cidToBytes32(deploymentId);
-    const tx = await this.network
-      .getSdk()
-      .stateChannel.open(
-        id,
-        indexer,
-        consumer,
-        total,
-        expirationAt,
-        rawDeployment,
-        callback,
-        lastIndexerSign,
-        lastConsumerSign,
-      );
-    console.log(tx);
-
     return this.channelRepo.save(channel);
   }
 
@@ -163,14 +151,14 @@ export class PaygService {
     return this.channelRepo.save(channel);
   }
 
-  async challenge(id: string): Promise<Channel> {
+  async terminate(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
     if (channel.onchain == channel.remote) {
       return null;
     }
 
-    // challenge
-    const tx = await this.network.getSdk().stateChannel.challenge({
+    // terminate
+    const tx = await this.network.getSdk().stateChannel.terminate({
       channelId: channel.id,
       isFinal: channel.lastFinal,
       spent: channel.remote,
@@ -181,6 +169,7 @@ export class PaygService {
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
+    channel.lastFinal = true;
     return this.channelRepo.save(channel);
   }
 
@@ -190,7 +179,7 @@ export class PaygService {
       return null;
     }
 
-    // challenge
+    // respond to chain
     const tx = await this.network.getSdk().stateChannel.respond({
       channelId: channel.id,
       isFinal: channel.lastFinal,
@@ -205,62 +194,62 @@ export class PaygService {
     return this.channelRepo.save(channel);
   }
 
-  async close(id: string): Promise<Channel> {
-    const channel = await this.channelRepo.findOne({ id });
-    if (!channel) {
-      getLogger('channel').error(`channel not exist: ${id}`);
-      return;
-    }
-
-    // checkpoint
-    if (channel.onchain < channel.remote) {
-      const tx = await this.network.getSdk().stateChannel.checkpoint({
-        channelId: channel.id,
-        isFinal: channel.lastFinal,
-        spent: channel.remote,
-        indexerSign: channel.lastIndexerSign,
-        consumerSign: channel.lastConsumerSign,
-      });
-
-      channel.onchain = channel.remote;
-      channel.spent = channel.remote;
-    }
-
-    channel.lastFinal = true;
-    return this.channelRepo.save(channel);
-  }
-
   async sync_open(
     id: string,
     indexer: string,
     consumer: string,
     total: string,
-    expirationAt: number,
+    expiredAt: number,
     deploymentId: string,
   ){
-    const channel = this.channelRepo.create({
-      id,
-      deploymentId,
-      indexer,
-      consumer,
-      total,
-      expirationAt,
-      lastIndexerSign: '',
-      lastConsumerSign: '',
-      status: ChannelStatus.OPEN,
-      spent: '0',
-      onchain: '0',
-      remote: '0',
-      challengeAt: 0,
-      lastFinal: false,
-      price: '',
-    });
-    this.channelRepo.save(channel);
+    // update the channel.
+    const channel = await this.channelRepo.findOne({ id });
+    if (!channel) {
+      // check if self.
+      const myIndexer = await this.account.getIndexer();
+      if (indexer != myIndexer) {
+        return;
+      }
+      const project = await this.projectRepo.findOne({ id: deploymentId });
+      if (!project || project.paygPrice == '' || project.paygPrice == '0') {
+        return;
+      }
+      const channel = this.channelRepo.create({
+        id,
+        deploymentId,
+        indexer,
+        consumer,
+        total,
+        expiredAt,
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        status: ChannelStatus.OPEN,
+        spent: '0',
+        onchain: '0',
+        remote: '0',
+        terminatedAt: expiredAt,
+        terminateByIndexer: false,
+        lastFinal: false,
+        price: project.paygPrice,
+      });
+      this.channelRepo.save(channel);
+    } else {
+      // update information (NOT CHANGE price and isFinal)
+      channel.indexer = indexer;
+      channel.consumer = consumer;
+      channel.total = total;
+      channel.expiredAt = expiredAt;
+      channel.terminatedAt = expiredAt;
+      channel.deploymentId = deploymentId;
+
+      this.channelRepo.save(channel);
+    }
   }
 
-  async sync_extend(id: string,  expirationAt: number){
+  async sync_extend(id: string,  expiredAt: number){
     const channel = await this.channelRepo.findOne({ id });
-    channel.expirationAt = expirationAt;
+    channel.expiredAt = expiredAt;
+    channel.terminatedAt = expiredAt;
     this.channelRepo.save(channel);
   }
 
@@ -276,17 +265,12 @@ export class PaygService {
     this.channelRepo.save(channel);
   }
 
-  async sync_challenge(id: string, onchain: string){
+  async sync_terminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean){
     const channel = await this.channelRepo.findOne({ id });
     channel.onchain = onchain;
-    channel.status = ChannelStatus.CHALLENGE;
-    this.channelRepo.save(channel);
-  }
-
-  async sync_respond(id: string, onchain: string){
-    const channel = await this.channelRepo.findOne({ id });
-    channel.onchain = onchain;
-    channel.status = ChannelStatus.OPEN;
+    channel.status = ChannelStatus.TERMINATING;
+    channel.terminatedAt = terminatedAt;
+    channel.terminateByIndexer = byIndexer;
     this.channelRepo.save(channel);
   }
 

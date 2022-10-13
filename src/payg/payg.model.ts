@@ -7,7 +7,7 @@ import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 export enum ChannelStatus {
   FINALIZED,
   OPEN,
-  CHALLENGE,
+  TERMINATING,
 }
 
 export class QueryState {
@@ -51,10 +51,13 @@ export class Channel {
   price: string;
 
   @Column()
-  expirationAt: number;
+  expiredAt: number;
 
   @Column()
-  challengeAt: number;
+  terminatedAt: number;
+
+  @Column()
+  terminateByIndexer: boolean;
 
   @Column({ default: false })
   lastFinal: boolean;
@@ -99,10 +102,13 @@ export class ChannelType {
   price: string;
 
   @Field()
-  expirationAt: number;
+  expiredAt: number;
 
   @Field()
-  challengeAt: number;
+  terminatedAt: number;
+
+  @Field()
+  terminateByIndexer: boolean;
 
   @Field()
   lastFinal: boolean;
