@@ -13,7 +13,8 @@ export async function sync(app: INestApplication) {
     let sdk = contractService.getSdk();
 
     const init_block = argv('start-block') as number;
-    let db_last_block: number = parseInt((await chainService.getBlock()).value);
+    const old_block = (await chainService.getBlock());
+    let db_last_block: number = old_block ? parseInt(old_block.value) : 0;
     getLogger(LogCategory.coordinator).info('db_last_block: ' + db_last_block);
     let last_block = Math.max(init_block, db_last_block);
 
