@@ -91,12 +91,11 @@ The domain and port depends on the deployment.
 
 Run the following command to build the local image for the coordinator updates
 
-```sh
-yarn build:docker-compose
-```
-  
-Then start all the services:
+- `docker-compose -f docker-compose-dev.yml up` running the postgres and redis
 
-```sh
-yarn start:docker-compose
-```
+- Add coordinator_db to network hosts. open `/etc/hosts`, add `127.0.0.1 coordinator_db`
+
+- Start services in development:
+  - `indexer-admin`: `yarn start`
+  - `indexer-coordinator`: `yarn start`
+  - `indexer-proxy`: `cargo run`

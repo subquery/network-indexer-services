@@ -70,7 +70,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      default: '127.0.0.1',
+      default: 'coordinator_db',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {
