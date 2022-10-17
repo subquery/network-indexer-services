@@ -17,6 +17,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { AccountModule } from './account/account.module';
 import { ProjectModule } from './project/project.module';
 import { PaygModule } from './payg/payg.module';
+import { ChainModule } from './chain/chain.module';
 import { DBModule } from './db/db.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { DBModule } from './db/db.module';
     AccountModule,
     MetricsModule,
     PaygModule,
+    ChainModule,
     ConfigureModule.register(),
     DBModule.register(),
     ServeStaticModule.forRoot({

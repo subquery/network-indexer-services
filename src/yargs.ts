@@ -35,6 +35,13 @@ export function getYargsOption() {
       default: 'https://rpc.api.moonbase.moonbeam.network',
       group: Groups.coordinator,
     },
+    'start-block': {
+      type: 'number',
+      describe: 'Specify the block hight start sync',
+      demandOption: true,
+      default: 2791650,
+      group: Groups.coordinator,
+    },
     ipfs: {
       type: 'string',
       describe: 'Specify ipfs endpoint for this network',
@@ -63,7 +70,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      default: '127.0.0.1',
+      default: 'coordinator_db_dev',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {

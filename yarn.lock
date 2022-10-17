@@ -4031,7 +4031,16 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.10.2-34", "@subql/contract-sdk@^0.10.2-34":
+"@subql/contract-sdk@0.10.2-36":
+  version "0.10.2-36"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-36.tgz#17f8ec267784d15bef9bba873379387e0e8ae1f7"
+  integrity sha512-8sFqyFTNjgTCEStR/tsiOU5w69FebmUYfFyTxO5j1jV3X3ghCA48AP0cw1MTAv/WmU4rpFPUkBRsBR+Zn8y53A==
+  dependencies:
+    "@openzeppelin/contracts-upgradeable" "^4.5.2"
+    "@polkadot/ui-keyring" "^2.9.4"
+    solidity-docgen "^0.6.0-beta.25"
+
+"@subql/contract-sdk@^0.10.2-34":
   version "0.10.2-34"
   resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.2-34.tgz#087ee20b9f4dec21d736f7ee4ecd227724b3dc6e"
   integrity sha512-rpqmJpPPJV+sm+Md8HywuMStFe9RjKJnuxNBs9k+FZw1AVZQzPdprbxAABV8G3Soh/B8kA2WWyKV3WWgQwecqg==

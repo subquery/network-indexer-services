@@ -59,6 +59,10 @@ export class ContractService {
     }
   }
 
+  async getLastBlockNumber() {
+    return await this.provider.getBlockNumber();
+  }
+
   async hasSufficientBalance() {
     try {
       const balance = await this.wallet.getBalance();
