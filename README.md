@@ -93,7 +93,7 @@ Run the following command to build the local image for the coordinator updates
 
 - `docker-compose -f docker-compose-dev.yml up` running the postgres and redis
 
-- Add coordinator_db to network hosts. open `/etc/hosts`, add `127.0.0.1 coordinator_db`
+- Add coordinator_db to network hosts. open `/etc/hosts`, add `127.0.0.1 coordinator_db_dev`
 
 - Start services in development:
   - `indexer-admin`: `yarn start`
