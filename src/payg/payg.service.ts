@@ -36,10 +36,11 @@ export class PaygService {
   }
 
   async getAliveChannels(): Promise<Channel[]> {
-    const now = Date.now();
+    const now = Math.floor(Date.now() / 1000);
+
     return this.channelRepo.find({
       where: [
-        { isFinal: false },
+        { lastFinal: false },
         { expiredAt: MoreThan(now) }
       ]
     });

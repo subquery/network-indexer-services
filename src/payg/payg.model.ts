@@ -141,7 +141,7 @@ export class QueryType {
 @Entity()
 export class ChannelLabor {
   @PrimaryGeneratedColumn()
-  id: number
+  id: number;
 
   @Column()
   deploymentId: string;
