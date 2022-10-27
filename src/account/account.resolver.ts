@@ -1,13 +1,20 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
+
+import { AccountEvent } from 'src/utils/subscription';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+
 import { AccountService } from './account.service';
 import { AccountMetaDataType, AccountType, ControllerType } from './account.model';
 
 @Resolver(() => AccountType)
 export class AccountResolver {
-  constructor(private accountService: AccountService) {}
+  constructor(
+    private accountService: AccountService,
+    private pubSub: SubscriptionService,
+  ) {}
 
   // TODO: can remove this if not use by other projects
   @Query(() => [AccountType])
@@ -43,5 +50,10 @@ export class AccountResolver {
   @Mutation(() => String)
   removeAccounts() {
     return this.accountService.removeAccounts();
+  }
+
+  @Subscription(() => AccountMetaDataType)
+  accountChanged() {
+    return this.pubSub.asyncIterator([AccountEvent.Indexer, AccountEvent.Controller]);
   }
 }

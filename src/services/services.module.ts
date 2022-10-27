@@ -11,7 +11,6 @@ import { DockerService } from './docker.service';
 import { NetworkService } from './network.service';
 import { QueryService } from './query.service';
 import { ServiceResolver } from './service.resolver';
-import { SubscriptionService } from './subscription.service';
 
 @Module({
   imports: [AccountModule],
@@ -21,7 +20,6 @@ import { SubscriptionService } from './subscription.service';
     DockerService,
     NetworkService,
     QueryService,
-    SubscriptionService,
     ServiceResolver,
   ],
   exports: [
@@ -30,7 +28,6 @@ import { SubscriptionService } from './subscription.service';
     DockerService,
     NetworkService,
     QueryService,
-    SubscriptionService,
   ],
 })
 export class ServicesModule {}

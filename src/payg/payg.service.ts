@@ -3,11 +3,12 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
-import { cidToBytes32 } from '@subql/network-clients';
+import { Repository, MoreThan } from 'typeorm';
 
 import { NetworkService } from 'src/services/network.service';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 import { getLogger } from 'src/utils/logger';
+import { PaygEvent } from 'src/utils/subscription';
 import { Config } from 'src/configure/configure.module';
 import { Project } from 'src/project/project.model';
 import { AccountService } from 'src/account/account.service';
@@ -20,6 +21,7 @@ export class PaygService {
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(Project) private projectRepo: Repository<Project>,
     @InjectRepository(ChannelLabor) private laborRepo: Repository<ChannelLabor>,
+    private pubSub: SubscriptionService,
     private config: Config,
     private network: NetworkService,
     private account: AccountService,
@@ -31,6 +33,16 @@ export class PaygService {
 
   async channels(): Promise<Channel[]> {
     return this.channelRepo.find();
+  }
+
+  async getAliveChannels(): Promise<Channel[]> {
+    const now = Date.now();
+    return this.channelRepo.find({
+      where: [
+        { isFinal: false },
+        { expiredAt: MoreThan(now) }
+      ]
+    });
   }
 
   async open(
@@ -63,9 +75,8 @@ export class PaygService {
       lastFinal: true, // until receive open event.
       price,
     });
-    // send to blockchain.
-    const rawDeployment = cidToBytes32(deploymentId);
-    return this.channelRepo.save(channel);
+
+    return this.save_pub(channel, PaygEvent.Opened);
   }
 
   async update(
@@ -82,30 +93,13 @@ export class PaygService {
       return;
     }
 
-    if (channel.lastFinal) {
-      return;
-    }
-
     const current_remote = BigInt(spent);
-    const prev_spent = BigInt(channel.spent);
     const prev_remote = BigInt(channel.remote);
     const price = BigInt(channel.price);
-    const max = BigInt(project.paygOverflow);
-    const threshold = BigInt(project.paygThreshold);
-    if (prev_remote < current_remote && prev_remote + price > current_remote) {
-      getLogger('StateChannel').warn('Price invalid');
-      return;
-    }
-    if (prev_spent > prev_remote + price * max) {
-      getLogger('StateChannel').warn('overflow the conflict');
-      return;
-    }
-    if (current_remote >= BigInt(channel.total) + price) {
-      getLogger('StateChannel').warn('overflow the total');
-      return;
-    }
 
-    channel.spent = (prev_spent + (current_remote - prev_remote)).toString();
+    const threshold = BigInt(project.paygThreshold);
+
+    channel.spent = (BigInt(channel.spent) + (current_remote - prev_remote)).toString();
     channel.remote = spent;
     channel.lastFinal = isFinal;
     channel.lastIndexerSign = indexerSign;
@@ -127,7 +121,7 @@ export class PaygService {
       channel.spent = channel.remote;
     }
 
-    return this.channelRepo.save(channel);
+    return this.save_pub(channel, PaygEvent.State);
   }
 
   async checkpoint(id: string): Promise<Channel> {
@@ -148,7 +142,8 @@ export class PaygService {
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
-    return this.channelRepo.save(channel);
+
+    return this.save_pub(channel, PaygEvent.State);
   }
 
   async terminate(id: string): Promise<Channel> {
@@ -167,10 +162,12 @@ export class PaygService {
     });
     console.log(tx);
 
+    channel.status = ChannelStatus.TERMINATING;
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
     channel.lastFinal = true;
-    return this.channelRepo.save(channel);
+
+    return this.save_pub(channel, PaygEvent.State);
   }
 
   async respond(id: string): Promise<Channel> {
@@ -191,7 +188,8 @@ export class PaygService {
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;
-    return this.channelRepo.save(channel);
+
+    return this.save_pub(channel, PaygEvent.State);
   }
 
   async sync_open(
@@ -201,7 +199,7 @@ export class PaygService {
     total: string,
     expiredAt: number,
     deploymentId: string,
-  ){
+  ) {
     // update the channel.
     const channel = await this.channelRepo.findOne({ id });
     if (!channel) {
@@ -232,7 +230,8 @@ export class PaygService {
         lastFinal: false,
         price: project.paygPrice,
       });
-      this.channelRepo.save(channel);
+
+      this.save_pub(channel, PaygEvent.Opened);
     } else {
       // update information (NOT CHANGE price and isFinal)
       channel.indexer = indexer;
@@ -242,43 +241,46 @@ export class PaygService {
       channel.terminatedAt = expiredAt;
       channel.deploymentId = deploymentId;
 
-      this.channelRepo.save(channel);
+      this.save_pub(channel, PaygEvent.State);
     }
   }
 
-  async sync_extend(id: string,  expiredAt: number){
+  async sync_extend(id: string,  expiredAt: number) {
     const channel = await this.channelRepo.findOne({ id });
     channel.expiredAt = expiredAt;
     channel.terminatedAt = expiredAt;
     this.channelRepo.save(channel);
   }
 
-  async sync_fund(id: string,  total: string){
+  async sync_fund(id: string,  total: string) {
     const channel = await this.channelRepo.findOne({ id });
     channel.total = total;
-    this.channelRepo.save(channel);
+
+    this.save_pub(channel, PaygEvent.State);
   }
 
-  async sync_checkpoint(id: string, onchain: string){
+  async sync_checkpoint(id: string, onchain: string) {
     const channel = await this.channelRepo.findOne({ id });
     channel.onchain = onchain;
     this.channelRepo.save(channel);
   }
 
-  async sync_terminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean){
+  async sync_terminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean) {
     const channel = await this.channelRepo.findOne({ id });
     channel.onchain = onchain;
     channel.status = ChannelStatus.TERMINATING;
     channel.terminatedAt = terminatedAt;
     channel.terminateByIndexer = byIndexer;
-    this.channelRepo.save(channel);
+
+    this.save_pub(channel, PaygEvent.State);
   }
 
-  async sync_finalize(id: string, total: number, remain: number){
+  async sync_finalize(id: string, total: number, remain: number) {
     const channel = await this.channelRepo.findOne({ id });
     channel.onchain = (total - remain).toString();
     channel.status = ChannelStatus.FINALIZED;
-    this.channelRepo.save(channel);
+
+    this.save_pub(channel, PaygEvent.Stopped);
   }
 
   async sync_labor(
@@ -286,13 +288,19 @@ export class PaygService {
     indexer: string,
     total: string,
     createdAt: number
-  ){
+  ) {
     const labor = this.laborRepo.create({
       deploymentId: deploymentId,
       indexer: indexer,
       total: total,
       createdAt: createdAt,
-    })
+    });
     this.laborRepo.save(labor);
+  }
+
+  async save_pub(channel: Channel, event: PaygEvent): Promise<Channel> {
+    const new_channel = await this.channelRepo.save(channel);
+    this.pubSub.publish(event, { channelChanged: new_channel });
+    return new_channel;
   }
 }

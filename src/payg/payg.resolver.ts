@@ -3,12 +3,18 @@
 
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 
+import { PaygEvent } from 'src/utils/subscription';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+
 import { PaygService } from './payg.service';
-import { ChannelType, QueryState, QueryType } from './payg.model';
+import { ChannelType, QueryType } from './payg.model';
 
 @Resolver(() => ChannelType)
 export class PaygResolver {
-  constructor(private paygService: PaygService) {}
+  constructor(
+    private paygService: PaygService,
+    private pubSub: SubscriptionService,
+  ) {}
 
   @Query(() => ChannelType)
   channel(@Args('id') id: string) {
@@ -18,6 +24,11 @@ export class PaygResolver {
   @Query(() => [ChannelType])
   channels() {
     return this.paygService.channels();
+  }
+
+  @Query(() => [ChannelType])
+  getAliveChannels() {
+    return this.paygService.getAliveChannels();
   }
 
   @Mutation(() => ChannelType)
@@ -71,5 +82,10 @@ export class PaygResolver {
   @Mutation(() => ChannelType)
   channelRespond(@Args('id') id: string) {
     return this.paygService.respond(id);
+  }
+
+  @Subscription(() => ChannelType)
+  channelChanged() {
+    return this.pubSub.asyncIterator([PaygEvent.Opened, PaygEvent.Stopped, PaygEvent.State]);
   }
 }
