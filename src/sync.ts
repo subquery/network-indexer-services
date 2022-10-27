@@ -40,7 +40,8 @@ export async function sync(app: INestApplication) {
             let _labors = await contract.queryFilter(contract.filters.ChannelLabor(), start, end);
 
             _opens.forEach(async (_open) => {
-                await paygServicee.sync_open(_open.args.channelId.toString(), _open.args.indexer, _open.args.consumer, _open.args.total.toString(), _open.args.expiredAt.toNumber(), _open.args.deploymentId);
+              // await paygServicee.sync_open(_open.args.channelId.toString(), _open.args.indexer, _open.args.consumer, _open.args.total.toString(), _open.args.expiredAt.toNumber(), _open.args.deploymentId, _open.args.callback); TODO
+              await paygServicee.sync_open(_open.args.channelId.toString(), _open.args.indexer, _open.args.consumer, _open.args.total.toString(), _open.args.expiredAt.toNumber(), _open.args.deploymentId, "0x");
             });
             _extends.forEach(async (_extend) => {
                 await paygServicee.sync_extend(_extend.args.channelId.toString(), _extend.args.expiredAt.toNumber());
@@ -75,10 +76,10 @@ export async function sync(app: INestApplication) {
     }
 
     getLogger(LogCategory.coordinator).info(`sync over, start listening`);
-    contract.on("ChannelOpen", async (channelId, indexer, consumer, total, expiredAt, deploymentId) => {
+    contract.on("ChannelOpen", async (channelId, indexer, consumer, total, expiredAt, deploymentId, callback) => {
         let chain_last_block = await contractService.getLastBlockNumber();
         await chainService.updateBlock(chain_last_block.toString());
-        await paygServicee.sync_open(channelId.toString(), indexer, consumer, total.toString(), expiredAt.toNumber(), deploymentId);
+        await paygServicee.sync_open(channelId.toString(), indexer, consumer, total.toString(), expiredAt.toNumber(), deploymentId, callback);
     });
     contract.on("ChannelExtend", async (channelId, expiredAt) => {
         let chain_last_block = await contractService.getLastBlockNumber();
