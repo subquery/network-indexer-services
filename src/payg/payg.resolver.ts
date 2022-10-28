@@ -36,24 +36,16 @@ export class PaygResolver {
     @Args('id') id: string,
     @Args('indexer') indexer: string,
     @Args('consumer') consumer: string,
-    @Args('total') balance: string,
-    @Args('expiration') expiration: number,
+    @Args('total') total: string,
     @Args('deploymentId') deploymentId: string,
-    @Args('callback') callback: string,
-    @Args('lastIndexerSign') lastIndexerSign: string,
-    @Args('lastConsumerSign') lastConsumerSign: string,
     @Args('price') price: string,
   ) {
     return this.paygService.open(
       id,
       indexer,
       consumer,
-      balance,
-      expiration,
+      total,
       deploymentId,
-      callback,
-      lastIndexerSign,
-      lastConsumerSign,
       price,
     );
   }

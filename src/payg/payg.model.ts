@@ -67,8 +67,6 @@ export class Channel {
 
   @Column({ default: '' })
   lastConsumerSign: string;
-
-  callback: string;
 }
 
 @ObjectType('Channel')
@@ -120,9 +118,6 @@ export class ChannelType {
 
   @Field()
   lastConsumerSign: string;
-
-  @Field()
-  callback: string;
 }
 
 @ObjectType('QueryState')

@@ -51,11 +51,7 @@ export class PaygService {
     indexer: string,
     consumer: string,
     total: string,
-    expiration: number,
     deploymentId: string,
-    callback: string,
-    lastIndexerSign: string,
-    lastConsumerSign: string,
     price: string,
   ): Promise<Channel> {
     const channel = this.channelRepo.create({
@@ -64,9 +60,9 @@ export class PaygService {
       indexer,
       consumer,
       total,
-      expiredAt: expiration,
-      lastIndexerSign,
-      lastConsumerSign,
+      expiredAt: 0,
+      lastIndexerSign: '',
+      lastConsumerSign: '',
       status: ChannelStatus.OPEN,
       spent: '0',
       onchain: '0',
@@ -206,7 +202,6 @@ export class PaygService {
     total: string,
     expiredAt: number,
     deploymentId: string,
-    callback: string,
   ) {
     // update the channel.
     const channel = await this.channelRepo.findOne({ id });
@@ -238,7 +233,6 @@ export class PaygService {
         lastFinal: false,
         price: project.paygPrice,
       });
-      channel.callback = callback;
 
       this.save_pub(channel, PaygEvent.Opened);
     } else {
@@ -250,7 +244,6 @@ export class PaygService {
       channel.terminatedAt = expiredAt;
       channel.deploymentId = deploymentId;
       channel.lastFinal = false;
-      channel.callback = callback;
 
       this.save_pub(channel, PaygEvent.State);
     }
