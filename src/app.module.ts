@@ -12,6 +12,7 @@ import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
 
+import { SubscriptionModule } from './subscription/subscription.module';
 import { ServicesModule } from './services/services.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { AccountModule } from './account/account.module';
@@ -39,6 +40,7 @@ import { DBModule } from './db/db.module';
       },
       cors: { origin: true, credentials: true },
     }),
+    SubscriptionModule,
     ServicesModule,
     ProjectModule,
     AccountModule,

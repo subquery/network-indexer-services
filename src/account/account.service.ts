@@ -8,17 +8,24 @@ import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 import { Wallet } from 'ethers';
 
-import { decrypt, encrypt } from '../utils/encrypt';
-import { DeleteResult, Repository } from 'typeorm';
+import { decrypt, encrypt } from 'src/utils/encrypt';
+import { AccountEvent } from 'src/utils/subscription';
+import { SubscriptionService } from 'src/subscription/subscription.service';
+import { Config } from 'src/configure/configure.module';
+
+import { Repository } from 'typeorm';
 import { Account, ControllerType } from './account.model';
 import { isEmpty } from 'lodash';
-import { Config } from '../configure/configure.module';
 
 @Injectable()
 export class AccountService {
   private indexer: string;
 
-  constructor(@InjectRepository(Account) private accountRepo: Repository<Account>, private config: Config) {}
+  constructor(
+    @InjectRepository(Account) private accountRepo: Repository<Account>,
+    private pubSub: SubscriptionService,
+    private config: Config,
+  ) {}
 
   privateToAdress(key: string) {
     return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
@@ -29,19 +36,25 @@ export class AccountService {
     return new Wallet(pk);
   }
 
-  addIndexer(indexer: string): Promise<Account> {
+  async addIndexer(indexer: string): Promise<Account> {
     if (indexer === this.indexer) {
       return this.getIndexerAccount();
     }
 
     this.indexer = indexer;
+    const controller = '';
     const account = this.accountRepo.create({
       id: uuid(),
       indexer,
-      controller: '',
+      controller,
     });
 
-    return this.accountRepo.save(account);
+    const new_account = await this.accountRepo.save(account);
+
+    const meta = await this.getMetadata();
+    this.pubSub.publish(AccountEvent.Indexer, { accountChanged: meta });
+
+    return new_account;
   }
 
   async getMetadata(): Promise<{ indexer: string; controller: string; network: string; wsEndpoint: string }> {
@@ -83,6 +96,10 @@ export class AccountService {
     });
 
     await this.accountRepo.save(account);
+
+    const meta = await this.getMetadata();
+    this.pubSub.publish(AccountEvent.Controller, { accountChanged: meta });
+
     return controller.address;
   }
 
@@ -110,6 +127,9 @@ export class AccountService {
     const account = await this.getAccount(id);
     await this.accountRepo.delete(id);
 
+    const meta = await this.getMetadata();
+    this.pubSub.publish(AccountEvent.Controller, { accountChanged: meta });
+
     return account;
   }
 
@@ -117,6 +137,9 @@ export class AccountService {
     this.indexer = undefined;
     const accounts = await this.getAccounts();
     await this.accountRepo.remove(accounts);
+
+    const meta = await this.getMetadata();
+    this.pubSub.publish(AccountEvent.Indexer, { accountChanged: meta });
 
     return '';
   }

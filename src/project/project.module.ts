@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ServicesModule } from 'src/services/services.module';
+import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { DBModule } from 'src/db/db.module';
 
 import { ProjectService } from './project.service';
@@ -13,7 +14,13 @@ import { Project } from './project.model';
 import { MetricsModule } from 'src/metrics/metrics.module';
 
 @Module({
-  imports: [ServicesModule, DBModule, MetricsModule, TypeOrmModule.forFeature([Project])],
+  imports: [
+    SubscriptionModule,
+    ServicesModule,
+    DBModule,
+    MetricsModule,
+    TypeOrmModule.forFeature([Project])
+  ],
   providers: [ProjectService, ProjectResolver],
   exports: [ProjectService],
 })

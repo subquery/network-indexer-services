@@ -26,7 +26,7 @@ import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
 import { IndexingStatus } from 'src/services/types';
 import { DockerService } from 'src/services/docker.service';
-import { SubscriptionService } from 'src/services/subscription.service';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 import { DB } from 'src/db/db.module';
 
 import { LogType, Project } from './project.model';

@@ -4,7 +4,7 @@
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 
 import { ProjectEvent } from 'src/utils/subscription';
-import { SubscriptionService } from 'src/services/subscription.service';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 import { QueryService } from 'src/services/query.service';
 import { DockerRegistry, DockerRegistryService } from 'src/services/docker.registry.service';
 

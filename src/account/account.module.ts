@@ -3,12 +3,15 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { SubscriptionModule } from 'src/subscription/subscription.module';
+
 import { AccountService } from './account.service';
 import { AccountResolver } from './account.resolver';
 import { Account } from './account.model';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Account])],
+  imports: [SubscriptionModule, TypeOrmModule.forFeature([Account])],
   providers: [AccountService, AccountResolver],
   exports: [AccountService],
 })
