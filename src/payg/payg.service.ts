@@ -204,7 +204,6 @@ export class PaygService {
     expiredAt: number,
     deploymentId: string,
   ) {
-    console.log("========================================== expired:", expiredAt);
     // update the channel.
     const channel = await this.channelRepo.findOne({ id });
     if (!channel) {
