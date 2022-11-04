@@ -200,6 +200,7 @@ export class PaygService {
     indexer: string,
     consumer: string,
     total: string,
+    price: string,
     expiredAt: number,
     deploymentId: string,
   ) {
@@ -211,16 +212,13 @@ export class PaygService {
       if (indexer != myIndexer) {
         return;
       }
-      const project = await this.projectRepo.findOne({ id: deploymentId });
-      if (!project || project.paygPrice == '' || project.paygPrice == '0') {
-        return;
-      }
       const channel = this.channelRepo.create({
         id,
         deploymentId,
         indexer,
         consumer,
         total,
+        price,
         expiredAt,
         lastIndexerSign: '',
         lastConsumerSign: '',
@@ -231,7 +229,6 @@ export class PaygService {
         terminatedAt: expiredAt,
         terminateByIndexer: false,
         lastFinal: false,
-        price: project.paygPrice,
       });
 
       this.save_pub(channel, PaygEvent.Opened);
