@@ -1,9 +1,0 @@
-/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/cargo_metadata-623d9cc2993cdef9.rmeta: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/dependency.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/diagnostic.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/errors.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/messages.rs
-
-/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/cargo_metadata-623d9cc2993cdef9.d: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/dependency.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/diagnostic.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/errors.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/messages.rs
-
-/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/lib.rs:
-/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/dependency.rs:
-/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/diagnostic.rs:
-/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/errors.rs:
-/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/cargo_metadata-0.15.0/src/messages.rs:
