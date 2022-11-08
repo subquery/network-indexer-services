@@ -42,7 +42,7 @@ export async function sync(app: INestApplication) {
 
     getLogger(LogCategory.coordinator).info(`sync over, start listening`);
     contract.on("ChannelOpen", async (channelId, indexer, consumer, total, expiredAt, deploymentId) => {
-        await paygServicee.sync_open(channelId.toString(), indexer, consumer, total.toString(), expiredAt.toNumber(), deploymentId);
+        await paygServicee.sync_open(channelId.toString(), indexer, consumer, total.toString(), price.toString(), expiredAt.toNumber(), deploymentId);
     });
     contract.on("ChannelExtend", async (channelId, expiredAt) => {
         await paygServicee.sync_extend(channelId.toString(), expiredAt.toNumber());
