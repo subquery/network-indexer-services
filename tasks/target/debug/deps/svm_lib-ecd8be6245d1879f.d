@@ -1,0 +1,10 @@
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/svm_lib-ecd8be6245d1879f.rmeta: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/error.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/platform.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/releases.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-arm64-old.json /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-aarch64.json
+
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/svm_lib-ecd8be6245d1879f.d: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/error.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/platform.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/releases.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-arm64-old.json /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-aarch64.json
+
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/lib.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/error.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/platform.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/releases.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-arm64-old.json:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/svm-rs-0.2.18/src/../list/linux-aarch64.json:

@@ -195,6 +195,44 @@ export class PaygService {
     return this.save_pub(channel, PaygEvent.State);
   }
 
+  async sync_channel(
+    id: string,
+    deploymentId: string,
+    indexer: string,
+    consumer: string,
+    total: string,
+    spent: string,
+    expiredAt: number,
+    terminatedAt: number,
+    terminateByIndexer: boolean,
+    lastFinal: boolean,
+  ) {
+    const channel = await this.channelRepo.findOne({ id });
+    if (!channel) {
+      const project = await this.projectRepo.findOne({ id: deploymentId });
+      const channel = this.channelRepo.create({
+        id,
+        deploymentId,
+        indexer,
+        consumer,
+        total,
+        expiredAt,
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        status: ChannelStatus.OPEN,
+        spent,
+        onchain: '0',
+        remote: '0',
+        terminatedAt,
+        terminateByIndexer,
+        lastFinal,
+        price: project.paygPrice,
+      });
+
+      this.channelRepo.save(channel);
+    }
+  }
+
   async sync_open(
     id: string,
     indexer: string,

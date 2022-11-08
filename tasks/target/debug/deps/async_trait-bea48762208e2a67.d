@@ -1,0 +1,10 @@
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/libasync_trait-bea48762208e2a67.dylib: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/args.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/expand.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lifetime.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/parse.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/receiver.rs
+
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/async_trait-bea48762208e2a67.d: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/args.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/expand.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lifetime.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/parse.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/receiver.rs
+
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lib.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/args.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/expand.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/lifetime.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/parse.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/async-trait-0.1.57/src/receiver.rs:

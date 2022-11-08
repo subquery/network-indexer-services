@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/build/typenum-4aaa22dbcd3875b8/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/build/typenum-4aaa22dbcd3875b8/out/op.rs

@@ -1,0 +1,9 @@
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/libfutures_macro-7b98dd4bbed4cd47.dylib: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/executor.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/join.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/select.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/stream_select.rs
+
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/futures_macro-7b98dd4bbed4cd47.d: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/executor.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/join.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/select.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/stream_select.rs
+
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/lib.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/executor.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/join.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/select.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-macro-0.3.24/src/stream_select.rs:

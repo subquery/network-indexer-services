@@ -1,0 +1,11 @@
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/indicatif-d3e1803bfcc9390b.rmeta: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/format.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/iter.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/progress_bar.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/state.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/style.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/utils.rs
+
+/Users/shenjianzhuo/Desktop/subquery/indexer-coordinator/tasks/target/debug/deps/indicatif-d3e1803bfcc9390b.d: /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/lib.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/format.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/iter.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/progress_bar.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/state.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/style.rs /Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/utils.rs
+
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/lib.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/format.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/iter.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/progress_bar.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/state.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/style.rs:
+/Users/shenjianzhuo/.cargo/registry/src/github.com-1ecc6299db9ec823/indicatif-0.16.2/src/utils.rs:

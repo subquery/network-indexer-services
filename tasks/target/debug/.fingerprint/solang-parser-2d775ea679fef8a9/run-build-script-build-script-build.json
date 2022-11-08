@@ -1,0 +1,1 @@
+{"rustc":16424401552534930639,"features":"","target":0,"profile":0,"path":0,"deps":[[14336945133867123113,"build_script_build",false,508167527293352131]],"local":[{"RerunIfChanged":{"output":"debug/build/solang-parser-2d775ea679fef8a9/output","paths":["src/solidity.lalrpop"]}}],"rustflags":[],"metadata":0,"config":0,"compile_kind":0}
