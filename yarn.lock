@@ -4128,25 +4128,18 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.2.1-17", "@subql/network-clients@^0.2.1-15":
-  version "0.2.1-17"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-17.tgz#c5e6a28cc6e0c550964d82a33c50ca50da4faa82"
-  integrity sha512-cWlOgJzoKRBESo5ngm/Z3qHxzc8E8i4MuyevqT9SlpMudYyykJoYOwh0c3rCRn9Y3mVi3qLGVDRzIonKbgB0IA==
+"@subql/network-clients@0.2.1-18":
+  version "0.2.1-18"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-18.tgz#c56ef573d8858bf0321b2c7b65f8a643d64d6529"
+  integrity sha512-qzIFlbREbs/+UWsvhyIaXh6dvsFFuXTfvLto/qv1+X4ZZIF8ndrml9SSGk+WR0fGv1atEOQNYZfsc0aIANGEag==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
-    "@subql/network-query" "^0.1.1-5"
+    "@subql/network-query" dev
     axios "^0.27.2"
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
-    graphql "^16.5.0"
-
-"@subql/network-query@0.1.1-5", "@subql/network-query@^0.1.1-5":
-  version "0.1.1-5"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-5.tgz#7cbe07bf4619ec357701d8a7ea1be03741391f32"
-  integrity sha512-UVJmuTlyz4RUJIt63Z5U8DskLAfNPGHyy7eadd7cGhbczTQCdo1arVB8tlgRt9Lbc6e1RUX90wLuAETw2HSOuw==
-  dependencies:
     graphql "^16.5.0"
 
 "@subql/network-clients@^0.2.1-15":
@@ -4161,6 +4154,13 @@
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
+    graphql "^16.5.0"
+
+"@subql/network-query@0.1.1-6", "@subql/network-query@dev":
+  version "0.1.1-6"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-6.tgz#8f9b960d553bfadf15cb03306b74504b77dbe73f"
+  integrity sha512-KRPAO3XerHph6txvcPHXp3nDOgMl3/OY8816c2jRKeLrT4+Hd2OZfR58bMQb93CgzPKeWAG/5/L8w9S4bGmlbA==
+  dependencies:
     graphql "^16.5.0"
 
 "@subql/network-query@^0.1.1-0":
