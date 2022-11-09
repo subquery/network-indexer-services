@@ -202,6 +202,7 @@ export class PaygService {
     consumer: string,
     total: string,
     spent: string,
+    price: string,
     expiredAt: number,
     terminatedAt: number,
     terminateByIndexer: boolean,
@@ -209,13 +210,13 @@ export class PaygService {
   ) {
     const channel = await this.channelRepo.findOne({ id });
     if (!channel) {
-      const project = await this.projectRepo.findOne({ id: deploymentId });
       const channel = this.channelRepo.create({
         id,
         deploymentId,
         indexer,
         consumer,
         total,
+        price,
         expiredAt,
         lastIndexerSign: '',
         lastConsumerSign: '',
@@ -226,7 +227,6 @@ export class PaygService {
         terminatedAt,
         terminateByIndexer,
         lastFinal,
-        price: project.paygPrice,
       });
 
       this.channelRepo.save(channel);

@@ -5,7 +5,7 @@ import { ContractService } from './services/contract.service'
 import { INestApplication } from '@nestjs/common';
 import { getLogger, LogCategory, NestLogger } from './utils/logger';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
-import { GetSteteChannels } from '@subql/network-query';
+import { GetStateChannels } from '@subql/network-query';
 
 export async function sync(app: INestApplication) {
     let client: GraphqlQueryClient;
@@ -13,7 +13,7 @@ export async function sync(app: INestApplication) {
     client = new GraphqlQueryClient(config);
     const apolloClient = client.explorerClient;
     const result = await apolloClient.query({
-      query: GetSteteChannels,
+      query: GetStateChannels,
       variables: { status: "OPEN" },
     });
 
@@ -31,6 +31,7 @@ export async function sync(app: INestApplication) {
             stateChannel.consumer, 
             stateChannel.total,
             stateChannel.spent,
+            stateChannel.price,
             new Date(stateChannel.expiredAt).valueOf()/ 1000, 
             new Date(stateChannel.terminatedAt).valueOf()/ 1000, 
             stateChannel.terminateByIndexer,
@@ -41,7 +42,7 @@ export async function sync(app: INestApplication) {
     let contract = sdk.stateChannel;
 
     getLogger(LogCategory.coordinator).info(`sync over, start listening`);
-    contract.on("ChannelOpen", async (channelId, indexer, consumer, total, expiredAt, deploymentId) => {
+    contract.on("ChannelOpen", async (channelId, indexer, consumer, total, price, expiredAt, deploymentId, callback) => {
         await paygServicee.sync_open(channelId.toString(), indexer, consumer, total.toString(), price.toString(), expiredAt.toNumber(), deploymentId);
     });
     contract.on("ChannelExtend", async (channelId, expiredAt) => {
