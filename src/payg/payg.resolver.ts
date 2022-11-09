@@ -11,10 +11,7 @@ import { ChannelType, QueryType } from './payg.model';
 
 @Resolver(() => ChannelType)
 export class PaygResolver {
-  constructor(
-    private paygService: PaygService,
-    private pubSub: SubscriptionService,
-  ) {}
+  constructor(private paygService: PaygService, private pubSub: SubscriptionService) {}
 
   @Query(() => ChannelType)
   channel(@Args('id') id: string) {
@@ -40,14 +37,7 @@ export class PaygResolver {
     @Args('deploymentId') deploymentId: string,
     @Args('price') price: string,
   ) {
-    return this.paygService.open(
-      id,
-      indexer,
-      consumer,
-      total,
-      deploymentId,
-      price,
-    );
+    return this.paygService.open(id, indexer, consumer, total, deploymentId, price);
   }
 
   @Mutation(() => QueryType)

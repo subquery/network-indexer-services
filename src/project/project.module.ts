@@ -14,13 +14,7 @@ import { Project } from './project.model';
 import { MetricsModule } from 'src/metrics/metrics.module';
 
 @Module({
-  imports: [
-    SubscriptionModule,
-    ServicesModule,
-    DBModule,
-    MetricsModule,
-    TypeOrmModule.forFeature([Project])
-  ],
+  imports: [SubscriptionModule, ServicesModule, DBModule, MetricsModule, TypeOrmModule.forFeature([Project])],
   providers: [ProjectService, ProjectResolver],
   exports: [ProjectService],
 })
