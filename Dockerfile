@@ -1,15 +1,30 @@
-FROM node:16 as builder
+FROM node:16-alpine AS BUILD_IMAGE
 
+RUN apk update && apk add --no-cache yarn curl bash tini git docker-cli docker-compose grep make python3 g++
 
-ARG RELEASE_VERSION
-ENTRYPOINT ["subql-coordinator"]
-RUN npm i -g --unsafe-perm @subql/indexer-coordinator@${RELEASE_VERSION}
+# install node-prune
+RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
+
+WORKDIR /usr/src/app
+
+COPY package.json yarn.lock ./
+
+RUN yarn --frozen-lockfile
+
+COPY . .
+
+RUN yarn build
+
+# remove development dependencies
+RUN npm prune --production
 
 FROM node:16-alpine
-ENV TZ utc
 
-RUN apk add --no-cache tini git curl docker-cli docker-compose grep
+WORKDIR /usr/src/app
 
-COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+# copy from build image
+COPY --from=BUILD_IMAGE /usr/src/app/dist ./dist
+COPY --from=BUILD_IMAGE /usr/src/app/node_modules ./node_modules
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/lib/node_modules/@subql/indexer-coordinator/bin/run"]
+
+CMD [ "node", "dist/main.js" ]
