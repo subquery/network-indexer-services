@@ -39,10 +39,7 @@ export class PaygService {
     const now = Math.floor(Date.now() / 1000);
 
     return this.channelRepo.find({
-      where: [
-        { lastFinal: false },
-        { expiredAt: MoreThan(now) }
-      ]
+      where: [{ lastFinal: false }, { expiredAt: MoreThan(now) }],
     });
   }
 
@@ -110,15 +107,18 @@ export class PaygService {
     // threshold value for checkpoint and spawn to other promise.
     if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
       // send to blockchain.
-      this.network.getSdk().stateChannel.checkpoint({
+      this.network
+        .getSdk()
+        .stateChannel.checkpoint({
           channelId: id,
           isFinal: isFinal,
           spent: channel.remote,
           indexerSign: indexerSign,
           consumerSign: consumerSign,
-      }).then(function (tx) {
-        console.log(tx);
-      });
+        })
+        .then(function (tx) {
+          console.log(tx);
+        });
       channel.onchain = channel.remote;
       channel.spent = channel.remote;
     }
@@ -195,6 +195,44 @@ export class PaygService {
     return this.save_pub(channel, PaygEvent.State);
   }
 
+  async sync_channel(
+    id: string,
+    deploymentId: string,
+    indexer: string,
+    consumer: string,
+    total: string,
+    spent: string,
+    price: string,
+    expiredAt: number,
+    terminatedAt: number,
+    terminateByIndexer: boolean,
+    lastFinal: boolean,
+  ) {
+    const channel = await this.channelRepo.findOne({ id });
+    if (!channel) {
+      const channel = this.channelRepo.create({
+        id,
+        deploymentId,
+        indexer,
+        consumer,
+        total,
+        price,
+        expiredAt,
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        status: ChannelStatus.OPEN,
+        spent,
+        onchain: '0',
+        remote: '0',
+        terminatedAt,
+        terminateByIndexer,
+        lastFinal,
+      });
+
+      this.channelRepo.save(channel);
+    }
+  }
+
   async sync_open(
     id: string,
     indexer: string,
@@ -246,14 +284,14 @@ export class PaygService {
     }
   }
 
-  async sync_extend(id: string,  expiredAt: number) {
+  async sync_extend(id: string, expiredAt: number) {
     const channel = await this.channelRepo.findOne({ id });
     channel.expiredAt = expiredAt;
     channel.terminatedAt = expiredAt;
     this.channelRepo.save(channel);
   }
 
-  async sync_fund(id: string,  total: string) {
+  async sync_fund(id: string, total: string) {
     const channel = await this.channelRepo.findOne({ id });
     channel.total = total;
 
@@ -286,12 +324,7 @@ export class PaygService {
     this.save_pub(channel, PaygEvent.Stopped);
   }
 
-  async sync_labor(
-    deploymentId: string,
-    indexer: string,
-    total: string,
-    createdAt: number
-  ) {
+  async sync_labor(deploymentId: string, indexer: string, total: string, createdAt: number) {
     const labor = this.laborRepo.create({
       deploymentId: deploymentId,
       indexer: indexer,
