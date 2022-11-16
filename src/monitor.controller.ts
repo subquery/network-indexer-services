@@ -30,8 +30,7 @@ export class MonitorController {
 
   @Get()
   async index() {
-    console.log('proxies: ', this.proxies);
-    return this.proxies;
+    return Array.from(this.proxies.values());
   }
 
   @Post()
