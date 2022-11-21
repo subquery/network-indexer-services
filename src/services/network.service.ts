@@ -6,7 +6,7 @@ import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
-import { cidToBytes32 } from '@subql/network-clients';
+import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
@@ -17,6 +17,11 @@ import { ContractService } from './contract.service';
 import { IndexingStatus, Transaction, TxFun } from './types';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
+import {
+  GetIndexerUnfinalisedPlans,
+  GetIndexerUnfinalisedPlansQuery,
+  GetIndexerUnfinalisedPlansQueryVariables,
+} from '@subql/network-query';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -51,7 +56,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   onApplicationBootstrap() {
-    this.periodicUpdateNetwrok();
+    this.periodicUpdateNetwork();
   }
 
   async getIndexingProjects() {
@@ -277,12 +282,37 @@ export class NetworkService implements OnApplicationBootstrap {
     };
   }
 
+  closeExpiredStateChannelsAction() {
+    const config = NETWORK_CONFIGS.kepler;
+    const client = new GraphqlQueryClient(config);
+
+    return async () => {
+      const apolloClient = client.explorerClient;
+      const now = new Date();
+      const indexer = await this.accountService.getIndexer();
+      const result = await apolloClient.query<
+        GetIndexerUnfinalisedPlansQuery,
+        GetIndexerUnfinalisedPlansQueryVariables
+      >({
+        query: GetIndexerUnfinalisedPlans,
+        variables: { indexer, now },
+      });
+
+      const unfinalisedPlans = result.data.stateChannels.nodes;
+
+      unfinalisedPlans.forEach(async (node) => {
+        await this.sdk.stateChannel.claim(node.id);
+      });
+    };
+  }
+
   networkActions() {
     return [
       this.updateEraNumberAction(),
       this.collectAndDistributeRewardsAction(),
       this.applyICRChangeAction(),
       this.applyStakeChangesAction(),
+      this.closeExpiredStateChannelsAction(),
     ];
   }
 
@@ -356,11 +386,11 @@ export class NetworkService implements OnApplicationBootstrap {
       getLogger('network').info(`transactions interval change from ${this.interval} to ${interval}`);
 
       this.interval = interval;
-      await this.periodicUpdateNetwrok();
+      await this.periodicUpdateNetwork();
     }
   }
 
-  async periodicUpdateNetwrok() {
+  async periodicUpdateNetwork() {
     if (!this.interval) {
       this.interval = await this.getInterval();
     }
