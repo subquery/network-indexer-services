@@ -7,6 +7,7 @@ import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { argv } from '../yargs';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
@@ -26,6 +27,7 @@ import {
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
+  private client: GraphqlQueryClient;
   private retryCount: number;
   private interval: number;
   private intervalTimer: NodeJS.Timer;
@@ -47,7 +49,7 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[argv['network']]);
     this.projectRepo = connection.getRepository(Project);
   }
 
@@ -220,6 +222,21 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
+  async getUnfinalizedPlans(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+    const apolloClient = this.client.explorerClient;
+    const now = new Date();
+    const indexer = await this.accountService.getIndexer();
+    const result = await apolloClient.query<
+      GetIndexerUnfinalisedPlansQuery,
+      GetIndexerUnfinalisedPlansQueryVariables
+    >({
+      query: GetIndexerUnfinalisedPlans,
+      variables: { indexer, now },
+    });
+
+    return result.data.stateChannels.nodes;
+  }
+
   collectAndDistributeRewardsAction() {
     return async () => {
       const canCollectRewards = await this.canCollectRewards();
@@ -285,22 +302,8 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   closeExpiredStateChannelsAction() {
-    const config = NETWORK_CONFIGS.kepler;
-    const client = new GraphqlQueryClient(config);
-
     return async () => {
-      const apolloClient = client.explorerClient;
-      const now = new Date();
-      const indexer = await this.accountService.getIndexer();
-      const result = await apolloClient.query<
-        GetIndexerUnfinalisedPlansQuery,
-        GetIndexerUnfinalisedPlansQueryVariables
-      >({
-        query: GetIndexerUnfinalisedPlans,
-        variables: { indexer, now },
-      });
-
-      const unfinalisedPlans = result.data.stateChannels.nodes;
+      const unfinalisedPlans = await this.getUnfinalizedPlans();
 
       for (const node of unfinalisedPlans) {
         await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async () =>
