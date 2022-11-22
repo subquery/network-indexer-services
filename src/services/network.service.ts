@@ -277,7 +277,9 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        await this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
+        await this.sendTransaction('update era number', async () =>
+          this.sdk.eraManager.safeUpdateAndGetEra(),
+        );
       }
     };
   }
@@ -300,9 +302,11 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const unfinalisedPlans = result.data.stateChannels.nodes;
 
-      unfinalisedPlans.forEach(async (node) => {
-        await this.sdk.stateChannel.claim(node.id);
-      });
+      for (const node of unfinalisedPlans) {
+        await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async () =>
+          this.sdk.stateChannel.claim(node.id),
+        );
+      }
     };
   }
 
