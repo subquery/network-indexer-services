@@ -75,10 +75,14 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry
+          .closedServiceAgreementIds(indexer, i)
+          .then((id) => id.toNumber());
+
         const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
           agreementId,
         );
+
         if (agreementExpired) {
           Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
         }
