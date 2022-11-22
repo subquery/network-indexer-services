@@ -8,12 +8,11 @@ import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
 import { SQToken } from '@subql/contract-sdk/publish/moonbase.json';
-import { EvmRpcProvider } from '@acala-network/eth-providers';
 import { cidToBytes32 } from '@subql/network-clients';
 
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
-import { ChainID, chainIds, initContractSDK } from 'src/utils/contractSDK';
+import { chainIds, initContractSDK } from 'src/utils/contractSDK';
 import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
@@ -24,7 +23,7 @@ import { DeploymentStatus, IndexingStatus } from './types';
 @Injectable()
 export class ContractService {
   private wallet: Wallet;
-  private provider: EvmRpcProvider | providers.StaticJsonRpcProvider;
+  private provider: providers.StaticJsonRpcProvider;
   private chainID: number;
   private sdk: ContractSDK;
   private emptyDeploymentStatus;
@@ -42,11 +41,7 @@ export class ContractService {
   }
 
   initProvider(endpoint: string) {
-    if (this.chainID === ChainID.moonbase) {
-      this.provider = new providers.StaticJsonRpcProvider(endpoint, this.chainID);
-    } else {
-      this.provider = EvmRpcProvider.from(endpoint);
-    }
+    this.provider = new providers.StaticJsonRpcProvider(endpoint, this.chainID);
   }
 
   async getBlockTime() {
