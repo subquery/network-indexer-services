@@ -222,7 +222,7 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  async getUnfinalizedPlans(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+  async getExpiredStateChannels(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
     const apolloClient = this.client.explorerClient;
     const now = new Date();
     const indexer = await this.accountService.getIndexer();
@@ -303,7 +303,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   closeExpiredStateChannelsAction() {
     return async () => {
-      const unfinalisedPlans = await this.getUnfinalizedPlans();
+      const unfinalisedPlans = await this.getExpiredStateChannels();
 
       for (const node of unfinalisedPlans) {
         await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async () =>
