@@ -23,6 +23,7 @@ import {
   GetIndexerUnfinalisedPlansQuery,
   GetIndexerUnfinalisedPlansQueryVariables,
 } from '@subql/network-query';
+import { Config } from 'src/configure/configure.module';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -46,10 +47,11 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
+    private readonly config: Config,
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[argv['network']]);
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(Project);
   }
 
