@@ -3243,7 +3243,7 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@0.2.1-18", "@subql/network-clients@^0.2.1-18":
+"@subql/network-clients@^0.2.1-18":
   version "0.2.1-18"
   resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.1-18.tgz#c56ef573d8858bf0321b2c7b65f8a643d64d6529"
   integrity sha512-qzIFlbREbs/+UWsvhyIaXh6dvsFFuXTfvLto/qv1+X4ZZIF8ndrml9SSGk+WR0fGv1atEOQNYZfsc0aIANGEag==
@@ -3257,7 +3257,14 @@
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-query@0.1.1-6", "@subql/network-query@dev":
+"@subql/network-query@^0.1.1-7":
+  version "0.1.1-7"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-7.tgz#db7be3ea2119cd44a9fd22342f363d6e83b9e9f1"
+  integrity sha512-FAI2+ktlbhiT42xRaW1oN1haDtO4bLqt/KSDeETq6sTK6fCTiEgwupCICIKwlunXLHSW3a4y4r0Xd4bxNmN3Lw==
+  dependencies:
+    graphql "^16.5.0"
+
+"@subql/network-query@dev":
   version "0.1.1-6"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-6.tgz#8f9b960d553bfadf15cb03306b74504b77dbe73f"
   integrity sha512-KRPAO3XerHph6txvcPHXp3nDOgMl3/OY8816c2jRKeLrT4+Hd2OZfR58bMQb93CgzPKeWAG/5/L8w9S4bGmlbA==
