@@ -51,7 +51,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   onApplicationBootstrap() {
-    this.periodicUpdateNetwrok();
+    this.periodicUpdateNetwork();
   }
 
   async getIndexingProjects() {
@@ -75,16 +75,14 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry
-          .closedServiceAgreementIds(indexer, i)
-          .then((id) => id.toNumber());
-
+        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
         const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
           agreementId,
         );
 
         if (agreementExpired) {
-          Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
+          const id = agreementId.toNumber();
+          Object.assign(this.expiredAgreements, { [id]: agreementId });
         }
       }
     } catch {
@@ -128,7 +126,10 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry
+          .closedServiceAgreementIds(indexer, i)
+          .then((id) => id.toNumber());
+
         if (this.expiredAgreements[agreementId]) {
           await this.sendTransaction(
             'remove expired service agreement',
@@ -360,11 +361,11 @@ export class NetworkService implements OnApplicationBootstrap {
       getLogger('network').info(`transactions interval change from ${this.interval} to ${interval}`);
 
       this.interval = interval;
-      await this.periodicUpdateNetwrok();
+      await this.periodicUpdateNetwork();
     }
   }
 
-  async periodicUpdateNetwrok() {
+  async periodicUpdateNetwork() {
     if (!this.interval) {
       this.interval = await this.getInterval();
     }
