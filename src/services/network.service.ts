@@ -25,7 +25,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
-  private expiredAgreements: { [key: number]: number };
+  private expiredAgreements: { [key: number]: BigNumber };
 
   // TODO: set back to 1800
   private defaultInterval = 1000 * 900;
