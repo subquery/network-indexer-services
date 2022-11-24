@@ -33,7 +33,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
-  private expiredAgreements: { [key: number]: number };
+  private expiredAgreements: { [key: number]: BigNumber };
 
   // TODO: set back to 1800
   private defaultInterval = 1000 * 900;
@@ -84,12 +84,14 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
         const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
           agreementId,
         );
+
         if (agreementExpired) {
-          Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
+          const id = agreementId.toNumber();
+          Object.assign(this.expiredAgreements, { [id]: agreementId });
         }
       }
     } catch {
@@ -133,7 +135,10 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry
+          .closedServiceAgreementIds(indexer, i)
+          .then((id) => id.toNumber());
+
         if (this.expiredAgreements[agreementId]) {
           await this.sendTransaction(
             'remove expired service agreement',
