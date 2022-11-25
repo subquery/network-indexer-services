@@ -51,7 +51,7 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.kepler);
     this.projectRepo = connection.getRepository(Project);
   }
 
