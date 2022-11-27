@@ -3,7 +3,7 @@ version: "3"
 services:
   postgres:
     image: postgres:12-alpine
-    container_name: coordinator_db
+    container_name: coordinator_db_dev
     ports:
       - 5432:5432
     volumes:
@@ -21,7 +21,7 @@ services:
     container_name: coordinator_service
     build:
       context: ../
-      dockerfile: dev/Dockerfile
+      dockerfile: Dockerfile
     ports:
       - 8000:8000
     depends_on:
@@ -54,22 +54,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  proxy-redis:
+    image: redis:7-alpine
+    container_name: coordinator_cache
+    expose:
+      - 6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+
   proxy-server:
-    image: dev4mz/test4mz:0.1.6-4
+    image: onfinality/subql-indexer-proxy:latest
     container_name: coordinator_proxy
     ports:
-      - 8001:8001
+      - 8008:8008
     depends_on:
       "coordinator-service":
         condition: service_healthy
     restart: always
     command:
-      - --port=8001
+      - --port=8008
       - --host=0.0.0.0
-      - --dev
+      - --debug
       - --auth
-      - --secret-key=qmbyd5hwac2jdcu
-      - --service-url=http://coordinator-service:8000/graphql
+      - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
+      - --network=moonbase
+      - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
+      - --redis-endpoint=redis://coordinator_cache
+      - --token-duration=8 # query auth token validity [hours]
+      - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
+      - --service-url=http://coordinator-service:8000
 networks:
   default:
     name: coordinator-service
