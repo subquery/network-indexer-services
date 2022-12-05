@@ -31,15 +31,6 @@ services:
     volumes:
       - /var/tmp/composeFiles:/var/tmp/composeFiles
       - /var/run/docker.sock:/var/run/docker.sock
-    command:
-      - --network=testnet
-      - --ws-endpoint=wss://moonbeam-alpha.api.onfinality.io/public-ws
-      - --postgres-host=postgres
-      - --postgres-database=postgres      # use the same password in the db config
-      - --postgres-port=5432
-      - --port=8000
-      - --debug
-      - --dev
     healthcheck:
       test:
         [
@@ -68,7 +59,7 @@ services:
     image: onfinality/subql-indexer-proxy:latest
     container_name: coordinator_proxy
     ports:
-      - 8008:8008
+      - 80:80
     depends_on:
       "coordinator-service":
         condition: service_healthy
@@ -76,15 +67,16 @@ services:
     command:
       - --port=8008
       - --host=0.0.0.0
-      - --debug
       - --auth
-      - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
+      - --debug
+      - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
       - --network=moonbase
       - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
       - --redis-endpoint=redis://coordinator_cache
       - --token-duration=8 # query auth token validity [hours]
       - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
       - --service-url=http://coordinator-service:8000
+      - --bootstrap=/ip4/210.55.152.69/tcp/7370
 networks:
   default:
     name: coordinator-service

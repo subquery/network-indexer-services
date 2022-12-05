@@ -39,7 +39,7 @@ export function getYargsOption() {
       type: 'number',
       describe: 'Specify the block hight start sync',
       demandOption: true,
-      default: 2791650,
+      default: 3301462,
       group: Groups.coordinator,
     },
     ipfs: {
