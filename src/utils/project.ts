@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import yaml from 'js-yaml';
-import { create } from 'ipfs-http-client';
 import { IPFSClient } from '@subql/network-clients';
 import { Project } from 'src/project/project.model';
 

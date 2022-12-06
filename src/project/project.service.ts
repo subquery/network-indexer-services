@@ -137,13 +137,14 @@ export class ProjectService {
     networkDictionary: string,
     nodeVersion: string,
     queryVersion: string,
-    poiEnabled: boolean,
     forceEnabled: boolean,
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
+
+    const poiEnabled = true;
 
     const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
