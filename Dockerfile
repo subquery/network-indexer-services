@@ -20,6 +20,8 @@ RUN npm prune --production
 
 FROM node:16-alpine
 
+RUN apk add --no-cache git curl docker-cli docker-compose grep
+
 WORKDIR /usr/src/app
 
 # copy from build image
