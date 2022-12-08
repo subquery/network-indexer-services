@@ -68,7 +68,7 @@ services:
         condition: service_healthy
     restart: always
     command:
-      - --port=8008
+      - --port=80
       - --host=0.0.0.0
       - --auth
       - --debug
