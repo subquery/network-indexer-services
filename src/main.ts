@@ -3,7 +3,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { sync } from './sync'
+import { sync } from './sync';
 import { getLogger, LogCategory, NestLogger } from './utils/logger';
 import { argv } from './yargs';
 

@@ -9,7 +9,7 @@ WORKDIR /usr/src/app
 
 COPY package.json yarn.lock ./
 
-RUN yarn --frozen-lockfile
+RUN yarn --network-timeout 600000 --frozen-lockfile
 
 COPY . .
 
@@ -20,11 +20,14 @@ RUN npm prune --production
 
 FROM node:16-alpine
 
+RUN apk add --no-cache git curl docker-cli docker-compose grep
+
 WORKDIR /usr/src/app
 
 # copy from build image
 COPY --from=BUILD_IMAGE /usr/src/app/dist ./dist
 COPY --from=BUILD_IMAGE /usr/src/app/node_modules ./node_modules
+COPY --from=BUILD_IMAGE /usr/src/app/package.json package.json
 
 
-CMD [ "node", "dist/main.js" ]
+ENTRYPOINT [ "node", "dist/main.js" ]

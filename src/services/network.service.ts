@@ -6,7 +6,8 @@ import { Repository, Connection } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
-import { cidToBytes32 } from '@subql/network-clients';
+import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { argv } from '../yargs';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
@@ -17,15 +18,22 @@ import { ContractService } from './contract.service';
 import { IndexingStatus, Transaction, TxFun } from './types';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
+import {
+  GetIndexerUnfinalisedPlans,
+  GetIndexerUnfinalisedPlansQuery,
+  GetIndexerUnfinalisedPlansQueryVariables,
+} from '@subql/network-query';
+import { Config } from 'src/configure/configure.module';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
+  private client: GraphqlQueryClient;
   private retryCount: number;
   private interval: number;
   private intervalTimer: NodeJS.Timer;
   private failedTransactions: Transaction[];
-  private expiredAgreements: { [key: number]: number };
+  private expiredAgreements: { [key: number]: BigNumber };
 
   // TODO: set back to 1800
   private defaultInterval = 1000 * 900;
@@ -39,10 +47,11 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
+    private readonly config: Config,
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.kepler);
     this.projectRepo = connection.getRepository(Project);
   }
 
@@ -51,7 +60,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   onApplicationBootstrap() {
-    this.periodicUpdateNetwrok();
+    this.periodicUpdateNetwork();
   }
 
   async getIndexingProjects() {
@@ -75,12 +84,14 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
         const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
           agreementId,
         );
+
         if (agreementExpired) {
-          Object.assign(this.expiredAgreements, { [agreementId]: agreementId });
+          const id = agreementId.toNumber();
+          Object.assign(this.expiredAgreements, { [id]: agreementId });
         }
       }
     } catch {
@@ -124,7 +135,10 @@ export class NetworkService implements OnApplicationBootstrap {
       const indexer = await this.accountService.getIndexer();
       const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds[indexer][i];
+        const agreementId = await this.sdk.serviceAgreementRegistry
+          .closedServiceAgreementIds(indexer, i)
+          .then((id) => id.toNumber());
+
         if (this.expiredAgreements[agreementId]) {
           await this.sendTransaction(
             'remove expired service agreement',
@@ -215,6 +229,21 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
+  async getExpiredStateChannels(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+    const apolloClient = this.client.explorerClient;
+    const now = new Date();
+    const indexer = await this.accountService.getIndexer();
+    const result = await apolloClient.query<
+      GetIndexerUnfinalisedPlansQuery,
+      GetIndexerUnfinalisedPlansQueryVariables
+    >({
+      query: GetIndexerUnfinalisedPlans,
+      variables: { indexer, now },
+    });
+
+    return result.data.stateChannels.nodes;
+  }
+
   collectAndDistributeRewardsAction() {
     return async () => {
       const canCollectRewards = await this.canCollectRewards();
@@ -272,7 +301,21 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        await this.sendTransaction('update era number', () => this.sdk.eraManager.safeUpdateAndGetEra());
+        await this.sendTransaction('update era number', async () =>
+          this.sdk.eraManager.safeUpdateAndGetEra(),
+        );
+      }
+    };
+  }
+
+  closeExpiredStateChannelsAction() {
+    return async () => {
+      const unfinalisedPlans = await this.getExpiredStateChannels();
+
+      for (const node of unfinalisedPlans) {
+        await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async () =>
+          this.sdk.stateChannel.claim(node.id),
+        );
       }
     };
   }
@@ -283,6 +326,7 @@ export class NetworkService implements OnApplicationBootstrap {
       this.collectAndDistributeRewardsAction(),
       this.applyICRChangeAction(),
       this.applyStakeChangesAction(),
+      this.closeExpiredStateChannelsAction(),
     ];
   }
 
@@ -356,11 +400,11 @@ export class NetworkService implements OnApplicationBootstrap {
       getLogger('network').info(`transactions interval change from ${this.interval} to ${interval}`);
 
       this.interval = interval;
-      await this.periodicUpdateNetwrok();
+      await this.periodicUpdateNetwork();
     }
   }
 
-  async periodicUpdateNetwrok() {
+  async periodicUpdateNetwork() {
     if (!this.interval) {
       this.interval = await this.getInterval();
     }

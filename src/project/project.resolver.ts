@@ -69,7 +69,6 @@ export class ProjectResolver {
     @Args('networkDictionary') networkDictionary: string,
     @Args('nodeVersion') nodeVersion: string,
     @Args('queryVersion') queryVersion: string,
-    @Args('poiEnabled') poiEnabled: boolean,
     @Args('forceEnabled') forceEnabled: boolean,
   ) {
     return this.projectService.startProject(
@@ -78,7 +77,6 @@ export class ProjectResolver {
       networkDictionary,
       nodeVersion,
       queryVersion,
-      poiEnabled,
       forceEnabled,
     );
   }
