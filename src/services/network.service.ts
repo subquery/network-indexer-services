@@ -7,7 +7,6 @@ import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
-import { argv } from '../yargs';
 
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';

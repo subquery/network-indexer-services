@@ -8,6 +8,7 @@ import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 import { Wallet } from 'ethers';
 
+import { getLogger } from 'src/utils/logger';
 import { decrypt, encrypt } from 'src/utils/encrypt';
 import { AccountEvent } from 'src/utils/subscription';
 import { SubscriptionService } from 'src/subscription/subscription.service';
@@ -16,16 +17,30 @@ import { Config } from 'src/configure/configure.module';
 import { Repository } from 'typeorm';
 import { Account, ControllerType } from './account.model';
 import { isEmpty } from 'lodash';
+import { ContractService } from 'src/services/contract.service';
+import { ContractSDK } from '@subql/contract-sdk';
 
 @Injectable()
 export class AccountService {
   private indexer: string;
+  private sdk: ContractSDK;
 
   constructor(
     @InjectRepository(Account) private accountRepo: Repository<Account>,
+    private contractService: ContractService,
     private pubSub: SubscriptionService,
     private config: Config,
   ) {}
+
+  async initContractSDK() {
+    try {
+      if (this.sdk) return;
+      await this.contractService.updateContractSDK();
+      this.sdk = this.contractService.getSdk();
+    } catch (e) {
+      getLogger('account').error(`Failed to init contract sdk ${e}`);
+    }
+  }
 
   privateToAdress(key: string) {
     return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
@@ -85,7 +100,17 @@ export class AccountService {
     return account?.indexer || '';
   }
 
+  onAddControllerEvent() {
+    this.sdk.indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
+      const meta = await this.getMetadata();
+      this.pubSub.publish(AccountEvent.Controller, { accountChanged: { ...meta, controller } });
+    });
+  }
+
   async addController(): Promise<string> {
+    await this.initContractSDK();
+    this.onAddControllerEvent();
+
     const controller = this.generateControllerWallet();
     const encryptedController = encrypt(controller.privateKey);
     const indexer = await this.getIndexer();
@@ -96,9 +121,6 @@ export class AccountService {
     });
 
     await this.accountRepo.save(account);
-
-    const meta = await this.getMetadata();
-    this.pubSub.publish(AccountEvent.Controller, { accountChanged: meta });
 
     return controller.address;
   }
