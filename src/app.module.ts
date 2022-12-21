@@ -11,6 +11,7 @@ import { ConfigureModule } from './configure/configure.module';
 import { argv, PostgresKeys } from './yargs';
 import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
+import { MonitorController } from './monitor.controller';
 
 import { SubscriptionModule } from './subscription/subscription.module';
 import { ServicesModule } from './services/services.module';
@@ -54,6 +55,6 @@ import { DBModule } from './db/db.module';
       exclude: ['/env.js', '/graphql*'],
     }),
   ],
-  controllers: [AdminController, AgreementController],
+  controllers: [AdminController, AgreementController, MonitorController],
 })
 export class AppModule {}
