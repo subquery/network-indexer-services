@@ -32,7 +32,7 @@ export class ContractService {
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = chainIds[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
-    this.existentialBalance = 0.5;
+    this.existentialBalance = 0.2;
     this.initProvider(config.wsEndpoint);
   }
 

@@ -340,7 +340,6 @@ export class NetworkService implements OnApplicationBootstrap {
         getLogger('contract').warn(
           'insufficient balance for the controller account, please top up your controller account ASAP.',
         );
-        return;
       }
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
