@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { Wallet, utils, providers } from 'ethers';
 import { isEmpty } from 'lodash';
@@ -29,7 +29,11 @@ export class ContractService {
   private chainID: number;
   private existentialBalance: number;
 
-  constructor(private accountService: AccountService, private config: Config) {
+  constructor(
+    // TODO: resolve the cycle dependency between `accountService` and `contractService`
+    @Inject(forwardRef(() => AccountService)) private accountService: AccountService,
+    private config: Config,
+  ) {
     this.chainID = chainIds[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = 0.2;

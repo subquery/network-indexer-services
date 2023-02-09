@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { v4 as uuid } from 'uuid';
@@ -26,8 +26,8 @@ export class AccountService {
   private sdk: ContractSDK;
 
   constructor(
+    @Inject(forwardRef(() => ContractService)) private contractService: ContractService,
     @InjectRepository(Account) private accountRepo: Repository<Account>,
-    private contractService: ContractService,
     private pubSub: SubscriptionService,
     private config: Config,
   ) {}

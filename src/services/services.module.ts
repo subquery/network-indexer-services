@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 import { AccountModule } from 'src/account/account.module';
 
@@ -13,7 +13,7 @@ import { QueryService } from './query.service';
 import { ServiceResolver } from './service.resolver';
 
 @Module({
-  imports: [AccountModule],
+  imports: [forwardRef(() => AccountModule)],
   providers: [
     ContractService,
     DockerRegistryService,
