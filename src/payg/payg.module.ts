@@ -21,7 +21,7 @@ import { ChainInfo, Channel, ChannelLabor } from './payg.model';
     TypeOrmModule.forFeature([Channel]),
     TypeOrmModule.forFeature([ChannelLabor]),
     TypeOrmModule.forFeature([ChainInfo]),
-    TypeOrmModule.forFeature([Project])
+    TypeOrmModule.forFeature([Project]),
   ],
   providers: [PaygService, PaygResolver],
   exports: [PaygService],

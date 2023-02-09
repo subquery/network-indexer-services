@@ -22,12 +22,6 @@ import { ServiceResolver } from './service.resolver';
     QueryService,
     ServiceResolver,
   ],
-  exports: [
-    ContractService,
-    DockerRegistryService,
-    DockerService,
-    NetworkService,
-    QueryService,
-  ],
+  exports: [ContractService, DockerRegistryService, DockerService, NetworkService, QueryService],
 })
 export class ServicesModule {}

@@ -23,10 +23,10 @@ import { DeploymentStatus, IndexingStatus } from './types';
 @Injectable()
 export class ContractService {
   private wallet: Wallet;
-  private provider: providers.StaticJsonRpcProvider;
-  private chainID: number;
   private sdk: ContractSDK;
+  private provider: providers.StaticJsonRpcProvider;
   private emptyDeploymentStatus;
+  private chainID: number;
   private existentialBalance: number;
 
   constructor(private accountService: AccountService, private config: Config) {
