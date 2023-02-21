@@ -2780,16 +2780,7 @@
     schema-utils "^2.6.5"
     source-map "^0.7.3"
 
-"@polkadot/keyring@^10.2.1":
-  version "10.2.1"
-  resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-10.2.1.tgz#692d4e24dcbbe294b6945640802fc924ea20348e"
-  integrity sha512-84/zzxDZANQ4AfsCT1vrjX3I23/mj9WUWl1F7q9ruK6UBFyGsl46Y3ABOopFHij9UXhppndhB65IeDnqoOKqxQ==
-  dependencies:
-    "@babel/runtime" "^7.20.6"
-    "@polkadot/util" "10.2.1"
-    "@polkadot/util-crypto" "10.2.1"
-
-"@polkadot/networks@10.2.1", "@polkadot/networks@^10.2.1":
+"@polkadot/networks@10.2.1":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/networks/-/networks-10.2.1.tgz#5095011795afa20291ef3e34a2ad38ed2c63fe09"
   integrity sha512-cDZIY4jBo2tlDdSXNbECpuWer0NWlPcJNhHHveTiu2idje2QyIBNxBlAPViNGpz+ScAR0EknEzmQKuHOcSKxzg==
@@ -2798,32 +2789,7 @@
     "@polkadot/util" "10.2.1"
     "@substrate/ss58-registry" "^1.35.0"
 
-"@polkadot/ui-keyring@^2.9.4":
-  version "2.9.14"
-  resolved "https://registry.yarnpkg.com/@polkadot/ui-keyring/-/ui-keyring-2.9.14.tgz#dfb0faf5c7b4627bf5e499ebe4d70d1fd648e837"
-  integrity sha512-8ar325pRhlhVBAES3pgXjMnFWeq/b6ccS7E953WvWUGvFSOlW59eDjfEhZIfSsrp10aSWt1rFDhoYPP28IMBzQ==
-  dependencies:
-    "@babel/runtime" "^7.20.6"
-    "@polkadot/keyring" "^10.2.1"
-    "@polkadot/ui-settings" "2.9.14"
-    "@polkadot/util" "^10.2.1"
-    "@polkadot/util-crypto" "^10.2.1"
-    mkdirp "^1.0.4"
-    rxjs "^7.5.7"
-    store "^2.0.12"
-
-"@polkadot/ui-settings@2.9.14":
-  version "2.9.14"
-  resolved "https://registry.yarnpkg.com/@polkadot/ui-settings/-/ui-settings-2.9.14.tgz#e52e59ed85c1b0d8f1b79de7cae68cc17916e5e3"
-  integrity sha512-uXKNVYEbREO3Qx3JN8AuUsNMu/mfTrBVC8zQ9YGIW6pdZ/g45uYA9hlLGqJvOh6PQqq7YtH/Ck7fenpt2Cz0qA==
-  dependencies:
-    "@babel/runtime" "^7.20.6"
-    "@polkadot/networks" "^10.2.1"
-    "@polkadot/util" "^10.2.1"
-    eventemitter3 "^4.0.7"
-    store "^2.0.12"
-
-"@polkadot/util-crypto@10.2.1", "@polkadot/util-crypto@^10", "@polkadot/util-crypto@^10.2.1":
+"@polkadot/util-crypto@^10":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util-crypto/-/util-crypto-10.2.1.tgz#f6ce1c81496336ca50c2ca84975bcde79aa16634"
   integrity sha512-UH1J4oD92gkLXMfVTLee3Y2vYadNyp1lmS4P2nZwQ0SOzGZ4rN7khD2CrB1cXS9WPq196Zb5oZdGLnPYnXHtjw==
@@ -2840,7 +2806,7 @@
     ed2curve "^0.3.0"
     tweetnacl "^1.0.3"
 
-"@polkadot/util@10.2.1", "@polkadot/util@^10", "@polkadot/util@^10.2.1":
+"@polkadot/util@10.2.1", "@polkadot/util@^10":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util/-/util-10.2.1.tgz#a8c3a4fe87091197448bec70f7ea079b60d5abf6"
   integrity sha512-ewGKSOp+VXKEeCvpCCP2Qqi/FVkewBF9vb/N8pRwuNQ2XE9k1lnsOZZeQemVBDhKsZz+h3IeNcWejaF6K3vYHQ==
@@ -3185,19 +3151,17 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/contract-sdk@^0.10.4-2":
-  version "0.10.4-2"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.10.4-2.tgz#fa7cf8fc9f043b7c7b103654309cbb1585d4bf98"
-  integrity sha512-ke0kV/VU+SZpU0juQuJnoAKFjyjv2/Tyu4e+/xhxiFFuTzYCey5lBqDMVK5Cxkg7UB8DUbm+H6QiNSNkkyvm2w==
+"@subql/contract-sdk@^0.11.1-8":
+  version "0.11.1-9"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.11.1-9.tgz#8e1293e40a1c3648c5f0b92b10efaf67528d1390"
+  integrity sha512-/v+lXPvqm3oVV+p7wmyOw5k05/K2gSRqq/gLnYfRNE/QRm28Ly9KKmEM24ZfA1eHpWoZayT48D7EosuOfMiRDQ==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
-    "@polkadot/ui-keyring" "^2.9.4"
-    solidity-docgen "^0.6.0-beta.25"
 
-"@subql/indexer-admin@0.2.3-0":
-  version "0.2.3-0"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.3-0.tgz#20202585fb267a611d88426a72e6a277e088d9d3"
-  integrity sha512-udzGg5krjIPejauWqnPjLmQxh2bTLmJefu1b7HX9wcam0Kh3vSHuD7NLfGfLdBj7m+ZWMOK7HNFZE6KmibGD/g==
+"@subql/indexer-admin@0.2.3-3":
+  version "0.2.3-3"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.3-3.tgz#221fc0fab82613a4d7b5ce3661382d1328c22692"
+  integrity sha512-cAWRaFBsvluXLsD3zfNeqZaKafNHoyyS+qDl2gJl7wDjyif/Wwnd558ferSNpJPF6FoPlg/ZVO+ErCh6GYW++A==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3207,8 +3171,9 @@
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
     "@subql/components" "1.0.1-37"
-    "@subql/contract-sdk" "^0.10.4-2"
+    "@subql/contract-sdk" "^0.11.1-8"
     "@subql/network-clients" "^0.2.1-19"
+    "@subql/network-query" "0.1.1-10"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3254,17 +3219,17 @@
     ethers "^5.6.8"
     graphql "^16.5.0"
 
+"@subql/network-query@0.1.1-10", "@subql/network-query@^0.1.1-7":
+  version "0.1.1-10"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-10.tgz#4db7a0b779c1439f51ad7807a253cdfa0cd1a446"
+  integrity sha512-FC0LwrAEXjNfQUCZqzYXHfj887wPjiYDc/hmAZNid72VtRsrxQVWQzxEAwle4Qq3h2Pnho1ECvHQKWBZ12zVMQ==
+  dependencies:
+    graphql "^16.5.0"
+
 "@subql/network-query@0.1.1-9":
   version "0.1.1-9"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-9.tgz#b57e47660e0a4c40024daae97fc6f9c7f2d00757"
   integrity sha512-JejExJPyiUybG9tH4yPRqOc7VI4eQY4J2hIV9btS0XBqvT5ArNVgi4lfKIxEmP5PZufbYjLeub9Sg25FVdZVdA==
-  dependencies:
-    graphql "^16.5.0"
-
-"@subql/network-query@^0.1.1-7":
-  version "0.1.1-10"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.1-10.tgz#4db7a0b779c1439f51ad7807a253cdfa0cd1a446"
-  integrity sha512-FC0LwrAEXjNfQUCZqzYXHfj887wPjiYDc/hmAZNid72VtRsrxQVWQzxEAwle4Qq3h2Pnho1ECvHQKWBZ12zVMQ==
   dependencies:
     graphql "^16.5.0"
 
@@ -8143,7 +8108,7 @@ eventemitter3@^3.1.0:
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
   integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
-eventemitter3@^4.0.0, eventemitter3@^4.0.7:
+eventemitter3@^4.0.0:
   version "4.0.7"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
@@ -15343,7 +15308,7 @@ rxjs@6.6.7, rxjs@^6.6.0:
   dependencies:
     tslib "^1.9.0"
 
-rxjs@^7.2.0, rxjs@^7.5.7:
+rxjs@^7.2.0:
   version "7.6.0"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.6.0.tgz#361da5362b6ddaa691a2de0b4f2d32028f1eb5a2"
   integrity sha512-DDa7d8TFNUalGC9VqXvQ1euWNN7sc63TrUCuM9J998+ViviahMIjKSOU7rfcgFOF+FCD71BhDRv4hrFz+ImDLQ==
@@ -15814,19 +15779,6 @@ sockjs@^0.3.21:
     uuid "^8.3.2"
     websocket-driver "^0.7.4"
 
-solidity-ast@^0.4.38:
-  version "0.4.38"
-  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.38.tgz#103e8340e871882e10cfb5c06fab9bf8dff4100a"
-  integrity sha512-e7gT6g8l8M2rAzH648QA3/IihCNy/anFoWyChVD+T+zfX4FjXbT8AO2DB3wG1iEmIBib9/+vD+GvTElWWpdw+w==
-
-solidity-docgen@^0.6.0-beta.25:
-  version "0.6.0-beta.32"
-  resolved "https://registry.yarnpkg.com/solidity-docgen/-/solidity-docgen-0.6.0-beta.32.tgz#bd6424de061cee3c1e3df2e90e2069cb87db982e"
-  integrity sha512-LGcosbgqxrqTo9winVq3+Xz1shS9k4p+RKwqPVPI0HtjfsKF9Mc5GzBzOUhce9uwzy0yJfhf832whfY1UKt4Aw==
-  dependencies:
-    handlebars "^4.7.7"
-    solidity-ast "^0.4.38"
-
 sonic-boom@^1.0.2:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/sonic-boom/-/sonic-boom-1.4.1.tgz#d35d6a74076624f12e6f917ade7b9d75e918f53e"
@@ -16022,11 +15974,6 @@ statuses@2.0.1:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.5.0.tgz#161c7dac177659fd9811f43771fa99381478628c"
   integrity sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==
-
-store@^2.0.12:
-  version "2.0.12"
-  resolved "https://registry.yarnpkg.com/store/-/store-2.0.12.tgz#8c534e2a0b831f72b75fc5f1119857c44ef5d593"
-  integrity sha512-eO9xlzDpXLiMr9W1nQ3Nfp9EzZieIQc10zPPMP5jsVV7bLOziSFFBP0XoDXACEIFtdI+rIz0NwWVA/QVJ8zJtw==
 
 stream-browserify@^2.0.1:
   version "2.0.2"
