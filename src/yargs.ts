@@ -24,8 +24,8 @@ export function getYargsOption() {
       demandOption: false,
       describe: 'Network type for the service',
       type: 'string',
-      choices: ['moonbase', 'testnet', 'mainnet'],
-      default: 'moonbase',
+      choices: ['mainnet', 'kepler', 'testnet'],
+      default: 'testnet',
       group: Groups.coordinator,
     },
     'ws-endpoint': {

@@ -7,7 +7,7 @@ import { Wallet, utils, providers } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
-import { SQToken } from '@subql/contract-sdk/publish/moonbase.json';
+import { SQToken } from '@subql/contract-sdk/publish/testnet.json'; // TODO fixme
 import { cidToBytes32 } from '@subql/network-clients';
 
 import { AccountService } from 'src/account/account.service';

@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
+import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
+import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import moonbaseDeployment from '@subql/contract-sdk/publish/moonbase.json';
 import { Signer } from 'ethers';
 
 const deployments = {
-  moonbase: moonbaseDeployment,
+  mainnet: mainnetDeployment,
+  kepler: keplerDeployment,
   testnet: testnetDeployment,
-  mainnet: testnetDeployment,
 };
 
 export enum ChainID {
-  moonbase = 1287,
-  testnet = 595,
-  mainnet = 1285,
+  mainnet = 0, // TODO when launch
+  kepler = 0, // TODO when launch
+  testnet = 1287,
 }
 
 function createContractOptions(network: SubqueryNetwork): SdkOptions {
@@ -26,15 +27,15 @@ function createContractOptions(network: SubqueryNetwork): SdkOptions {
 }
 
 export const chainIds: Record<string, number> = {
-  moonbase: ChainID.moonbase,
-  testnet: ChainID.testnet,
   mainnet: ChainID.mainnet,
+  kepler: ChainID.kepler,
+  testnet: ChainID.testnet,
 };
 
 const options = {
-  [ChainID.moonbase]: createContractOptions('moonbase'),
-  [ChainID.testnet]: createContractOptions('testnet'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
+  [ChainID.kepler]: createContractOptions('kepler'),
+  [ChainID.testnet]: createContractOptions('testnet'),
 };
 
 export async function initContractSDK(provider: Signer, chainID: ChainID): Promise<ContractSDK> {
