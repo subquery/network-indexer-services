@@ -1,18 +1,19 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { ChainID } from './../utils/contractSDK';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { Wallet, utils, providers } from 'ethers';
 import { isEmpty } from 'lodash';
 import { formatUnits } from '@ethersproject/units';
 import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
-import { SQToken } from '@subql/contract-sdk/publish/moonbase.json';
+import { SQToken } from '@subql/contract-sdk/publish/testnet.json';
 import { cidToBytes32 } from '@subql/network-clients';
 
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
-import { chainIds, initContractSDK } from 'src/utils/contractSDK';
+import { initContractSDK, networkToChainID } from 'src/utils/contractSDK';
 import { decrypt } from 'src/utils/encrypt';
 import { getLogger } from 'src/utils/logger';
 
@@ -26,7 +27,7 @@ export class ContractService {
   private sdk: ContractSDK;
   private provider: providers.StaticJsonRpcProvider;
   private emptyDeploymentStatus;
-  private chainID: number;
+  private chainID: string;
   private existentialBalance: number;
 
   constructor(
@@ -34,7 +35,7 @@ export class ContractService {
     @Inject(forwardRef(() => AccountService)) private accountService: AccountService,
     private config: Config,
   ) {
-    this.chainID = chainIds[config.network];
+    this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = 0.2;
     this.initProvider(config.wsEndpoint);
@@ -45,7 +46,7 @@ export class ContractService {
   }
 
   initProvider(endpoint: string) {
-    this.provider = new providers.StaticJsonRpcProvider(endpoint, this.chainID);
+    this.provider = new providers.StaticJsonRpcProvider(endpoint, parseInt(this.chainID, 16));
   }
 
   async getBlockTime() {
@@ -122,14 +123,14 @@ export class ContractService {
   }
 
   async indexerToController(indexer: string) {
-    const controller = await this.sdk.indexerRegistry.indexerToController(indexer);
+    const controller = await this.sdk.indexerRegistry.getController(indexer);
     return controller ? controller.toLowerCase() : '';
   }
 
   async createSDK(key: string) {
     const keyBuffer = toBuffer(key);
     this.wallet = new Wallet(keyBuffer, this.provider);
-    this.sdk = await initContractSDK(this.wallet, this.chainID);
+    this.sdk = await initContractSDK(this.wallet, this.chainID as ChainID);
   }
 
   async updateContractSDK() {

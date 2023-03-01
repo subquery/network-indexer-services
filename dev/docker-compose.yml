@@ -73,7 +73,7 @@ services:
       - --auth
       - --debug
       - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
-      - --network=moonbase
+      - --network=testnet
       - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
       - --redis-endpoint=redis://coordinator_cache
       - --token-duration=8 # query auth token validity [hours]

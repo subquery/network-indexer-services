@@ -50,7 +50,7 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.kepler);
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.testnet);
     this.projectRepo = connection.getRepository(Project);
   }
 
@@ -166,10 +166,12 @@ export class NetworkService implements OnApplicationBootstrap {
     const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} ${mmrRootLog}`;
 
     const timestamp = await this.contractService.getBlockTime();
+    const indexer = await this.accountService.getIndexer();
     await this.sendTransaction(
       `report project status`,
       async () => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
+          indexer,
           cidToBytes32(id.trim()),
           blockHeight,
           mmrRoot,

@@ -3144,17 +3144,17 @@
     react-jazzicon "^0.1.3"
     react-router-dom "^6.4.2"
 
-"@subql/contract-sdk@^0.11.1-10", "@subql/contract-sdk@^0.11.1-9":
-  version "0.11.1-10"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.11.1-10.tgz#de96d79f62ef0fbb40747f486829c06dbe848404"
-  integrity sha512-q/dDtxaHKTyOJWiP62oQj7kn4Eui5CVbWpV+8LYtuHTBOIcK4m1ZGS/srj6lMUdZtYF1pgPIkwP0Z+OIFOTspA==
+"@subql/contract-sdk@0.12.1-5", "@subql/contract-sdk@^0.12.1-5":
+  version "0.12.1-5"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.12.1-5.tgz#77985ab5c1299efd185d1b9c26d62ac6aa1e7799"
+  integrity sha512-B/KztkQXeTiiWBZG41a2HoNI506kgBBpcY+0ZWeKnAaptcaHi3sKHFR3wIdDmNGh5FGi3dVNc3ijFXYncMa++w==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@0.2.3-4":
-  version "0.2.3-4"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.2.3-4.tgz#2ab3ec747df934b8552b5fb620e01b0be461ab4e"
-  integrity sha512-nnC+46MCtqk0P3weiNQ0ryeJSC7dJPaiECqlubb2rPUksOb30QV+M2gB/mxSchTuboRS/cWz8PJ0wBpmBjYW5g==
+"@subql/indexer-admin@0.3.1-1":
+  version "0.3.1-1"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.1-1.tgz#db35e1044e6189f56b7e2505a4a60a140e8fc70f"
+  integrity sha512-rroGXS2LDglOuWc/N9EEXgpl0TsYMuQZoiGDyOZ5hmenOztcHAz3qKNTn988fUQqNb+Iroy5qMTTyHRPrTSfgA==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3164,9 +3164,9 @@
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
     "@subql/components" "1.0.1-37"
-    "@subql/contract-sdk" "^0.11.1-9"
-    "@subql/network-clients" "^0.2.3-1"
-    "@subql/network-query" "0.1.3-0"
+    "@subql/contract-sdk" "^0.12.1-5"
+    "@subql/network-clients" "^0.3.1-3"
+    "@subql/network-query" "0.3.1-0"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3198,24 +3198,38 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@^0.2.3-1":
-  version "0.2.3-1"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.2.3-1.tgz#639e42d9dfcdbf619cfb878898c33335854c0902"
-  integrity sha512-Ui6ftfdQcqlLP0Yg2dCX/a0Z2L5kysCt5SGdQNbJv7ew36wNPqCeIk1Yw2BZnZOsawkIiFACsuvSZyq7PIj2ZQ==
+"@subql/network-clients@^0.3.1-3":
+  version "0.3.1-3"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.3.1-3.tgz#38739a8a47d247f32e447ad7002e372ca0146b6d"
+  integrity sha512-89kzWnWe5iCpiX23fH9lZRlFOKwTSr6xLp5h5pa2LFiW2O23eusOUCZTRenVt/mrn/1wq3eoZOWfs6R5TaInow==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
-    "@subql/network-query" "0.1.3-0"
+    "@subql/network-query" "0.3.1-0"
     axios "^0.27.2"
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-query@0.1.3-0", "@subql/network-query@^0.1.3-0":
-  version "0.1.3-0"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.1.3-0.tgz#5515e73b11b9b2a1c9aef8af5adf5a9b706040b2"
-  integrity sha512-mQjq11vmoXttpr1XXCtilDQFqq+k2ExKC4DtmMwpn9RaBgnhLat+xN4RfjIiIkcv+wJnEC8ahLTAa6KPrNJcqA==
+"@subql/network-clients@^0.3.1-4":
+  version "0.3.1-4"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.3.1-4.tgz#75cdef3aa0f068d6d32e8ced328c22e3ba175ba1"
+  integrity sha512-n2Y/4AX4XKIBX2vD6GN0bFG37BCPz3I/mUgQqgLY/hdDmN+FoDvESPaFX1RyxCV8cgvoeAgQbPubbz8GAzrflg==
+  dependencies:
+    "@apollo/client" "^3.7.0"
+    "@ethersproject/bignumber" "^5.7.0"
+    "@subql/network-query" "0.3.1-0"
+    axios "^0.27.2"
+    buffer "^6.0.3"
+    cross-fetch "^3.1.5"
+    ethers "^5.6.8"
+    graphql "^16.5.0"
+
+"@subql/network-query@0.3.1-0", "@subql/network-query@^0.3.1-0":
+  version "0.3.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.1-0.tgz#84175686205cd2db4e5c93a4f55a935432545c7a"
+  integrity sha512-pYSpIpKVsPTrkhmD8uNEYheAZ/IAI5nQDI5YKixgwWR7sVRi5Xv3JBWQ1/jr7T3/hmDfraZlSSBaoJSZ0PwTFA==
   dependencies:
     graphql "^16.5.0"
 

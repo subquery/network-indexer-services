@@ -9,7 +9,7 @@ import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetStateChannels } from '@subql/network-query';
 
 export async function sync(app: INestApplication) {
-  const config = NETWORK_CONFIGS.kepler;
+  const config = NETWORK_CONFIGS.testnet;
   const client = new GraphqlQueryClient(config);
   const apolloClient = client.explorerClient;
   const result = await apolloClient.query({

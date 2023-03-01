@@ -1,22 +1,27 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ContractSDK, SubqueryNetwork, SdkOptions } from '@subql/contract-sdk';
+import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import moonbaseDeployment from '@subql/contract-sdk/publish/moonbase.json';
+import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
+import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
 import { Signer } from 'ethers';
 
 const deployments = {
-  moonbase: moonbaseDeployment,
   testnet: testnetDeployment,
-  mainnet: testnetDeployment,
+  kepler: keplerDeployment,
+  mainnet: mainnetDeployment,
 };
 
 export enum ChainID {
-  moonbase = 1287,
-  testnet = 595,
-  mainnet = 1285,
+  testnet = '0x13881',
+  kepler = '0x89',
+  mainnet = '0x89',
 }
+
+export const ChainIDs = [ChainID.testnet, ChainID.kepler, ChainID.mainnet];
+
+type SubqueryNetwork = 'mainnet' | 'kepler' | 'testnet';
 
 function createContractOptions(network: SubqueryNetwork): SdkOptions {
   return {
@@ -25,15 +30,15 @@ function createContractOptions(network: SubqueryNetwork): SdkOptions {
   };
 }
 
-export const chainIds: Record<string, number> = {
-  moonbase: ChainID.moonbase,
+export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
   testnet: ChainID.testnet,
+  kepler: ChainID.kepler,
   mainnet: ChainID.mainnet,
 };
 
 const options = {
-  [ChainID.moonbase]: createContractOptions('moonbase'),
   [ChainID.testnet]: createContractOptions('testnet'),
+  [ChainID.kepler]: createContractOptions('kepler'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
 

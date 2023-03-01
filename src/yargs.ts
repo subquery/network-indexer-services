@@ -24,15 +24,15 @@ export function getYargsOption() {
       demandOption: false,
       describe: 'Network type for the service',
       type: 'string',
-      choices: ['moonbase', 'testnet', 'mainnet'],
-      default: 'moonbase',
+      choices: ['testnet', 'kepler', 'mainnet'],
+      default: 'testnet',
       group: Groups.coordinator,
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'https://rpc.api.moonbase.moonbeam.network',
+      default: 'https://rpc.ankr.com/polygon_mumbai',
       group: Groups.coordinator,
     },
     'start-block': {
