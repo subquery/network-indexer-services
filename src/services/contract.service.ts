@@ -37,7 +37,7 @@ export class ContractService {
   ) {
     this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
-    this.existentialBalance = 0.2;
+    this.existentialBalance = 0.05;
     this.initProvider(config.wsEndpoint);
   }
 
