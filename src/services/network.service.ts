@@ -270,7 +270,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
       const { lastClaimedEra, lastSettledEra } = await this.geEraConfig();
 
-      if (stakers.length === 0 || lastSettledEra.gt(lastClaimedEra)) return;
+      if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers}`);
       await this.sendTransaction('apply stake changes', async () =>
