@@ -34,8 +34,7 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: number]: BigNumber };
 
-  // TODO: set back to 1800
-  private defaultInterval = 1000 * 900;
+  private defaultInterval = 1000 * 1800;
   private defaultRetryCount = 5;
   private batchSize = 20;
 

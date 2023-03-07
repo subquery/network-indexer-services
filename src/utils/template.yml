@@ -17,7 +17,7 @@ services:
       - -f=ipfs://{{deploymentID}}
       - -d={{dictionary}}
       - --ipfs=https://authipfs.subquery.network/ipfs/api/v0
-      - --network-endpoint={{networkEndpoint}}
+      - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
       - --proof-of-index={{poiEnabled}}
