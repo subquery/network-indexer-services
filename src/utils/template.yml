@@ -20,6 +20,7 @@ services:
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
+      - --batch-size=50
       - --proof-of-index={{poiEnabled}}
       - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}
