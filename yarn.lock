@@ -3300,19 +3300,17 @@
     react-jazzicon "^0.1.3"
     react-router-dom "^6.4.2"
 
-"@subql/contract-sdk@^0.12.3-0":
-  version "0.12.3-0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.12.3-0.tgz#b8e4d912f37fe47f30079aba4c3b18110f1e930e"
-  integrity sha512-xc4Md5ZO3WkZRM9iCL0uw19BS7xCUEc1jAEJlc0anY4NXCi3ncnvhvLOIhurRvdtpK5gZwiiZospeUVLrdujqA==
+"@subql/contract-sdk@^0.12.5-0":
+  version "0.12.5-0"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.12.5-0.tgz#18e2ab20eb02946bd0d76479aaab47391f1fdfba"
+  integrity sha512-qmupGknVCUY8S73cJE+rngCZY/SqO4Ut7I45wGuuhMe7UxJKgUhojJdCDb9E4uP4VVrzTq8Jmee8H3VH3K0x+Q==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-
-
-"@subql/indexer-admin@^0.3.1-5":
-  version "0.3.1-5"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.1-5.tgz#ed0603634b369f04ce284854baaef9eb438466b5"
-  integrity sha512-wJHdHP62sUjojHy72WkQxGp92I0WD5nrJs/gmeEDuAjkzXDjirGeR36o7dscspEXs73R33V6EellJ5eUQEI6eg==
+"@subql/indexer-admin@^0.3.4-0":
+  version "0.3.4-0"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.4-0.tgz#e938859336b94b5d7dec97a220185fd8fb95fe9c"
+  integrity sha512-i66I8G6V/BlW7vYDGuffnLKXCiKeZJaVqLnWaZpcIk5t5YOBakgdUGYI2Q58iZIdTK90LNpx0jOV9xc0j6lGEA==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3322,9 +3320,9 @@
     "@sentry/react" "^6.19.6"
     "@sentry/tracing" "^6.19.6"
     "@subql/components" "1.0.1-37"
-    "@subql/contract-sdk" "^0.12.3-0"
-    "@subql/network-clients" "^0.3.1-5"
-    "@subql/network-query" "0.3.1-0"
+    "@subql/contract-sdk" "^0.12.5-0"
+    "@subql/network-clients" "^0.3.3-0"
+    "@subql/network-query" "0.3.3-0"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3356,24 +3354,24 @@
     web-vitals "^1.0.1"
     yup "^0.32.11"
 
-"@subql/network-clients@^0.3.1-5":
-  version "0.3.1-5"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.3.1-5.tgz#6338e078165240228da9c4da5e94cbc6796cd12b"
-  integrity sha512-UgEsR5Q+6Qi3Fm1tjoTxu3DfNzOnyxeEzTyAcicabzfizTAW1bilqmahaycLlS70+Tuxb2HeLrcp+xjH3n/QMg==
+"@subql/network-clients@^0.3.3-0":
+  version "0.3.3-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.3.3-0.tgz#be11603c4c2d11ef5e2b36bc72a258ad07db4486"
+  integrity sha512-IvOx6gZRwlMD57zc4eBfAKlZaaiH412iCm8wavn0Yz75wpdjyu94YXWoj5lXnxvjDSujXa3/3cv2nhAqaiJOKg==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
-    "@subql/network-query" "0.3.1-0"
+    "@subql/network-query" "0.3.3-0"
     axios "^0.27.2"
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-query@0.3.1-0", "@subql/network-query@^0.3.1-0":
-  version "0.3.1-0"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.1-0.tgz#84175686205cd2db4e5c93a4f55a935432545c7a"
-  integrity sha512-pYSpIpKVsPTrkhmD8uNEYheAZ/IAI5nQDI5YKixgwWR7sVRi5Xv3JBWQ1/jr7T3/hmDfraZlSSBaoJSZ0PwTFA==
+"@subql/network-query@0.3.3-0", "@subql/network-query@^0.3.3-0":
+  version "0.3.3-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.3-0.tgz#1be1857811c194214adf99e0ef77f9a6e9cbadd6"
+  integrity sha512-v+JEGWVABQwaThPWvxpeZMW5W1viZ1k/QzWhrAPaWdTWLUqFWW1VdEt94E0GXtNnDVykysgZTpzqLwiTWLSR7g==
   dependencies:
     graphql "^16.5.0"
 
