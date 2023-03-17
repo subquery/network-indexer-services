@@ -38,7 +38,7 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "8.0.4",
     "@subql/common": "^1.0.0",
-    "@subql/contract-sdk": "^0.12.5-0",
+    "@subql/contract-sdk": "^0.12.5-2",
     "@subql/indexer-admin": "^0.3.4-0",
     "@subql/network-clients": "^0.3.3-0",
     "@subql/network-query": "^0.3.3-0",
