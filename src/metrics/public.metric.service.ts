@@ -47,7 +47,7 @@ export class PublicMetricsService implements OnModuleInit {
   }
 
   public async pushServiceInfo() {
-    const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
+    const proxyVersion = await this.docker.imageVersion('indexer_proxy');
     const indexer = await this.accountService.getIndexer();
     if (!indexer) return;
 

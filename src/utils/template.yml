@@ -59,4 +59,4 @@ services:
 
 networks:
   default:
-    name: coordinator-service
+    name: indexer_services

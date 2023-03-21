@@ -70,7 +70,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      default: 'coordinator_db_dev',
+      default: 'indexer_db_dev',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {
@@ -88,7 +88,7 @@ export function getYargsOption() {
     [PostgresKeys.password]: {
       type: 'string',
       describe: 'Postgres password',
-      default: 'postgres',
+      default: 'pos_z8X',
       group: Groups.postgres,
     },
     [PostgresKeys.database]: {
