@@ -29,7 +29,7 @@ services:
         condition: service_healthy
     restart: always
     volumes:
-      - /var/tmp/composeFiles:/var/tmp/composeFiles
+      - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --postgres-host=postgres
@@ -48,6 +48,39 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  
+  proxy-redis:
+    image: redis:7-alpine
+    container_name: coordinator_cache
+    expose:
+      - 6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+  
+  proxy-server:
+    image: onfinality/subql-indexer-proxy:v0.3.3-1
+    container_name: coordinator_proxy
+    ports:
+      - 8001:8001
+    depends_on:
+      "coordinator-service":
+        condition: service_healthy
+    restart: always
+    command:
+      - --port=8001
+      - --auth
+      - --debug
+      - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
+      - --network=testnet
+      - --network-endpoint=https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
+      - --redis-endpoint=redis://coordinator_cache
+      - --token-duration=8 # query auth token validity [hours]
+      - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
+      - --service-url=http://coordinator-service:8000
+      - --bootstrap=210.55.152.69:7370
+      # - --bootstrap=210.55.152.69:7370 # if more, just add new line
 networks:
   default:
     name: coordinator-service

@@ -18,7 +18,7 @@ export class DockerService {
       const result = await this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
-      getLogger('docker').error(`file: ${filePath} not exist`);
+      getLogger('docker').warn(`file: ${filePath} not exist`);
     }
   }
 

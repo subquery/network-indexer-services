@@ -210,7 +210,7 @@ export class ProjectService {
 
     try {
       await this.db.createDBSchema(schemaName(projectID));
-      generateDockerComposeFile(item);
+      await generateDockerComposeFile(item);
       await this.docker.up(item.deploymentID);
     } catch (e) {
       getLogger('project').info(`start project: ${e}`);
