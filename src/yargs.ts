@@ -39,7 +39,7 @@ export function getYargsOption() {
       type: 'number',
       describe: 'Specify the block hight start sync',
       demandOption: true,
-      default: 3301462,
+      default: 33168664,
       group: Groups.coordinator,
     },
     ipfs: {
@@ -65,6 +65,12 @@ export function getYargsOption() {
       describe: 'Enable dev mode',
       default: false,
       group: Groups.coordinator,
+    },
+    'pushgateway-endpoint': {
+      type: 'string',
+      describe: 'Specify pushgateway endpoint',
+      default: 'http://pushgateway',
+      group: Groups.metrics,
     },
     [PostgresKeys.host]: {
       type: 'string',
