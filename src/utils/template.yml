@@ -20,7 +20,9 @@ services:
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
-      - --batch-size=100
+      - --batch-size=50
+      - --timeout=1800
+      - --store-cache-threshold=300
       - --proof-of-index={{poiEnabled}}
       - -m=/home/projects/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}

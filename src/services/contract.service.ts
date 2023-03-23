@@ -15,7 +15,7 @@ import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
 import { initContractSDK, networkToChainID } from 'src/utils/contractSDK';
 import { decrypt } from 'src/utils/encrypt';
-import { getLogger } from 'src/utils/logger';
+import { debugLogger, getLogger } from 'src/utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
 
@@ -135,13 +135,20 @@ export class ContractService {
 
   async updateContractSDK() {
     const accounts = await this.accountService.getAccounts();
-    if (isEmpty(accounts)) return;
+    if (isEmpty(accounts)) {
+      getLogger('account').warn('Empty accounts');
+      return;
+    }
 
     // check current sdk signer is same with the controller account on network
     const indexer = await this.accountService.getIndexer();
+    const controllerAccount = await this.indexerToController(indexer);
+    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet.address}`);
+    debugLogger('contract', `Indexer address: ${indexer}`);
+    debugLogger('contract', `Controller address: ${controllerAccount}`);
+
     if (indexer && this.wallet && this.sdk) {
-      const controller = await this.indexerToController(indexer);
-      if (this.wallet.address.toLowerCase() === controller) return;
+      if (this.wallet.address.toLowerCase() === controllerAccount) return;
     }
 
     // TODO: move to account repo
@@ -160,10 +167,9 @@ export class ContractService {
       if (key) await this.createSDK(key);
     }
 
-    const controller = await this.indexerToController(indexer);
     validAccounts.forEach(async ({ controllerKey }) => {
       try {
-        if (this.wallet.address.toLowerCase() !== controller) {
+        if (this.wallet.address.toLowerCase() !== controllerAccount) {
           await this.createSDK(controllerKey);
         }
       } catch (e) {
