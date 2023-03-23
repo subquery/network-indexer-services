@@ -26,7 +26,7 @@ export class PublicMetricsService implements OnModuleInit {
     private config: Config,
   ) {}
 
-  public async onModuleInit() {
+  public onModuleInit() {
     this.prefix = 'subquery_indexer';
     this.pushgateway = new client.Pushgateway(this.config.pushGateway);
     this.gauge = new client.Gauge({
@@ -35,8 +35,8 @@ export class PublicMetricsService implements OnModuleInit {
       labelNames: ['coordinator_version', 'proxy_version'],
     });
 
-    await this.pushServiceInfo();
-    await this.periodicPushServiceInfo();
+    this.pushServiceInfo();
+    this.periodicPushServiceInfo();
   }
 
   public async pushServiceInfo() {
