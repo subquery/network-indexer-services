@@ -3,21 +3,32 @@ version: "3"
 services:
   postgres:
     image: postgres:12-alpine
-    container_name: coordinator_db_dev
+    container_name: indexer_db
     ports:
       - 5432:5432
     volumes:
       - .data/postgres:/var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: pos_z8X
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  coordinator-service:
-    container_name: coordinator_service
+  redis:
+    image: redis:7-alpine
+    container_name: indexer_cache
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+
+  coordinator:
+    # image: dev4mz/test4mz:0.1.1
+    container_name: indexer_coordinator
     image: coordinator:latest
     build:
       context: ../
@@ -32,7 +43,12 @@ services:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
+      - --network=testnet
       - --postgres-host=postgres
+      - --postgres-password=pos_z8X
+      # use the same password in the db config
+      - --postgres-port=5432
+      - --port=8000
       - --debug
     healthcheck:
       test:
@@ -41,31 +57,21 @@ services:
           "curl",
           "-i",
           "-X POST",
-          "http://coordinator-service:8000/graphql",
+          "http://indexer_coordinator:8000/graphql",
           "-H 'Content-Type: application/json'",
           "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
         ]
       interval: 5s
       timeout: 5s
       retries: 5
-  
-  proxy-redis:
-    image: redis:7-alpine
-    container_name: coordinator_cache
-    expose:
-      - 6379
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    healthcheck:
-      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
-  
-  proxy-server:
-    image: onfinality/subql-indexer-proxy:v0.3.3-1
-    container_name: coordinator_proxy
+
+  proxy:
+    image: onfinality/subql-indexer-proxy:latest
+    container_name: indexer_proxy
     ports:
       - 8001:8001
     depends_on:
-      "coordinator-service":
+      "coordinator":
         condition: service_healthy
     restart: always
     command:
@@ -74,13 +80,12 @@ services:
       - --debug
       - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
       - --network=testnet
-      - --network-endpoint=https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
-      - --redis-endpoint=redis://coordinator_cache
+      - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
+      - --redis-endpoint=redis://indexer_cache
       - --token-duration=8 # query auth token validity [hours]
       - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
-      - --service-url=http://coordinator-service:8000
-      - --bootstrap=210.55.152.69:7370
-      # - --bootstrap=210.55.152.69:7370 # if more, just add new line
+      - --service-url=http://indexer_coordinator:8000
+      - --bootstrap=/ip4/210.55.152.69/tcp/7370
 networks:
   default:
-    name: coordinator-service
+    name: indexer_services
