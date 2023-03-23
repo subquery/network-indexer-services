@@ -47,7 +47,7 @@ export class PublicMetricsService implements OnModuleInit {
     try {
       this.gauge
         .labels({
-          version,
+          coordinator_version: version,
           proxy_version: proxyVersion,
         })
         .set(1);
