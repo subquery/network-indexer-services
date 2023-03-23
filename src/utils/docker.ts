@@ -39,11 +39,11 @@ export function queryEndpoint(cid: string, port: number): string {
 }
 
 export function getComposeFileDirectory(cid: string): string {
-  return join('/var/tmp', `composeFiles/${cid}`);
+  return join('/usr', `projects/${cid}`);
 }
 
 export function getMmrFile(cid: string): string {
-  return join('/var/tmp', `composeFiles/${cid}/.mmr`);
+  return join('/usr', `projects/${cid}/.mmr`);
 }
 
 export function getComposeFilePath(cid: string): string {

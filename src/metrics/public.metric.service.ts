@@ -8,8 +8,7 @@ import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
 import { DockerService } from 'src/services/docker.service';
 import { debugLogger } from 'src/utils/logger';
-
-import { PUSHGATEWAY_DEV, PUSHGATEWAY_PROD } from './constant';
+import { getYargsOption } from 'src/yargs';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version } = require('../../package.json');
@@ -43,7 +42,8 @@ export class PublicMetricsService implements OnModuleInit {
   }
 
   private pushgatewayUrl() {
-    return this.config.dev ? PUSHGATEWAY_DEV : PUSHGATEWAY_PROD;
+    const { argv } = getYargsOption();
+    return argv['pushgateway-endpoint'];
   }
 
   public async pushServiceInfo() {

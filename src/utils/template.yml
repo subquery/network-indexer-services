@@ -12,7 +12,7 @@ services:
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
-      - /var/tmp/composeFiles/{{deploymentID}}:/var/tmp/composeFiles/{{deploymentID}}
+      - /usr/projects/{{deploymentID}}:/home/projects/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{dictionary}}
@@ -20,9 +20,9 @@ services:
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
-      - --batch-size=50
+      - --batch-size=100
       - --proof-of-index={{poiEnabled}}
-      - -m=/var/tmp/composeFiles/{{deploymentID}}/.mmr
+      - -m=/home/projects/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}
     healthcheck:
       test:

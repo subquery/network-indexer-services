@@ -30,9 +30,9 @@ services:
     # image: dev4mz/test4mz:0.1.1
     container_name: indexer_coordinator
     image: coordinator:latest
-    # build:
-    #   context: ../
-    #   dockerfile: Dockerfile
+    build:
+      context: ../
+      dockerfile: Dockerfile
     ports:
       - 8000:8000
     depends_on:
@@ -40,7 +40,7 @@ services:
         condition: service_healthy
     restart: always
     volumes:
-      - /var/tmp/composeFiles:/var/tmp/composeFiles
+      - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
@@ -57,7 +57,7 @@ services:
           "curl",
           "-i",
           "-X POST",
-          "http://coordinator:8000/graphql",
+          "http://indexer_coordinator:8000/graphql",
           "-H 'Content-Type: application/json'",
           "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
         ]
@@ -69,14 +69,13 @@ services:
     image: onfinality/subql-indexer-proxy:latest
     container_name: indexer_proxy
     ports:
-      - 80:80
+      - 8001:8001
     depends_on:
       "coordinator":
         condition: service_healthy
     restart: always
     command:
-      - --port=8008
-      - --host=0.0.0.0
+      - --port=8001
       - --auth
       - --debug
       - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
