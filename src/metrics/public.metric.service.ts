@@ -1,9 +1,9 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
 import client from 'prom-client';
 
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AccountService } from 'src/account/account.service';
 import { Config } from 'src/configure/configure.module';
 import { DockerService } from 'src/services/docker.service';
@@ -28,7 +28,6 @@ export class PublicMetricsService implements OnModuleInit {
 
   public async onModuleInit() {
     this.prefix = 'subquery_indexer';
-
     this.pushgateway = new client.Pushgateway(this.config.pushGateway);
     this.gauge = new client.Gauge({
       name: `${this.prefix}_coordinator_info`,
@@ -42,20 +41,23 @@ export class PublicMetricsService implements OnModuleInit {
 
   public async pushServiceInfo() {
     const proxyVersion = await this.docker.imageVersion('coordinator_proxy');
-    // const indexer = await this.accountService.getIndexer();
-    // if (!indexer) return;
+    const indexer = await this.accountService.getIndexer();
+    if (!indexer) return;
 
     try {
       this.gauge
         .labels({
-          coordinator_version: version,
+          version,
           proxy_version: proxyVersion,
         })
         .set(1);
 
-      await this.gateway.pushAdd({ jobName: `${this.prefix}_service`, groupings: { instance: indexer } });
+      await this.pushgateway.pushAdd({
+        jobName: `${this.prefix}_service`,
+        groupings: { instance: indexer },
+      });
     } catch {
-      debugLogger('metrics', `failed to send service info ${version} ${proxyVersion} ${'test'}`);
+      debugLogger('metrics', `failed to send service info ${version} ${proxyVersion}`);
     }
   }
 

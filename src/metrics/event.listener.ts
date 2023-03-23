@@ -6,20 +6,12 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
 import { EventPayload, metric, ServiceEvent } from './events';
 
-// TODO: all metrics export to indexer
-
-/// 1. `metadata`: for each indexing project, send this metric periodically (maybe 10min)-> instance: project_cid, labels: `metadta`
-/// 2. `stats`: for docker containers ->  instance: container_name, labels: `metrics`
-/// 3. `network status`: controllerBalance, rewardCollection (if currentEra - claimedEra > 1)
-
-/// 4. `the disk used`: https://github.com/prometheus/node_exporter (low priority)
-
 export class MetricEventListener {
   constructor(
     @InjectMetric(metric(ServiceEvent.CoordinatorVersion))
     private coordinatorVersion: Gauge<string>,
     @InjectMetric(metric(ServiceEvent.ControllerBalance))
-    private controllreBalance: Gauge<string>,
+    private controllerBalance: Gauge<string>,
   ) {}
 
   @OnEvent(ServiceEvent.CoordinatorVersion)
@@ -29,6 +21,6 @@ export class MetricEventListener {
 
   @OnEvent(ServiceEvent.ControllerBalance)
   handlerControllerBalance({ value }: EventPayload<number>) {
-    this.controllreBalance.set(value);
+    this.controllerBalance.set(value);
   }
 }
