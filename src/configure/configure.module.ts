@@ -22,9 +22,8 @@ export interface IConfig {
   readonly debug: boolean;
   readonly dev: boolean;
   readonly secret: string;
+  readonly pushGateway: string;
 }
-
-// const default_pushgateway = 'https://pushgateway-kong-dev.onfinality.me';
 
 export class Config implements IConfig {
   public static fromArgs(): Config {
@@ -41,6 +40,7 @@ export class Config implements IConfig {
     return new Config({
       network: argv['network'] as Network,
       wsEndpoint: argv['ws-endpoint'],
+      pushGateway: argv['pushgateway-endpoint'],
       port: argv['port'] as number,
       debug: argv['debug'] as boolean,
       dev: argv['dev'] as boolean,
@@ -77,6 +77,10 @@ export class Config implements IConfig {
 
   get secret(): string {
     return this._config.secret;
+  }
+
+  get pushGateway(): string {
+    return this._config.pushGateway;
   }
 }
 
