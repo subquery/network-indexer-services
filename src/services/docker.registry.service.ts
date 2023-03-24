@@ -5,6 +5,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import LRU from 'lru-cache';
 import * as semver from 'semver';
 import axios from 'axios';
+import { getYargsOption } from 'src/yargs';
 
 export enum DockerRegistry {
   query = 'onfinality/subql-query',
@@ -45,12 +46,17 @@ export class DockerRegistryService implements OnModuleInit {
     return tags;
   }
 
+  private enablePrerelease(): boolean {
+    const { argv } = getYargsOption();
+    return argv['use-prerelease'];
+  }
+
   private filterRegistryVersions(tags: string[], range: string) {
     if (!semver.validRange(range)) return tags;
 
     const result = tags
       .filter((t) => {
-        if (semver.prerelease(t)) return false;
+        if (semver.prerelease(t)) return this.enablePrerelease();
         if (semver.prerelease(semver.validRange(range))) {
           return semver.satisfies(t, range);
         } else {
