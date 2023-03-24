@@ -66,6 +66,12 @@ export function getYargsOption() {
       default: false,
       group: Groups.coordinator,
     },
+    'use-prerelease': {
+      type: 'boolean',
+      describe: 'Enable pre-release versions for the docker images',
+      default: false,
+      group: Groups.coordinator,
+    },
     'pushgateway-endpoint': {
       type: 'string',
       describe: 'Specify pushgateway endpoint',
