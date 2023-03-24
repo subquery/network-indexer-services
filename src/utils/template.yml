@@ -22,6 +22,7 @@ services:
       - --port={{servicePort}}
       - --batch-size=50
       - --timeout=1800
+      - --workers=3
       - --store-cache-threshold=300
       - --proof-of-index={{poiEnabled}}
       - -m=/home/projects/{{deploymentID}}/.mmr
