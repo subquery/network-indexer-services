@@ -7,11 +7,16 @@ export function metric(name: string): string {
   return `${metricPrefix}_${name}`;
 }
 
-export enum ServiceEvent {
+export enum Metric {
+  CoordinatorDetails = 'coordinator_details',
+}
+
+export enum SetMetricEvent {
+  CoordinatorBalance = 'coordinator_balance',
   CoordinatorVersion = 'coordinator_version',
-  ControllerBalance = 'controller_balance',
 }
 
 export interface EventPayload<T> {
   value: T;
+  indexer: string;
 }

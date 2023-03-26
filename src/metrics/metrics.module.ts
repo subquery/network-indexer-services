@@ -6,24 +6,26 @@ import { makeGaugeProvider, PrometheusModule } from '@willsoto/nestjs-prometheus
 
 import { AccountModule } from 'src/account/account.module';
 import { ServicesModule } from 'src/services/services.module';
-import { PublicMetricsService } from './public.metric.service';
-import { metric, ServiceEvent } from './events';
+import { CoordinatorMetricsService } from './coordinator.metric.service';
 import { MetricEventListener } from './event.listener';
+import { metric, Metric } from './events';
 
 @Module({
-  imports: [PrometheusModule.register(), AccountModule, ServicesModule],
+  imports: [
+    PrometheusModule.register({
+      defaultMetrics: { enabled: false },
+    }),
+    AccountModule,
+    ServicesModule,
+  ],
   providers: [
     MetricEventListener,
     makeGaugeProvider({
-      name: metric(ServiceEvent.CoordinatorVersion),
-      help: 'The coordiantor service version',
+      name: metric(Metric.CoordinatorDetails),
+      help: 'details about indexer coordinator',
+      labelNames: ['coordinator_version', 'coordinator_balance'],
     }),
-    makeGaugeProvider({
-      name: metric(ServiceEvent.ControllerBalance),
-      help: 'The coordiantor service version',
-    }),
-    PublicMetricsService,
+    CoordinatorMetricsService,
   ],
-  exports: [PublicMetricsService],
 })
 export class MetricsModule {}
