@@ -30,6 +30,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { DB } from 'src/db/db.module';
 
 import { LogType, Project } from './project.model';
+import { getYargsOption } from 'src/yargs';
 
 @Injectable()
 export class ProjectService {
@@ -47,6 +48,11 @@ export class ProjectService {
     });
 
     this.updateProjectConfig();
+  }
+
+  getMmrPath() {
+    const { argv } = getYargsOption();
+    return argv['mmrPath'].replace(/\/$/, '');
   }
 
   async getUsedPorts(): Promise<number[]> {
@@ -194,6 +200,7 @@ export class ProjectService {
     const nodeImageVersion = nodeVersion;
     const queryImageVersion = queryVersion;
     const postgres = this.config.postgres;
+    const mmrPath = this.getMmrPath();
 
     const item: TemplateType = {
       deploymentID: id,
@@ -206,6 +213,7 @@ export class ProjectService {
       dbSchema: schemaName(id),
       poiEnabled,
       postgres,
+      mmrPath,
     };
 
     try {
@@ -273,7 +281,7 @@ export class ProjectService {
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
 
-    const mmrFile = getMmrFile(id);
+    const mmrFile = getMmrFile(this.getMmrPath, id);
     await this.docker.deleteFile(mmrFile);
 
     return this.projectRepo.remove([project]);

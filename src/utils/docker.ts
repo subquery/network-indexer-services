@@ -20,6 +20,7 @@ export type TemplateType = {
   dictionary?: string;
   dbSchema: string;
   postgres: Postgres;
+  mmrPath: string;
 };
 
 export function projectId(cid: string): string {
@@ -42,8 +43,8 @@ export function getComposeFileDirectory(cid: string): string {
   return join('/usr', `projects/${cid}`);
 }
 
-export function getMmrFile(cid: string): string {
-  return join('/usr', `projects/${cid}/.mmr`);
+export function getMmrFile(path: string, cid: string): string {
+  return join(path, `${cid}/.mmr`);
 }
 
 export function getComposeFilePath(cid: string): string {
