@@ -40,6 +40,7 @@
     "@nestjs/event-emitter": "^1.4.1",
     "@nestjs/graphql": "9.1.1",
     "@nestjs/platform-express": "^8.0.0",
+    "@nestjs/schedule": "^2.2.0",
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "8.0.4",
     "@subql/common": "^1.0.0",
