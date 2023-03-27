@@ -281,7 +281,7 @@ export class ProjectService {
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
 
-    const mmrFile = getMmrFile(this.getMmrPath, id);
+    const mmrFile = getMmrFile(this.getMmrPath(), id);
     await this.docker.deleteFile(mmrFile);
 
     return this.projectRepo.remove([project]);
