@@ -133,7 +133,7 @@ export class ContractService {
     this.sdk = await initContractSDK(this.wallet, this.chainID as ChainID);
   }
 
-  async updateContractSDK() {
+  async updateContractSDK(): Promise<ContractSDK | undefined> {
     const accounts = await this.accountService.getAccounts();
     if (isEmpty(accounts)) {
       getLogger('account').warn('Empty accounts');
@@ -147,8 +147,9 @@ export class ContractService {
     debugLogger('contract', `Indexer address: ${indexer}`);
     debugLogger('contract', `Controller address: ${controllerAccount}`);
 
-    if (indexer && this.wallet && this.sdk) {
-      if (this.wallet.address.toLowerCase() === controllerAccount) return;
+    if (indexer && this.wallet && this.sdk && this.wallet.address.toLowerCase() === controllerAccount) {
+      debugLogger('contract', 'contract sdk is up to date');
+      return this.sdk;
     }
 
     // TODO: move to account repo
@@ -158,6 +159,7 @@ export class ContractService {
 
     if (isEmpty(validAccounts)) {
       getLogger('contract').warn('no valid controller account config in service');
+      this.sdk = undefined;
       return;
     }
 

@@ -99,8 +99,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async syncContractConfig(): Promise<boolean> {
     try {
-      await this.contractService.updateContractSDK();
-      this.sdk = this.contractService.getSdk();
+      this.sdk = await this.contractService.updateContractSDK();
 
       return !!this.sdk;
     } catch {

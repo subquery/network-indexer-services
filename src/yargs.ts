@@ -89,7 +89,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      default: 'indexer_db_dev',
+      default: 'indexer_db',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {

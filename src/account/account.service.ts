@@ -35,8 +35,7 @@ export class AccountService {
   async initContractSDK() {
     try {
       if (this.sdk) return;
-      await this.contractService.updateContractSDK();
-      this.sdk = this.contractService.getSdk();
+      this.sdk = await this.contractService.updateContractSDK();
     } catch (e) {
       getLogger('account').error(`Failed to init contract sdk ${e}`);
     }
