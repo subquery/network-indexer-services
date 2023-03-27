@@ -112,7 +112,7 @@ export class AccountService {
     this.onAddControllerEvent();
 
     const controller = this.generateControllerWallet();
-    const encryptedController = encrypt(controller.privateKey);
+    const encryptedController = encrypt(controller.privateKey, this.config.secret);
     const indexer = await this.getIndexer();
     const account = this.accountRepo.create({
       id: uuid(),
@@ -140,7 +140,14 @@ export class AccountService {
     const controllers = accounts.filter((a) => !!a.controller);
 
     return controllers.map((c) => ({
-      address: this.privateToAdress(decrypt(c.controller)),
+      address: (() => {
+        const controllerSk = decrypt(c.controller, this.config.secret);
+        let controllerAddress = '0x00000000000000000000000000000000000000';
+        if (!isEmpty(controllerSk)) {
+          controllerAddress = this.privateToAdress(controllerSk);
+        }
+        return controllerAddress;
+      })(),
       id: c.id,
     }));
   }

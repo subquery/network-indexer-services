@@ -78,6 +78,12 @@ export function getYargsOption() {
       default: 'http://pushgateway',
       group: Groups.metrics,
     },
+    secret: {
+      type: 'string',
+      describe: 'Specify secret key for the service',
+      default: 'ThisIsYourSecret',
+      group: Groups.coordinator,
+    },
     [PostgresKeys.host]: {
       type: 'string',
       describe: 'Postgres host',

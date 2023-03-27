@@ -92,7 +92,7 @@ export class ContractService {
         return;
       }
 
-      const pk = decrypt(account.controller);
+      const pk = decrypt(account.controller, this.config.secret);
       const wallet = new Wallet(toBuffer(pk), this.provider);
 
       // send SQT
@@ -153,7 +153,7 @@ export class ContractService {
 
     // TODO: move to account repo
     const validAccounts = accounts
-      .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
+      .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller, this.config.secret) }))
       .filter(({ controllerKey }) => this.isValidPrivateKey(controllerKey));
 
     if (isEmpty(validAccounts)) {
