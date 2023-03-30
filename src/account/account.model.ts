@@ -22,7 +22,7 @@ export class Controller {
   address: string; // controller address
 
   @Column()
-  encrypted_key: string; // encrypted private key of controller account
+  encryptedKey: string; // encrypted private key of controller account
 }
 
 // Object Types

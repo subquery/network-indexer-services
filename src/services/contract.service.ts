@@ -1,14 +1,14 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { BigNumber } from 'ethers';
+import { parseEther } from 'ethers/lib/utils';
 import { ChainID } from './../utils/contractSDK';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
-import { Wallet, utils, providers } from 'ethers';
+import { Wallet, providers } from 'ethers';
 import { isEmpty } from 'lodash';
-import { formatUnits } from '@ethersproject/units';
-import { ContractSDK, ERC20__factory } from '@subql/contract-sdk';
-import { SQToken } from '@subql/contract-sdk/publish/testnet.json';
+import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 
 import { AccountService } from 'src/account/account.service';
@@ -18,8 +18,9 @@ import { decrypt } from 'src/utils/encrypt';
 import { debugLogger, getLogger } from 'src/utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
-
-// TODO: move contract service to a separate moduel
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Controller } from 'src/account/account.model';
 
 @Injectable()
 export class ContractService {
@@ -27,18 +28,19 @@ export class ContractService {
   private sdk: ContractSDK;
   private provider: providers.StaticJsonRpcProvider;
   private emptyDeploymentStatus;
-  private chainID: string;
-  private existentialBalance: number;
+  private chainID: ChainID;
+  private existentialBalance: BigNumber;
 
   constructor(
-    // TODO: resolve the cycle dependency between `accountService` and `contractService`
     @Inject(forwardRef(() => AccountService)) private accountService: AccountService,
+    @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
     private config: Config,
   ) {
     this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
-    this.existentialBalance = 0.05;
+    this.existentialBalance = parseEther('0.05');
     this.initProvider(config.wsEndpoint);
+    this.sdk = initContractSDK(this.provider, this.chainID);
   }
 
   getSdk() {
@@ -66,8 +68,7 @@ export class ContractService {
   async hasSufficientBalance() {
     try {
       const balance = await this.wallet.getBalance();
-      const value = Number(formatUnits(balance, 18));
-      return value > this.existentialBalance;
+      return balance.gte(this.existentialBalance);
     } catch {
       return false;
     }
@@ -76,7 +77,6 @@ export class ContractService {
   async isEmpytAccount(account: string) {
     try {
       const balance = await this.provider.getBalance(account);
-      // TODO: should comparing with a small amount other than 0
       return balance.eq(0);
     } catch {
       return false;
@@ -86,26 +86,24 @@ export class ContractService {
   async withdrawAll(id: string): Promise<boolean> {
     try {
       const indexer = await this.accountService.getIndexer();
-      const account = await this.accountService.getAccount(id);
-      if (!account) {
-        getLogger('contract').warn(`Account: ${id} not exist`);
+      const controller = await this.accountService.getController(id);
+      if (!controller) {
+        getLogger('contract').warn(`Controller: ${id} not exist`);
         return;
       }
 
-      const pk = decrypt(account.controller);
+      const pk = decrypt(controller.encryptedKey);
       const wallet = new Wallet(toBuffer(pk), this.provider);
 
       // send SQT
-      const sqtToken = ERC20__factory.connect(SQToken.address, wallet);
-      const sqtBalance = await sqtToken.balanceOf(wallet.address);
+      const sqtBalance = await this.sdk.sqToken.balanceOf(wallet.address);
       if (!sqtBalance.eq(0)) {
-        const tx = await sqtToken.transfer(indexer, sqtBalance);
-        await tx.wait(1);
+        const tx = await this.sdk.sqToken.connect(wallet).transfer(indexer, sqtBalance);
+        await tx.wait(5);
       }
 
-      // send ACA
-      const balance = await this.provider.getBalance(wallet.address);
-      const value = balance.sub(utils.parseEther('0.1'));
+      // send Chain Token
+      const value = await this.provider.getBalance(wallet.address);
       const res = await wallet.sendTransaction({ to: indexer, value });
       await res.wait(1);
 
@@ -127,57 +125,36 @@ export class ContractService {
     return controller ? controller.toLowerCase() : '';
   }
 
-  async createSDK(key: string) {
+  updateSDK(key: string) {
     const keyBuffer = toBuffer(key);
     this.wallet = new Wallet(keyBuffer, this.provider);
-    this.sdk = await initContractSDK(this.wallet, this.chainID as ChainID);
+    this.sdk = initContractSDK(this.wallet, this.chainID);
   }
 
   async updateContractSDK(): Promise<ContractSDK | undefined> {
-    const accounts = await this.accountService.getAccounts();
-    if (isEmpty(accounts)) {
-      getLogger('account').warn('Empty accounts');
+    const controllers = await this.controllerRepo.find();
+    const indexer = await this.accountService.getIndexer();
+    if (!indexer || isEmpty(controllers)) {
+      getLogger('account').warn('No controller account config in service');
       return;
     }
 
     // check current sdk signer is same with the controller account on network
-    const indexer = await this.accountService.getIndexer();
     const controllerAccount = await this.indexerToController(indexer);
     debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet.address}`);
     debugLogger('contract', `Indexer address: ${indexer}`);
     debugLogger('contract', `Controller address: ${controllerAccount}`);
 
-    if (indexer && this.wallet && this.sdk && this.wallet.address.toLowerCase() === controllerAccount) {
+    if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
       debugLogger('contract', 'contract sdk is up to date');
       return this.sdk;
     }
 
-    // TODO: move to account repo
-    const validAccounts = accounts
-      .map(({ id, controller }) => ({ id, controllerKey: decrypt(controller) }))
-      .filter(({ controllerKey }) => this.isValidPrivateKey(controllerKey));
+    const controller = controllers.find((c) => c.address.toLocaleLowerCase() === controllerAccount);
+    if (!controller) getLogger('contract').error(`Controller account: ${controllerAccount} not exist`);
 
-    if (isEmpty(validAccounts)) {
-      getLogger('contract').warn('no valid controller account config in service');
-      this.sdk = undefined;
-      return;
-    }
-
-    if (!this.sdk) {
-      const key = validAccounts[0].controllerKey;
-      if (!key) getLogger('contract').error('controller key can not be empty');
-      if (key) await this.createSDK(key);
-    }
-
-    validAccounts.forEach(async ({ controllerKey }) => {
-      try {
-        if (this.wallet.address.toLowerCase() !== controllerAccount) {
-          await this.createSDK(controllerKey);
-        }
-      } catch (e) {
-        getLogger('contract').error(`Init contract sdk failed: ${e}`);
-      }
-    });
+    this.updateSDK(decrypt(controller.encryptedKey));
+    return this.sdk;
   }
 
   async deploymentStatusByIndexer(id: string): Promise<DeploymentStatus> {

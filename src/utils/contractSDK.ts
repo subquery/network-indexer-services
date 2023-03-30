@@ -5,7 +5,7 @@ import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
 import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
-import { Signer } from 'ethers';
+import { providers, Signer } from 'ethers';
 
 const deployments = {
   testnet: testnetDeployment,
@@ -36,13 +36,16 @@ export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
   mainnet: ChainID.mainnet,
 };
 
-const options = {
+export const sdkOptions = {
   [ChainID.testnet]: createContractOptions('testnet'),
   [ChainID.kepler]: createContractOptions('kepler'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
 
-export async function initContractSDK(provider: Signer, chainID: ChainID): Promise<ContractSDK> {
-  const sdk = await ContractSDK.create(provider, options[chainID]);
+export function initContractSDK(
+  provider: providers.StaticJsonRpcProvider | Signer,
+  chainID: ChainID,
+): ContractSDK {
+  const sdk = new ContractSDK(provider, sdkOptions[chainID]);
   return sdk;
 }

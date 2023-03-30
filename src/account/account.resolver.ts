@@ -20,7 +20,7 @@ export class AccountResolver {
 
   @Query(() => AccountMetaDataType)
   accountMetadata() {
-    return this.accountService.emitAccountChanged();
+    return this.accountService.getAccountMetadata();
   }
 
   @Mutation(() => String)

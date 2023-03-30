@@ -8,7 +8,6 @@ import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 import { Wallet } from 'ethers';
 
-import { getLogger } from 'src/utils/logger';
 import { encrypt } from 'src/utils/encrypt';
 import { AccountEvent } from 'src/utils/subscription';
 import { SubscriptionService } from 'src/subscription/subscription.service';
@@ -22,7 +21,7 @@ import { ContractSDK } from '@subql/contract-sdk';
 @Injectable()
 export class AccountService {
   private indexer: string | undefined;
-  private controller: string | undefined;
+  private controller: string;
   private sdk: ContractSDK;
 
   constructor(
@@ -31,17 +30,15 @@ export class AccountService {
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
     private pubSub: SubscriptionService,
     private config: Config,
-  ) {
-    this.indexerRepo.findOne()?.then((indexer) => (this.indexer = indexer?.address));
-  }
+  ) {}
 
-  async initContractSDK() {
-    try {
-      if (this.sdk) return;
-      this.sdk = await this.contractService.updateContractSDK();
-    } catch (e) {
-      getLogger('account').error(`Failed to init contract sdk ${e}`);
+  async getIndexer(): Promise<string> {
+    if (!this.indexer) {
+      const indexer = await this.indexerRepo.findOne();
+      this.indexer = indexer?.address;
     }
+
+    return this.indexer;
   }
 
   privateToAdress(key: string) {
@@ -79,7 +76,7 @@ export class AccountService {
   }
 
   onAddControllerEvent() {
-    this.sdk.indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
+    this.contractService.getSdk().indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
       if (this.indexer !== indexer) return;
       this.controller = controller;
       this.emitAccountChanged();
@@ -88,7 +85,6 @@ export class AccountService {
 
   // create and add controller account
   async addController(): Promise<string> {
-    await this.initContractSDK();
     this.onAddControllerEvent();
 
     const pk = `0x${crypto.randomBytes(32).toString('hex')}`;
@@ -98,16 +94,23 @@ export class AccountService {
       this.controllerRepo.create({
         id: uuid(),
         address: controller.address,
-        encrypted_key: encrypt(controller.privateKey),
+        encryptedKey: encrypt(controller.privateKey),
       }),
     );
 
     return controller.address;
   }
 
+  getController(id: string): Promise<Controller> {
+    return this.controllerRepo.findOne({ where: { id } });
+  }
+
   async removeController(id: string): Promise<Controller> {
+    console.log('>>>id:', id);
     const controller = await this.controllerRepo.findOne({ where: { id } });
     await this.controllerRepo.delete(id);
+
+    console.log('controller:', controller);
 
     return controller;
   }
