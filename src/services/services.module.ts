@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { forwardRef, Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Controller } from 'src/account/account.model';
 
 import { AccountModule } from 'src/account/account.module';
 
@@ -13,7 +15,7 @@ import { QueryService } from './query.service';
 import { ServiceResolver } from './service.resolver';
 
 @Module({
-  imports: [forwardRef(() => AccountModule)],
+  imports: [forwardRef(() => AccountModule), TypeOrmModule.forFeature([Controller])],
   providers: [
     ContractService,
     DockerRegistryService,

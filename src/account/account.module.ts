@@ -9,10 +9,15 @@ import { SubscriptionModule } from 'src/subscription/subscription.module';
 
 import { AccountService } from './account.service';
 import { AccountResolver } from './account.resolver';
-import { Account } from './account.model';
+import { Indexer, Controller } from './account.model';
 
 @Module({
-  imports: [forwardRef(() => ServicesModule), SubscriptionModule, TypeOrmModule.forFeature([Account])],
+  imports: [
+    forwardRef(() => ServicesModule),
+    SubscriptionModule,
+    TypeOrmModule.forFeature([Indexer]),
+    TypeOrmModule.forFeature([Controller]),
+  ],
   providers: [AccountService, AccountResolver],
   exports: [AccountService],
 })

@@ -6,6 +6,7 @@ import yargs from 'yargs';
 
 export enum Groups {
   coordinator = 'Indexer Coordinator',
+  node = 'Indexer Node',
   postgres = 'Postgres',
   metrics = 'Metrics',
 }
@@ -70,7 +71,13 @@ export function getYargsOption() {
       type: 'boolean',
       describe: 'Enable pre-release versions for the docker images',
       default: false,
-      group: Groups.coordinator,
+      group: Groups.node,
+    },
+    mmrPath: {
+      type: 'string',
+      describe: 'The local path to store the mmr data',
+      default: '/home/projects',
+      group: Groups.metrics,
     },
     'pushgateway-endpoint': {
       type: 'string',
@@ -88,7 +95,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Postgres host',
       demandOption: true,
-      default: 'indexer_db_dev',
+      default: 'indexer_db',
       group: Groups.postgres,
     },
     [PostgresKeys.port]: {
