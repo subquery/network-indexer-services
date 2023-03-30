@@ -92,7 +92,7 @@ export class ContractService {
         return;
       }
 
-      const pk = decrypt(controller.encryptedKey);
+      const pk = decrypt(controller.encryptedKey, this.config.secret);
       const wallet = new Wallet(toBuffer(pk), this.provider);
 
       // send SQT
@@ -103,7 +103,10 @@ export class ContractService {
       }
 
       // send Chain Token
-      const value = await this.provider.getBalance(wallet.address);
+      const gasPrice = await this.provider.getGasPrice();
+      const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
+      const balance = await this.provider.getBalance(wallet.address);
+      const value = balance.sub(tokenTransferGas);
       const res = await wallet.sendTransaction({ to: indexer, value });
       await res.wait(1);
 
@@ -141,7 +144,7 @@ export class ContractService {
 
     // check current sdk signer is same with the controller account on network
     const controllerAccount = await this.indexerToController(indexer);
-    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet.address}`);
+    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet?.address}`);
     debugLogger('contract', `Indexer address: ${indexer}`);
     debugLogger('contract', `Controller address: ${controllerAccount}`);
 
@@ -153,7 +156,7 @@ export class ContractService {
     const controller = controllers.find((c) => c.address.toLocaleLowerCase() === controllerAccount);
     if (!controller) getLogger('contract').error(`Controller account: ${controllerAccount} not exist`);
 
-    this.updateSDK(decrypt(controller.encryptedKey));
+    this.updateSDK(decrypt(controller.encryptedKey, this.config.secret));
     return this.sdk;
   }
 

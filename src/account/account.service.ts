@@ -89,12 +89,13 @@ export class AccountService {
 
     const pk = `0x${crypto.randomBytes(32).toString('hex')}`;
     const controller = new Wallet(pk);
+    const encryptedKey = encrypt(controller.privateKey, this.config.secret);
 
     await this.controllerRepo.save(
       this.controllerRepo.create({
         id: uuid(),
         address: controller.address,
-        encryptedKey: encrypt(controller.privateKey),
+        encryptedKey,
       }),
     );
 

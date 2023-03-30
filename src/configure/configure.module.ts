@@ -21,6 +21,7 @@ export interface IConfig {
   readonly postgres: Postgres;
   readonly debug: boolean;
   readonly dev: boolean;
+  readonly secret: string;
 }
 
 // const default_pushgateway = 'https://pushgateway-kong-dev.onfinality.me';
@@ -43,6 +44,7 @@ export class Config implements IConfig {
       port: argv['port'] as number,
       debug: argv['debug'] as boolean,
       dev: argv['dev'] as boolean,
+      secret: argv['secret'],
       postgres,
     });
   }
@@ -71,6 +73,10 @@ export class Config implements IConfig {
 
   get dev(): boolean {
     return this._config.dev;
+  }
+
+  get secret(): string {
+    return this._config.secret;
   }
 }
 
