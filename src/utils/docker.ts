@@ -20,6 +20,7 @@ export type TemplateType = {
   dictionary?: string;
   dbSchema: string;
   postgres: Postgres;
+  mmrPath: string;
 };
 
 export function projectId(cid: string): string {
@@ -42,8 +43,12 @@ export function getComposeFileDirectory(cid: string): string {
   return join('/usr', `projects/${cid}`);
 }
 
-export function getMmrFile(cid: string): string {
-  return join('/usr', `projects/${cid}/.mmr`);
+export function getMmrPathDirectory(path: string, cid: string): string {
+  return join(path, `projects/${cid}`);
+}
+
+export function getMmrFile(path: string, cid: string): string {
+  return join(path, `${cid}/.mmr`);
 }
 
 export function getComposeFilePath(cid: string): string {
@@ -68,6 +73,12 @@ export function schemaName(cid: string): string {
 
 export function projectContainers(cid: string) {
   return [nodeContainer(cid), queryContainer(cid)];
+}
+
+function createDirectory(path: string) {
+  if (!fs.existsSync(path)) {
+    fs.mkdirSync(path, { recursive: true });
+  }
 }
 
 export function getImageVersion(containerInfo: string) {
@@ -96,10 +107,8 @@ export async function configsWithNode({ id, poiEnabled }: { id: string; poiEnabl
 }
 
 export async function generateDockerComposeFile(data: TemplateType) {
-  const directory = getComposeFileDirectory(data.deploymentID);
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
+  createDirectory(getComposeFileDirectory(data.deploymentID));
+  createDirectory(getMmrPathDirectory(data.mmrPath, data.deploymentID));
 
   try {
     const config = await configsWithNode({ id: data.deploymentID, poiEnabled: data.poiEnabled });

@@ -99,9 +99,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async syncContractConfig(): Promise<boolean> {
     try {
-      await this.contractService.updateContractSDK();
-      this.sdk = this.contractService.getSdk();
-
+      this.sdk = await this.contractService.updateContractSDK();
       return !!this.sdk;
     } catch {
       return false;
@@ -333,7 +331,6 @@ export class NetworkService implements OnApplicationBootstrap {
   async sendTxs() {
     try {
       const isContractReady = await this.syncContractConfig();
-      debugLogger('contract', `contract sdk ready: ${isContractReady}`);
       if (!isContractReady) return;
 
       const isBalanceSufficient = await this.contractService.hasSufficientBalance();

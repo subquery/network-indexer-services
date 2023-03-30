@@ -12,7 +12,7 @@ services:
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
-      - /usr/projects/{{deploymentID}}:/home/projects/{{deploymentID}}
+      - {{mmrPath}}/projects/{{deploymentID}}:/home/projects/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{dictionary}}
@@ -20,12 +20,12 @@ services:
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
-      - --batch-size=50
+      - --batch-size=100
       - --timeout=1800
-      - --workers=3
-      - --store-cache-threshold=300
+      - --workers=10
+      - --store-cache-threshold=500
       - --proof-of-index={{poiEnabled}}
-      - -m=/home/projects/{{deploymentID}}/.mmr
+      - -m={{mmrPath}}/projects/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}
     healthcheck:
       test:

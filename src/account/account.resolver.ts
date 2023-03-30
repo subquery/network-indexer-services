@@ -13,17 +13,6 @@ import { AccountMetaDataType, AccountType, ControllerType } from './account.mode
 export class AccountResolver {
   constructor(private accountService: AccountService, private pubSub: SubscriptionService) {}
 
-  // TODO: can remove this if not use by other projects
-  @Query(() => [AccountType])
-  accounts() {
-    return this.accountService.getAccounts();
-  }
-
-  @Query(() => [ControllerType])
-  controllers() {
-    return this.accountService.getControllers();
-  }
-
   @Mutation(() => AccountType)
   addIndexer(@Args('indexer') indexer: string) {
     return this.accountService.addIndexer(indexer);
@@ -31,7 +20,7 @@ export class AccountResolver {
 
   @Query(() => AccountMetaDataType)
   accountMetadata() {
-    return this.accountService.getMetadata();
+    return this.accountService.getAccountMetadata();
   }
 
   @Mutation(() => String)
@@ -40,11 +29,16 @@ export class AccountResolver {
   }
 
   @Mutation(() => AccountType)
-  removeAccount(@Args('id') id: string) {
-    return this.accountService.deleteAccount(id);
+  removeController(@Args('id') id: string) {
+    return this.accountService.removeController(id);
   }
 
-  @Mutation(() => String)
+  @Query(() => [ControllerType])
+  controllers() {
+    return this.accountService.getControllers();
+  }
+
+  @Mutation(() => AccountMetaDataType)
   removeAccounts() {
     return this.accountService.removeAccounts();
   }

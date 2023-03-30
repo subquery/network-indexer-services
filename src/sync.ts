@@ -19,7 +19,6 @@ export async function sync(app: INestApplication) {
 
   const contractService: ContractService = app.get<ContractService>(ContractService);
   const paygServicee: PaygService = app.get<PaygService>(PaygService);
-  await contractService.createSDK('0x2de44e00deb5b936a838d61978170a4dab9f23056736fed3409301f58db07d8b');
   const sdk = contractService.getSdk();
 
   getLogger(LogCategory.coordinator).info(`sync from Subquery Project...`);
