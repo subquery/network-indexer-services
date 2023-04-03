@@ -48,7 +48,7 @@ services:
       - --postgres-password=pos_z8X
       # use the same password in the db config
       - --postgres-port=5432
-      - --mmrPath=/var/tmp/
+      - --mmrPath=/var/tmp/poi
       - --use-prerelease
       - --port=8000
       - --debug

@@ -12,7 +12,7 @@ services:
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
-      - {{mmrPath}}/projects/{{deploymentID}}:/home/projects/{{deploymentID}}
+      - {{mmrPath}}/poi/{{deploymentID}}:/home/projects/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{dictionary}}
@@ -25,7 +25,7 @@ services:
       - --workers=10
       - --store-cache-threshold=500
       - --proof-of-index={{poiEnabled}}
-      - -m={{mmrPath}}/projects/{{deploymentID}}/.mmr
+      - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}
     healthcheck:
       test:

@@ -76,7 +76,7 @@ export function getYargsOption() {
     mmrPath: {
       type: 'string',
       describe: 'The local path to store the mmr data',
-      default: '/home/projects',
+      default: '/home/indexer-service',
       group: Groups.metrics,
     },
     'pushgateway-endpoint': {
