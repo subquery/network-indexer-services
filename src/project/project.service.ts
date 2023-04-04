@@ -80,6 +80,9 @@ export class ProjectService {
       status: 0,
     });
 
+    const projectPayg = this.paygRepo.create({ id: id.trim() });
+    this.paygRepo.save(projectPayg);
+
     return this.projectRepo.save(project);
   }
 
@@ -179,11 +182,6 @@ export class ProjectService {
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);
   }
-
-  // paygPrice: '', // default is none
-  // paygExpiration: 3600,
-  // paygThreshold: 1000,
-  // paygOverflow: 5,
 
   async stopProject(id: string) {
     const project = await this.getProject(id);

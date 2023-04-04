@@ -179,10 +179,10 @@ export class PaygEntity {
   @Column()
   expiration: number;
 
-  @Column()
+  @Column({ default: 100 })
   threshold: number;
 
-  @Column()
+  @Column({ default: 5 })
   overflow: number;
 }
 
