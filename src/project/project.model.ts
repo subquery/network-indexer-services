@@ -153,13 +153,25 @@ export class ProjectEntity {
   advancedConfig: ProjectAdvancedConfig;
 }
 
+@ObjectType('PaygConfig')
+export class PaygConfig {
+  @Field()
+  price: string;
+
+  @Field()
+  expiration: number;
+
+  @Field()
+  threshold: number;
+
+  @Field()
+  overflow: number;
+}
+
 @Entity()
 export class PaygEntity {
   @PrimaryColumn()
   id: string;
-
-  @Column()
-  projectId: string;
 
   @Column()
   price: string;
@@ -176,3 +188,6 @@ export class PaygEntity {
 
 @ObjectType('Project')
 export class Project extends ProjectEntity {}
+
+@ObjectType('Payg')
+export class Payg extends PaygEntity {}

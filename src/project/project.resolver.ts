@@ -8,7 +8,14 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { QueryService } from 'src/services/query.service';
 import { DockerRegistry, DockerRegistryService } from 'src/services/docker.registry.service';
 
-import { LogType, MetadataType, ProjectAdvancedConfig, ProjectBaseConfig, Project } from './project.model';
+import {
+  LogType,
+  MetadataType,
+  ProjectAdvancedConfig,
+  ProjectBaseConfig,
+  Project,
+  PaygConfig,
+} from './project.model';
 import { ProjectService } from './project.service';
 
 @Resolver(() => Project)
@@ -77,14 +84,8 @@ export class ProjectResolver {
   }
 
   @Mutation(() => Project)
-  paygProject(
-    @Args('id') id: string,
-    @Args('paygPrice') paygPrice: string,
-    @Args('paygExpiration') paygExpiration: number,
-    @Args('paygThreshold') paygThreshold: number,
-    @Args('paygOverflow') paygOverflow: number,
-  ) {
-    return this.projectService.paygProject(id, paygPrice, paygExpiration, paygThreshold, paygOverflow);
+  updateProjectPayg(@Args('id') id: string, @Args('paygConfig') paygConfig: PaygConfig) {
+    return this.projectService.updateProjectPayg(id, paygConfig);
   }
 
   @Subscription(() => Project)

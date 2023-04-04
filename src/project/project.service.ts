@@ -29,7 +29,15 @@ import { DockerService } from 'src/services/docker.service';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { DB } from 'src/db/db.module';
 
-import { LogType, ProjectEntity, Project, ProjectBaseConfig, ProjectAdvancedConfig } from './project.model';
+import {
+  LogType,
+  ProjectEntity,
+  Project,
+  ProjectBaseConfig,
+  ProjectAdvancedConfig,
+  PaygConfig,
+  PaygEntity,
+} from './project.model';
 import { getYargsOption } from 'src/yargs';
 
 @Injectable()
@@ -37,6 +45,7 @@ export class ProjectService {
   private ports: number[];
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
+    @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     private pubSub: SubscriptionService,
     private docker: DockerService,
     private config: Config,
@@ -216,26 +225,21 @@ export class ProjectService {
     return this.projectRepo.remove([project]);
   }
 
-  // async paygProject(
-  //   id: string,
-  //   paygPrice: string,
-  //   paygExpiration: number,
-  //   paygThreshold: number,
-  //   paygOverflow: number,
-  // ) {
-  //   const project = await this.getProject(id);
-  //   if (!project) {
-  //     getLogger('project').error(`project not exist: ${id}`);
-  //     return;
-  //   }
-  //   // TODO more check with price
-  //   project.paygPrice = paygPrice;
-  //   project.paygExpiration = paygExpiration;
-  //   project.paygThreshold = paygThreshold;
-  //   project.paygOverflow = paygOverflow;
-  //   this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
-  //   return this.projectRepo.save(project);
-  // }
+  async updateProjectPayg(id: string, paygConfig: PaygConfig) {
+    const payg = await this.paygRepo.findOne({ id });
+    if (!payg) {
+      getLogger('project').error(`project not exist: ${id}`);
+      return;
+    }
+
+    payg.price = paygConfig.price;
+    payg.expiration = paygConfig.expiration;
+    payg.threshold = paygConfig.threshold;
+    payg.overflow = paygConfig.overflow;
+
+    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
+    return this.paygRepo.save(payg);
+  }
 
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);
