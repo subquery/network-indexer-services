@@ -1,101 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-
-@Entity()
-export class Project {
-  @PrimaryColumn()
-  id: string; // deploymentId
-
-  @Column()
-  status: number;
-
-  @Column({ default: '' })
-  chainType: string;
-
-  @Column()
-  networkEndpoint: string;
-
-  @Column({ default: '' })
-  networkDictionary: string;
-
-  @Column()
-  nodeEndpoint: string; // endpoint of indexer service
-
-  @Column()
-  queryEndpoint: string; // endpoint of query service
-
-  @Column({ default: '' })
-  nodeVersion: string;
-
-  @Column({ default: '' })
-  queryVersion: string;
-
-  @Column({ default: false })
-  poiEnabled: boolean;
-
-  @Column({ default: false })
-  forceEnabled: boolean;
-
-  @Column({ default: '' })
-  paygPrice: string; // price of PAYG
-
-  @Column({ default: 3600 })
-  paygExpiration: number; // max expiration time of PAYG
-
-  @Column({ default: 1000 })
-  paygThreshold: number; // Threshold of PAYG
-
-  @Column({ default: 5 })
-  paygOverflow: number; // Overflow max conflict of PAYG
-}
-
-@ObjectType('Project')
-export class ProjectType {
-  @Field(() => ID)
-  id: string;
-
-  @Field(() => Int)
-  status: number;
-
-  @Field()
-  networkEndpoint: string;
-
-  @Field()
-  networkDictionary: string;
-
-  @Field()
-  nodeEndpoint: string;
-
-  @Field()
-  queryEndpoint: string;
-
-  @Field()
-  nodeVersion: string;
-
-  @Field()
-  queryVersion: string;
-
-  @Field()
-  poiEnabled: boolean;
-
-  @Field()
-  forceEnabled: boolean;
-
-  @Field()
-  paygPrice: string;
-
-  @Field()
-  paygExpiration: number;
-
-  @Field()
-  paygThreshold: number;
-
-  @Field()
-  paygOverflow: number;
-}
 
 @ObjectType('Log')
 export class LogType {
@@ -138,3 +45,107 @@ export class MetadataType {
   @Field()
   queryStatus: string;
 }
+
+export interface IProjectBaseConfig {
+  networkEndpoint: string;
+  networkDictionary: string;
+  nodeVersion: string;
+  queryVersion: string;
+  poiEnabled: boolean;
+  forceStart: boolean;
+}
+
+export interface IProjectAdvancedConfig {
+  worker: number;
+  batchSize: number;
+  cache: number;
+  cpu: number;
+  memory: number;
+}
+
+@ObjectType('ProjectBaseConfig')
+export class ProjectBaseConfig implements IProjectBaseConfig {
+  @Field()
+  networkEndpoint: string;
+
+  @Field()
+  networkDictionary: string;
+
+  @Field()
+  nodeVersion: string;
+
+  @Field()
+  queryVersion: string;
+
+  @Field()
+  poiEnabled: boolean;
+
+  @Field()
+  forceStart: boolean;
+}
+
+@ObjectType('ProjectAdvancedConfig')
+export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
+  @Field(() => Int)
+  worker: number;
+
+  @Field(() => Int)
+  batchSize: number;
+
+  @Field(() => Int)
+  cache: number;
+
+  @Field(() => Int)
+  cpu: number;
+
+  @Field(() => Int)
+  memory: number;
+}
+
+@Entity()
+export class ProjectEntity {
+  @PrimaryColumn()
+  id: string; // deploymentId
+
+  @Column()
+  status: number;
+
+  @Column({ default: '' })
+  chainType: string;
+
+  @Column()
+  nodeEndpoint: string; // endpoint of indexer service
+
+  @Column()
+  queryEndpoint: string; // endpoint of query service
+
+  @Column('jsonb', { default: {} })
+  baseConfig: ProjectBaseConfig;
+
+  @Column('jsonb', { default: {} })
+  advancedConfig: ProjectAdvancedConfig;
+}
+
+@Entity()
+export class PaygEntity {
+  @PrimaryColumn()
+  id: string;
+
+  @Column()
+  projectId: string;
+
+  @Column()
+  price: string;
+
+  @Column()
+  expiration: number;
+
+  @Column()
+  threshold: number;
+
+  @Column()
+  overflow: number;
+}
+
+@ObjectType('Project')
+export class ProjectType extends ProjectEntity {}
