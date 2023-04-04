@@ -14,7 +14,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { Config } from 'src/configure/configure.module';
 
 import { Repository } from 'typeorm';
-import { Indexer, Controller, ControllerType, AccountType, AccountMetaDataType } from './account.model';
+import { Indexer, Controller, AccountMetaDataType } from './account.model';
 import { ContractService } from 'src/services/contract.service';
 import { ContractSDK } from '@subql/contract-sdk';
 
@@ -60,7 +60,7 @@ export class AccountService {
     return accountMeta;
   }
 
-  async addIndexer(indexer: string): Promise<AccountType> {
+  async addIndexer(indexer: string): Promise<Indexer> {
     if (this.indexer !== undefined && indexer !== this.indexer) {
       throw new Error(`Indexer account already exists ${this.indexer}`);
     }
@@ -72,7 +72,7 @@ export class AccountService {
       await this.emitAccountChanged();
     }
 
-    return { indexer, controller: '' };
+    return { address: indexer, id: '' };
   }
 
   onAddControllerEvent() {
@@ -107,18 +107,15 @@ export class AccountService {
   }
 
   async removeController(id: string): Promise<Controller> {
-    console.log('>>>id:', id);
     const controller = await this.controllerRepo.findOne({ where: { id } });
     await this.controllerRepo.delete(id);
-
-    console.log('controller:', controller);
 
     return controller;
   }
 
-  async getControllers(): Promise<ControllerType[]> {
+  async getControllers(): Promise<Controller[]> {
     const controllers = await this.controllerRepo.find();
-    return controllers.map((c) => ({ id: c.id, address: c.address }));
+    return controllers;
   }
 
   async removeAccounts(): Promise<AccountMetaDataType> {

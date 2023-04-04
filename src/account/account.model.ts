@@ -5,43 +5,31 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
+@ObjectType('Indexer')
 export class Indexer {
   @PrimaryGeneratedColumn('uuid')
+  @Field(() => ID)
   id: string;
 
   @Column()
+  @Field()
   address: string; // indexer address
 }
 
 @Entity()
+@ObjectType('Controller')
 export class Controller {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  address: string; // controller address
-
-  @Column()
-  encryptedKey: string; // encrypted private key of controller account
-}
-
-// Object Types
-@ObjectType('Account')
-export class AccountType {
-  @Field()
-  indexer: string;
-
-  @Field()
-  controller: string;
-}
-
-@ObjectType('Controller')
-export class ControllerType {
   @Field(() => ID)
   id: string;
 
+  @Column()
   @Field()
-  address: string;
+  address: string; // controller address
+
+  @Column()
+  @Field()
+  encryptedKey: string; // encrypted private key of controller account
 }
 
 @ObjectType('AccountMetadata')
