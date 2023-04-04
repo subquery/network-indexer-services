@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @ObjectType('Log')
@@ -64,7 +64,7 @@ export interface IProjectAdvancedConfig {
   cpu: number;
   memory: number;
 }
-
+@InputType('ProjectBaseConfigInput')
 @ObjectType('ProjectBaseConfig')
 export class ProjectBaseConfig implements IProjectBaseConfig {
   @Field()
@@ -80,6 +80,7 @@ export class ProjectBaseConfig implements IProjectBaseConfig {
   queryVersion: string;
 }
 
+@InputType('ProjectAdvancedConfigInput')
 @ObjectType('ProjectAdvancedConfig')
 export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   @Field()
@@ -130,29 +131,38 @@ const defaultAdvancedConfig: IProjectAdvancedConfig = {
 };
 
 @Entity()
+@ObjectType()
 export class ProjectEntity {
   @PrimaryColumn()
+  @Field(() => ID)
   id: string; // deploymentId
 
   @Column()
+  @Field()
   status: number;
 
   @Column({ default: '' })
+  @Field()
   chainType: string;
 
   @Column({ default: '' })
+  @Field()
   nodeEndpoint: string; // endpoint of indexer service
 
   @Column({ default: '' })
+  @Field()
   queryEndpoint: string; // endpoint of query service
 
   @Column('jsonb', { default: defaultBaseConfig })
+  @Field(() => ProjectBaseConfig)
   baseConfig: ProjectBaseConfig;
 
   @Column('jsonb', { default: defaultAdvancedConfig })
+  @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
 }
 
+@InputType('PaygConfigInput')
 @ObjectType('PaygConfig')
 export class PaygConfig {
   @Field()
@@ -169,20 +179,26 @@ export class PaygConfig {
 }
 
 @Entity()
+@ObjectType()
 export class PaygEntity {
   @PrimaryColumn()
+  @Field(() => ID)
   id: string;
 
   @Column()
+  @Field()
   price: string;
 
   @Column()
+  @Field()
   expiration: number;
 
   @Column({ default: 100 })
+  @Field()
   threshold: number;
 
   @Column({ default: 5 })
+  @Field()
   overflow: number;
 }
 

@@ -11,9 +11,9 @@ import { DockerRegistry, DockerRegistryService } from 'src/services/docker.regis
 import {
   LogType,
   MetadataType,
+  Project,
   ProjectAdvancedConfig,
   ProjectBaseConfig,
-  Project,
   PaygConfig,
 } from './project.model';
 import { ProjectService } from './project.service';
