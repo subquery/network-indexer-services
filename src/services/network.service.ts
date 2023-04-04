@@ -113,7 +113,7 @@ export class NetworkService implements OnApplicationBootstrap {
       );
 
       const tx = await txFun();
-      await tx.wait(1);
+      await tx.wait(10);
 
       getLogger('transaction').info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
