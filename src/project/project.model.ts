@@ -51,11 +51,13 @@ export interface IProjectBaseConfig {
   networkDictionary: string;
   nodeVersion: string;
   queryVersion: string;
-  poiEnabled: boolean;
-  forceStart: boolean;
 }
 
 export interface IProjectAdvancedConfig {
+  poiEnabled: boolean;
+  forceStart: boolean;
+  purgeDB: boolean;
+  timeout: number;
   worker: number;
   batchSize: number;
   cache: number;
@@ -76,16 +78,22 @@ export class ProjectBaseConfig implements IProjectBaseConfig {
 
   @Field()
   queryVersion: string;
-
-  @Field()
-  poiEnabled: boolean;
-
-  @Field()
-  forceStart: boolean;
 }
 
 @ObjectType('ProjectAdvancedConfig')
 export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
+  @Field()
+  poiEnabled: boolean;
+
+  @Field()
+  purgeDB: boolean;
+
+  @Field()
+  forceStart: boolean;
+
+  @Field(() => Int)
+  timeout: number;
+
   @Field(() => Int)
   worker: number;
 
@@ -102,6 +110,25 @@ export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   memory: number;
 }
 
+const defaultBaseConfig: IProjectBaseConfig = {
+  networkEndpoint: '',
+  networkDictionary: '',
+  nodeVersion: '',
+  queryVersion: '',
+};
+
+const defaultAdvancedConfig: IProjectAdvancedConfig = {
+  purgeDB: false,
+  poiEnabled: true,
+  forceStart: false,
+  timeout: 1800,
+  worker: 2,
+  batchSize: 50,
+  cache: 300,
+  cpu: 2,
+  memory: 2046,
+};
+
 @Entity()
 export class ProjectEntity {
   @PrimaryColumn()
@@ -113,16 +140,16 @@ export class ProjectEntity {
   @Column({ default: '' })
   chainType: string;
 
-  @Column()
+  @Column({ default: '' })
   nodeEndpoint: string; // endpoint of indexer service
 
-  @Column()
+  @Column({ default: '' })
   queryEndpoint: string; // endpoint of query service
 
-  @Column('jsonb', { default: {} })
+  @Column('jsonb', { default: defaultBaseConfig })
   baseConfig: ProjectBaseConfig;
 
-  @Column('jsonb', { default: {} })
+  @Column('jsonb', { default: defaultAdvancedConfig })
   advancedConfig: ProjectAdvancedConfig;
 }
 
@@ -148,4 +175,4 @@ export class PaygEntity {
 }
 
 @ObjectType('Project')
-export class ProjectType extends ProjectEntity {}
+export class Project extends ProjectEntity {}

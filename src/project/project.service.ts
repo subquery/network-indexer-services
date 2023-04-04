@@ -4,10 +4,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
-import { isEmpty } from 'lodash';
 
 import { Config } from 'src/configure/configure.module';
-import { getLogger, debugLogger } from 'src/utils/logger';
+import { getLogger } from 'src/utils/logger';
 import {
   canContainersRestart,
   composeFileExist,
@@ -22,6 +21,7 @@ import {
   TemplateType,
   configsWithNode,
 } from 'src/utils/docker';
+import { PortService } from './port.service';
 import { ProjectEvent } from 'src/utils/subscription';
 import { projectConfigChanged } from 'src/utils/project';
 import { IndexingStatus } from 'src/services/types';
@@ -29,77 +29,24 @@ import { DockerService } from 'src/services/docker.service';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import { DB } from 'src/db/db.module';
 
-import { LogType, Project } from './project.model';
+import { LogType, ProjectEntity, Project, ProjectBaseConfig, ProjectAdvancedConfig } from './project.model';
 import { getYargsOption } from 'src/yargs';
 
 @Injectable()
 export class ProjectService {
   private ports: number[];
   constructor(
-    @InjectRepository(Project) private projectRepo: Repository<Project>,
+    @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private pubSub: SubscriptionService,
     private docker: DockerService,
     private config: Config,
+    private portService: PortService,
     private db: DB,
-  ) {
-    this.getUsedPorts().then((ports) => {
-      this.ports = ports;
-      debugLogger('project', `initial ports: ${this.ports}`);
-    });
-
-    this.updateProjectConfig();
-  }
+  ) {}
 
   getMmrPath() {
     const { argv } = getYargsOption();
     return argv['mmrPath'].replace(/\/$/, '');
-  }
-
-  async getUsedPorts(): Promise<number[]> {
-    const projects = await this.getProjects();
-    if (projects.length === 0) return [];
-
-    return projects
-      .map(({ queryEndpoint }) => getServicePort(queryEndpoint))
-      .filter((p) => typeof p === 'number');
-  }
-
-  async getAvailablePort(): Promise<number> {
-    if (isEmpty(this.ports)) return 3100;
-
-    const maxPort = Math.max(...this.ports);
-    const port = maxPort + 1;
-    // FIXME: dynamic port allocation
-    // for (let i = 3000; i < maxPort; i++) {
-    //   const p = this.ports.find((p) => p === i);
-    //   if (p) continue;
-    //   port = i;
-    //   break;
-    // }
-
-    debugLogger('project', `current ports: ${this.ports}`);
-    debugLogger('project', `next port: ${port}`);
-
-    this.ports.push(port);
-    return port;
-  }
-
-  async removePort(port: number) {
-    if (!port) return;
-
-    const index = this.ports.indexOf(port);
-    if (index >= 0) {
-      this.ports.splice(index, 1);
-    }
-  }
-
-  async updateProjectConfig() {
-    const projects = await this.getProjects();
-    projects.map(async (p) => {
-      const { id } = p;
-      const { chainType, poiEnabled } = await configsWithNode({ id, poiEnabled: p.poiEnabled });
-      await this.projectRepo.save({ ...p, chainType, poiEnabled });
-    });
   }
 
   async getProject(id: string): Promise<Project> {
@@ -122,9 +69,6 @@ export class ProjectService {
     const project = this.projectRepo.create({
       id: id.trim(),
       status: 0,
-      networkEndpoint: '',
-      nodeEndpoint: '',
-      queryEndpoint: '',
     });
 
     return this.projectRepo.save(project);
@@ -139,113 +83,98 @@ export class ProjectService {
   // project management
   async startProject(
     id: string,
-    networkEndpoint: string,
-    networkDictionary: string,
-    nodeVersion: string,
-    queryVersion: string,
-    forceEnabled: boolean,
+    baseConfig: ProjectBaseConfig,
+    advancedConfig: ProjectAdvancedConfig,
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
 
-    const poiEnabled = true;
-
     const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
-    const isConfigChanged = projectConfigChanged(project, {
-      networkEndpoint,
-      networkDictionary,
-      nodeVersion,
-      queryVersion,
-      poiEnabled,
-      forceEnabled,
-    });
+    const isConfigChanged = projectConfigChanged(project, baseConfig, advancedConfig);
 
     if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
       const restartedProject = await this.restartProject(id);
       return restartedProject;
     }
 
-    const startedProject = await this.createAndStartProject(
-      id,
-      networkEndpoint,
-      networkDictionary,
-      nodeVersion,
-      queryVersion,
-      poiEnabled,
-      forceEnabled,
-    );
+    const startedProject = await this.createAndStartProject(id, baseConfig, advancedConfig);
 
     return startedProject;
   }
 
-  async createAndStartProject(
-    id: string,
-    networkEndpoint: string,
-    networkDictionary: string,
-    nodeVersion: string,
-    queryVersion: string,
-    poiEnabled: boolean,
-    forceEnabled: boolean,
-  ) {
-    let project = await this.getProject(id);
-    if (!project) await this.addProject(id);
-
-    const port = await this.getAvailablePort();
+  async configToTemplate(
+    project: Project,
+    baseConfig: ProjectBaseConfig,
+    advancedConfig: ProjectAdvancedConfig,
+  ): Promise<TemplateType> {
+    const port = await this.portService.getAvailablePort();
     const servicePort = getServicePort(project.queryEndpoint) ?? port;
+    const projectID = projectId(project.id);
 
-    const projectID = projectId(id);
-    const nodeImageVersion = nodeVersion;
-    const queryImageVersion = queryVersion;
     const postgres = this.config.postgres;
     const mmrPath = this.getMmrPath();
 
     const item: TemplateType = {
-      deploymentID: id,
+      deploymentID: project.id,
+      dbSchema: schemaName(project.id),
       projectID,
-      networkEndpoint,
       servicePort,
-      dictionary: networkDictionary,
-      queryVersion: queryImageVersion,
-      nodeVersion: nodeImageVersion,
-      dbSchema: schemaName(id),
-      poiEnabled,
       postgres,
       mmrPath,
+      ...baseConfig,
+      ...advancedConfig,
     };
 
+    return item;
+  }
+
+  async createAndStartProject(
+    id: string,
+    baseConfig: ProjectBaseConfig,
+    advancedConfig: ProjectAdvancedConfig,
+  ) {
+    let project = await this.getProject(id);
+    if (!project) await this.addProject(id);
+
+    const projectID = projectId(project.id);
+    if (advancedConfig.purgeDB) {
+      await this.db.dropDBSchema(schemaName(projectID));
+      const mmrFile = getMmrFile(this.getMmrPath(), id);
+      await this.docker.deleteFile(mmrFile);
+    }
+
+    const templateItem = await this.configToTemplate(project, baseConfig, advancedConfig);
     try {
       await this.db.createDBSchema(schemaName(projectID));
-      await generateDockerComposeFile(item);
-      await this.docker.up(item.deploymentID);
+      await generateDockerComposeFile(templateItem);
+      await this.docker.up(templateItem.deploymentID);
     } catch (e) {
       getLogger('project').info(`start project: ${e}`);
     }
 
-    const config = await configsWithNode({ id, poiEnabled });
+    //TODO: remove this after confirm other chains suppor POI feature
+    const config = await configsWithNode({ id, poiEnabled: advancedConfig.poiEnabled });
     project = {
       id,
-      networkEndpoint,
-      networkDictionary,
-      queryEndpoint: queryEndpoint(id, servicePort),
-      nodeEndpoint: nodeEndpoint(id, servicePort),
+      baseConfig,
+      advancedConfig,
+      queryEndpoint: queryEndpoint(id, templateItem.servicePort),
+      nodeEndpoint: nodeEndpoint(id, templateItem.servicePort),
       status: IndexingStatus.INDEXING,
-      nodeVersion: nodeImageVersion,
-      queryVersion,
       chainType: config.chainType,
-      poiEnabled: config.poiEnabled,
-      forceEnabled,
-      paygPrice: '', // default is none
-      paygExpiration: 3600,
-      paygThreshold: 1000,
-      paygOverflow: 5,
     };
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);
   }
+
+  // paygPrice: '', // default is none
+  // paygExpiration: 3600,
+  // paygThreshold: 1000,
+  // paygOverflow: 5,
 
   async stopProject(id: string) {
     const project = await this.getProject(id);
@@ -274,7 +203,7 @@ export class ProjectService {
 
     // release port
     const port = getServicePort(project.queryEndpoint);
-    this.removePort(port);
+    this.portService.removePort(port);
 
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
@@ -287,26 +216,26 @@ export class ProjectService {
     return this.projectRepo.remove([project]);
   }
 
-  async paygProject(
-    id: string,
-    paygPrice: string,
-    paygExpiration: number,
-    paygThreshold: number,
-    paygOverflow: number,
-  ) {
-    const project = await this.getProject(id);
-    if (!project) {
-      getLogger('project').error(`project not exist: ${id}`);
-      return;
-    }
-    // TODO more check with price
-    project.paygPrice = paygPrice;
-    project.paygExpiration = paygExpiration;
-    project.paygThreshold = paygThreshold;
-    project.paygOverflow = paygOverflow;
-    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
-    return this.projectRepo.save(project);
-  }
+  // async paygProject(
+  //   id: string,
+  //   paygPrice: string,
+  //   paygExpiration: number,
+  //   paygThreshold: number,
+  //   paygOverflow: number,
+  // ) {
+  //   const project = await this.getProject(id);
+  //   if (!project) {
+  //     getLogger('project').error(`project not exist: ${id}`);
+  //     return;
+  //   }
+  //   // TODO more check with price
+  //   project.paygPrice = paygPrice;
+  //   project.paygExpiration = paygExpiration;
+  //   project.paygThreshold = paygThreshold;
+  //   project.paygOverflow = paygOverflow;
+  //   this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+  //   return this.projectRepo.save(project);
+  // }
 
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);

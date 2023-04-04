@@ -8,10 +8,10 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { QueryService } from 'src/services/query.service';
 import { DockerRegistry, DockerRegistryService } from 'src/services/docker.registry.service';
 
-import { LogType, MetadataType, ProjectType } from './project.model';
+import { LogType, MetadataType, ProjectAdvancedConfig, ProjectBaseConfig, Project } from './project.model';
 import { ProjectService } from './project.service';
 
-@Resolver(() => ProjectType)
+@Resolver(() => Project)
 export class ProjectResolver {
   constructor(
     private projectService: ProjectService,
@@ -31,17 +31,17 @@ export class ProjectResolver {
     return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
   }
 
-  @Query(() => ProjectType)
+  @Query(() => Project)
   project(@Args('id') id: string) {
     return this.projectService.getProject(id);
   }
 
-  @Query(() => [ProjectType])
+  @Query(() => [Project])
   getProjects() {
     return this.projectService.getProjects();
   }
 
-  @Query(() => [ProjectType])
+  @Query(() => [Project])
   getAliveProjects() {
     return this.projectService.getAliveProjects();
   }
@@ -51,42 +51,32 @@ export class ProjectResolver {
     return this.projectService.logs(container);
   }
 
-  @Mutation(() => ProjectType)
+  @Mutation(() => Project)
   addProject(@Args('id') id: string) {
     return this.projectService.addProject(id);
   }
 
-  @Mutation(() => [ProjectType])
+  @Mutation(() => [Project])
   removeProject(@Args('id') id: string) {
     return this.projectService.removeProject(id);
   }
 
   // project management
-  @Mutation(() => ProjectType)
+  @Mutation(() => Project)
   startProject(
     @Args('id') id: string,
-    @Args('networkEndpoint') networkEndpoint: string,
-    @Args('networkDictionary') networkDictionary: string,
-    @Args('nodeVersion') nodeVersion: string,
-    @Args('queryVersion') queryVersion: string,
-    @Args('forceEnabled') forceEnabled: boolean,
+    @Args('baseConfig') baseConfig: ProjectBaseConfig,
+    @Args('advancedConfig') advancedConfig: ProjectAdvancedConfig,
   ) {
-    return this.projectService.startProject(
-      id,
-      networkEndpoint,
-      networkDictionary,
-      nodeVersion,
-      queryVersion,
-      forceEnabled,
-    );
+    return this.projectService.startProject(id, baseConfig, advancedConfig);
   }
 
-  @Mutation(() => ProjectType)
+  @Mutation(() => Project)
   stopProject(@Args('id') id: string) {
     return this.projectService.stopProject(id);
   }
 
-  @Mutation(() => ProjectType)
+  @Mutation(() => Project)
   paygProject(
     @Args('id') id: string,
     @Args('paygPrice') paygPrice: string,
@@ -97,7 +87,7 @@ export class ProjectResolver {
     return this.projectService.paygProject(id, paygPrice, paygExpiration, paygThreshold, paygOverflow);
   }
 
-  @Subscription(() => ProjectType)
+  @Subscription(() => Project)
   projectChanged() {
     return this.pubSub.asyncIterator([ProjectEvent.ProjectStarted, ProjectEvent.ProjectStopped]);
   }
