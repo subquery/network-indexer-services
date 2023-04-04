@@ -107,8 +107,8 @@ export class ContractService {
       const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
       const balance = await this.provider.getBalance(wallet.address);
       const value = balance.sub(tokenTransferGas);
-      const res = await wallet.sendTransaction({ to: indexer, value });
-      await res.wait(1);
+      const txToken = await wallet.sendTransaction({ to: indexer, value });
+      await txToken.wait(5);
 
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
 
@@ -142,16 +142,16 @@ export class ContractService {
       return;
     }
 
-    // check current sdk signer is same with the controller account on network
     const controllerAccount = await this.indexerToController(indexer);
-    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet?.address}`);
-    debugLogger('contract', `Indexer address: ${indexer}`);
-    debugLogger('contract', `Controller address: ${controllerAccount}`);
-
     if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
       debugLogger('contract', 'contract sdk is up to date');
       return this.sdk;
     }
+
+    // check current sdk signer is same with the controller account on network
+    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet?.address}`);
+    debugLogger('contract', `Indexer address: ${indexer}`);
+    debugLogger('contract', `Controller address: ${controllerAccount}`);
 
     const controller = controllers.find((c) => c.address.toLocaleLowerCase() === controllerAccount);
     if (!controller) getLogger('contract').error(`Controller account: ${controllerAccount} not exist`);

@@ -44,11 +44,11 @@ export function getComposeFileDirectory(cid: string): string {
 }
 
 export function getMmrPathDirectory(path: string, cid: string): string {
-  return join(path, `projects/${cid}`);
+  return join(path, `poi/${cid}`);
 }
 
 export function getMmrFile(path: string, cid: string): string {
-  return join(path, `${cid}/.mmr`);
+  return join(getMmrPathDirectory(path, cid), '.mmr');
 }
 
 export function getComposeFilePath(cid: string): string {
