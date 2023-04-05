@@ -14,6 +14,7 @@ import {
   Project,
   ProjectAdvancedConfig,
   ProjectBaseConfig,
+  Payg,
   PaygConfig,
 } from './project.model';
 import { ProjectService } from './project.service';
@@ -51,6 +52,11 @@ export class ProjectResolver {
   @Query(() => [Project])
   getAliveProjects() {
     return this.projectService.getAliveProjects();
+  }
+
+  @Query(() => [Payg])
+  getAlivePaygs() {
+    return this.projectService.getAlivePaygs();
   }
 
   @Query(() => LogType)

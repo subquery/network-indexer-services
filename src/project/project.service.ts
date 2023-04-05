@@ -35,6 +35,7 @@ import {
   Project,
   ProjectBaseConfig,
   ProjectAdvancedConfig,
+  Payg,
   PaygConfig,
   PaygEntity,
 } from './project.model';
@@ -70,6 +71,14 @@ export class ProjectService {
     return this.projectRepo.find({
       where: {
         queryEndpoint: Not(''),
+      },
+    });
+  }
+
+  async getAlivePaygs(): Promise<Payg[]> {
+    return this.paygRepo.find({
+      where: {
+        price: Not(''),
       },
     });
   }

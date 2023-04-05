@@ -185,11 +185,11 @@ export class PaygEntity {
   @Field(() => ID)
   id: string;
 
-  @Column()
+  @Column({ default: '' })
   @Field()
   price: string;
 
-  @Column()
+  @Column({ default: 0 })
   @Field()
   expiration: number;
 

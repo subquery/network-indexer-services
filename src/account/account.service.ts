@@ -60,19 +60,19 @@ export class AccountService {
     return accountMeta;
   }
 
-  async addIndexer(indexer: string): Promise<Indexer> {
-    if (this.indexer !== undefined && indexer !== this.indexer) {
+  async addIndexer(address: string): Promise<Indexer> {
+    if (this.indexer !== undefined && address !== this.indexer) {
       throw new Error(`Indexer account already exists ${this.indexer}`);
     }
 
     if (!this.indexer) {
-      this.indexer = indexer;
-      const indexerAccount = this.indexerRepo.create({ id: uuid(), address: indexer });
+      this.indexer = address;
+      const indexerAccount = this.indexerRepo.create({ id: uuid(), address: address });
       await this.indexerRepo.save(indexerAccount);
       await this.emitAccountChanged();
     }
 
-    return { address: indexer, id: '' };
+    return { address: address, id: '' };
   }
 
   onAddControllerEvent() {

@@ -14,8 +14,8 @@ export class AccountResolver {
   constructor(private accountService: AccountService, private pubSub: SubscriptionService) {}
 
   @Mutation(() => Indexer)
-  addIndexer(@Args('indexer') indexer: string) {
-    return this.accountService.addIndexer(indexer);
+  addIndexer(@Args('address') address: string) {
+    return this.accountService.addIndexer(address);
   }
 
   @Query(() => AccountMetaDataType)
