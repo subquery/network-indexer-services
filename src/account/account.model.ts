@@ -25,6 +25,10 @@ export class Controller {
 
   @Column()
   @Field()
+  active: boolean;
+
+  @Column()
+  @Field()
   address: string; // controller address
 
   @Column()
@@ -39,6 +43,9 @@ export class AccountMetaDataType {
 
   @Field()
   controller: string;
+
+  @Field()
+  encryptedKey: string;
 
   @Field()
   network: string;

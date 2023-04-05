@@ -21,7 +21,6 @@ import { ContractSDK } from '@subql/contract-sdk';
 @Injectable()
 export class AccountService {
   private indexer: string | undefined;
-  private controller: string;
   private sdk: ContractSDK;
 
   constructor(
@@ -45,17 +44,19 @@ export class AccountService {
     return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
   }
 
-  getAccountMetadata(): AccountMetaDataType {
+  async getAccountMetadata(): Promise<AccountMetaDataType> {
+    const controller = await this.getActiveController();
     return {
       indexer: this.indexer,
-      controller: this.controller,
+      controller: controller ? controller.address : '',
+      encryptedKey: controller ? controller.encryptedKey : '',
       network: this.config.network,
       wsEndpoint: this.config.wsEndpoint,
     };
   }
 
   async emitAccountChanged(): Promise<AccountMetaDataType> {
-    const accountMeta = this.getAccountMetadata();
+    const accountMeta = await this.getAccountMetadata();
     this.pubSub.publish(AccountEvent.Indexer, { accountChanged: accountMeta });
     return accountMeta;
   }
@@ -78,7 +79,7 @@ export class AccountService {
   onAddControllerEvent() {
     this.contractService.getSdk().indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
       if (this.indexer !== indexer) return;
-      this.controller = controller;
+      this.activeController(controller);
       this.emitAccountChanged();
     });
   }
@@ -94,6 +95,7 @@ export class AccountService {
     await this.controllerRepo.save(
       this.controllerRepo.create({
         id: uuid(),
+        active: false,
         address: controller.address,
         encryptedKey,
       }),
@@ -109,6 +111,26 @@ export class AccountService {
   async removeController(id: string): Promise<Controller> {
     const controller = await this.controllerRepo.findOne({ where: { id } });
     await this.controllerRepo.delete(id);
+
+    return controller;
+  }
+
+  async getActiveController(): Promise<Controller> {
+    return this.controllerRepo.findOne({ where: { active: true } });
+  }
+
+  async activeController(address: string): Promise<Controller> {
+    const old = await this.getActiveController();
+    if (old) {
+      old.active = false;
+      await this.controllerRepo.save(old);
+    }
+
+    const controller = await this.controllerRepo.findOne({ where: { address } });
+    if (controller) {
+      controller.active = true;
+      await this.controllerRepo.save(controller);
+    }
 
     return controller;
   }
