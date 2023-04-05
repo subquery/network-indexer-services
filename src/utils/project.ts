@@ -12,7 +12,6 @@ export function projectConfigChanged(
   advancedConfig: ProjectAdvancedConfig,
 ): boolean {
   return (
-    advancedConfig.forceStart ||
     advancedConfig.purgeDB ||
     !isEqual(project.baseConfig, baseConfig) ||
     !isEqual(project.advancedConfig, advancedConfig)

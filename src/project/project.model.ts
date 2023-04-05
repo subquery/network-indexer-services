@@ -55,7 +55,6 @@ export interface IProjectBaseConfig {
 
 export interface IProjectAdvancedConfig {
   poiEnabled: boolean;
-  forceStart: boolean;
   purgeDB: boolean;
   timeout: number;
   worker: number;
@@ -89,9 +88,6 @@ export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   @Field()
   purgeDB: boolean;
 
-  @Field()
-  forceStart: boolean;
-
   @Field(() => Int)
   timeout: number;
 
@@ -121,7 +117,6 @@ const defaultBaseConfig: IProjectBaseConfig = {
 const defaultAdvancedConfig: IProjectAdvancedConfig = {
   purgeDB: false,
   poiEnabled: true,
-  forceStart: false,
   timeout: 1800,
   worker: 2,
   batchSize: 50,
