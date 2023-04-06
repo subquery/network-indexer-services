@@ -5,6 +5,8 @@ services:
     image: {{dockerRegistry}}:{{nodeVersion}}
     container_name: node_{{projectID}}
     restart: always
+    cpus: {{cpu}}
+    memory: {{memory}}
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
@@ -15,15 +17,15 @@ services:
       - {{mmrPath}}/poi/{{deploymentID}}:/home/projects/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
-      - -d={{dictionary}}
+      - -d={{networkDictionary}}
       - --ipfs=https://authipfs.subquery.network/ipfs/api/v0
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
-      - --batch-size=60
-      - --timeout=1800
-      - --workers=3
-      - --store-cache-threshold=500
+      - --batch-size={{batchSize}}
+      - --timeout={{timeout}}
+      - --workers={{worker}}
+      - --store-cache-threshold={{cache}}
       - --proof-of-index={{poiEnabled}}
       - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
       - --disable-historical={{disableHistorical}}

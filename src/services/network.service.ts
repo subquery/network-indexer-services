@@ -11,7 +11,7 @@ import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/networ
 import { colorText, getLogger, TextColor } from 'src/utils/logger';
 import { AccountService } from 'src/account/account.service';
 import { ZERO_BYTES32 } from 'src/utils/project';
-import { Project } from 'src/project/project.model';
+import { Project, ProjectEntity } from 'src/project/project.model';
 
 import { ContractService } from './contract.service';
 import { IndexingStatus, Transaction, TxFun } from './types';
@@ -34,11 +34,11 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: number]: BigNumber };
 
-  private defaultInterval = 1000 * 1800;
+  private defaultInterval = 1000 * 300;
   private defaultRetryCount = 5;
   private batchSize = 20;
 
-  private projectRepo: Repository<Project>;
+  private projectRepo: Repository<ProjectEntity>;
 
   constructor(
     private connection: Connection,
@@ -50,7 +50,7 @@ export class NetworkService implements OnApplicationBootstrap {
     this.failedTransactions = [];
     this.expiredAgreements = {};
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS.testnet);
-    this.projectRepo = connection.getRepository(Project);
+    this.projectRepo = connection.getRepository(ProjectEntity);
   }
 
   getSdk() {

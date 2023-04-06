@@ -1,101 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-
-@Entity()
-export class Project {
-  @PrimaryColumn()
-  id: string; // deploymentId
-
-  @Column()
-  status: number;
-
-  @Column({ default: '' })
-  chainType: string;
-
-  @Column()
-  networkEndpoint: string;
-
-  @Column({ default: '' })
-  networkDictionary: string;
-
-  @Column()
-  nodeEndpoint: string; // endpoint of indexer service
-
-  @Column()
-  queryEndpoint: string; // endpoint of query service
-
-  @Column({ default: '' })
-  nodeVersion: string;
-
-  @Column({ default: '' })
-  queryVersion: string;
-
-  @Column({ default: false })
-  poiEnabled: boolean;
-
-  @Column({ default: false })
-  forceEnabled: boolean;
-
-  @Column({ default: '' })
-  paygPrice: string; // price of PAYG
-
-  @Column({ default: 3600 })
-  paygExpiration: number; // max expiration time of PAYG
-
-  @Column({ default: 1000 })
-  paygThreshold: number; // Threshold of PAYG
-
-  @Column({ default: 5 })
-  paygOverflow: number; // Overflow max conflict of PAYG
-}
-
-@ObjectType('Project')
-export class ProjectType {
-  @Field(() => ID)
-  id: string;
-
-  @Field(() => Int)
-  status: number;
-
-  @Field()
-  networkEndpoint: string;
-
-  @Field()
-  networkDictionary: string;
-
-  @Field()
-  nodeEndpoint: string;
-
-  @Field()
-  queryEndpoint: string;
-
-  @Field()
-  nodeVersion: string;
-
-  @Field()
-  queryVersion: string;
-
-  @Field()
-  poiEnabled: boolean;
-
-  @Field()
-  forceEnabled: boolean;
-
-  @Field()
-  paygPrice: string;
-
-  @Field()
-  paygExpiration: number;
-
-  @Field()
-  paygThreshold: number;
-
-  @Field()
-  paygOverflow: number;
-}
 
 @ObjectType('Log')
 export class LogType {
@@ -138,3 +45,160 @@ export class MetadataType {
   @Field()
   queryStatus: string;
 }
+
+export interface IProjectBaseConfig {
+  networkEndpoint: string;
+  networkDictionary: string;
+  nodeVersion: string;
+  queryVersion: string;
+}
+
+export interface IProjectAdvancedConfig {
+  poiEnabled: boolean;
+  purgeDB: boolean;
+  timeout: number;
+  worker: number;
+  batchSize: number;
+  cache: number;
+  cpu: number;
+  memory: number;
+}
+@InputType('ProjectBaseConfigInput')
+@ObjectType('ProjectBaseConfig')
+export class ProjectBaseConfig implements IProjectBaseConfig {
+  @Field()
+  networkEndpoint: string;
+
+  @Field()
+  networkDictionary: string;
+
+  @Field()
+  nodeVersion: string;
+
+  @Field()
+  queryVersion: string;
+}
+
+@InputType('ProjectAdvancedConfigInput')
+@ObjectType('ProjectAdvancedConfig')
+export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
+  @Field()
+  poiEnabled: boolean;
+
+  @Field()
+  purgeDB: boolean;
+
+  @Field(() => Int)
+  timeout: number;
+
+  @Field(() => Int)
+  worker: number;
+
+  @Field(() => Int)
+  batchSize: number;
+
+  @Field(() => Int)
+  cache: number;
+
+  @Field(() => Int)
+  cpu: number;
+
+  @Field(() => Int)
+  memory: number;
+}
+
+const defaultBaseConfig: IProjectBaseConfig = {
+  networkEndpoint: '',
+  networkDictionary: '',
+  nodeVersion: '',
+  queryVersion: '',
+};
+
+const defaultAdvancedConfig: IProjectAdvancedConfig = {
+  purgeDB: false,
+  poiEnabled: true,
+  timeout: 1800,
+  worker: 2,
+  batchSize: 50,
+  cache: 300,
+  cpu: 2,
+  memory: 2046,
+};
+
+@Entity()
+@ObjectType()
+export class ProjectEntity {
+  @PrimaryColumn()
+  @Field(() => ID)
+  id: string; // deploymentId
+
+  @Column()
+  @Field()
+  status: number;
+
+  @Column({ default: '' })
+  @Field()
+  chainType: string;
+
+  @Column({ default: '' })
+  @Field()
+  nodeEndpoint: string; // endpoint of indexer service
+
+  @Column({ default: '' })
+  @Field()
+  queryEndpoint: string; // endpoint of query service
+
+  @Column('jsonb', { default: defaultBaseConfig })
+  @Field(() => ProjectBaseConfig)
+  baseConfig: ProjectBaseConfig;
+
+  @Column('jsonb', { default: defaultAdvancedConfig })
+  @Field(() => ProjectAdvancedConfig)
+  advancedConfig: ProjectAdvancedConfig;
+}
+
+@InputType('PaygConfigInput')
+@ObjectType('PaygConfig')
+export class PaygConfig {
+  @Field()
+  price: string;
+
+  @Field()
+  expiration: number;
+
+  @Field()
+  threshold: number;
+
+  @Field()
+  overflow: number;
+}
+
+@Entity()
+@ObjectType()
+export class PaygEntity {
+  @PrimaryColumn()
+  @Field(() => ID)
+  id: string;
+
+  @Column({ default: '' })
+  @Field()
+  price: string;
+
+  @Column({ default: 0 })
+  @Field()
+  expiration: number;
+
+  @Column({ default: 100 })
+  @Field()
+  threshold: number;
+
+  @Column({ default: 5 })
+  @Field()
+  overflow: number;
+}
+
+@ObjectType('Project')
+export class Project extends ProjectEntity {}
+
+@ObjectType('Payg')
+export class Payg extends PaygEntity {}

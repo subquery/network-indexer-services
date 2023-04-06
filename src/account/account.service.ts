@@ -14,14 +14,13 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { Config } from 'src/configure/configure.module';
 
 import { Repository } from 'typeorm';
-import { Indexer, Controller, ControllerType, AccountType, AccountMetaDataType } from './account.model';
+import { Indexer, Controller, AccountMetaDataType } from './account.model';
 import { ContractService } from 'src/services/contract.service';
 import { ContractSDK } from '@subql/contract-sdk';
 
 @Injectable()
 export class AccountService {
   private indexer: string | undefined;
-  private controller: string;
   private sdk: ContractSDK;
 
   constructor(
@@ -45,40 +44,42 @@ export class AccountService {
     return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
   }
 
-  getAccountMetadata(): AccountMetaDataType {
+  async getAccountMetadata(): Promise<AccountMetaDataType> {
+    const controller = await this.getActiveController();
     return {
       indexer: this.indexer,
-      controller: this.controller,
+      controller: controller ? controller.address : '',
+      encryptedKey: controller ? controller.encryptedKey : '',
       network: this.config.network,
       wsEndpoint: this.config.wsEndpoint,
     };
   }
 
   async emitAccountChanged(): Promise<AccountMetaDataType> {
-    const accountMeta = this.getAccountMetadata();
+    const accountMeta = await this.getAccountMetadata();
     this.pubSub.publish(AccountEvent.Indexer, { accountChanged: accountMeta });
     return accountMeta;
   }
 
-  async addIndexer(indexer: string): Promise<AccountType> {
-    if (this.indexer !== undefined && indexer !== this.indexer) {
+  async addIndexer(address: string): Promise<Indexer> {
+    if (this.indexer !== undefined && address !== this.indexer) {
       throw new Error(`Indexer account already exists ${this.indexer}`);
     }
 
     if (!this.indexer) {
-      this.indexer = indexer;
-      const indexerAccount = this.indexerRepo.create({ id: uuid(), address: indexer });
+      this.indexer = address;
+      const indexerAccount = this.indexerRepo.create({ id: uuid(), address: address });
       await this.indexerRepo.save(indexerAccount);
       await this.emitAccountChanged();
     }
 
-    return { indexer, controller: '' };
+    return { address: address, id: '' };
   }
 
   onAddControllerEvent() {
     this.contractService.getSdk().indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
       if (this.indexer !== indexer) return;
-      this.controller = controller;
+      this.activeController(controller);
       this.emitAccountChanged();
     });
   }
@@ -94,6 +95,7 @@ export class AccountService {
     await this.controllerRepo.save(
       this.controllerRepo.create({
         id: uuid(),
+        active: false,
         address: controller.address,
         encryptedKey,
       }),
@@ -107,18 +109,35 @@ export class AccountService {
   }
 
   async removeController(id: string): Promise<Controller> {
-    console.log('>>>id:', id);
     const controller = await this.controllerRepo.findOne({ where: { id } });
     await this.controllerRepo.delete(id);
-
-    console.log('controller:', controller);
 
     return controller;
   }
 
-  async getControllers(): Promise<ControllerType[]> {
+  async getActiveController(): Promise<Controller> {
+    return this.controllerRepo.findOne({ where: { active: true } });
+  }
+
+  async activeController(address: string): Promise<Controller> {
+    const old = await this.getActiveController();
+    if (old) {
+      old.active = false;
+      await this.controllerRepo.save(old);
+    }
+
+    const controller = await this.controllerRepo.findOne({ where: { address } });
+    if (controller) {
+      controller.active = true;
+      await this.controllerRepo.save(controller);
+    }
+
+    return controller;
+  }
+
+  async getControllers(): Promise<Controller[]> {
     const controllers = await this.controllerRepo.find();
-    return controllers.map((c) => ({ id: c.id, address: c.address }));
+    return controllers;
   }
 
   async removeAccounts(): Promise<AccountMetaDataType> {

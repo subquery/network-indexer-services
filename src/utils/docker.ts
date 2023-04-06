@@ -17,10 +17,16 @@ export type TemplateType = {
   queryVersion: string;
   servicePort: number;
   poiEnabled: boolean;
-  dictionary?: string;
+  networkDictionary?: string;
   dbSchema: string;
   postgres: Postgres;
   mmrPath: string;
+  worker: number;
+  batchSize: number;
+  timeout: number;
+  cache: number;
+  cpu: number;
+  memory: number;
 };
 
 export function projectId(cid: string): string {

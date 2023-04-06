@@ -150,7 +150,12 @@ export class QueryService {
   }
 
   async getValidPoi(project: Project): Promise<Poi> {
-    const { id, queryEndpoint, poiEnabled } = project;
+    const {
+      id,
+      queryEndpoint,
+      advancedConfig: { poiEnabled },
+    } = project;
+
     const metadata = await this.getQueryMetaData(id, queryEndpoint);
     const blockHeight = metadata.lastProcessedHeight;
     if (blockHeight === 0) return this.emptyPoi;

@@ -3,25 +3,18 @@
 
 import yaml from 'js-yaml';
 import { IPFSClient } from '@subql/network-clients';
-import { Project } from 'src/project/project.model';
+import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from 'src/project/project.model';
+import { isEqual } from 'lodash';
 
-type ProjectConfig = {
-  networkEndpoint: string;
-  networkDictionary: string;
-  nodeVersion: string;
-  queryVersion: string;
-  poiEnabled: boolean;
-  forceEnabled: boolean;
-};
-
-export function projectConfigChanged(project: Project, config: ProjectConfig): boolean {
+export function projectConfigChanged(
+  project: Project,
+  baseConfig: ProjectBaseConfig,
+  advancedConfig: ProjectAdvancedConfig,
+): boolean {
   return (
-    config.forceEnabled ||
-    project.networkEndpoint !== config.networkEndpoint ||
-    project.networkDictionary !== config.networkDictionary ||
-    project.nodeVersion !== config.nodeVersion ||
-    project.queryVersion !== config.queryVersion ||
-    project.poiEnabled !== config.poiEnabled
+    advancedConfig.purgeDB ||
+    !isEqual(project.baseConfig, baseConfig) ||
+    !isEqual(project.advancedConfig, advancedConfig)
   );
 }
 

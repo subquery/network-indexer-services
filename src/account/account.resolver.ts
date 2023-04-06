@@ -7,15 +7,15 @@ import { AccountEvent } from 'src/utils/subscription';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 
 import { AccountService } from './account.service';
-import { AccountMetaDataType, AccountType, ControllerType } from './account.model';
+import { AccountMetaDataType, Controller, Indexer } from './account.model';
 
-@Resolver(() => AccountType)
+@Resolver()
 export class AccountResolver {
   constructor(private accountService: AccountService, private pubSub: SubscriptionService) {}
 
-  @Mutation(() => AccountType)
-  addIndexer(@Args('indexer') indexer: string) {
-    return this.accountService.addIndexer(indexer);
+  @Mutation(() => Indexer)
+  addIndexer(@Args('address') address: string) {
+    return this.accountService.addIndexer(address);
   }
 
   @Query(() => AccountMetaDataType)
@@ -28,12 +28,12 @@ export class AccountResolver {
     return this.accountService.addController();
   }
 
-  @Mutation(() => AccountType)
+  @Mutation(() => Controller)
   removeController(@Args('id') id: string) {
     return this.accountService.removeController(id);
   }
 
-  @Query(() => [ControllerType])
+  @Query(() => [Controller])
   controllers() {
     return this.accountService.getControllers();
   }

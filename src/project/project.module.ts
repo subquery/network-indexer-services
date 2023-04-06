@@ -10,12 +10,19 @@ import { DBModule } from 'src/db/db.module';
 
 import { ProjectService } from './project.service';
 import { ProjectResolver } from './project.resolver';
-import { Project } from './project.model';
+import { PaygEntity, ProjectEntity } from './project.model';
 import { MetricsModule } from 'src/metrics/metrics.module';
+import { PortService } from './port.service';
 
 @Module({
-  imports: [SubscriptionModule, ServicesModule, DBModule, MetricsModule, TypeOrmModule.forFeature([Project])],
-  providers: [ProjectService, ProjectResolver],
+  imports: [
+    SubscriptionModule,
+    ServicesModule,
+    DBModule,
+    MetricsModule,
+    TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
+  ],
+  providers: [ProjectService, PortService, ProjectResolver],
   exports: [ProjectService],
 })
 export class ProjectModule {}

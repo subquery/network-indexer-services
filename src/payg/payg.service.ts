@@ -10,7 +10,7 @@ import { SubscriptionService } from 'src/subscription/subscription.service';
 import { getLogger } from 'src/utils/logger';
 import { PaygEvent } from 'src/utils/subscription';
 import { Config } from 'src/configure/configure.module';
-import { Project } from 'src/project/project.model';
+import { PaygEntity } from 'src/project/project.model';
 import { AccountService } from 'src/account/account.service';
 
 import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
@@ -19,7 +19,7 @@ import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
 export class PaygService {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
-    @InjectRepository(Project) private projectRepo: Repository<Project>,
+    @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     @InjectRepository(ChannelLabor) private laborRepo: Repository<ChannelLabor>,
     private pubSub: SubscriptionService,
     private config: Config,
@@ -81,12 +81,12 @@ export class PaygService {
     consumerSign: string,
   ): Promise<Channel> {
     const channel = await this.channelRepo.findOne({ id });
-    const project = await this.projectRepo.findOne({ id: channel.deploymentId });
-    if (!channel || !project) {
+    const projectPayg = await this.paygRepo.findOne({ id: channel.deploymentId });
+    if (!channel || !projectPayg) {
       getLogger('channel or project').error(`channel or project not exist: ${id}`);
       return;
     }
-    const threshold = BigInt(project.paygThreshold);
+    const threshold = BigInt(projectPayg.threshold);
 
     const currentRemote = BigInt(spent);
     const prevSpent = BigInt(channel.spent);
