@@ -91,7 +91,7 @@
     "eslint-plugin-header": "^3.1.1",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-prettier": "^4.0.0",
-    "@subql/indexer-admin": "^0.3.4-8",
+    "@subql/indexer-admin": "^0.3.4-11",
     "jest": "^27.2.5",
     "prettier": "^2.3.2",
     "source-map-support": "^0.5.20",
