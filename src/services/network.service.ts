@@ -228,7 +228,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getExpiredStateChannels(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
-    const apolloClient = this.client.explorerClient;
+    const apolloClient = this.client.networkClient;
     const now = new Date();
     const indexer = await this.accountService.getIndexer();
     const result = await apolloClient.query<

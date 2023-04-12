@@ -11,7 +11,7 @@ import { GetStateChannels } from '@subql/network-query';
 export async function sync(app: INestApplication) {
   const config = NETWORK_CONFIGS.testnet;
   const client = new GraphqlQueryClient(config);
-  const apolloClient = client.explorerClient;
+  const apolloClient = client.networkClient;
   const result = await apolloClient.query({
     query: GetStateChannels,
     variables: { status: 'OPEN' },
