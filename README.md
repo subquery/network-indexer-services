@@ -32,13 +32,13 @@ Need to start a postgres DB server before run the coordinator service. The follo
 
 ```sh
 # Install and start the db server
-docker run --name "coordinator-server" -e POSTGRES_PASSWORD="postgres" \
+docker run --name "indexer_coordinator" -e POSTGRES_PASSWORD="postgres" \
     -e PGPASSWORD="postgres" \
     -p 5432:5432 \
     -d postgres
 
 # Create db
-docker exec -i "coordinator-server" psql -U postgres -c "create database \"coordinator\""
+docker exec -i "indexer_coordinator" psql -U postgres -c "create database \"coordinator\""
 ```
 
 ### Run the Coordinator Command
