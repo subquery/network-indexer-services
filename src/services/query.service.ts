@@ -65,6 +65,8 @@ export class QueryService {
           lastProcessedTimestamp
           targetHeight
           chain
+          specName
+          genesisHash
           indexerHealthy
           indexerNodeVersion
           queryNodeVersion
