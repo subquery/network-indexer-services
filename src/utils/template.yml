@@ -13,7 +13,7 @@ services:
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
-      - {{mmrPath}}/poi/{{deploymentID}}:/home/projects/{{deploymentID}}
+      - {{mmrPath}}/poi/{{deploymentID}}:{{mmrPath}}/poi/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
