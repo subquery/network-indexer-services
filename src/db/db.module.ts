@@ -21,7 +21,8 @@ export class DB {
   }
 
   public async connect(): Promise<void> {
-    return this.dbClient.connect();
+    await this.dbClient.connect();
+    await this.createDBExtension();
   }
 
   public async checkSchemaExist(name: string): Promise<boolean> {
@@ -34,9 +35,13 @@ export class DB {
     }
   }
 
+  public async createDBExtension() {
+    await this.dbClient.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
+    getLogger('db').info('Add btree_gist extension to db');
+  }
+
   public async createDBSchema(name: string) {
     await this.dbClient.query(`CREATE SCHEMA IF NOT EXISTS ${name}`);
-    await this.dbClient.query(`CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA ${name}`);
     getLogger('docker').info(`create new db schema: ${name}`);
   }
 

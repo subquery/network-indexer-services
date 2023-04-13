@@ -5,7 +5,6 @@ import { Controller, Get, Header } from '@nestjs/common';
 import { NETWORK_CONFIGS, SQNetworks } from '@subql/network-clients';
 import { argv } from './yargs';
 
-// TODO: config for `mainnet` | `testnet`
 @Controller()
 export class AdminController {
   @Get('env.js')
@@ -15,7 +14,7 @@ export class AdminController {
       NETWORK: `${argv('network')}`, //  mainnet| kepler | testnet
       COORDINATOR_SERVICE_PORT: argv('port'),
       IPFS_GATEWAY: argv('ipfs'),
-      REGISTRY_PROJECT: NETWORK_CONFIGS[argv('network') as SQNetworks].gql.explorer,
+      REGISTRY_PROJECT: NETWORK_CONFIGS[argv('network') as SQNetworks].gql.network,
     };
 
     return `window.env = ${JSON.stringify(config)};`;
