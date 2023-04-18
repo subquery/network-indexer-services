@@ -3609,10 +3609,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@^0.3.4-15":
-  version "0.3.4-15"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.4-15.tgz#5a96289cc28f01d556a0e9b14f040aea02f09611"
-  integrity sha512-Ltw4IK9sevlHkHA5rv4l/lDewF/VzofHn1wJmddCyzjFtk4QNXuPxK9J9DGZw/G3LriMRDQvLJqh6KAPporVSg==
+"@subql/indexer-admin@^0.3.4-17":
+  version "0.3.4-17"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.4-17.tgz#5dcf13b6216797518fde66f0b16866a9b78aa241"
+  integrity sha512-ulfzxec64QUZJmSALQoh3tMeYG+BFfMzlXmp9//O1q6hwIr5Ragd1Kq2OR3E0ODS81ix9BNxXFrW4fVYVbbtQg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3625,6 +3625,7 @@
     "@subql/contract-sdk" "0.13.0"
     "@subql/network-clients" "^0.3.3-1"
     "@subql/network-query" "0.3.3-2"
+    "@subql/react-hooks" "^0.1.1-0"
     "@subql/react-ui" "^1.0.1-21"
     "@testing-library/jest-dom" "^5.11.4"
     "@testing-library/react" "^11.1.0"
@@ -3682,6 +3683,14 @@
   integrity sha512-MNkfC+tu00GX/g8t8S2/flOF2NV3qdluQbEv8CfQTG/EFQjOYvpNDAyzBIS/dU6yYgkPNUOmCi1gn+l9BZRWPw==
   dependencies:
     graphql "^16.5.0"
+
+"@subql/react-hooks@^0.1.1-0":
+  version "0.1.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/react-hooks/-/react-hooks-0.1.1-0.tgz#45ceb26e4c9d59315106fc54f5df97f9eafbdc08"
+  integrity sha512-T5F5et72IGE/0nFflUgNzYqfnw/PrSBuV1snaGPq0e935em5bSJMU+ENeUfotKfA26jnfGtEfTbi2Nl/hpaOQA==
+  dependencies:
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
 
 "@subql/react-ui@^1.0.1-21":
   version "1.0.1-22"
@@ -6644,7 +6653,7 @@ cjs-module-lexer@^1.0.0:
   resolved "https://registry.yarnpkg.com/cjs-module-lexer/-/cjs-module-lexer-1.2.2.tgz#9f84ba3244a512f3a54e5277e8eef4c489864e40"
   integrity sha512-cOU9usZw8/dXIXKtwa8pM0OTJQuJkxMN6w30csNRUerHfeQ5R6U3kkU/FtJeIf3M202OHfY2U8ccInBG7/xogA==
 
-class-transformer@0.5.1:
+class-transformer@0.5.1, class-transformer@^0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/class-transformer/-/class-transformer-0.5.1.tgz#24147d5dffd2a6cea930a3250a677addf96ab336"
   integrity sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==
