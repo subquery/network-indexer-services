@@ -217,16 +217,13 @@ export class ProjectService {
     const project = await this.getProject(id);
     if (!project) return [];
 
-    // release port
-    const port = getServicePort(project.queryEndpoint);
-    this.portService.removePort(port);
-
     const projectID = projectId(id);
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
 
     const mmrFile = getMmrFile(this.getMmrPath(), id);
+    getLogger('project').info(`remove mmr file: ${mmrFile}`);
     await this.docker.deleteFile(mmrFile);
 
     return this.projectRepo.remove([project]);
