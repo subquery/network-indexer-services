@@ -226,6 +226,10 @@ export class ProjectService {
     getLogger('project').info(`remove mmr file: ${mmrFile}`);
     await this.docker.deleteFile(mmrFile);
 
+    // release port
+    const port = getServicePort(project.queryEndpoint);
+    this.portService.removePort(port);
+
     return this.projectRepo.remove([project]);
   }
 
