@@ -15,10 +15,12 @@ import { getServicePort } from 'src/utils/docker';
 @Injectable()
 export class PortService {
   private ports: number[];
+  private defaultStartPort: number;
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private config: Config,
   ) {
+    this.defaultStartPort = config.startPort;
     portfinder.setBasePort(config.startPort);
 
     this.getUsedPorts().then((ports) => {
@@ -29,9 +31,14 @@ export class PortService {
 
   async getAvailablePort(): Promise<number> {
     let port: number;
+    let startPort = this.defaultStartPort;
     while (true) {
-      port = await portfinder.getPortPromise();
-      if (!this.ports.includes(port)) break;
+      port = await portfinder.getPortPromise({ port: startPort });
+      if (this.ports.includes(port)) {
+        startPort++;
+      } else {
+        break;
+      }
     }
 
     debugLogger('node', `next port: ${port}`);
