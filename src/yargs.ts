@@ -73,6 +73,12 @@ export function getYargsOption() {
       default: false,
       group: Groups.node,
     },
+    'start-port': {
+      type: 'number',
+      describe: 'The start port number for the indexer node',
+      default: 3001,
+      group: Groups.node,
+    },
     mmrPath: {
       type: 'string',
       describe: 'The local path to store the mmr data',
@@ -85,7 +91,7 @@ export function getYargsOption() {
       default: 'http://pushgateway',
       group: Groups.metrics,
     },
-    secret: {
+    'secret-key': {
       type: 'string',
       describe: 'Specify secret key for the service',
       default: 'ThisIsYourSecret',
