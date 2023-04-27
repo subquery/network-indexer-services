@@ -45,7 +45,7 @@ export class ProjectResolver {
     return this.projectService.getProjectDetails(id);
   }
 
-  @Query(() => [Project])
+  @Query(() => [ProjectDetails])
   getProjects() {
     return this.projectService.getProjects();
   }

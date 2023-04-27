@@ -87,8 +87,9 @@ export class ProjectService {
     return { ...project, metadata };
   }
 
-  async getProjects(): Promise<Project[]> {
-    return this.projectRepo.find();
+  async getProjects(): Promise<ProjectDetails[]> {
+    const projects = await this.projectRepo.find();
+    return Promise.all(projects.map(({ id }) => this.getProjectDetails(id)));
   }
 
   async getAliveProjects(): Promise<Project[]> {

@@ -13,6 +13,7 @@ import { Project, MetadataType } from 'src/project/project.model';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { ServiceStatus, Poi, PoiItem } from './types';
+import { assert } from 'console';
 
 @Injectable()
 export class QueryService {
@@ -78,12 +79,14 @@ export class QueryService {
       const data = await response.json();
       const metadata = data.data._metadata;
 
+      assert(metadata.targetHeight, 'targetHeight is not defined');
+
       return {
         ...metadata,
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
-    } catch (e) {
+    } catch {
       return {
         lastProcessedHeight: 0,
         lastProcessedTimestamp: 0,
