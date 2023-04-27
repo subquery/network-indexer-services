@@ -4,9 +4,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
+import { GraphqlQueryClient, IPFSClient, NETWORK_CONFIGS, IPFS_URLS } from '@subql/network-clients';
 
 import { Config } from 'src/configure/configure.module';
-import { getLogger } from 'src/utils/logger';
+import { debugLogger, getLogger } from 'src/utils/logger';
 import {
   canContainersRestart,
   composeFileExist,
@@ -38,22 +39,38 @@ import {
   Payg,
   PaygConfig,
   PaygEntity,
+  ProjectInfo,
+  ProjectDetails,
 } from './project.model';
 import { getYargsOption } from 'src/yargs';
+import { ContractService } from 'src/services/contract.service';
+import { QueryService } from 'src/services/query.service';
+import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from 'src/utils/queries';
+import { AccountService } from 'src/account/account.service';
 
 @Injectable()
 export class ProjectService {
-  private ports: number[];
+  private client: GraphqlQueryClient;
+  private ipfsClient: IPFSClient;
+
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     private pubSub: SubscriptionService,
+    private contract: ContractService,
+    private query: QueryService,
     private docker: DockerService,
+    private account: AccountService,
     private config: Config,
     private portService: PortService,
     private db: DB,
-  ) {}
+  ) {
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
+    this.ipfsClient = new IPFSClient(IPFS_URLS.project);
+    this.restoreProjects();
+  }
 
+  /// get methods
   getMmrPath() {
     const { argv } = getYargsOption();
     return argv['mmrPath'].replace(/\/$/, '');
@@ -63,36 +80,88 @@ export class ProjectService {
     return this.projectRepo.findOne({ id });
   }
 
-  async getProjects(): Promise<Project[]> {
-    return this.projectRepo.find();
+  async getProjectDetails(id: string): Promise<ProjectDetails> {
+    const project = await this.projectRepo.findOne({ id });
+    const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
+
+    return { ...project, metadata };
+  }
+
+  async getProjects(): Promise<ProjectDetails[]> {
+    const projects = await this.projectRepo.find();
+    return Promise.all(projects.map(({ id }) => this.getProjectDetails(id)));
   }
 
   async getAliveProjects(): Promise<Project[]> {
-    return this.projectRepo.find({
-      where: {
-        queryEndpoint: Not(''),
-      },
-    });
+    return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
   }
 
   async getAlivePaygs(): Promise<Payg[]> {
-    return this.paygRepo.find({
-      where: {
-        price: Not(''),
-      },
+    return this.paygRepo.find({ where: { price: Not('') } });
+  }
+
+  /// restore projects not `TERMINATED`
+  async restoreProjects() {
+    const indexer = await this.account.getIndexer();
+    const networkClient = this.client.networkClient;
+    if (!indexer) return;
+
+    try {
+      const result = await networkClient.query({
+        // @ts-ignore
+        query: GET_INDEXER_PROJECTS,
+        variables: { indexer },
+      });
+
+      const projects = result.data.deploymentIndexers.nodes;
+      const p = projects.filter(({ status }) => status !== 'TERMINATED');
+      await Promise.all(p.map(({ deploymentId }) => this.addProject(deploymentId)));
+    } catch (e) {
+      debugLogger('project', `Failed to restore not terminated projects: ${e}`);
+    }
+  }
+
+  /// add project
+  async getProjectInfo(id: string): Promise<ProjectInfo> {
+    const networkClient = this.client.networkClient;
+    const result = await networkClient.query({
+      // @ts-ignore
+      query: GET_DEPLOYMENT,
+      variables: { id },
     });
+
+    const deployment = result.data.deployment;
+    const project = deployment.project;
+    const metadataStr = await this.ipfsClient.cat(project.metadata);
+    const versionStr = await this.ipfsClient.cat(deployment.version);
+    const metadata = JSON.parse(metadataStr);
+    const version = JSON.parse(versionStr);
+
+    return {
+      createdTimestamp: project.createdTimestamp,
+      updatedTimestamp: deployment.createdTimestamp,
+      owner: project.owner,
+      ...metadata,
+      ...version,
+    };
   }
 
   async addProject(id: string): Promise<Project> {
-    const project = this.projectRepo.create({
+    const project = await this.getProject(id);
+    if (project) return project;
+
+    const { status } = await this.contract.deploymentStatusByIndexer(id);
+    const details = await this.getProjectInfo(id);
+    const projectEntity = this.projectRepo.create({
       id: id.trim(),
-      status: 0,
+      status,
+      details,
     });
 
     const projectPayg = this.paygRepo.create({ id: id.trim() });
     this.paygRepo.save(projectPayg);
 
-    return this.projectRepo.save(project);
+    return this.projectRepo.save(projectEntity);
   }
 
   async updateProjectStatus(id: string, status: IndexingStatus): Promise<Project> {
@@ -158,7 +227,9 @@ export class ProjectService {
     advancedConfig: ProjectAdvancedConfig,
   ) {
     let project = await this.getProject(id);
-    if (!project) await this.addProject(id);
+    if (!project) {
+      project = await this.addProject(id);
+    }
 
     const projectID = projectId(project.id);
     if (advancedConfig.purgeDB) {
@@ -178,15 +249,12 @@ export class ProjectService {
 
     //TODO: remove this after confirm other chains suppor POI feature
     const config = await configsWithNode({ id, poiEnabled: advancedConfig.poiEnabled });
-    project = {
-      id,
-      baseConfig,
-      advancedConfig,
-      queryEndpoint: queryEndpoint(id, templateItem.servicePort),
-      nodeEndpoint: nodeEndpoint(id, templateItem.servicePort),
-      status: IndexingStatus.INDEXING,
-      chainType: config.chainType,
-    };
+    project.baseConfig = baseConfig;
+    project.advancedConfig = advancedConfig;
+    project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
+    project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
+    project.status = IndexingStatus.INDEXING;
+    project.chainType = config.chainType;
 
     this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);

@@ -1,15 +1,18 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { PaygService } from './payg/payg.service';
-import { ContractService } from './services/contract.service';
 import { INestApplication } from '@nestjs/common';
-import { getLogger, LogCategory } from './utils/logger';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetStateChannels } from '@subql/network-query';
 
+import { PaygService } from './payg/payg.service';
+import { ContractService } from './services/contract.service';
+import { getLogger, LogCategory } from './utils/logger';
+import { getYargsOption } from './yargs';
+
 export async function sync(app: INestApplication) {
-  const config = NETWORK_CONFIGS.testnet;
+  const { argv } = getYargsOption();
+  const config = NETWORK_CONFIGS[argv['network']];
   const client = new GraphqlQueryClient(config);
   const apolloClient = client.networkClient;
   const result = await apolloClient.query({

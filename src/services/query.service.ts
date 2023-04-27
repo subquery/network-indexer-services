@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { isEmpty } from 'lodash';
+import { isEmpty, values, isNull } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
 import { nodeContainer, queryContainer } from 'src/utils/docker';
 import { debugLogger } from 'src/utils/logger';
 import { ZERO_BYTES32 } from 'src/utils/project';
-import { Project } from 'src/project/project.model';
+import { Project, MetadataType } from 'src/project/project.model';
 
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
-import { ServiceStatus, MetaData, Poi, PoiItem } from './types';
+import { ServiceStatus, Poi, PoiItem } from './types';
 
 @Injectable()
 export class QueryService {
@@ -56,7 +56,7 @@ export class QueryService {
     }
   }
 
-  public async getQueryMetaData(id: string, endpoint: string): Promise<MetaData> {
+  public async getQueryMetaData(id: string, endpoint: string): Promise<MetadataType> {
     const { indexerStatus, queryStatus } = await this.servicesStatus(id);
     const queryBody = JSON.stringify({
       query: `{
@@ -80,10 +80,14 @@ export class QueryService {
 
       return {
         ...metadata,
+        targetHeight: metadata.targetHeight ?? 0,
+        lastProcessedTimestamp: metadata.lastProcessedTimestamp ?? 0,
+        lastProcessedHeight: metadata.lastProcessedHeight ?? 0,
+        indexerHealthy: metadata.indexerHealthy ?? false,
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
-    } catch (e) {
+    } catch {
       return {
         lastProcessedHeight: 0,
         lastProcessedTimestamp: 0,
