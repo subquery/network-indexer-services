@@ -74,17 +74,16 @@ export class QueryService {
     });
 
     try {
-      debugLogger('request metadata', '');
       const response = await this.queryRequest(endpoint, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
-      if (values(metadata).every((m) => !isNull(m))) {
-        throw new Error('metadata contains null fields');
-      }
-
       return {
         ...metadata,
+        targetHeight: metadata.targetHeight ?? 0,
+        lastProcessedTimestamp: metadata.lastProcessedTimestamp ?? 0,
+        lastProcessedHeight: metadata.lastProcessedHeight ?? 0,
+        indexerHealthy: metadata.indexerHealthy ?? false,
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
