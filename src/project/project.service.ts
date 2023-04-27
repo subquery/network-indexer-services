@@ -7,7 +7,7 @@ import { Repository, Not } from 'typeorm';
 import { GraphqlQueryClient, IPFSClient, NETWORK_CONFIGS, IPFS_URLS } from '@subql/network-clients';
 
 import { Config } from 'src/configure/configure.module';
-import { getLogger } from 'src/utils/logger';
+import { debugLogger, getLogger } from 'src/utils/logger';
 import {
   canContainersRestart,
   composeFileExist,
@@ -103,15 +103,21 @@ export class ProjectService {
   async restoreProjects() {
     const indexer = await this.account.getIndexer();
     const networkClient = this.client.networkClient;
-    const result = await networkClient.query({
-      // @ts-ignore
-      query: GET_INDEXER_PROJECTS,
-      variables: { indexer },
-    });
+    if (!indexer) return;
 
-    const projects = result.data.deploymentIndexers.nodes;
-    const p = projects.filter(async ({ status }) => status !== 'TERMINATED');
-    await Promise.all(p.map(({ deploymentId }) => this.addProject(deploymentId)));
+    try {
+      const result = await networkClient.query({
+        // @ts-ignore
+        query: GET_INDEXER_PROJECTS,
+        variables: { indexer },
+      });
+
+      const projects = result.data.deploymentIndexers.nodes;
+      const p = projects.filter(({ status }) => status !== 'TERMINATED');
+      await Promise.all(p.map(({ deploymentId }) => this.addProject(deploymentId)));
+    } catch (e) {
+      debugLogger('project', `Failed to restore not terminated projects: ${e}`);
+    }
   }
 
   /// add project
