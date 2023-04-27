@@ -34,8 +34,8 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: number]: BigNumber };
 
-  private defaultInterval = 1000 * 300;
-  private defaultRetryCount = 5;
+  private defaultInterval = 14400000; // 4 hours
+  private defaultRetryCount = 3;
   private batchSize = 20;
 
   private projectRepo: Repository<ProjectEntity>;
@@ -381,7 +381,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!isContractReady) return this.interval ?? this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return Math.min((eraPeriod.toNumber() * 1000) / 6, this.defaultInterval);
+      return Math.min((eraPeriod.toNumber() * 1000) / 3, this.defaultInterval);
     } catch {
       return this.defaultInterval;
     }
