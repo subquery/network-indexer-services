@@ -14,6 +14,8 @@ export class VersionsService {
   constructor(private docker: DockerService, private config: Config) {}
 
   formatVersion(version: string) {
+    if (version === 'latest') return [0, 0, 0, 0];
+
     const a = version.replace(/^v/, '').replace(/-/, '.');
     const versionNums = a.split('.').map((i) => Number(i));
 

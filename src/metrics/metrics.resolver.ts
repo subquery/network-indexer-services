@@ -7,10 +7,10 @@ import { VersionsService } from './versions.service';
 import { VersionMetrics } from './metrics.model';
 
 @Resolver(() => VersionMetrics)
-export class ProjectResolver {
+export class MetricsResolver {
   constructor(private versionsService: VersionsService) {}
 
-  @Query(() => Promise<VersionMetrics>)
+  @Query(() => VersionMetrics)
   getServicesVersion() {
     return this.versionsService.getVersions();
   }
