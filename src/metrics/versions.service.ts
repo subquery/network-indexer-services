@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Config } from 'src/configure/configure.module';
 import { DockerService } from 'src/services/docker.service';
 import { VersionMetrics } from './metrics.model';
+import { debugLogger } from 'src/utils/logger';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version: coordinatorVersion } = require('../../package.json');
@@ -14,12 +15,18 @@ export class VersionsService {
   constructor(private docker: DockerService, private config: Config) {}
 
   formatVersion(version: string) {
-    if (version === 'latest') return [0, 0, 0, 0];
+    const defaultVersion = [0, 0, 0, 0];
+    if (version === 'latest') return defaultVersion;
 
-    const a = version.replace(/^v/, '').replace(/-/, '.');
-    const versionNums = a.split('.').map((i) => Number(i));
+    try {
+      const a = version.replace(/^v/, '').replace(/-/, '.');
+      const versionNums = a.split('.').map((i) => Number(i));
 
-    return versionNums.length === 3 ? [...versionNums, 0] : versionNums;
+      return versionNums.length === 3 ? [...versionNums, 0] : versionNums;
+    } catch (e) {
+      debugLogger('metrics', `failed to decode service versions: ${e}`);
+      return defaultVersion;
+    }
   }
 
   public async getVersions(): Promise<VersionMetrics> {
