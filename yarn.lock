@@ -3677,10 +3677,17 @@
   resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.3.3-2.tgz#ed4d464d546b65ef7339aeaa01d070e6761847d1"
   integrity sha512-3SQEJWoGM+sH+bubcMfjVxD2te6UEwPFtuGpcmqZB3nq6TV/S5IshXwX6cvMFzqyaUl2aOP95KuJ3CWTHfAOPw==
 
-"@subql/network-query@0.3.3-2", "@subql/network-query@^0.3.3-2":
+"@subql/network-query@0.3.3-2":
   version "0.3.3-2"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.3-2.tgz#ea873ad6ebbea7a4d0ce9d7a9bf1ff33c669b5bf"
   integrity sha512-MNkfC+tu00GX/g8t8S2/flOF2NV3qdluQbEv8CfQTG/EFQjOYvpNDAyzBIS/dU6yYgkPNUOmCi1gn+l9BZRWPw==
+  dependencies:
+    graphql "^16.5.0"
+
+"@subql/network-query@^0.3.3-6":
+  version "0.3.3-6"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.3-6.tgz#70e199cd99325c96b25aaf9472165116977f4eeb"
+  integrity sha512-tcGNY6K6z7G4tobJz9VlhWfwM28XBMWlkRZGrGoL/9C1GBVv78B8f8yptYQ0TIEfZz6oMy/4lvJWaVew7TSgKA==
   dependencies:
     graphql "^16.5.0"
 

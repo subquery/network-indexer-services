@@ -49,7 +49,7 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.testnet);
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(ProjectEntity);
   }
 

@@ -22,20 +22,6 @@ export enum ServiceStatus {
   Terminated = 'TERMINATED',
 }
 
-export declare type MetaData = {
-  lastProcessedHeight: number;
-  lastProcessedTimestamp: number;
-  targetHeight: number;
-  chain: string;
-  specName: string;
-  genesisHash: string;
-  indexerHealthy: boolean;
-  indexerNodeVersion: string;
-  queryNodeVersion: string;
-  indexerStatus: string;
-  queryStatus: string;
-};
-
 export type TxFun = () => Promise<ContractTransaction>;
 
 export type Transaction = {
