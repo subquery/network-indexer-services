@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { isEmpty } from 'lodash';
+import { isEmpty, values, isNull } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
 import { nodeContainer, queryContainer } from 'src/utils/docker';
@@ -13,7 +13,6 @@ import { Project, MetadataType } from 'src/project/project.model';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { ServiceStatus, Poi, PoiItem } from './types';
-import { assert } from 'console';
 
 @Injectable()
 export class QueryService {
@@ -75,11 +74,14 @@ export class QueryService {
     });
 
     try {
+      debugLogger('request metadata', '');
       const response = await this.queryRequest(endpoint, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
-      assert(metadata.targetHeight, 'targetHeight is not defined');
+      if (values(metadata).every((m) => !isNull(m))) {
+        throw new Error('metadata contains null fields');
+      }
 
       return {
         ...metadata,
