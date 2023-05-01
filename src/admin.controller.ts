@@ -11,9 +11,10 @@ export class AdminController {
   @Header('content-type', 'text/javascript; charset=utf-8')
   getEnv() {
     const config = {
-      NETWORK: `${argv('network')}`, //  mainnet| kepler | testnet
+      NETWORK: argv('network'), //  mainnet| kepler | testnet
       COORDINATOR_SERVICE_PORT: argv('port'),
       IPFS_GATEWAY: argv('ipfs'),
+      RPC_ENDPOINT: argv('ws-endpoint'),
       REGISTRY_PROJECT: NETWORK_CONFIGS[argv('network') as SQNetworks].gql.network,
     };
 
