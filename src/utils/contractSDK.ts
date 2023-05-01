@@ -39,7 +39,6 @@ export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
 export const sdkOptions = {
   [ChainID.testnet]: createContractOptions('testnet'),
   [ChainID.kepler]: createContractOptions('kepler'),
-  [ChainID.mainnet]: createContractOptions('mainnet'),
 };
 
 export function initContractSDK(

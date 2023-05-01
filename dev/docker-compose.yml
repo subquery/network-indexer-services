@@ -43,12 +43,12 @@ services:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --network=testnet
+      - --network=kepler
       - --postgres-host=postgres
       - --postgres-password=pos_z8X
       # use the same password in the db config
       - --postgres-port=5432
-      - --mmrPath=/var/tmp
+      - --mmrPath=./poi
       - --use-prerelease
       - --port=8000
       - --debug
