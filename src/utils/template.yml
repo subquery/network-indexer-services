@@ -63,4 +63,4 @@ services:
 
 networks:
   default:
-    name: indexer_services
+    name: {{dockerNetwork}}

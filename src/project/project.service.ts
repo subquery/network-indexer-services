@@ -205,6 +205,7 @@ export class ProjectService {
     const projectID = projectId(project.id);
 
     const postgres = this.config.postgres;
+    const dockerNetwork = this.config.dockerNetwork;
     const mmrPath = this.getMmrPath();
 
     const item: TemplateType = {
@@ -214,6 +215,7 @@ export class ProjectService {
       servicePort,
       postgres,
       mmrPath,
+      dockerNetwork,
       ...baseConfig,
       ...advancedConfig,
     };

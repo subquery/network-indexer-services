@@ -20,6 +20,7 @@ export type TemplateType = {
   networkDictionary?: string;
   dbSchema: string;
   postgres: Postgres;
+  dockerNetwork: string;
   mmrPath: string;
   worker: number;
   batchSize: number;
