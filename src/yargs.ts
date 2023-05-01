@@ -33,7 +33,7 @@ export function getYargsOption() {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'https://rpc.ankr.com/polygon_mumbai',
+      default: 'https://polygon-rpc.com',
       group: Groups.coordinator,
     },
     'start-block': {
