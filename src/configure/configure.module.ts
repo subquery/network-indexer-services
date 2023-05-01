@@ -22,7 +22,7 @@ export interface IConfig {
   readonly debug: boolean;
   readonly dev: boolean;
   readonly secret: string;
-  readonly pushGateway: string;
+  readonly startPort: number;
 }
 
 export class Config implements IConfig {
@@ -40,11 +40,11 @@ export class Config implements IConfig {
     return new Config({
       network: argv['network'] as Network,
       wsEndpoint: argv['ws-endpoint'],
-      pushGateway: argv['pushgateway-endpoint'],
       port: argv['port'] as number,
       debug: argv['debug'] as boolean,
       dev: argv['dev'] as boolean,
-      secret: argv['secret'],
+      secret: argv['secret-key'],
+      startPort: argv['start-port'],
       postgres,
     });
   }
@@ -79,8 +79,8 @@ export class Config implements IConfig {
     return this._config.secret;
   }
 
-  get pushGateway(): string {
-    return this._config.pushGateway;
+  get startPort(): number {
+    return this._config.startPort;
   }
 }
 

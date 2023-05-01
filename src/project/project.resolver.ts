@@ -16,6 +16,7 @@ import {
   ProjectBaseConfig,
   Payg,
   PaygConfig,
+  ProjectDetails,
 } from './project.model';
 import { ProjectService } from './project.service';
 
@@ -39,12 +40,12 @@ export class ProjectResolver {
     return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
   }
 
-  @Query(() => Project)
+  @Query(() => ProjectDetails)
   project(@Args('id') id: string) {
-    return this.projectService.getProject(id);
+    return this.projectService.getProjectDetails(id);
   }
 
-  @Query(() => [Project])
+  @Query(() => [ProjectDetails])
   getProjects() {
     return this.projectService.getProjects();
   }

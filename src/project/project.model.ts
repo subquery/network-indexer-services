@@ -4,6 +4,31 @@
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
+// TODO: temp place to put these types
+@ObjectType('ProjectInfo')
+export class ProjectInfo {
+  @Field()
+  name: string;
+  @Field()
+  owner: string;
+  @Field()
+  image: string;
+  @Field()
+  description: string;
+  @Field()
+  websiteUrl: string;
+  @Field()
+  codeUrl: string;
+  @Field()
+  version: string;
+  @Field()
+  createdTimestamp: string;
+  @Field()
+  updatedTimestamp: string;
+  @Field()
+  metadata: string;
+}
+
 @ObjectType('Log')
 export class LogType {
   @Field()
@@ -14,34 +39,24 @@ export class LogType {
 export class MetadataType {
   @Field(() => Int)
   lastProcessedHeight: number;
-
   @Field()
-  lastProcessedTimestamp: string;
-
+  lastProcessedTimestamp: number;
   @Field(() => Int)
   targetHeight: number;
-
   @Field()
   chain: string;
-
   @Field()
   specName: string;
-
   @Field()
   genesisHash: string;
-
   @Field()
   indexerHealthy: boolean;
-
   @Field()
   indexerNodeVersion: string;
-
   @Field()
   queryNodeVersion: string;
-
   @Field()
   indexerStatus: string;
-
   @Field()
   queryStatus: string;
 }
@@ -68,13 +83,10 @@ export interface IProjectAdvancedConfig {
 export class ProjectBaseConfig implements IProjectBaseConfig {
   @Field()
   networkEndpoint: string;
-
   @Field()
   networkDictionary: string;
-
   @Field()
   nodeVersion: string;
-
   @Field()
   queryVersion: string;
 }
@@ -84,25 +96,18 @@ export class ProjectBaseConfig implements IProjectBaseConfig {
 export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   @Field()
   poiEnabled: boolean;
-
   @Field()
   purgeDB: boolean;
-
   @Field(() => Int)
   timeout: number;
-
   @Field(() => Int)
   worker: number;
-
   @Field(() => Int)
   batchSize: number;
-
   @Field(() => Int)
   cache: number;
-
   @Field(() => Int)
   cpu: number;
-
   @Field(() => Int)
   memory: number;
 }
@@ -148,6 +153,10 @@ export class ProjectEntity {
   @Field()
   queryEndpoint: string; // endpoint of query service
 
+  @Column('jsonb', { default: {} })
+  @Field(() => ProjectInfo)
+  details: ProjectInfo;
+
   @Column('jsonb', { default: defaultBaseConfig })
   @Field(() => ProjectBaseConfig)
   baseConfig: ProjectBaseConfig;
@@ -162,13 +171,10 @@ export class ProjectEntity {
 export class PaygConfig {
   @Field()
   price: string;
-
   @Field()
   expiration: number;
-
   @Field()
   threshold: number;
-
   @Field()
   overflow: number;
 }
@@ -199,6 +205,12 @@ export class PaygEntity {
 
 @ObjectType('Project')
 export class Project extends ProjectEntity {}
+
+@ObjectType('ProjectDetails')
+export class ProjectDetails extends ProjectEntity {
+  @Field(() => MetadataType)
+  metadata: MetadataType;
+}
 
 @ObjectType('Payg')
 export class Payg extends PaygEntity {}

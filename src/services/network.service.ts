@@ -34,8 +34,8 @@ export class NetworkService implements OnApplicationBootstrap {
   private failedTransactions: Transaction[];
   private expiredAgreements: { [key: number]: BigNumber };
 
-  private defaultInterval = 1000 * 300;
-  private defaultRetryCount = 5;
+  private defaultInterval = 14400000; // 4 hours
+  private defaultRetryCount = 3;
   private batchSize = 20;
 
   private projectRepo: Repository<ProjectEntity>;
@@ -49,7 +49,7 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     this.failedTransactions = [];
     this.expiredAgreements = {};
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS.testnet);
+    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(ProjectEntity);
   }
 
@@ -112,7 +112,8 @@ export class NetworkService implements OnApplicationBootstrap {
         `${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`,
       );
 
-      const tx = await txFun();
+      const overrides = await this.contractService.getOverrides();
+      const tx = await txFun(overrides);
       await tx.wait(10);
 
       getLogger('transaction').info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
@@ -138,7 +139,7 @@ export class NetworkService implements OnApplicationBootstrap {
         if (this.expiredAgreements[agreementId]) {
           await this.sendTransaction(
             'remove expired service agreement',
-            () => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i),
+            (overrides) => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
             `service agreement: ${agreementId}`,
           );
 
@@ -166,13 +167,14 @@ export class NetworkService implements OnApplicationBootstrap {
     const indexer = await this.accountService.getIndexer();
     await this.sendTransaction(
       `report project status`,
-      async () => {
+      async (overrides) => {
         const tx = await this.sdk.queryRegistry.reportIndexingStatus(
           indexer,
           cidToBytes32(id.trim()),
           blockHeight,
           mmrRoot,
           timestamp,
+          overrides,
         );
         return tx;
       },
@@ -210,8 +212,8 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async collectAndDistributeReward(indexer: string) {
-    await this.sendTransaction('collect and distribute rewards', () =>
-      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer),
+    await this.sendTransaction('collect and distribute rewards', (overrides) =>
+      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides),
     );
   }
 
@@ -221,8 +223,8 @@ export class NetworkService implements OnApplicationBootstrap {
       const canCollectRewards = await this.canCollectRewards();
       if (!canCollectRewards) return;
 
-      await this.sendTransaction('batch collect and distribute rewards', () =>
-        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize),
+      await this.sendTransaction('batch collect and distribute rewards', (overrides) =>
+        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize, overrides),
       );
     }
   }
@@ -271,8 +273,8 @@ export class NetworkService implements OnApplicationBootstrap {
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers}`);
-      await this.sendTransaction('apply stake changes', async () =>
-        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers),
+      await this.sendTransaction('apply stake changes', async (overrides) =>
+        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides),
       );
     };
   }
@@ -284,8 +286,8 @@ export class NetworkService implements OnApplicationBootstrap {
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
-        await this.sendTransaction('apply ICR changes', async () =>
-          this.sdk.rewardsStaking.applyICRChange(indexer),
+        await this.sendTransaction('apply ICR changes', async (overrides) =>
+          this.sdk.rewardsStaking.applyICRChange(indexer, overrides),
         );
       }
     };
@@ -299,8 +301,8 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        await this.sendTransaction('update era number', async () =>
-          this.sdk.eraManager.safeUpdateAndGetEra(),
+        await this.sendTransaction('update era number', async (overrides) =>
+          this.sdk.eraManager.safeUpdateAndGetEra(overrides),
         );
       }
     };
@@ -311,8 +313,8 @@ export class NetworkService implements OnApplicationBootstrap {
       const unfinalisedPlans = await this.getExpiredStateChannels();
 
       for (const node of unfinalisedPlans) {
-        await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async () =>
-          this.sdk.stateChannel.claim(node.id),
+        await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async (overrides) =>
+          this.sdk.stateChannel.claim(node.id, overrides),
         );
       }
     };
@@ -338,6 +340,7 @@ export class NetworkService implements OnApplicationBootstrap {
         getLogger('contract').warn(
           'insufficient balance for the controller account, please top up your controller account ASAP.',
         );
+        return;
       }
 
       const reportIndexingServiceActions = await this.reportIndexingServiceActions();
@@ -381,7 +384,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!isContractReady) return this.interval ?? this.defaultInterval;
 
       const eraPeriod = await this.sdk.eraManager.eraPeriod();
-      return Math.min((eraPeriod.toNumber() * 1000) / 6, this.defaultInterval);
+      return Math.min((eraPeriod.toNumber() * 1000) / 3, this.defaultInterval);
     } catch {
       return this.defaultInterval;
     }

@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BigNumber, ContractTransaction } from 'ethers';
+import { BigNumber, ContractTransaction, Overrides } from 'ethers';
 
 export enum IndexingStatus {
   NOTINDEXING,
@@ -22,21 +22,7 @@ export enum ServiceStatus {
   Terminated = 'TERMINATED',
 }
 
-export declare type MetaData = {
-  lastProcessedHeight: number;
-  lastProcessedTimestamp: number;
-  targetHeight: number;
-  chain: string;
-  specName: string;
-  genesisHash: string;
-  indexerHealthy: boolean;
-  indexerNodeVersion: string;
-  queryNodeVersion: string;
-  indexerStatus: string;
-  queryStatus: string;
-};
-
-export type TxFun = () => Promise<ContractTransaction>;
+export type TxFun = (overrides: Overrides) => Promise<ContractTransaction>;
 
 export type Transaction = {
   name: string;

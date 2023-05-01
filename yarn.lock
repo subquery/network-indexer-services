@@ -3624,10 +3624,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@^0.3.4-19":
-  version "0.3.4-19"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-0.3.4-19.tgz#19b903cc6cadd1939af8f0f8fa6d9fc9968e28bd"
-  integrity sha512-esVa+VKWldq4EfOfYQXtLiE1SMROc13vhNCYTu2Dr/XoNxAPSezVdk76eJjvnzw5rmL8p0SrciOkmdDad9S1+g==
+"@subql/indexer-admin@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-1.0.0.tgz#f11beaf9d60a00c8662c884b3a94bb8ea9bbeb2a"
+  integrity sha512-uMfR4CTp+HZdrjkYruH4nbeYyMXa28WoP+brhLa57ia1xvRx2GRD7zXRYycfjv/DonVl93KCcrOGOtGR9UTeDg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3692,10 +3692,17 @@
   resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.3.3-2.tgz#ed4d464d546b65ef7339aeaa01d070e6761847d1"
   integrity sha512-3SQEJWoGM+sH+bubcMfjVxD2te6UEwPFtuGpcmqZB3nq6TV/S5IshXwX6cvMFzqyaUl2aOP95KuJ3CWTHfAOPw==
 
-"@subql/network-query@0.3.3-2", "@subql/network-query@^0.3.3-2":
+"@subql/network-query@0.3.3-2":
   version "0.3.3-2"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.3-2.tgz#ea873ad6ebbea7a4d0ce9d7a9bf1ff33c669b5bf"
   integrity sha512-MNkfC+tu00GX/g8t8S2/flOF2NV3qdluQbEv8CfQTG/EFQjOYvpNDAyzBIS/dU6yYgkPNUOmCi1gn+l9BZRWPw==
+  dependencies:
+    graphql "^16.5.0"
+
+"@subql/network-query@^0.3.3-6":
+  version "0.3.3-6"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.3-6.tgz#70e199cd99325c96b25aaf9472165116977f4eeb"
+  integrity sha512-tcGNY6K6z7G4tobJz9VlhWfwM28XBMWlkRZGrGoL/9C1GBVv78B8f8yptYQ0TIEfZz6oMy/4lvJWaVew7TSgKA==
   dependencies:
     graphql "^16.5.0"
 
@@ -13982,7 +13989,7 @@ popper.js@^1.16.0:
   resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.16.1.tgz#2a223cb3dc7b6213d740e40372be40de43e65b1b"
   integrity sha512-Wb4p1J4zyFTbM+u6WuO4XstYx4Ky9Cewe4DWrel7B0w6VVICvPwdOpotjzcf6eD8TsckVnIMNONQyPIUFOUbCQ==
 
-portfinder@^1.0.26:
+portfinder@^1.0.26, portfinder@^1.0.32:
   version "1.0.32"
   resolved "https://registry.yarnpkg.com/portfinder/-/portfinder-1.0.32.tgz#2fe1b9e58389712429dc2bea5beb2146146c7f81"
   integrity sha512-on2ZJVVDXRADWE6jnQaX0ioEylzgBpQk8r55NE4wjXW1ZxO+BgDlY6DXwj20i0V8eB4SenDQ00WEaxfiIQPcxg==

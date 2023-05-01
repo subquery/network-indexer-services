@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BigNumber } from 'ethers';
+import { BigNumber, Overrides } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ChainID } from './../utils/contractSDK';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
@@ -45,6 +45,11 @@ export class ContractService {
 
   getSdk() {
     return this.sdk;
+  }
+
+  async getOverrides(): Promise<Overrides> {
+    const gasPrice = await this.provider.getGasPrice();
+    return { gasPrice };
   }
 
   initProvider(endpoint: string) {

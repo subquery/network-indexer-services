@@ -9,6 +9,8 @@ import { ServicesModule } from 'src/services/services.module';
 import { CoordinatorMetricsService } from './coordinator.metric.service';
 import { MetricEventListener } from './event.listener';
 import { metric, Metric } from './events';
+import { MetricsResolver } from './metrics.resolver';
+import { VersionsService } from './versions.service';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { metric, Metric } from './events';
   ],
   providers: [
     MetricEventListener,
+    VersionsService,
+    MetricsResolver,
     makeGaugeProvider({
       name: metric(Metric.CoordinatorDetails),
       help: 'details about indexer coordinator',
