@@ -15,6 +15,7 @@ import { VersionsService } from './versions.service';
 @Module({
   imports: [
     PrometheusModule.register({
+      path: 'metrics',
       defaultMetrics: { enabled: false },
     }),
     AccountModule,
