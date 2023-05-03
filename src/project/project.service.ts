@@ -234,15 +234,22 @@ export class ProjectService {
     }
 
     const projectID = projectId(project.id);
+    // TODO: recover `purgeDB` feature
+    // if (advancedConfig.purgeDB) {
+    //   await this.db.dropDBSchema(schemaName(projectID));
+    //   const mmrFile = getMmrFile(this.getMmrPath(), id);
+    //   await this.docker.deleteFile(mmrFile);
+    // }
+
+    // HOTFIX: purge poi
+    const projectSchemaName = schemaName(projectID);
     if (advancedConfig.purgeDB) {
-      await this.db.dropDBSchema(schemaName(projectID));
-      const mmrFile = getMmrFile(this.getMmrPath(), id);
-      await this.docker.deleteFile(mmrFile);
+      await this.db.clearMMRoot(projectSchemaName, 15154679);
     }
 
     const templateItem = await this.configToTemplate(project, baseConfig, advancedConfig);
     try {
-      await this.db.createDBSchema(schemaName(projectID));
+      await this.db.createDBSchema(projectSchemaName);
       await generateDockerComposeFile(templateItem);
       await this.docker.up(templateItem.deploymentID);
     } catch (e) {
