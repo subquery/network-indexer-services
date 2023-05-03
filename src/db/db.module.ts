@@ -53,7 +53,7 @@ export class DB {
 
   public async clearMMRoot(name: string, blockHeight: number) {
     getLogger('docker').info('start purging mmrRoot...');
-    await this.dbClient.query(`UPDATE ${name}._poi SET mmrRoot = NULL WHERE id >= ${blockHeight}`);
+    await this.dbClient.query(`UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`);
     getLogger('docker').info('clear mmrRoot completed');
   }
 }
