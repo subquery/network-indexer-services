@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Module } from '@nestjs/common';
-import { makeGaugeProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { makeCounterProvider, makeGaugeProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 import { AccountModule } from 'src/account/account.module';
 import { ServicesModule } from 'src/services/services.module';
 import { CoordinatorMetricsService } from './coordinator.metric.service';
 import { MetricEventListener } from './event.listener';
-import { metric, Metric } from './events';
+import { Metric } from './events';
 import { MetricsResolver } from './metrics.resolver';
 import { VersionsService } from './versions.service';
 
@@ -26,9 +26,29 @@ import { VersionsService } from './versions.service';
     VersionsService,
     MetricsResolver,
     makeGaugeProvider({
-      name: metric(Metric.CoordinatorDetails),
-      help: 'details about indexer coordinator',
-      labelNames: ['coordinator_version', 'coordinator_balance'],
+      name: Metric.IndexerServicesVersions,
+      help: 'indexer services versions',
+      labelNames: ['coordinator_version', 'proxy_version'],
+    }),
+    makeGaugeProvider({
+      name: Metric.ProxyDockerStats,
+      help: 'indexer proxy docker stats',
+      labelNames: ['cpu_usage', 'memory_usage'],
+    }),
+    makeGaugeProvider({
+      name: Metric.CoordinatorDockerStats,
+      help: 'indexer coordinator docker stats',
+      labelNames: ['cpu_usage', 'memory_usage'],
+    }),
+    makeGaugeProvider({
+      name: Metric.DbDockerStats,
+      help: 'postgres database docker stats',
+      labelNames: ['cpu_usage', 'memory_usage'],
+    }),
+    makeCounterProvider({
+      name: Metric.IndexerQueriesServed,
+      help: 'indexer queries served',
+      labelNames: ['queries'],
     }),
     CoordinatorMetricsService,
   ],

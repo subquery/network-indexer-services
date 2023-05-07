@@ -8,15 +8,23 @@ export function metric(name: string): string {
 }
 
 export enum Metric {
-  CoordinatorDetails = 'coordinator_details',
+  IndexerServicesVersions = 'services_details',
+  ProxyDockerStats = 'proxy_docker_stats',
+  CoordinatorDockerStats = 'coordinator_docker_stats',
+  DbDockerStats = 'db_docker_stats',
+  IndexerQueriesServed = 'indexer_queries_served',
 }
 
-export enum SetMetricEvent {
-  CoordinatorBalance = 'coordinator_balance',
-  CoordinatorVersion = 'coordinator_version',
+export interface ServicesVersionsPayload {
+  coordinator_version: string;
+  proxy_version: string;
 }
 
-export interface EventPayload<T> {
-  value: T;
-  indexer: string;
+export interface DockerEventPayload {
+  cpu_usage: string;
+  memory_usage: string;
+}
+
+export interface IndexerQueriesPayload {
+  queriesServed: number;
 }
