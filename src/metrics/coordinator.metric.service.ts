@@ -62,11 +62,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
   // Function to fetch stats for a container
   public async fetchContainerStats(container: Docker.Container) {
     const stats = await container.stats({ stream: false });
-
-    // Calculate memory usage in bytes
     const memoryUsage = stats.memory_stats.usage;
-
-    // Calculate CPU usage in percentage
     const { cpu_stats, precpu_stats } = stats;
 
     const cpuDelta = cpu_stats.cpu_usage.total_usage - precpu_stats.cpu_usage.total_usage;
