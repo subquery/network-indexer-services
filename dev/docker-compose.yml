@@ -16,78 +16,78 @@ services:
       timeout: 5s
       retries: 5
 
-#   redis:
-#     image: redis:7-alpine
-#     container_name: indexer_cache
-#     ports:
-#       - 6379:6379
-#     environment:
-#       - ALLOW_EMPTY_PASSWORD=yes
-#     healthcheck:
-#       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+  redis:
+    image: redis:7-alpine
+    container_name: indexer_cache
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
 
-#   coordinator:
-#     # image: dev4mz/test4mz:0.1.1
-#     container_name: indexer_coordinator
-#     image: coordinator:latest
-#     build:
-#       context: ../
-#       dockerfile: Dockerfile
-#     ports:
-#       - 8000:8000
-#     depends_on:
-#       "postgres":
-#         condition: service_healthy
-#     restart: always
-#     volumes:
-#       - .projects:/usr/projects
-#       - /var/run/docker.sock:/var/run/docker.sock
-#     command:
-#       - --network=testnet
-#       - --postgres-host=postgres
-#       - --postgres-password=pos_z8X
-#       # use the same password in the db config
-#       - --postgres-port=5432
-#       - --mmrPath=/var/tmp
-#       - --use-prerelease
-#       - --port=8000
-#       - --debug
-#     healthcheck:
-#       test:
-#         [
-#           "CMD",
-#           "curl",
-#           "-i",
-#           "-X POST",
-#           "http://indexer_coordinator:8000/graphql",
-#           "-H 'Content-Type: application/json'",
-#           "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
-#         ]
-#       interval: 5s
-#       timeout: 5s
-#       retries: 5
+  coordinator:
+    # image: dev4mz/test4mz:0.1.1
+    container_name: indexer_coordinator
+    image: coordinator:latest
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    depends_on:
+      "postgres":
+        condition: service_healthy
+    restart: always
+    volumes:
+      - .projects:/usr/projects
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --network=kepler
+      - --postgres-host=postgres
+      - --postgres-password=pos_z8X
+      # use the same password in the db config
+      - --postgres-port=5432
+      - --mmrPath=/var/tmp
+      - --use-prerelease
+      - --port=8000
+      - --debug
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-i",
+          "-X POST",
+          "http://indexer_coordinator:8000/graphql",
+          "-H 'Content-Type: application/json'",
+          "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-#   proxy:
-#     image: onfinality/subql-indexer-proxy:latest
-#     container_name: indexer_proxy
-#     ports:
-#       - 8001:8001
-#     depends_on:
-#       "coordinator":
-#         condition: service_healthy
-#     restart: always
-#     command:
-#       - --port=8001
-#       - --auth
-#       - --debug
-#       - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
-#       - --network=testnet
-#       - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
-#       - --redis-endpoint=redis://indexer_cache
-#       - --token-duration=8 # query auth token validity [hours]
-#       - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
-#       - --service-url=http://indexer_coordinator:8000
-#       - --bootstrap=/ip4/210.55.152.69/tcp/7370
-# networks:
-#   default:
-#     name: indexer_services
+  proxy:
+    image: onfinality/subql-indexer-proxy:latest
+    container_name: indexer_proxy
+    ports:
+      - 8001:8001
+    depends_on:
+      "coordinator":
+        condition: service_healthy
+    restart: always
+    command:
+      - --port=8001
+      - --auth
+      - --debug
+      - --jwt-secret=vOVH6sdmpNWjRRIqCc7rdxs
+      - --network=testnet
+      - --network-endpoint=https://moonbeam-alpha.api.onfinality.io/public
+      - --redis-endpoint=redis://indexer_cache
+      - --token-duration=8 # query auth token validity [hours]
+      - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
+      - --service-url=http://indexer_coordinator:8000
+      - --bootstrap=/ip4/210.55.152.69/tcp/7370
+networks:
+  default:
+    name: indexer_services
