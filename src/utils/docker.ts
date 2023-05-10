@@ -29,6 +29,10 @@ export type TemplateType = {
   memory: number;
 };
 
+export function bytesToMegabytes(bytes: number): number {
+  return bytes / (1024 * 1024);
+}
+
 export function projectId(cid: string): string {
   return cid.substring(0, 15).toLowerCase();
 }

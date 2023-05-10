@@ -22,8 +22,6 @@ export class MetricEventListener {
     private indexerQueriesServed: Gauge<string>,
   ) {}
 
-  //TODO: serviceDetailsVersions event handler
-
   @OnEvent(Metric.IndexerServicesVersions)
   async handleIndexerVersions({ coordinator_version, proxy_version }: ServicesVersionsPayload) {
     this.serviceDetails.labels({ coordinator_version, proxy_version }).set(1);
