@@ -7,6 +7,14 @@ export function metric(name: string): string {
   return `${metricPrefix}_${name}`;
 }
 
+export function cpuMetric(metric: Metric): string {
+  return `${metric}_cpu`;
+}
+
+export function memoryMetric(metric: Metric): string {
+  return `${metric}_memory`;
+}
+
 export enum Metric {
   IndexerServicesVersions = 'services_details',
   ProxyDockerStats = 'proxy_docker_stats',

@@ -4,20 +4,34 @@
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
-import { DockerEventPayload, IndexerQueriesPayload, Metric, ServicesVersionsPayload } from './events';
+import { DockerEventPayload, Metric, ServicesVersionsPayload } from './events';
 import { Injectable } from '@nestjs/common';
+
+export function cpuMetric(metric: Metric): string {
+  return `${metric}_cpu`;
+}
+
+export function memoryMetric(metric: Metric): string {
+  return `${metric}_memory`;
+}
 
 @Injectable()
 export class MetricEventListener {
   constructor(
     @InjectMetric(Metric.IndexerServicesVersions)
     private serviceDetails: Gauge<string>,
-    @InjectMetric(Metric.ProxyDockerStats)
-    private proxyDockerStats: Gauge<string>,
-    @InjectMetric(Metric.CoordinatorDockerStats)
-    private coordinatorDockerStats: Gauge<string>,
-    @InjectMetric(Metric.DbDockerStats)
-    private dbDockerStats: Gauge<string>,
+    @InjectMetric(memoryMetric(Metric.ProxyDockerStats))
+    private proxyDockerMemory: Gauge<string>,
+    @InjectMetric(cpuMetric(Metric.ProxyDockerStats))
+    private proxyDockerCpu: Gauge<string>,
+    @InjectMetric(memoryMetric(Metric.CoordinatorDockerStats))
+    private coordinatorDockerMemory: Gauge<string>,
+    @InjectMetric(cpuMetric(Metric.CoordinatorDockerStats))
+    private coordinatorDockerCpu: Gauge<string>,
+    @InjectMetric(memoryMetric(Metric.DbDockerStats))
+    private dbDockerMemory: Gauge<string>,
+    @InjectMetric(cpuMetric(Metric.DbDockerStats))
+    private dbDockerCpu: Gauge<string>,
     @InjectMetric(Metric.IndexerQueriesServed)
     private indexerQueriesServed: Gauge<string>,
   ) {}
@@ -28,22 +42,33 @@ export class MetricEventListener {
   }
 
   @OnEvent(Metric.ProxyDockerStats)
-  async handleCoordinatorStats({ cpu_usage, memory_usage }: DockerEventPayload) {
-    this.proxyDockerStats.labels({ cpu_usage, memory_usage }).set(1);
+  async handleProxyStats({ cpu_usage, memory_usage }: DockerEventPayload) {
+    this.handleDockerStats(this.proxyDockerCpu, this.proxyDockerMemory, cpu_usage, memory_usage);
   }
 
   @OnEvent(Metric.CoordinatorDockerStats)
-  async handleProxyStats({ cpu_usage, memory_usage }: DockerEventPayload) {
-    this.coordinatorDockerStats.labels({ cpu_usage, memory_usage }).set(1);
+  async handleCoordinatorStats({ cpu_usage, memory_usage }: DockerEventPayload) {
+    this.handleDockerStats(this.coordinatorDockerCpu, this.coordinatorDockerMemory, cpu_usage, memory_usage);
   }
 
   @OnEvent(Metric.DbDockerStats)
   async handleDbStats({ cpu_usage, memory_usage }: DockerEventPayload) {
-    this.dbDockerStats.labels({ cpu_usage, memory_usage }).set(1);
+    this.handleDockerStats(this.dbDockerCpu, this.dbDockerMemory, cpu_usage, memory_usage);
   }
 
-  @OnEvent(Metric.IndexerQueriesServed)
-  async handleIndexerQueriesServed({ queriesServed }: IndexerQueriesPayload) {
-    this.indexerQueriesServed.labels({ queriesServed }).set(1);
+  //TODO: add this
+  // @OnEvent(Metric.IndexerQueriesServed)
+  // async handleIndexerQueriesServed({ queriesServed }: IndexerQueriesPayload) {
+  //   this.indexerQueriesServed.labels({ queriesServed }).set(1);
+  // }
+
+  private handleDockerStats(
+    cpuGauge: Gauge<string>,
+    memoryGauge: Gauge<string>,
+    cpu_usage: string,
+    memory_usage: string,
+  ) {
+    cpuGauge.set(parseFloat(cpu_usage));
+    memoryGauge.set(parseFloat(memory_usage));
   }
 }
