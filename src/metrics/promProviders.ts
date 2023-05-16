@@ -39,8 +39,8 @@ export const PrometheusProviders = [
     name: memoryMetric(Metric.DbDockerStats),
     help: 'Postgres database memory usage (MB)',
   }),
-  makeCounterProvider({
-    name: Metric.IndexerQueriesServed,
-    help: 'Indexer queries served',
-  }),
+  // makeCounterProvider({
+  //   name: Metric.IndexerQueriesServed,
+  //   help: 'Indexer queries served',
+  // }),
 ];
