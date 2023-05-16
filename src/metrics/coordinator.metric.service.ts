@@ -37,8 +37,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
       const container = docker.getContainer(containerInfo.Id);
       const data = await container.inspect();
 
-      const parts = data.Config.Image.split(':');
-      const image = parts[0];
+      const [image] = data.Config.Image.split(':');
       const metric = this.getDockerMetricEnum(image);
       if (metric) {
         const stats = await this.fetchContainerStats(container);
@@ -75,18 +74,17 @@ export class CoordinatorMetricsService implements OnModuleInit {
       const container = docker.getContainer(containerInfo.Id);
       const data = await container.inspect();
 
-      const parts = data.Config.Image.split(':');
-      const image = parts[0];
+      const [image, tag] = data.Config.Image.split(':');
 
-      if (image === 'onfinality/subql-coordinator' && parts[1]) {
+      if (image === 'onfinality/subql-coordinator' && tag) {
         this.eventEmitter.emit(Metric.CoordinatorVersion, {
-          coordinator_version: parts[1],
+          coordinator_version: tag,
         });
       }
 
-      if (image === 'onfinality/subql-indexer-proxy' && parts[1]) {
+      if (image === 'onfinality/subql-indexer-proxy' && tag) {
         this.eventEmitter.emit(Metric.ProxyVersion, {
-          proxy_version: parts[1],
+          proxy_version: tag,
         });
       }
     }
