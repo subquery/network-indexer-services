@@ -4,7 +4,7 @@
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
-import { DockerEventPayload, Metric, ServicesVersionsPayload } from './events';
+import { DockerEventPayload, Metric } from './events';
 import { Injectable } from '@nestjs/common';
 
 export function cpuMetric(metric: Metric): string {
@@ -18,8 +18,10 @@ export function memoryMetric(metric: Metric): string {
 @Injectable()
 export class MetricEventListener {
   constructor(
-    @InjectMetric(Metric.IndexerServicesVersions)
-    private serviceDetails: Gauge<string>,
+    @InjectMetric(Metric.CoordinatorVersion)
+    private coordinatorVersion: Gauge<string>,
+    @InjectMetric(Metric.ProxyVersion)
+    private proxyVersion: Gauge<string>,
     @InjectMetric(memoryMetric(Metric.ProxyDockerStats))
     private proxyDockerMemory: Gauge<string>,
     @InjectMetric(cpuMetric(Metric.ProxyDockerStats))
@@ -36,9 +38,14 @@ export class MetricEventListener {
     private indexerQueriesServed: Gauge<string>,
   ) {}
 
-  @OnEvent(Metric.IndexerServicesVersions)
-  async handleIndexerVersions({ coordinator_version, proxy_version }: ServicesVersionsPayload) {
-    this.serviceDetails.labels({ coordinator_version, proxy_version }).set(1);
+  @OnEvent(Metric.CoordinatorVersion)
+  async handleCoordinatorVersions({ coordinator_version }: { coordinator_version: string }) {
+    this.coordinatorVersion.labels({ coordinator_version }).set(1);
+  }
+
+  @OnEvent(Metric.ProxyVersion)
+  async handleProxyVersion({ proxy_version }: { proxy_version: string }) {
+    this.proxyVersion.labels({ proxy_version }).set(1);
   }
 
   @OnEvent(Metric.ProxyDockerStats)
@@ -56,11 +63,10 @@ export class MetricEventListener {
     this.handleDockerStats(this.dbDockerCpu, this.dbDockerMemory, cpu_usage, memory_usage);
   }
 
-  //TODO: add this
-  // @OnEvent(Metric.IndexerQueriesServed)
-  // async handleIndexerQueriesServed({ queriesServed }: IndexerQueriesPayload) {
-  //   this.indexerQueriesServed.labels({ queriesServed }).set(1);
-  // }
+  @OnEvent(Metric.IndexerQueriesServed)
+  async handleIndexerQueriesServed({ queriesServed }: { queriesServed: number }) {
+    this.indexerQueriesServed.set(queriesServed);
+  }
 
   private handleDockerStats(
     cpuGauge: Gauge<string>,

@@ -6,36 +6,41 @@ import { Metric, cpuMetric, memoryMetric } from './events';
 
 export const PrometheusProviders = [
   makeGaugeProvider({
-    name: Metric.IndexerServicesVersions,
-    help: 'indexer services versions',
-    labelNames: ['coordinator_version', 'proxy_version'],
+    name: Metric.CoordinatorVersion,
+    help: 'Indexer Coordinator version',
+    labelNames: ['coordinator_version'],
+  }),
+  makeGaugeProvider({
+    name: Metric.ProxyVersion,
+    help: 'Indexer Proxy version',
+    labelNames: ['proxy_version'],
   }),
   makeGaugeProvider({
     name: cpuMetric(Metric.ProxyDockerStats),
-    help: 'indexer proxy cpu docker stats',
+    help: 'Indexer proxy cpu usage (%)',
   }),
   makeGaugeProvider({
     name: memoryMetric(Metric.ProxyDockerStats),
-    help: 'indexer proxy memory docker stats',
+    help: 'Indexer proxy memory usage (MB)',
   }),
   makeGaugeProvider({
     name: cpuMetric(Metric.CoordinatorDockerStats),
-    help: 'indexer coordinator cpu docker stats',
+    help: 'Indexer coordinator cpu usage (%)',
   }),
   makeGaugeProvider({
     name: memoryMetric(Metric.CoordinatorDockerStats),
-    help: 'indexer coordinator memory docker stats',
+    help: 'Indexer coordinator memory usage (MB)',
   }),
   makeGaugeProvider({
     name: cpuMetric(Metric.DbDockerStats),
-    help: 'postgres database cpu docker stats',
+    help: 'Postgres database cpu usage (%)',
   }),
   makeGaugeProvider({
     name: memoryMetric(Metric.DbDockerStats),
-    help: 'postgres database memory docker stats',
+    help: 'Postgres database memory usage (MB)',
   }),
   makeCounterProvider({
     name: Metric.IndexerQueriesServed,
-    help: 'indexer queries served',
+    help: 'Indexer queries served',
   }),
 ];

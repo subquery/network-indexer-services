@@ -16,23 +16,15 @@ export function memoryMetric(metric: Metric): string {
 }
 
 export enum Metric {
-  IndexerServicesVersions = 'services_details',
+  CoordinatorVersion = 'coordinator_version',
+  ProxyVersion = 'proxy_version',
   ProxyDockerStats = 'proxy_docker_stats',
   CoordinatorDockerStats = 'coordinator_docker_stats',
   DbDockerStats = 'db_docker_stats',
   IndexerQueriesServed = 'indexer_queries_served',
 }
 
-export interface ServicesVersionsPayload {
-  coordinator_version: string;
-  proxy_version: string;
-}
-
 export interface DockerEventPayload {
   cpu_usage: string;
   memory_usage: string;
-}
-
-export interface IndexerQueriesPayload {
-  queriesServed: number;
 }
