@@ -1,0 +1,1 @@
+yarn start:prod --postgres-host localhost --network testnet --ws-endpoint https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78 --debug --dev --port 8007
