@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { isEmpty, values, isNull } from 'lodash';
+import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
 import { nodeContainer, queryContainer } from 'src/utils/docker';

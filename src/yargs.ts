@@ -26,7 +26,7 @@ export function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['testnet', 'kepler', 'mainnet'],
-      default: 'testnet',
+      default: 'kepler',
       group: Groups.coordinator,
     },
     'ws-endpoint': {
@@ -77,12 +77,6 @@ export function getYargsOption() {
       type: 'number',
       describe: 'The start port number for the indexer node',
       default: 3001,
-      group: Groups.node,
-    },
-    mmrPath: {
-      type: 'string',
-      describe: 'The local path to store the mmr data',
-      default: '/home/indexer-service',
       group: Groups.node,
     },
     'docker-network': {
