@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "1.0.4",
+  "version": "1.0.5-0",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -26,7 +26,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "start:cli": "node ./dist/main.js",
     "start:help": "yarn start:prod --help",
-    "start:testnet": "yarn start:prod --postgres-host localhost --debug --dev --port 8007",
+    "start:testnet": "sh ./scripts/start-testnet.sh",
+    "start:db": "docker-compose -f ./dev/docker-db.yml up -d",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up -d"
   },
