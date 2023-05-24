@@ -244,7 +244,7 @@ export class ProjectService {
     // HOTFIX: purge poi
     const projectSchemaName = schemaName(projectID);
     if (advancedConfig.purgeDB) {
-      await this.db.clearMMRoot(projectSchemaName, 15154679);
+      await this.db.clearMMRoot(projectSchemaName, 0);
     }
 
     const templateItem = await this.configToTemplate(project, baseConfig, advancedConfig);

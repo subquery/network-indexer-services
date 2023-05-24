@@ -26,7 +26,7 @@ export function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['testnet', 'kepler', 'mainnet'],
-      default: 'testnet',
+      default: 'kepler',
       group: Groups.coordinator,
     },
     'ws-endpoint': {
