@@ -4,16 +4,9 @@
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
-import { DockerEventPayload, Metric } from './events';
 import { Injectable } from '@nestjs/common';
 
-export function cpuMetric(metric: Metric): string {
-  return `${metric}_cpu`;
-}
-
-export function memoryMetric(metric: Metric): string {
-  return `${metric}_memory`;
-}
+import { DockerEventPayload, Metric, cpuMetric, memoryMetric } from './events';
 
 @Injectable()
 export class MetricEventListener {
