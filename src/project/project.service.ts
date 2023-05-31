@@ -13,7 +13,6 @@ import {
   composeFileExist,
   schemaName,
   generateDockerComposeFile,
-  getMmrFile,
   getServicePort,
   nodeEndpoint,
   projectContainers,
@@ -42,7 +41,6 @@ import {
   ProjectInfo,
   ProjectDetails,
 } from './project.model';
-import { getYargsOption } from 'src/yargs';
 import { ContractService } from 'src/services/contract.service';
 import { QueryService } from 'src/services/query.service';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from 'src/utils/queries';
@@ -68,12 +66,6 @@ export class ProjectService {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.ipfsClient = new IPFSClient(IPFS_URLS.project);
     this.restoreProjects();
-  }
-
-  /// get methods
-  getMmrPath() {
-    const { argv } = getYargsOption();
-    return argv['mmrPath'].replace(/\/$/, '');
   }
 
   async getProject(id: string): Promise<Project> {
@@ -205,7 +197,7 @@ export class ProjectService {
     const projectID = projectId(project.id);
 
     const postgres = this.config.postgres;
-    const mmrPath = this.getMmrPath();
+    const dockerNetwork = this.config.dockerNetwork;
 
     const item: TemplateType = {
       deploymentID: project.id,
@@ -213,7 +205,7 @@ export class ProjectService {
       projectID,
       servicePort,
       postgres,
-      mmrPath,
+      dockerNetwork,
       ...baseConfig,
       ...advancedConfig,
     };
@@ -232,15 +224,20 @@ export class ProjectService {
     }
 
     const projectID = projectId(project.id);
+    // TODO: recover `purgeDB` feature
+    // if (advancedConfig.purgeDB) {
+    //   await this.db.dropDBSchema(schemaName(projectID));
+    // }
+
+    // HOTFIX: purge poi
+    const projectSchemaName = schemaName(projectID);
     if (advancedConfig.purgeDB) {
-      await this.db.dropDBSchema(schemaName(projectID));
-      const mmrFile = getMmrFile(this.getMmrPath(), id);
-      await this.docker.deleteFile(mmrFile);
+      await this.db.clearMMRoot(projectSchemaName, 0);
     }
 
     const templateItem = await this.configToTemplate(project, baseConfig, advancedConfig);
     try {
-      await this.db.createDBSchema(schemaName(projectID));
+      await this.db.createDBSchema(projectSchemaName);
       await generateDockerComposeFile(templateItem);
       await this.docker.up(templateItem.deploymentID);
     } catch (e) {
@@ -289,10 +286,6 @@ export class ProjectService {
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
-
-    const mmrFile = getMmrFile(this.getMmrPath(), id);
-    getLogger('project').info(`remove mmr file: ${mmrFile}`);
-    await this.docker.deleteFile(mmrFile);
 
     // release port
     const port = getServicePort(project.queryEndpoint);

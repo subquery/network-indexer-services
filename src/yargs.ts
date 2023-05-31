@@ -26,14 +26,14 @@ export function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['testnet', 'kepler', 'mainnet'],
-      default: 'testnet',
+      default: 'kepler',
       group: Groups.coordinator,
     },
     'ws-endpoint': {
       type: 'string',
       describe: 'Specify wss endpoint for this network',
       demandOption: true,
-      default: 'https://rpc.ankr.com/polygon_mumbai',
+      default: 'https://polygon-rpc.com',
       group: Groups.coordinator,
     },
     'start-block': {
@@ -79,11 +79,11 @@ export function getYargsOption() {
       default: 3001,
       group: Groups.node,
     },
-    mmrPath: {
+    'docker-network': {
       type: 'string',
-      describe: 'The local path to store the mmr data',
-      default: '/home/indexer-service',
-      group: Groups.metrics,
+      describe: 'The default docker network',
+      default: 'indexer_services',
+      group: Groups.node,
     },
     'pushgateway-endpoint': {
       type: 'string',

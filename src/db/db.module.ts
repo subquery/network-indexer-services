@@ -50,6 +50,12 @@ export class DB {
     await this.dbClient.query(query);
     getLogger('docker').info(`drop db schema: ${name}`);
   }
+
+  public async clearMMRoot(name: string, blockHeight: number) {
+    getLogger('docker').info('start purging mmrRoot...');
+    await this.dbClient.query(`UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`);
+    getLogger('docker').info('clear mmrRoot completed');
+  }
 }
 
 @Global()

@@ -11,21 +11,21 @@ export class ProjectInfo {
   name: string;
   @Field()
   owner: string;
-  @Field()
+  @Field({ nullable: true })
   image: string;
-  @Field()
+  @Field({ nullable: true })
   description: string;
-  @Field()
+  @Field({ nullable: true })
   websiteUrl: string;
-  @Field()
+  @Field({ nullable: true })
   codeUrl: string;
-  @Field()
+  @Field({ nullable: true })
   version: string;
-  @Field()
+  @Field({ nullable: true })
   createdTimestamp: string;
-  @Field()
+  @Field({ nullable: true })
   updatedTimestamp: string;
-  @Field()
+  @Field({ nullable: true })
   metadata: string;
 }
 

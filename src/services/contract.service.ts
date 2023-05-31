@@ -103,7 +103,8 @@ export class ContractService {
       // send SQT
       const sqtBalance = await this.sdk.sqToken.balanceOf(wallet.address);
       if (!sqtBalance.eq(0)) {
-        const tx = await this.sdk.sqToken.connect(wallet).transfer(indexer, sqtBalance);
+        const overrides = await this.getOverrides();
+        const tx = await this.sdk.sqToken.connect(wallet).transfer(indexer, sqtBalance, overrides);
         await tx.wait(5);
       }
 
@@ -112,7 +113,7 @@ export class ContractService {
       const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
       const balance = await this.provider.getBalance(wallet.address);
       const value = balance.sub(tokenTransferGas);
-      const txToken = await wallet.sendTransaction({ to: indexer, value });
+      const txToken = await wallet.sendTransaction({ to: indexer, value, gasPrice });
       await txToken.wait(5);
 
       getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);

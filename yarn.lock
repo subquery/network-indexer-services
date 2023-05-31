@@ -3629,10 +3629,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-1.0.0.tgz#f11beaf9d60a00c8662c884b3a94bb8ea9bbeb2a"
-  integrity sha512-uMfR4CTp+HZdrjkYruH4nbeYyMXa28WoP+brhLa57ia1xvRx2GRD7zXRYycfjv/DonVl93KCcrOGOtGR9UTeDg==
+"@subql/indexer-admin@^1.0.1-7":
+  version "1.0.1-7"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-1.0.1-7.tgz#4ed3d515ea2b67fe84505ef76cab9b30cfee2092"
+  integrity sha512-1CEpfRqe2QI4+JJrHaGMZsRYqgVUoK4E6f1oROgH5Q/1U4FheG9rTKsW1x6jZqRoP8109ltNaodIY7j26wYEzg==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"

@@ -23,6 +23,7 @@ export interface IConfig {
   readonly dev: boolean;
   readonly secret: string;
   readonly startPort: number;
+  readonly dockerNetwork: string;
 }
 
 export class Config implements IConfig {
@@ -45,6 +46,7 @@ export class Config implements IConfig {
       dev: argv['dev'] as boolean,
       secret: argv['secret-key'],
       startPort: argv['start-port'],
+      dockerNetwork: argv['docker-network'],
       postgres,
     });
   }
@@ -81,6 +83,10 @@ export class Config implements IConfig {
 
   get startPort(): number {
     return this._config.startPort;
+  }
+
+  get dockerNetwork(): string {
+    return this._config.dockerNetwork;
   }
 }
 

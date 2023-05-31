@@ -20,7 +20,7 @@ export type TemplateType = {
   networkDictionary?: string;
   dbSchema: string;
   postgres: Postgres;
-  mmrPath: string;
+  dockerNetwork: string;
   worker: number;
   batchSize: number;
   timeout: number;
@@ -51,14 +51,6 @@ export function queryEndpoint(cid: string, port: number): string {
 
 export function getComposeFileDirectory(cid: string): string {
   return join('/usr', `projects/${cid}`);
-}
-
-export function getMmrPathDirectory(path: string, cid: string): string {
-  return join(path, `poi/${cid}`);
-}
-
-export function getMmrFile(path: string, cid: string): string {
-  return join(getMmrPathDirectory(path, cid), '.mmr');
 }
 
 export function getComposeFilePath(cid: string): string {
@@ -118,7 +110,6 @@ export async function configsWithNode({ id, poiEnabled }: { id: string; poiEnabl
 
 export async function generateDockerComposeFile(data: TemplateType) {
   createDirectory(getComposeFileDirectory(data.deploymentID));
-  createDirectory(getMmrPathDirectory(data.mmrPath, data.deploymentID));
 
   try {
     const config = await configsWithNode({ id: data.deploymentID, poiEnabled: data.poiEnabled });
