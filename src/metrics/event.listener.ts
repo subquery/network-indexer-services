@@ -27,8 +27,6 @@ export class MetricEventListener {
     private dbDockerMemory: Gauge<string>,
     @InjectMetric(cpuMetric(Metric.DbDockerStats))
     private dbDockerCpu: Gauge<string>,
-    @InjectMetric(Metric.IndexerQueriesServed)
-    private indexerQueriesServed: Gauge<string>,
   ) {}
 
   @OnEvent(Metric.CoordinatorVersion)
@@ -54,11 +52,6 @@ export class MetricEventListener {
   @OnEvent(Metric.DbDockerStats)
   async handleDbStats({ cpu_usage, memory_usage }: DockerEventPayload) {
     this.handleDockerStats(this.dbDockerCpu, this.dbDockerMemory, cpu_usage, memory_usage);
-  }
-
-  @OnEvent(Metric.IndexerQueriesServed)
-  async handleIndexerQueriesServed({ queriesServed }: { queriesServed: number }) {
-    this.indexerQueriesServed.set(queriesServed);
   }
 
   private handleDockerStats(

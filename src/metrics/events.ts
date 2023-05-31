@@ -13,7 +13,6 @@ export enum Metric {
   ProxyDockerStats = 'proxy_docker_stats',
   CoordinatorDockerStats = 'coordinator_docker_stats',
   DbDockerStats = 'db_docker_stats',
-  IndexerQueriesServed = 'indexer_queries_served',
 }
 
 export const metricNameMap: Record<Images, Metric> = {
