@@ -4,48 +4,42 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Metric } from './events';
+import { Images, Metric, metricNameMap } from './events';
 import Docker from 'dockerode';
 import { bytesToMegabytes } from 'src/utils/docker';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
-  constructor(protected eventEmitter: EventEmitter2) {}
+  private docker: Docker;
+  constructor(protected eventEmitter: EventEmitter2) {
+    this.docker = new Docker();
+  }
 
   onModuleInit() {
     this.pushServiceVersions();
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async handleCron() {
     await this.fetchAllContainersStats();
   }
 
-  private getDockerMetricEnum(imageName: string): Metric | undefined {
-    const metricNameMap: Record<string, Metric> = {
-      'onfinality/subql-indexer-proxy': Metric.ProxyDockerStats,
-      postgres: Metric.DbDockerStats,
-      'onfinality/subql-coordinator': Metric.CoordinatorDockerStats,
-    };
-    return metricNameMap[imageName];
-  }
-
   public async fetchAllContainersStats() {
-    const docker = new Docker();
-    const containers = await docker.listContainers({ all: false }); // { all : false } excludes stopped containers
+    // { all : false } excludes stopped containers
+    const containers = await this.docker.listContainers({ all: false });
     for (const containerInfo of containers) {
-      const container = docker.getContainer(containerInfo.Id);
+      const container = this.docker.getContainer(containerInfo.Id);
       const data = await container.inspect();
 
       const [image] = data.Config.Image.split(':');
-      const metric = this.getDockerMetricEnum(image);
-      if (metric) {
-        const stats = await this.fetchContainerStats(container);
-        this.eventEmitter.emit(metric, {
-          cpu_usage: stats.cpuUsage,
-          memory_usage: stats.memoryUsage,
-        });
-      }
+      const metric = metricNameMap[image as Images];
+      if (!metric) return;
+
+      const stats = await this.fetchContainerStats(container);
+      this.eventEmitter.emit(metric, {
+        cpu_usage: stats.cpuUsage,
+        memory_usage: stats.memoryUsage,
+      });
     }
   }
 
@@ -67,22 +61,21 @@ export class CoordinatorMetricsService implements OnModuleInit {
   }
 
   public async pushServiceVersions() {
-    const docker = new Docker();
-    const containers = await docker.listContainers({ all: false });
+    const containers = await this.docker.listContainers({ all: false });
 
     for (const containerInfo of containers) {
-      const container = docker.getContainer(containerInfo.Id);
+      const container = this.docker.getContainer(containerInfo.Id);
       const data = await container.inspect();
 
       const [image, tag] = data.Config.Image.split(':');
 
-      if (image === 'onfinality/subql-coordinator' && tag) {
+      if (image === Images.Coordinator && tag) {
         this.eventEmitter.emit(Metric.CoordinatorVersion, {
           coordinator_version: tag,
         });
       }
 
-      if (image === 'onfinality/subql-indexer-proxy' && tag) {
+      if (image === Images.Proxy && tag) {
         this.eventEmitter.emit(Metric.ProxyVersion, {
           proxy_version: tag,
         });
