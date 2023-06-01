@@ -5,6 +5,7 @@ export enum Images {
   Coordinator = 'onfinality/subql-coordinator',
   Proxy = 'onfinality/subql-indexer-proxy',
   Db = 'postgres',
+  Redis = 'redis',
 }
 
 export enum Metric {
@@ -13,17 +14,29 @@ export enum Metric {
   ProxyDockerStats = 'proxy_docker_stats',
   CoordinatorDockerStats = 'coordinator_docker_stats',
   DbDockerStats = 'db_docker_stats',
+  RedisDockerStats = 'redis_docker_stats',
 }
 
 export const metricNameMap: Record<Images, Metric> = {
   [Images.Coordinator]: Metric.CoordinatorDockerStats,
   [Images.Proxy]: Metric.ProxyDockerStats,
   [Images.Db]: Metric.DbDockerStats,
+  [Images.Redis]: Metric.DbDockerStats,
 };
+
+export enum ContainerStatus {
+  exit = 1,
+  dead,
+  paused,
+  restarting,
+  unhealthy,
+  healthy,
+}
 
 export interface DockerEventPayload {
   cpu_usage: string;
   memory_usage: string;
+  status: ContainerStatus;
 }
 
 const metricPrefix = 'subql_indexer';
@@ -38,4 +51,8 @@ export function cpuMetric(metric: Metric): string {
 
 export function memoryMetric(metric: Metric): string {
   return `${metric}_memory`;
+}
+
+export function statusMetric(metric: Metric): string {
+  return `${metric}_status`;
 }

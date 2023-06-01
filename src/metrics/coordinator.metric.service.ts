@@ -4,9 +4,10 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Images, Metric, metricNameMap } from './events';
+import { ContainerStatus, Images, Metric, metricNameMap } from './events';
 import Docker from 'dockerode';
 import { bytesToMegabytes } from 'src/utils/docker';
+import { debugLogger } from 'src/utils/logger';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
@@ -26,7 +27,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
 
   public async fetchAllContainersStats() {
     // { all : false } excludes stopped containers
-    const containers = await this.docker.listContainers({ all: false });
+    const containers = await this.docker.listContainers({ all: true });
     for (const containerInfo of containers) {
       const container = this.docker.getContainer(containerInfo.Id);
       const data = await container.inspect();
@@ -35,29 +36,62 @@ export class CoordinatorMetricsService implements OnModuleInit {
       const metric = metricNameMap[image as Images];
       if (!metric) return;
 
-      const stats = await this.fetchContainerStats(container);
+      const status = await this.fetchContainerStatus(data);
+      const stats = await this.fecthContainerCPUandMemoryUsage(container);
       this.eventEmitter.emit(metric, {
         cpu_usage: stats.cpuUsage,
         memory_usage: stats.memoryUsage,
+        status,
       });
     }
   }
 
-  // Function to fetch stats for a container
-  public async fetchContainerStats(container: Docker.Container) {
+  public fetchContainerStatus(data: Docker.ContainerInspectInfo): ContainerStatus {
+    const { Health, Restarting, ExitCode } = data.State;
+    const health = Health?.Status;
+
+    let status = ContainerStatus.healthy;
+    if (health && health === 'healthy') {
+      status = ContainerStatus.healthy;
+    } else if (Restarting) {
+      status = ContainerStatus.restarting;
+    } else if (!ExitCode) {
+      status = ContainerStatus.exit;
+    } else if (health && health === 'unhealthy') {
+      status = ContainerStatus.unhealthy;
+    }
+
+    debugLogger('metric', `Container ${data.Name} status: ${status}`);
+
+    return status;
+  }
+
+  public async fecthContainerCPUandMemoryUsage(container: Docker.Container) {
     const stats = await container.stats({ stream: false });
-    const memoryUsage = stats.memory_stats.usage;
+
     const { cpu_stats, precpu_stats } = stats;
+    const { total_usage: currTotalUsage } = cpu_stats.cpu_usage;
+    const { total_usage: preTotalUsage } = precpu_stats.cpu_usage;
+    const { system_cpu_usage: currSystemUsage } = cpu_stats;
+    const { system_cpu_usage: preSystemUsage } = precpu_stats;
 
-    const cpuDelta = cpu_stats.cpu_usage.total_usage - precpu_stats.cpu_usage.total_usage;
-    const systemDelta = cpu_stats.system_cpu_usage - precpu_stats.system_cpu_usage;
-    const cpuUsagePercentage = (cpuDelta / systemDelta) * 100;
+    let cpuUsage = 0;
+    if (currTotalUsage && preSystemUsage) {
+      // TODO: is it necessary to calculate cpu usage by delta?
+      const cpuDelta = Math.abs(currTotalUsage - preTotalUsage);
+      const systemDelta = Math.abs(currSystemUsage - preSystemUsage);
+      cpuUsage = (cpuDelta / systemDelta) * 100;
+    }
 
-    return {
-      id: container.id,
-      memoryUsage: bytesToMegabytes(memoryUsage),
-      cpuUsage: cpuUsagePercentage,
-    };
+    let memoryUsage = 0;
+    const { usage: _memoryUsage } = stats.memory_stats;
+    if (_memoryUsage) {
+      memoryUsage = bytesToMegabytes(stats.memory_stats.usage);
+    }
+
+    console.log(`container ${container.id} cpu: ${cpuUsage} | memory: ${memoryUsage}`);
+
+    return { id: container.id, memoryUsage, cpuUsage };
   }
 
   public async pushServiceVersions() {
