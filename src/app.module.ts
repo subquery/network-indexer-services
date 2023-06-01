@@ -21,9 +21,13 @@ import { ProjectModule } from './project/project.module';
 import { PaygModule } from './payg/payg.module';
 import { ChainModule } from './chain/chain.module';
 import { DBModule } from './db/db.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: argv(PostgresKeys.host) as string,

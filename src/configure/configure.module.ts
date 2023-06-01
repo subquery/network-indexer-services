@@ -26,8 +26,6 @@ export interface IConfig {
   readonly dockerNetwork: string;
 }
 
-// const default_pushgateway = 'https://pushgateway-kong-dev.onfinality.me';
-
 export class Config implements IConfig {
   public static fromArgs(): Config {
     const { argv } = getYargsOption();

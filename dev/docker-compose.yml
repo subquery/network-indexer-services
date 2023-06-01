@@ -27,7 +27,6 @@ services:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
 
   coordinator:
-    # image: dev4mz/test4mz:0.1.1
     container_name: indexer_coordinator
     image: coordinator:latest
     build:
