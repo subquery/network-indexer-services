@@ -7,7 +7,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContainerStatus, Images, Metric, metricNameMap } from './events';
 import Docker from 'dockerode';
 import { bytesToMegabytes } from 'src/utils/docker';
-import { debugLogger } from 'src/utils/logger';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
