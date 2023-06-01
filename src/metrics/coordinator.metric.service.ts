@@ -76,7 +76,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     const { system_cpu_usage: preSystemUsage } = precpu_stats;
 
     let cpuUsage = 0;
-    if (currTotalUsage && preSystemUsage) {
+    if (currSystemUsage && preSystemUsage) {
       // TODO: is it necessary to calculate cpu usage by delta?
       const cpuDelta = Math.abs(currTotalUsage - preTotalUsage);
       const systemDelta = Math.abs(currSystemUsage - preSystemUsage);
