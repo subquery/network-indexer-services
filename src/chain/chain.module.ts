@@ -4,12 +4,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ServicesModule } from 'src/services/services.module';
-import { DBModule } from 'src/db/db.module';
+import { DBModule } from '../db/db.module';
+import { MetricsModule } from '../metrics/metrics.module';
+import { ServicesModule } from '../services/services.module';
 
-import { ChainService } from './chain.service';
 import { Chain } from './chain.model';
-import { MetricsModule } from 'src/metrics/metrics.module';
+import { ChainService } from './chain.service';
 
 @Module({
   imports: [ServicesModule, DBModule, MetricsModule, TypeOrmModule.forFeature([Chain])],

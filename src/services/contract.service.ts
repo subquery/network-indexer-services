@@ -1,26 +1,25 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BigNumber, Overrides } from 'ethers';
-import { parseEther } from 'ethers/lib/utils';
-import { ChainID } from './../utils/contractSDK';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { isValidPrivate, toBuffer } from 'ethereumjs-util';
-import { Wallet, providers } from 'ethers';
-import { isEmpty } from 'lodash';
+import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
+import { isValidPrivate, toBuffer } from 'ethereumjs-util';
+import { BigNumber, Overrides } from 'ethers';
+import { Wallet, providers } from 'ethers';
+import { parseEther } from 'ethers/lib/utils';
+import { isEmpty } from 'lodash';
+import { Repository } from 'typeorm';
 
-import { AccountService } from 'src/account/account.service';
-import { Config } from 'src/configure/configure.module';
-import { initContractSDK, networkToChainID } from 'src/utils/contractSDK';
-import { decrypt } from 'src/utils/encrypt';
-import { debugLogger, getLogger } from 'src/utils/logger';
+import { Controller } from '../account/account.model';
+import { AccountService } from '../account/account.service';
+import { Config } from '../configure/configure.module';
+import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
+import { decrypt } from '../utils/encrypt';
+import { debugLogger, getLogger } from '../utils/logger';
 
 import { DeploymentStatus, IndexingStatus } from './types';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Controller } from 'src/account/account.model';
 
 @Injectable()
 export class ContractService {
@@ -120,7 +119,7 @@ export class ContractService {
 
       return true;
     } catch (e) {
-      getLogger('contract').warn(`Fail to transfer all funds from controller to indexer ${e}`);
+      getLogger('contract').warn(e,`Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
@@ -177,7 +176,7 @@ export class ContractService {
       );
       return { status, blockHeight };
     } catch (e) {
-      getLogger('contract').error(`failed to get indexing status for project: ${id} ${e}`);
+      getLogger('contract').error(e,`failed to get indexing status for project: ${id}`);
       return this.emptyDeploymentStatus;
     }
   }

@@ -4,14 +4,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ServicesModule } from 'src/services/services.module';
-import { SubscriptionModule } from 'src/subscription/subscription.module';
-import { PaygEntity } from 'src/project/project.model';
-import { AccountModule } from 'src/account/account.module';
+import { AccountModule } from '../account/account.module';
+import { PaygEntity } from '../project/project.model';
+import { ServicesModule } from '../services/services.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
-import { PaygService } from './payg.service';
-import { PaygResolver } from './payg.resolver';
 import { ChainInfo, Channel, ChannelLabor } from './payg.model';
+import { PaygResolver } from './payg.resolver';
+import { PaygService } from './payg.service';
 
 @Module({
   imports: [

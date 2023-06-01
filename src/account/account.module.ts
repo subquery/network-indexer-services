@@ -1,15 +1,15 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ServicesModule } from 'src/services/services.module';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServicesModule } from '../services/services.module';
 
-import { SubscriptionModule } from 'src/subscription/subscription.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
-import { AccountService } from './account.service';
-import { AccountResolver } from './account.resolver';
 import { Indexer, Controller } from './account.model';
+import { AccountResolver } from './account.resolver';
+import { AccountService } from './account.service';
 
 @Module({
   imports: [

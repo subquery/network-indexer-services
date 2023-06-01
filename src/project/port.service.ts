@@ -1,21 +1,22 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
 import portfinder from 'portfinder';
+import {Repository} from 'typeorm';
 
-import { debugLogger } from 'src/utils/logger';
+import {Config} from '../configure/configure.module';
+import {getServicePort} from '../utils/docker';
+import {debugLogger} from '../utils/logger';
 
-import { ProjectEntity } from './project.model';
-import { Config } from 'src/configure/configure.module';
-import { getServicePort } from 'src/utils/docker';
+import {ProjectEntity} from './project.model';
 
 @Injectable()
 export class PortService {
   private ports: number[];
   private defaultStartPort: number;
+
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private config: Config,
@@ -23,23 +24,25 @@ export class PortService {
     this.defaultStartPort = config.startPort;
     portfinder.setBasePort(config.startPort);
 
-    this.getUsedPorts().then((ports) => {
+    void this.getUsedPorts().then((ports) => {
       this.ports = ports;
-      debugLogger('project', `Used ports: ${this.ports}`);
+      debugLogger('project', `Used ports: ${this.ports.join(',')}`);
     });
   }
 
   async getAvailablePort(): Promise<number> {
     let port: number;
     let startPort = this.defaultStartPort;
-    while (true) {
-      port = await portfinder.getPortPromise({ port: startPort });
+    for (let i = 0; i < 10; i++) {
+      const _port = await portfinder.getPortPromise({port: startPort});
       if (this.ports.includes(port)) {
-        startPort++;
+        startPort = _port+1;
       } else {
+        port = _port;
         break;
       }
     }
+    if (!port) throw new Error(`can not find available port`);
 
     debugLogger('node', `next port: ${port}`);
     this.addPort(port);
@@ -52,7 +55,7 @@ export class PortService {
     if (projects.length === 0) return [];
 
     return projects
-      .map(({ queryEndpoint }) => getServicePort(queryEndpoint))
+      .map(({queryEndpoint}) => getServicePort(queryEndpoint))
       .filter((p) => typeof p === 'number');
   }
 

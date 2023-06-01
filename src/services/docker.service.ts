@@ -1,12 +1,12 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import {exec} from 'child_process';
 import * as fs from 'fs';
-import { exec } from 'child_process';
-import { Injectable } from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 
-import { getLogger } from 'src/utils/logger';
-import { getComposeFilePath, getImageVersion, projectContainers, projectId } from 'src/utils/docker';
+import {getComposeFilePath, getImageVersion, projectContainers, projectId} from '../utils/docker';
+import {getLogger} from '../utils/logger';
 
 @Injectable()
 export class DockerService {
@@ -26,16 +26,15 @@ export class DockerService {
     try {
       return this.execute(`docker start ${containers.join(' ')}`);
     } catch (e) {
-      getLogger('docker').error(`failed to restart the containers: ${e}`);
+      getLogger('docker').error(e,`failed to restart the containers`);
     }
   }
 
   async stop(containers: string[]): Promise<string> {
     try {
-      const result = await this.execute(`docker stop ${containers.join(' ')}`);
-      return result;
+      return await this.execute(`docker stop ${containers.join(' ')}`);
     } catch (e) {
-      getLogger('docker').warn(`failed to stop the containers: ${e}`);
+      getLogger('docker').warn(e,`failed to stop the containers`);
     }
   }
 

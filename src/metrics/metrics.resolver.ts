@@ -3,8 +3,8 @@
 
 import { Query, Resolver } from '@nestjs/graphql';
 
-import { VersionsService } from './versions.service';
 import { VersionMetrics } from './metrics.model';
+import { VersionsService } from './versions.service';
 
 @Resolver(() => VersionMetrics)
 export class MetricsResolver {

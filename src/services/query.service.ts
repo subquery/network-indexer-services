@@ -5,10 +5,10 @@ import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
-import { nodeContainer, queryContainer } from 'src/utils/docker';
-import { debugLogger } from 'src/utils/logger';
-import { ZERO_BYTES32 } from 'src/utils/project';
-import { Project, MetadataType } from 'src/project/project.model';
+import { Project, MetadataType } from '../project/project.model';
+import { nodeContainer, queryContainer } from '../utils/docker';
+import { debugLogger } from '../utils/logger';
+import { ZERO_BYTES32 } from '../utils/project';
 
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
@@ -56,7 +56,7 @@ export class QueryService {
     }
   }
 
-  public async getQueryMetaData(id: string, endpoint: string): Promise<MetadataType> {
+  async getQueryMetaData(id: string, endpoint: string): Promise<MetadataType> {
     const { indexerStatus, queryStatus } = await this.servicesStatus(id);
     const queryBody = JSON.stringify({
       query: `{
@@ -104,7 +104,7 @@ export class QueryService {
     }
   }
 
-  public async getMmrRoot(id: string, endpoint: string, blockHeight: number): Promise<string> {
+  async getMmrRoot(id: string, endpoint: string, blockHeight: number): Promise<string> {
     const queryBody = JSON.stringify({
       query: `{
         _poi(id: ${blockHeight}) {
@@ -126,7 +126,7 @@ export class QueryService {
     }
   }
 
-  public async getLastPoi(id: string, endpoint: string): Promise<Poi> {
+  async getLastPoi(id: string, endpoint: string): Promise<Poi> {
     // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
@@ -174,7 +174,7 @@ export class QueryService {
     return this.getLastPoi(id, queryEndpoint);
   }
 
-  public async getReportPoi(project: Project): Promise<Poi> {
+  async getReportPoi(project: Project): Promise<Poi> {
     const { id } = project;
     try {
       const poi = await this.getValidPoi(project);
@@ -191,7 +191,7 @@ export class QueryService {
         `project: ${shortId} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
       );
     } catch (e) {
-      debugLogger('report', `failed to get report poi: ${e}`);
+      debugLogger('report', `failed to get report poi: ${String(e)}`);
     }
 
     return this.emptyPoi;

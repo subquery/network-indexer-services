@@ -17,4 +17,4 @@ async function bootstrap() {
     getLogger(LogCategory.coordinator).error(e, 'coordinator service failed');
   }
 }
-bootstrap();
+void bootstrap();

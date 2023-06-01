@@ -4,8 +4,8 @@
 import * as fs from 'fs';
 import { join } from 'path';
 import * as handlebars from 'handlebars';
-import { getLogger } from 'src/utils/logger';
-import { Postgres } from 'src/configure/configure.module';
+import { Postgres } from '../configure/configure.module';
+import { getLogger } from './logger';
 import { nodeConfigs } from './project';
 
 // move to types folder
@@ -118,7 +118,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
     fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ ...data, ...config }));
     getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
   } catch (e) {
-    getLogger('docker').error(`fail to generate new docker compose file for ${data.deploymentID}: ${e} `);
+    getLogger('docker').error(e,`fail to generate new docker compose file for ${data.deploymentID}`);
   }
 }
 

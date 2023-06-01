@@ -27,7 +27,7 @@ export interface IConfig {
 }
 
 export class Config implements IConfig {
-  public static fromArgs(): Config {
+  static fromArgs(): Config {
     const { argv } = getYargsOption();
 
     const postgres = {
@@ -41,9 +41,9 @@ export class Config implements IConfig {
     return new Config({
       network: argv['network'] as Network,
       wsEndpoint: argv['ws-endpoint'],
-      port: argv['port'] as number,
-      debug: argv['debug'] as boolean,
-      dev: argv['dev'] as boolean,
+      port: argv['port'] ,
+      debug: argv['debug'] ,
+      dev: argv['dev'] ,
       secret: argv['secret-key'],
       startPort: argv['start-port'],
       dockerNetwork: argv['docker-network'],

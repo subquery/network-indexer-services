@@ -4,9 +4,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ContainerStatus, Images, Metric, metricNameMap } from './events';
 import Docker from 'dockerode';
-import { bytesToMegabytes } from 'src/utils/docker';
+import { bytesToMegabytes } from '../utils/docker';
+import { ContainerStatus, Images, Metric, metricNameMap } from './events';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
@@ -16,7 +16,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.pushServiceVersions();
+    void this.pushServiceVersions();
   }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
@@ -24,7 +24,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     await this.fetchAllContainersStats();
   }
 
-  public async fetchAllContainersStats() {
+  async fetchAllContainersStats() {
     // { all : false } excludes stopped containers
     const containers = await this.docker.listContainers({ all: true });
     for (const containerInfo of containers) {
@@ -35,7 +35,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
       const metric = metricNameMap[image as Images];
       if (!metric) return;
 
-      const status = await this.fetchContainerStatus(data);
+      const status = this.fetchContainerStatus(data);
       const stats = await this.fecthContainerCPUandMemoryUsage(container);
       this.eventEmitter.emit(metric, {
         cpu_usage: stats.cpuUsage,
@@ -45,7 +45,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     }
   }
 
-  public fetchContainerStatus(data: Docker.ContainerInspectInfo): ContainerStatus {
+  fetchContainerStatus(data: Docker.ContainerInspectInfo): ContainerStatus {
     const { Health, Restarting, ExitCode } = data.State;
     const health = Health?.Status;
 
@@ -63,7 +63,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     return status;
   }
 
-  public async fecthContainerCPUandMemoryUsage(container: Docker.Container) {
+  async fecthContainerCPUandMemoryUsage(container: Docker.Container) {
     const stats = await container.stats({ stream: false });
 
     const { cpu_stats, precpu_stats } = stats;
@@ -89,7 +89,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     return { id: container.id, memoryUsage, cpuUsage };
   }
 
-  public async pushServiceVersions() {
+  async pushServiceVersions() {
     const containers = await this.docker.listContainers({ all: false });
 
     for (const containerInfo of containers) {
