@@ -1,8 +1,9 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { Repository, Connection } from 'typeorm';
+import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Connection, Repository } from 'typeorm';
 import { isEmpty } from 'lodash';
 import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
@@ -14,7 +15,7 @@ import { ZERO_BYTES32 } from 'src/utils/project';
 import { Project, ProjectEntity } from 'src/project/project.model';
 
 import { ContractService } from './contract.service';
-import { IndexingStatus, Transaction, TxFun } from './types';
+import { IndexingStatus, TxFun } from './types';
 import { QueryService } from './query.service';
 import { debugLogger } from '../utils/logger';
 import {
@@ -24,18 +25,22 @@ import {
 } from '@subql/network-query';
 import { Config } from 'src/configure/configure.module';
 
+const MAX_RETRY = 3;
+
+const logger = getLogger('transaction');
+
 @Injectable()
-export class NetworkService implements OnApplicationBootstrap {
+export class NetworkService {
   private sdk: ContractSDK;
   private client: GraphqlQueryClient;
-  private retryCount: number;
+  // private retryCount: number;
   private interval: number;
   private intervalTimer: NodeJS.Timer;
-  private failedTransactions: Transaction[];
+  // private failedTransactions: Transaction[];
   private expiredAgreements: { [key: number]: BigNumber };
 
   private defaultInterval = 14400000; // 4 hours
-  private defaultRetryCount = 3;
+  // private defaultRetryCount = 3;
   private batchSize = 20;
 
   private projectRepo: Repository<ProjectEntity>;
@@ -47,7 +52,7 @@ export class NetworkService implements OnApplicationBootstrap {
     private queryService: QueryService,
     private readonly config: Config,
   ) {
-    this.failedTransactions = [];
+    // this.failedTransactions = [];
     this.expiredAgreements = {};
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(ProjectEntity);
@@ -57,9 +62,9 @@ export class NetworkService implements OnApplicationBootstrap {
     return this.sdk;
   }
 
-  onApplicationBootstrap() {
-    this.periodicUpdateNetwork();
-  }
+  // onApplicationBootstrap() {
+  // this.periodicUpdateNetwork();
+  // }
 
   async getIndexingProjects() {
     const projects = await this.projectRepo.find();
@@ -77,23 +82,19 @@ export class NetworkService implements OnApplicationBootstrap {
     );
   }
 
-  async updateExpiredAgreements() {
-    try {
-      const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
-      for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
-        const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
-          agreementId,
-        );
+  private async updateExpiredAgreements() {
+    const indexer = await this.accountService.getIndexer();
+    const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
+    for (let i = 0; i < agreementCount.toNumber(); i++) {
+      const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
+      const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
+        agreementId,
+      );
 
-        if (agreementExpired) {
-          const id = agreementId.toNumber();
-          Object.assign(this.expiredAgreements, { [id]: agreementId });
-        }
+      if (agreementExpired) {
+        const id = agreementId.toNumber();
+        Object.assign(this.expiredAgreements, { [id]: agreementId });
       }
-    } catch {
-      getLogger('network').info('failed to update expired service agreements');
     }
   }
 
@@ -106,26 +107,37 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
+  async sendTransaction(actionName: string, txFun: TxFun, desc = '', retries = 0) {
     try {
-      getLogger('transaction').info(
-        `${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`,
-      );
+      logger.info(`${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
 
       const overrides = await this.contractService.getOverrides();
       const tx = await txFun(overrides);
       await tx.wait(10);
 
-      getLogger('transaction').info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
+      logger.info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
       return;
     } catch (e) {
-      this.failedTransactions.push({ name: actionName, txFun, desc });
-      getLogger('transaction').warn(`${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`);
+      // this.failedTransactions.push({ name: actionName, txFun, desc });
+      if (retries < MAX_RETRY) {
+        logger.warn(`${colorText(actionName)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
+        await this.sendTransaction(actionName, txFun, desc, retries + 1);
+      } else {
+        logger.warn(`${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)} : ${e}`);
+        throw e;
+      }
     }
   }
 
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
+    await this.checkControllerReady();
+    try {
+      await this.updateExpiredAgreements();
+    } catch {
+      getLogger('network').info('failed to update expired service agreements');
+    }
     if (Object.keys(this.expiredAgreements).length === 0) return;
 
     try {
@@ -150,8 +162,6 @@ export class NetworkService implements OnApplicationBootstrap {
     } catch {
       getLogger('network').info('failed to remove expired service agreements');
     }
-
-    await this.removeExpiredAgreements();
   }
 
   async reportIndexingService(project: Project) {
@@ -182,7 +192,9 @@ export class NetworkService implements OnApplicationBootstrap {
     );
   }
 
+  @Cron(CronExpression.EVERY_2_HOURS)
   async reportIndexingServiceActions() {
+    await this.checkControllerReady();
     const indexingProjects = await this.getIndexingProjects();
     if (isEmpty(indexingProjects)) return [];
 
@@ -320,7 +332,7 @@ export class NetworkService implements OnApplicationBootstrap {
     };
   }
 
-  networkActions() {
+  private networkActions() {
     return [
       this.updateEraNumberAction(),
       this.collectAndDistributeRewardsAction(),
@@ -330,51 +342,28 @@ export class NetworkService implements OnApplicationBootstrap {
     ];
   }
 
-  async sendTxs() {
+  private async checkControllerReady(): Promise<void> {
+    const isContractReady = await this.syncContractConfig();
+    if (!isContractReady) return;
+
+    const isBalanceSufficient = await this.contractService.hasSufficientBalance();
+    if (!isBalanceSufficient) {
+      getLogger('contract').warn(
+        'insufficient balance for the controller account, please top up your controller account ASAP.',
+      );
+      return;
+    }
+  }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async doNetworkActions() {
+    await this.checkControllerReady();
     try {
-      const isContractReady = await this.syncContractConfig();
-      if (!isContractReady) return;
-
-      const isBalanceSufficient = await this.contractService.hasSufficientBalance();
-      if (!isBalanceSufficient) {
-        getLogger('contract').warn(
-          'insufficient balance for the controller account, please top up your controller account ASAP.',
-        );
-        return;
+      for (const action of this.networkActions()) {
+        await action();
       }
-
-      const reportIndexingServiceActions = await this.reportIndexingServiceActions();
-      const networkActions = this.networkActions();
-      const actions = [...networkActions, ...reportIndexingServiceActions];
-
-      for (let i = 0; i < actions.length; i++) {
-        await actions[i]();
-      }
-
-      await this.updateExpiredAgreements();
-      await this.removeExpiredAgreements();
-
-      const txCount = this.failedTransactions.length;
-      if (txCount > 0) {
-        getLogger('network').info('resend failed transactions');
-      }
-
-      for (let i = 0; i < txCount; i++) {
-        const { name, txFun, desc } = this.failedTransactions[i];
-        await this.sendTransaction(name, txFun, desc);
-      }
-
-      this.failedTransactions = [];
     } catch (e) {
       debugLogger('network', `failed to update network: ${e}`);
-      getLogger('network').info(`retry to send transactions`);
-
-      this.failedTransactions = [];
-
-      if (this.retryCount !== 0) {
-        this.retryCount--;
-        await this.sendTxs();
-      }
     }
   }
 
@@ -388,34 +377,5 @@ export class NetworkService implements OnApplicationBootstrap {
     } catch {
       return this.defaultInterval;
     }
-  }
-
-  async updateInterval() {
-    const interval = await this.getInterval();
-    if (interval !== this.interval && this.intervalTimer) {
-      clearInterval(this.intervalTimer);
-      this.intervalTimer = undefined;
-
-      getLogger('network').info(`transactions interval change from ${this.interval} to ${interval}`);
-
-      this.interval = interval;
-      await this.periodicUpdateNetwork();
-    }
-  }
-
-  async periodicUpdateNetwork() {
-    if (!this.interval) {
-      this.interval = await this.getInterval();
-    }
-
-    getLogger('network').info(`transaction interval: ${this.interval}`);
-
-    await this.sendTxs();
-
-    this.intervalTimer = setInterval(async () => {
-      this.retryCount = this.defaultRetryCount;
-      await this.updateInterval();
-      await this.sendTxs();
-    }, this.interval);
   }
 }
