@@ -1,22 +1,22 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import crypto from 'crypto';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
-import { v4 as uuid } from 'uuid';
-import crypto from 'crypto';
-import { Wallet } from 'ethers';
-
-import { encrypt } from 'src/utils/encrypt';
-import { AccountEvent } from 'src/utils/subscription';
-import { SubscriptionService } from 'src/subscription/subscription.service';
-import { Config } from 'src/configure/configure.module';
-
-import { Repository } from 'typeorm';
-import { Indexer, Controller, AccountMetaDataType } from './account.model';
-import { ContractService } from 'src/services/contract.service';
 import { ContractSDK } from '@subql/contract-sdk';
+import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
+import { Wallet } from 'ethers';
+import { Repository } from 'typeorm';
+import { v4 as uuid } from 'uuid';
+
+import { Config } from '../configure/configure.module';
+import { ContractService } from '../services/contract.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { encrypt } from '../utils/encrypt';
+import { AccountEvent } from '../utils/subscription';
+
+import { Indexer, Controller, AccountMetaDataType } from './account.model';
 
 @Injectable()
 export class AccountService {
@@ -57,7 +57,7 @@ export class AccountService {
 
   async emitAccountChanged(): Promise<AccountMetaDataType> {
     const accountMeta = await this.getAccountMetadata();
-    this.pubSub.publish(AccountEvent.Indexer, { accountChanged: accountMeta });
+    await this.pubSub.publish(AccountEvent.Indexer, {accountChanged: accountMeta});
     return accountMeta;
   }
 
@@ -77,10 +77,11 @@ export class AccountService {
   }
 
   onAddControllerEvent() {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     this.contractService.getSdk().indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
       if (this.indexer !== indexer) return;
-      this.activeController(controller);
-      this.emitAccountChanged();
+      await this.activeController(controller);
+      await this.emitAccountChanged();
     });
   }
 

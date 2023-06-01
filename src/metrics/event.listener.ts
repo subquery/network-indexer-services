@@ -1,10 +1,10 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
-import { Injectable } from '@nestjs/common';
 
 import { ContainerStatus, DockerEventPayload, Metric, cpuMetric, memoryMetric, statusMetric } from './events';
 
@@ -38,17 +38,17 @@ export class MetricEventListener {
   ) {}
 
   @OnEvent(Metric.CoordinatorVersion)
-  async handleCoordinatorVersions({ coordinator_version }: { coordinator_version: string }) {
+  handleCoordinatorVersions({ coordinator_version }: { coordinator_version: string }) {
     this.coordinatorVersion.labels({ coordinator_version }).set(1);
   }
 
   @OnEvent(Metric.ProxyVersion)
-  async handleProxyVersion({ proxy_version }: { proxy_version: string }) {
+  handleProxyVersion({ proxy_version }: { proxy_version: string }) {
     this.proxyVersion.labels({ proxy_version }).set(1);
   }
 
   @OnEvent(Metric.ProxyDockerStats)
-  async handleProxyStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
+  handleProxyStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
     this.handleDockerStats(
       this.proxyDockerCpu,
       this.proxyDockerMemory,
@@ -60,7 +60,7 @@ export class MetricEventListener {
   }
 
   @OnEvent(Metric.CoordinatorDockerStats)
-  async handleCoordinatorStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
+  handleCoordinatorStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
     this.handleDockerStats(
       this.coordinatorDockerCpu,
       this.coordinatorDockerMemory,
@@ -72,7 +72,7 @@ export class MetricEventListener {
   }
 
   @OnEvent(Metric.DbDockerStats)
-  async handleDbStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
+  handleDbStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
     this.handleDockerStats(
       this.dbDockerCpu,
       this.dbDockerMemory,

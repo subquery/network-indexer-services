@@ -1,50 +1,50 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
-import { GraphqlQueryClient, IPFSClient, NETWORK_CONFIGS, IPFS_URLS } from '@subql/network-clients';
+import {Injectable} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS} from '@subql/network-clients';
+import {Not, Repository} from 'typeorm';
 
-import { Config } from 'src/configure/configure.module';
-import { debugLogger, getLogger } from 'src/utils/logger';
+import {AccountService} from '../account/account.service';
+import {Config} from '../configure/configure.module';
+import {DB} from '../db/db.module';
+
+import {ContractService} from '../services/contract.service';
+import {DockerService} from '../services/docker.service';
+import {QueryService} from '../services/query.service';
+import {IndexingStatus} from '../services/types';
+import {SubscriptionService} from '../subscription/subscription.service';
 import {
   canContainersRestart,
   composeFileExist,
-  schemaName,
+  configsWithNode,
   generateDockerComposeFile,
   getServicePort,
   nodeEndpoint,
   projectContainers,
   projectId,
   queryEndpoint,
+  schemaName,
   TemplateType,
-  configsWithNode,
-} from 'src/utils/docker';
-import { PortService } from './port.service';
-import { ProjectEvent } from 'src/utils/subscription';
-import { projectConfigChanged } from 'src/utils/project';
-import { IndexingStatus } from 'src/services/types';
-import { DockerService } from 'src/services/docker.service';
-import { SubscriptionService } from 'src/subscription/subscription.service';
-import { DB } from 'src/db/db.module';
-
+} from '../utils/docker';
+import {debugLogger, getLogger} from '../utils/logger';
+import {projectConfigChanged} from '../utils/project';
+import {GET_DEPLOYMENT, GET_INDEXER_PROJECTS} from '../utils/queries';
+import {ProjectEvent} from '../utils/subscription';
+import {PortService} from './port.service';
 import {
   LogType,
-  ProjectEntity,
-  Project,
-  ProjectBaseConfig,
-  ProjectAdvancedConfig,
   Payg,
   PaygConfig,
   PaygEntity,
-  ProjectInfo,
+  Project,
+  ProjectAdvancedConfig,
+  ProjectBaseConfig,
   ProjectDetails,
+  ProjectEntity,
+  ProjectInfo,
 } from './project.model';
-import { ContractService } from 'src/services/contract.service';
-import { QueryService } from 'src/services/query.service';
-import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from 'src/utils/queries';
-import { AccountService } from 'src/account/account.service';
 
 @Injectable()
 export class ProjectService {
@@ -65,7 +65,7 @@ export class ProjectService {
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.ipfsClient = new IPFSClient(IPFS_URLS.project);
-    this.restoreProjects();
+    void this.restoreProjects();
   }
 
   async getProject(id: string): Promise<Project> {
@@ -109,7 +109,7 @@ export class ProjectService {
       const p = projects.filter(({ status }) => status !== 'TERMINATED');
       await Promise.all(p.map(({ deploymentId }) => this.addProject(deploymentId)));
     } catch (e) {
-      debugLogger('project', `Failed to restore not terminated projects: ${e}`);
+      debugLogger('project', `Failed to restore not terminated projects: ${String(e)}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class ProjectService {
     });
 
     const projectPayg = this.paygRepo.create({ id: id.trim() });
-    this.paygRepo.save(projectPayg);
+    await this.paygRepo.save(projectPayg);
 
     return this.projectRepo.save(projectEntity);
   }
@@ -178,13 +178,10 @@ export class ProjectService {
     const isConfigChanged = projectConfigChanged(project, baseConfig, advancedConfig);
 
     if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
-      const restartedProject = await this.restartProject(id);
-      return restartedProject;
+      return await this.restartProject(id);
     }
 
-    const startedProject = await this.createAndStartProject(id, baseConfig, advancedConfig);
-
-    return startedProject;
+    return await this.createAndStartProject(id, baseConfig, advancedConfig);
   }
 
   async configToTemplate(
@@ -241,7 +238,7 @@ export class ProjectService {
       await generateDockerComposeFile(templateItem);
       await this.docker.up(templateItem.deploymentID);
     } catch (e) {
-      getLogger('project').info(`start project: ${e}`);
+      getLogger('project').warn(e,`start project`);
     }
 
     //TODO: remove this after confirm other chains suppor POI feature
@@ -253,7 +250,7 @@ export class ProjectService {
     project.status = IndexingStatus.INDEXING;
     project.chainType = config.chainType;
 
-    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: project});
     return this.projectRepo.save(project);
   }
 
@@ -265,14 +262,14 @@ export class ProjectService {
     }
 
     getLogger('project').info(`stop project: ${id}`);
-    this.docker.stop(projectContainers(id));
-    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    await this.docker.stop(projectContainers(id));
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: project});
     return this.updateProjectStatus(id, IndexingStatus.NOTINDEXING);
   }
 
   async restartProject(id: string) {
     getLogger('project').info(`restart project: ${id}`);
-    this.docker.start(projectContainers(id));
+    await this.docker.start(projectContainers(id));
     return this.updateProjectStatus(id, IndexingStatus.INDEXING);
   }
 
@@ -306,7 +303,7 @@ export class ProjectService {
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
 
-    this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: payg});
     return this.paygRepo.save(payg);
   }
 

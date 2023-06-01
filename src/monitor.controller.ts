@@ -29,12 +29,12 @@ export class MonitorController {
   proxies: Map<string, Proxy> = new Map();
 
   @Get()
-  async index() {
+  index() {
     return Array.from(this.proxies.values());
   }
 
   @Post()
-  async collect(@Body() proxy: Proxy) {
+  collect(@Body() proxy: Proxy) {
     this.proxies.set(proxy.peer, proxy);
     return;
   }

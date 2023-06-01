@@ -3,7 +3,7 @@
 
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { Client } from 'pg';
-import { getLogger } from 'src/utils/logger';
+import { getLogger } from '../utils/logger';
 import { getYargsOption, PostgresKeys } from '../yargs';
 
 export class DB {
@@ -20,12 +20,12 @@ export class DB {
     });
   }
 
-  public async connect(): Promise<void> {
+  async connect(): Promise<void> {
     await this.dbClient.connect();
     await this.createDBExtension();
   }
 
-  public async checkSchemaExist(name: string): Promise<boolean> {
+  async checkSchemaExist(name: string): Promise<boolean> {
     const query = `SELECT schema_name FROM information_schema.schemata WHERE schema_name = '${name}'`;
     try {
       const r = await this.dbClient.query(query);
@@ -35,23 +35,23 @@ export class DB {
     }
   }
 
-  public async createDBExtension() {
+  async createDBExtension() {
     await this.dbClient.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
     getLogger('db').info('Add btree_gist extension to db');
   }
 
-  public async createDBSchema(name: string) {
+  async createDBSchema(name: string) {
     await this.dbClient.query(`CREATE SCHEMA IF NOT EXISTS ${name}`);
     getLogger('docker').info(`create new db schema: ${name}`);
   }
 
-  public async dropDBSchema(name: string) {
+  async dropDBSchema(name: string) {
     const query = `DROP SCHEMA IF EXISTS ${name} CASCADE`;
     await this.dbClient.query(query);
     getLogger('docker').info(`drop db schema: ${name}`);
   }
 
-  public async clearMMRoot(name: string, blockHeight: number) {
+  async clearMMRoot(name: string, blockHeight: number) {
     getLogger('docker').info('start purging mmrRoot...');
     await this.dbClient.query(`UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`);
     getLogger('docker').info('clear mmrRoot completed');
@@ -62,15 +62,16 @@ export class DB {
 @Module({})
 export class DBModule {
   static register(): DynamicModule {
-    const db = new DB();
-    db.connect();
-
     return {
       module: DBModule,
       providers: [
         {
           provide: DB,
-          useValue: db,
+          useFactory: async ()=> {
+            const db = new DB();
+            await db.connect();
+            return db;
+          },
         },
       ],
       exports: [DB],

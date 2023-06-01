@@ -1,10 +1,10 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import yaml from 'js-yaml';
 import { IPFSClient } from '@subql/network-clients';
-import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from 'src/project/project.model';
+import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
+import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
 
 export function projectConfigChanged(
   project: Project,

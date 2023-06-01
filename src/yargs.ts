@@ -1,8 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 export enum Groups {
   coordinator = 'Indexer Coordinator',

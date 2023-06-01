@@ -3,11 +3,11 @@
 
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 
-import { AccountEvent } from 'src/utils/subscription';
-import { SubscriptionService } from 'src/subscription/subscription.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { AccountEvent } from '../utils/subscription';
 
-import { AccountService } from './account.service';
 import { AccountMetaDataType, Controller, Indexer } from './account.model';
+import { AccountService } from './account.service';
 
 @Resolver()
 export class AccountResolver {

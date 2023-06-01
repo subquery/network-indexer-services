@@ -2,27 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { Repository, Connection } from 'typeorm';
-import { isEmpty } from 'lodash';
-import { BigNumber } from 'ethers';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
-
-import { colorText, getLogger, TextColor } from 'src/utils/logger';
-import { AccountService } from 'src/account/account.service';
-import { ZERO_BYTES32 } from 'src/utils/project';
-import { Project, ProjectEntity } from 'src/project/project.model';
-
-import { ContractService } from './contract.service';
-import { IndexingStatus, Transaction, TxFun } from './types';
-import { QueryService } from './query.service';
-import { debugLogger } from '../utils/logger';
 import {
   GetIndexerUnfinalisedPlans,
   GetIndexerUnfinalisedPlansQuery,
   GetIndexerUnfinalisedPlansQueryVariables,
 } from '@subql/network-query';
-import { Config } from 'src/configure/configure.module';
+import { BigNumber } from 'ethers';
+import { isEmpty } from 'lodash';
+
+import { Repository, Connection } from 'typeorm';
+import { AccountService } from '../account/account.service';
+import { Config } from '../configure/configure.module';
+import { Project, ProjectEntity } from '../project/project.model';
+import { colorText, getLogger, TextColor } from '../utils/logger';
+import { debugLogger } from '../utils/logger';
+import { ZERO_BYTES32 } from '../utils/project';
+import { ContractService } from './contract.service';
+import { QueryService } from './query.service';
+import { IndexingStatus, Transaction, TxFun } from './types';
 
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
@@ -272,7 +271,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
-      getLogger('network').info(`new stakers ${stakers}`);
+      getLogger('network').info(`new stakers ${stakers.join(',')}`);
       await this.sendTransaction('apply stake changes', async (overrides) =>
         this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides),
       );
@@ -366,7 +365,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       this.failedTransactions = [];
     } catch (e) {
-      debugLogger('network', `failed to update network: ${e}`);
+      debugLogger('network', `failed to update network: ${String(e)}`);
       getLogger('network').info(`retry to send transactions`);
 
       this.failedTransactions = [];

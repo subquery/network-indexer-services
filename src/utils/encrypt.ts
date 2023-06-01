@@ -1,8 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { randomBytes, createDecipheriv, createCipheriv, createHash } from 'crypto';
 import { Buffer } from 'buffer';
+import { randomBytes, createDecipheriv, createCipheriv, createHash } from 'crypto';
 
 const algorithm = 'aes-256-gcm';
 const iv = randomBytes(12);

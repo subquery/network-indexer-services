@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Controller, Get, Param } from '@nestjs/common';
-import { NetworkService } from 'src/services/network.service';
+import { NetworkService } from './services/network.service';
 
 @Controller('agreements')
 export class AgreementController {
