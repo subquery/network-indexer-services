@@ -36,7 +36,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
       if (!metric) return;
 
       const status = this.fetchContainerStatus(data);
-      const stats = await this.fecthContainerCPUandMemoryUsage(container);
+      const stats = await this.fetchContainerCPUandMemoryUsage(container);
       this.eventEmitter.emit(metric, {
         cpu_usage: stats.cpuUsage,
         memory_usage: stats.memoryUsage,
@@ -63,7 +63,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     return status;
   }
 
-  async fecthContainerCPUandMemoryUsage(container: Docker.Container) {
+  async fetchContainerCPUandMemoryUsage(container: Docker.Container) {
     const stats = await container.stats({ stream: false });
 
     const { cpu_stats, precpu_stats } = stats;
