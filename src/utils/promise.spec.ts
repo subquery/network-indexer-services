@@ -5,8 +5,7 @@ import 'reflect-metadata';
 import { mutexPromise } from './promise';
 
 class T {
-  constructor(private delay = 1000) {
-  }
+  constructor(private delay = 1000) {}
   @mutexPromise()
   async doPromise(): Promise<number> {
     return new Promise((resolve) => {
