@@ -50,7 +50,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     const { Health, Restarting, ExitCode } = data.State;
     const health = Health?.Status;
 
-    let status = ContainerStatus.healthy;
+    let status = ContainerStatus.dead;
     if (health && health === 'healthy') {
       status = ContainerStatus.healthy;
     } else if (Restarting) {
@@ -60,8 +60,6 @@ export class CoordinatorMetricsService implements OnModuleInit {
     } else if (health && health === 'unhealthy') {
       status = ContainerStatus.unhealthy;
     }
-
-    debugLogger('metric', `Container ${data.Name} status: ${status}`);
 
     return status;
   }
@@ -88,8 +86,6 @@ export class CoordinatorMetricsService implements OnModuleInit {
     if (_memoryUsage) {
       memoryUsage = bytesToMegabytes(stats.memory_stats.usage);
     }
-
-    console.log(`container ${container.id} cpu: ${cpuUsage} | memory: ${memoryUsage}`);
 
     return { id: container.id, memoryUsage, cpuUsage };
   }
