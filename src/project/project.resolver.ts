@@ -3,8 +3,8 @@
 
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 
-import { DockerRegistry, DockerRegistryService } from '../services/docker.registry.service';
-import { QueryService } from '../services/query.service';
+import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.service';
+import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 

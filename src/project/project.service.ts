@@ -6,14 +6,14 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS} from '@subql/network-clients';
 import {Not, Repository} from 'typeorm';
 
-import {AccountService} from '../account/account.service';
 import {Config} from '../configure/configure.module';
-import {DB} from '../db/db.module';
 
-import {ContractService} from '../services/contract.service';
-import {DockerService} from '../services/docker.service';
-import {QueryService} from '../services/query.service';
-import {IndexingStatus} from '../services/types';
+import {AccountService} from "../core/account.service";
+import {ContractService} from '../core/contract.service';
+import {DockerService} from '../core/docker.service';
+import {QueryService} from '../core/query.service';
+import {IndexingStatus} from '../core/types';
+import {DB} from '../db/db.module';
 import {SubscriptionService} from '../subscription/subscription.service';
 import {
   canContainersRestart,
@@ -141,8 +141,8 @@ export class ProjectService {
   async addProject(id: string): Promise<Project> {
     const project = await this.getProject(id);
     if (project) return project;
-
-    const { status } = await this.contract.deploymentStatusByIndexer(id);
+    const indexer = await this.account.getIndexer();
+    const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
     const details = await this.getProjectInfo(id);
     const projectEntity = this.projectRepo.create({
       id: id.trim(),

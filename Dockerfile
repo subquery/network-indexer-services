@@ -1,6 +1,4 @@
-FROM node:16-alpine AS BUILD_IMAGE
-
-RUN apk update && apk add --no-cache yarn curl bash tini git docker-cli docker-compose grep make python3 g++
+FROM node:16 AS BUILD_IMAGE
 
 # install node-prune
 RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin

@@ -2,21 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from 'crypto';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { Wallet } from 'ethers';
-import { Repository } from 'typeorm';
+import {ILike, Repository} from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
 import { Config } from '../configure/configure.module';
-import { ContractService } from '../services/contract.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { encrypt } from '../utils/encrypt';
+import {getLogger} from "../utils/logger";
 import { AccountEvent } from '../utils/subscription';
-
 import { Indexer, Controller, AccountMetaDataType } from './account.model';
+import { ContractService } from './contract.service';
+
+const logger = getLogger('account')
 
 @Injectable()
 export class AccountService {
@@ -24,15 +26,16 @@ export class AccountService {
   private sdk: ContractSDK;
 
   constructor(
-    @Inject(forwardRef(() => ContractService)) private contractService: ContractService,
     @InjectRepository(Indexer) private indexerRepo: Repository<Indexer>,
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
+    private contractService: ContractService,
     private pubSub: SubscriptionService,
     private config: Config,
   ) {}
 
   async getIndexer(): Promise<string> {
     if (!this.indexer) {
+      logger.info(`indexer registry: ${this.sdk.indexerRegistry.address}`)
       const indexer = await this.indexerRepo.findOne();
       this.indexer = indexer?.address;
     }
@@ -127,7 +130,7 @@ export class AccountService {
       await this.controllerRepo.save(old);
     }
 
-    const controller = await this.controllerRepo.findOne({ where: { address } });
+    const controller = await this.controllerRepo.findOne({ where: { address: ILike(`%${address}%`) } });
     if (controller) {
       controller.active = true;
       await this.controllerRepo.save(controller);

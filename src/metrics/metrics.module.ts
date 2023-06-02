@@ -3,8 +3,7 @@
 
 import { Module } from '@nestjs/common';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { AccountModule } from '../account/account.module';
-import { ServicesModule } from '../services/services.module';
+import { CoreModule } from '../core/core.module';
 import { CoordinatorMetricsService } from './coordinator.metric.service';
 import { MetricEventListener } from './event.listener';
 import { MetricsResolver } from './metrics.resolver';
@@ -17,8 +16,7 @@ import { VersionsService } from './versions.service';
       path: 'metrics',
       defaultMetrics: { enabled: false },
     }),
-    AccountModule,
-    ServicesModule,
+    CoreModule,
   ],
   providers: [
     MetricEventListener,

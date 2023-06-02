@@ -5,8 +5,8 @@ import {INestApplication} from '@nestjs/common';
 import {GraphqlQueryClient, NETWORK_CONFIGS, NetworkConfig} from '@subql/network-clients';
 import {GetStateChannels, GetStateChannelsQuery} from '@subql/network-query';
 
+import {ContractService} from './core/contract.service';
 import {PaygService} from './payg/payg.service';
-import {ContractService} from './services/contract.service';
 import {getLogger, LogCategory} from './utils/logger';
 import {getYargsOption} from './yargs';
 

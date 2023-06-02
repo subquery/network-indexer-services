@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
@@ -9,17 +9,16 @@ import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides } from 'ethers';
 import { Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import { isEmpty } from 'lodash';
-import { Repository } from 'typeorm';
+import {ILike, Repository} from 'typeorm';
 
-import { Controller } from '../account/account.model';
-import { AccountService } from '../account/account.service';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { debugLogger, getLogger } from '../utils/logger';
-
+import {Controller} from "./account.model";
 import { DeploymentStatus, IndexingStatus } from './types';
+
+const logger = getLogger('contract');
 
 @Injectable()
 export class ContractService {
@@ -31,7 +30,6 @@ export class ContractService {
   private existentialBalance: BigNumber;
 
   constructor(
-    @Inject(forwardRef(() => AccountService)) private accountService: AccountService,
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
     private config: Config,
   ) {
@@ -87,15 +85,8 @@ export class ContractService {
     }
   }
 
-  async withdrawAll(id: string): Promise<boolean> {
+  async withdrawAll(id: string, indexer: string, controller: Controller): Promise<boolean> {
     try {
-      const indexer = await this.accountService.getIndexer();
-      const controller = await this.accountService.getController(id);
-      if (!controller) {
-        getLogger('contract').warn(`Controller: ${id} not exist`);
-        return;
-      }
-
       const pk = decrypt(controller.encryptedKey, this.config.secret);
       const wallet = new Wallet(toBuffer(pk), this.provider);
 
@@ -115,11 +106,11 @@ export class ContractService {
       const txToken = await wallet.sendTransaction({ to: indexer, value, gasPrice });
       await txToken.wait(5);
 
-      getLogger('contract').info(`Transfer all funds from controller to indexer successfully`);
+      logger.info(`Transfer all funds from controller to indexer successfully`);
 
       return true;
     } catch (e) {
-      getLogger('contract').warn(e,`Fail to transfer all funds from controller to indexer`);
+      logger.warn(e,`Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
@@ -139,36 +130,35 @@ export class ContractService {
     this.sdk = initContractSDK(this.wallet, this.chainID);
   }
 
-  async updateContractSDK(): Promise<ContractSDK | undefined> {
-    const controllers = await this.controllerRepo.find();
-    const indexer = await this.accountService.getIndexer();
-    if (!indexer || isEmpty(controllers)) {
-      getLogger('account').warn('No controller account config in service');
+  async updateContractSDK(indexer: string): Promise<ContractSDK | undefined> {
+    const controllerAccount = await this.indexerToController(indexer);
+    if (!controllerAccount) {
+      logger.warn('Controller Account hasn\'t been set');
       return;
     }
+    const controller = await this.controllerRepo.findOne({where:{
+        address: ILike(`%${controllerAccount}%`), // case insensitive
+      }});
 
-    const controllerAccount = await this.indexerToController(indexer);
+    if (!controller) {
+      logger.warn('Don\'t have controller pk in db');
+      return;
+    }
     if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
-      debugLogger('contract', 'contract sdk is up to date');
+      debugLogger('contract', `contract sdk is connected to ${this.wallet?.address}`);
       return this.sdk;
     }
 
     // check current sdk signer is same with the controller account on network
-    debugLogger('contract', `Wallet address used by contract sdk: ${this.wallet?.address}`);
     debugLogger('contract', `Indexer address: ${indexer}`);
     debugLogger('contract', `Controller address: ${controllerAccount}`);
-
-    const controller = controllers.find((c) => c.address.toLocaleLowerCase() === controllerAccount);
-    if (!controller) getLogger('contract').error(`Controller account: ${controllerAccount} not exist`);
-
     this.updateSDK(decrypt(controller.encryptedKey, this.config.secret));
+    debugLogger('contract', `Update wallet used by contract sdk: ${this.wallet?.address}`);
     return this.sdk;
   }
 
-  async deploymentStatusByIndexer(id: string): Promise<DeploymentStatus> {
-    const indexer = await this.accountService.getIndexer();
+  async deploymentStatusByIndexer(id: string, indexer: string): Promise<DeploymentStatus> {
     if (!this.sdk || !indexer) return this.emptyDeploymentStatus;
-
     try {
       const { status, blockHeight } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
         cidToBytes32(id.trim()),

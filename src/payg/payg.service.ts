@@ -5,10 +5,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 
-import { AccountService } from '../account/account.service';
 import { Config } from '../configure/configure.module';
+import { AccountService } from '../core/account.service';
+import { NetworkService } from '../core/network.service';
 import { PaygEntity } from '../project/project.model';
-import { NetworkService } from '../services/network.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { getLogger } from '../utils/logger';
 import { PaygEvent } from '../utils/subscription';

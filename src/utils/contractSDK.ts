@@ -1,11 +1,11 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
+import {ContractSDK, SdkOptions} from '@subql/contract-sdk';
 import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
 import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import { providers, Signer } from 'ethers';
+import {providers, Signer} from 'ethers';
 
 const deployments = {
   testnet: testnetDeployment,
@@ -45,6 +45,5 @@ export function initContractSDK(
   provider: providers.StaticJsonRpcProvider | Signer,
   chainID: ChainID,
 ): ContractSDK {
-  const sdk = new ContractSDK(provider, sdkOptions[chainID]);
-  return sdk;
+  return new ContractSDK(provider, sdkOptions[chainID]);
 }
