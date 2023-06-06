@@ -10,6 +10,7 @@ import { nodeContainer, queryContainer } from '../utils/docker';
 import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from '../utils/project';
 
+import {AccountService} from "./account.service";
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { ServiceStatus, Poi, PoiItem } from './types';
@@ -18,7 +19,10 @@ import { ServiceStatus, Poi, PoiItem } from './types';
 export class QueryService {
   private emptyPoi: Poi;
 
-  constructor(private docker: DockerService, private contract: ContractService) {
+  constructor(
+    private docker: DockerService,
+    private accountService: AccountService,
+    private contract: ContractService) {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
 
@@ -181,8 +185,8 @@ export class QueryService {
       const { blockHeight, mmrRoot } = poi;
       debugLogger('poi', `project: ${project.id} | ${poi.blockHeight} | ${poi.mmrRoot}`);
       if (blockHeight === 0) return poi;
-
-      const indexingStatus = await this.contract.deploymentStatusByIndexer(id);
+      const indexer = await this.accountService.getIndexer();
+      const indexingStatus = await this.contract.deploymentStatusByIndexer(id, indexer);
       if (indexingStatus.blockHeight.lt(blockHeight)) return poi;
 
       const shortId = id.substring(0, 15);

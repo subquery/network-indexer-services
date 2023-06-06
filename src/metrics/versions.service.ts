@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { Config } from '../configure/configure.module';
-import { DockerService } from '../services/docker.service';
+import { DockerService } from '../core/docker.service';
 import { debugLogger } from '../utils/logger';
 import { VersionMetrics } from './metrics.model';
 

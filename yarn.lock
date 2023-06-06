@@ -2899,12 +2899,12 @@
     multer "1.4.4-lts.1"
     tslib "2.4.0"
 
-"@nestjs/schedule@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@nestjs/schedule/-/schedule-2.2.0.tgz#6e6e55648d9fa03dfc861354d00da2985161753b"
-  integrity sha512-wrDnUONTxBkD6lTWh9ecYk/kvJTbA3PylotjBoRsECmcS1SNvgInFXuL38UnHiFnXM3CHSFnzRLB259Bc1mOdQ==
+"@nestjs/schedule@^2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@nestjs/schedule/-/schedule-2.2.2.tgz#45eab2485172317cd80eafda55842aeda37b6713"
+  integrity sha512-e9z1bbFwi4QsPkR2ix72OABhBlfRQcl4ZjF8LShlefOskR4ySN4rUzJilH+1rk8vORYDyGDurVdeduPyyfSQRg==
   dependencies:
-    cron "2.2.0"
+    cron "2.3.0"
     uuid "9.0.0"
 
 "@nestjs/schematics@^8.0.0", "@nestjs/schematics@^8.0.3":
@@ -7270,10 +7270,10 @@ create-require@^1.1.0:
   resolved "https://registry.yarnpkg.com/create-require/-/create-require-1.1.1.tgz#c1d7e8f1e5f6cfc9ff65f9cd352d37348756c333"
   integrity sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==
 
-cron@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/cron/-/cron-2.2.0.tgz#605ae5048e9715a22db12e9fe2563a92740b9fed"
-  integrity sha512-GPiI3OgMv83XRtEUc2gUdaLvJhO3XbLN288layOBkDTupg0RK5IECNGpkykIMHg+muVR2bxt29b0xvCAcBrjYQ==
+cron@2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/cron/-/cron-2.3.0.tgz#20df6da18d4f7d2f8937def2eb5fc0d1a320c526"
+  integrity sha512-ZN5HP8zDY41sJolMsbc+GksRATcbvkPKF5wR/qc8FrV4NBVi9ORQa1HmYa5GydaysUB80X9XpRlRkooa5uEtTA==
   dependencies:
     luxon "^3.2.1"
 
@@ -13216,11 +13216,6 @@ node-emoji@1.11.0:
   integrity sha512-wo2DpQkQp7Sjm2A0cq+sN7EHKO6Sl0ctXeBdFZrL9T9+UywORbufTcTZxom8YqpLQt/FqNMUkOpkZrJVYSKD3A==
   dependencies:
     lodash "^4.17.21"
-
-node-fetch@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
-  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
 
 node-fetch@2.6.7, node-fetch@^2.6.1, node-fetch@^2.6.7:
   version "2.6.7"

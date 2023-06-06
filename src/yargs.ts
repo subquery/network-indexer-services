@@ -85,12 +85,6 @@ export function getYargsOption() {
       default: 'indexer_services',
       group: Groups.node,
     },
-    'pushgateway-endpoint': {
-      type: 'string',
-      describe: 'Specify pushgateway endpoint',
-      default: 'http://pushgateway',
-      group: Groups.metrics,
-    },
     'secret-key': {
       type: 'string',
       describe: 'Specify secret key for the service',
