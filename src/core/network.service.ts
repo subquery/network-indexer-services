@@ -23,6 +23,7 @@ import {AccountService} from "./account.service";
 import {ContractService} from './contract.service';
 import {QueryService} from './query.service';
 import {IndexingStatus, TxFun} from './types';
+import {mutexPromise} from "../utils/promise";
 
 const MAX_RETRY = 3;
 
@@ -110,6 +111,7 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
+  @mutexPromise()
   async sendTransaction(actionName: string, txFun: TxFun, desc = '', retries = 0) {
     try {
       logger.info(`${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
