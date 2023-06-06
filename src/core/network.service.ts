@@ -19,11 +19,11 @@ import {Project, ProjectEntity} from '../project/project.model';
 import {colorText, debugLogger, getLogger, TextColor} from '../utils/logger';
 import {ZERO_BYTES32} from '../utils/project';
 
+import {mutexPromise} from "../utils/promise";
 import {AccountService} from "./account.service";
 import {ContractService} from './contract.service';
 import {QueryService} from './query.service';
 import {IndexingStatus, TxFun} from './types';
-import {mutexPromise} from "../utils/promise";
 
 const MAX_RETRY = 3;
 
@@ -183,7 +183,7 @@ export class NetworkService implements OnApplicationBootstrap {
     await this.sendTransaction(
       `report project status`,
       async (overrides) => {
-        const tx = await this.sdk.queryRegistry.reportIndexingStatus(
+        return await this.sdk.queryRegistry.reportIndexingStatus(
           indexer,
           cidToBytes32(id.trim()),
           blockHeight,
@@ -191,7 +191,6 @@ export class NetworkService implements OnApplicationBootstrap {
           timestamp,
           overrides,
         );
-        return tx;
       },
       desc,
     );
