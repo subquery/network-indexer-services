@@ -74,9 +74,10 @@ export class ProjectService {
 
   async getProjectDetails(id: string): Promise<ProjectDetails> {
     const project = await this.projectRepo.findOne({ id });
+    const payg = await this.paygRepo.findOne({ id });
     const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
 
-    return { ...project, metadata };
+    return { ...project, metadata, payg };
   }
 
   async getProjects(): Promise<ProjectDetails[]> {
