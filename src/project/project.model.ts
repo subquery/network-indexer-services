@@ -206,11 +206,14 @@ export class PaygEntity {
 @ObjectType('Project')
 export class Project extends ProjectEntity {}
 
+@ObjectType('Payg')
+export class Payg extends PaygEntity {}
+
 @ObjectType('ProjectDetails')
 export class ProjectDetails extends ProjectEntity {
   @Field(() => MetadataType)
   metadata: MetadataType;
-}
 
-@ObjectType('Payg')
-export class Payg extends PaygEntity {}
+  @Field(() => Payg)
+  payg: Payg;
+}
