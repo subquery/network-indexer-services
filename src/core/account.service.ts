@@ -35,7 +35,6 @@ export class AccountService {
 
   async getIndexer(): Promise<string> {
     if (!this.indexer) {
-      logger.info(`indexer registry: ${this.sdk.indexerRegistry.address}`)
       const indexer = await this.indexerRepo.findOne();
       this.indexer = indexer?.address;
     }
