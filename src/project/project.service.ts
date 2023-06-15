@@ -18,7 +18,6 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import {
   canContainersRestart,
   composeFileExist,
-  configsWithNode,
   generateDockerComposeFile,
   getServicePort,
   nodeEndpoint,
@@ -29,7 +28,7 @@ import {
   TemplateType,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import { projectConfigChanged } from '../utils/project';
+import { nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -242,14 +241,13 @@ export class ProjectService {
       getLogger('project').warn(e, `start project`);
     }
 
-    //TODO: remove this after confirm other chains suppor POI feature
-    const config = await configsWithNode({ id, poiEnabled: advancedConfig.poiEnabled });
+    const nodeConfig = await nodeConfigs(id);
     project.baseConfig = baseConfig;
     project.advancedConfig = advancedConfig;
     project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
     project.status = IndexingStatus.INDEXING;
-    project.chainType = config.chainType;
+    project.chainType = nodeConfig.chainType;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);

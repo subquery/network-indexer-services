@@ -46,13 +46,7 @@ export type PartialIpfsDeploymentManifest = {
   runner?: Runner;
 };
 
-export enum NodeDockerRegistry {
-  substrateNode = 'onfinality/subql-node',
-  cosmos = 'onfinality/subql-node-cosmos',
-  avalanche = 'onfinality/subql-node-avalanche',
-}
-
-export type ChainType = 'cosmos' | 'avalanche' | 'substrate';
+export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
 
 export const IPFS_URL = 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
@@ -64,20 +58,20 @@ export async function getManifest(cid: string) {
   return resultManifest;
 }
 
-function dockerRegistryFromChain(chainType: ChainType): NodeDockerRegistry {
+function dockerRegistryFromChain(chainType: ChainType): string {
   switch (chainType) {
     case 'cosmos':
-      return NodeDockerRegistry.cosmos;
-    case 'avalanche':
-      return NodeDockerRegistry.avalanche;
+    case 'algorand':
+    case 'flare':
+    case 'near':
+    case 'ethereum':
+      return `onfinality/subql-node-${chainType}`;
     default:
-      return NodeDockerRegistry.substrateNode;
+      return 'onfinality/subql-node';
   }
 }
 
-export async function nodeConfigs(
-  cid: string,
-): Promise<{ chainType: ChainType; dockerRegistry: NodeDockerRegistry }> {
+export async function nodeConfigs(cid: string): Promise<{ chainType: ChainType; dockerRegistry: string }> {
   const manifest = await getManifest(cid);
   const { dataSources } = manifest;
   const runtime = dataSources[0].kind;

@@ -373,6 +373,9 @@ export class NetworkService implements OnApplicationBootstrap {
     logger.debug(`syncContractConfig: ${String(isContractReady)}`);
     if (!isContractReady) return false;
 
+    const maintenance = await this.sdk.eraManager.maintenance();
+    if (maintenance) return false;
+
     const isBalanceSufficient = await this.contractService.hasSufficientBalance();
     if (!isBalanceSufficient) {
       getLogger('contract').warn(

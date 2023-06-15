@@ -93,32 +93,18 @@ export function getImageVersion(containerInfo: string) {
   return imageInfo[1];
 }
 
-export function getPoiEnable(chainType: string, poiEnabled: boolean): boolean {
-  return chainType === 'substrate' ? poiEnabled : false;
-}
-
-export async function configsWithNode({ id, poiEnabled }: { id: string; poiEnabled: boolean }) {
-  const { chainType, dockerRegistry } = await nodeConfigs(id);
-  const disableHistorical = chainType === 'avalanche';
-  return {
-    poiEnabled: getPoiEnable(chainType, poiEnabled),
-    chainType,
-    disableHistorical,
-    dockerRegistry,
-  };
-}
-
 export async function generateDockerComposeFile(data: TemplateType) {
-  createDirectory(getComposeFileDirectory(data.deploymentID));
+  const { deploymentID } = data;
+  createDirectory(getComposeFileDirectory(deploymentID));
 
   try {
-    const config = await configsWithNode({ id: data.deploymentID, poiEnabled: data.poiEnabled });
+    const config = await nodeConfigs(deploymentID);
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
-    fs.writeFileSync(getComposeFilePath(data.deploymentID), template({ ...data, ...config }));
-    getLogger('docker').info(`generate new docker compose file: ${data.deploymentID}.yml`);
+    fs.writeFileSync(getComposeFilePath(deploymentID), template({ ...data, ...config }));
+    getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
-    getLogger('docker').error(e,`fail to generate new docker compose file for ${data.deploymentID}`);
+    getLogger('docker').error(e, `fail to generate new docker compose file for ${data.deploymentID}`);
   }
 }
 

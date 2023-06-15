@@ -79,6 +79,12 @@ export function getYargsOption() {
       default: 3001,
       group: Groups.node,
     },
+    mmrPath: {
+      type: 'string',
+      describe: 'The local path to store the mmr data',
+      default: '/home/indexer-service',
+      group: Groups.node,
+    },
     'docker-network': {
       type: 'string',
       describe: 'The default docker network',

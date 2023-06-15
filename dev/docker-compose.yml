@@ -42,7 +42,8 @@ services:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --network=kepler
+      - --network=testnet
+      - --ws-endpoint="https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
       - --postgres-host=postgres
       - --postgres-password=pos_z8X
       # use the same password in the db config
