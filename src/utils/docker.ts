@@ -104,7 +104,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
     fs.writeFileSync(getComposeFilePath(deploymentID), template({ ...data, ...config }));
     getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
-    getLogger('docker').error(e,`fail to generate new docker compose file for ${data.deploymentID}`);
+    getLogger('docker').error(e, `fail to generate new docker compose file for ${data.deploymentID}`);
   }
 }
 

@@ -71,9 +71,7 @@ function dockerRegistryFromChain(chainType: ChainType): string {
   }
 }
 
-export async function nodeConfigs(
-  cid: string,
-): Promise<{ chainType: ChainType; dockerRegistry: string }> {
+export async function nodeConfigs(cid: string): Promise<{ chainType: ChainType; dockerRegistry: string }> {
   const manifest = await getManifest(cid);
   const { dataSources } = manifest;
   const runtime = dataSources[0].kind;
