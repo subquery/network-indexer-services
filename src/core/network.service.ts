@@ -136,7 +136,9 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
-    await this.checkControllerReady();
+    const isReady = await this.checkControllerReady();
+    if (!isReady) return;
+
     try {
       await this.updateExpiredAgreements();
     } catch {
@@ -197,7 +199,9 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_2_HOURS)
   async reportIndexingServiceActions() {
-    await this.checkControllerReady();
+    const isReady = await this.checkControllerReady();
+    if (!isReady) return;
+
     const indexingProjects = await this.getIndexingProjects();
     if (isEmpty(indexingProjects)) return [];
 
@@ -349,13 +353,18 @@ export class NetworkService implements OnApplicationBootstrap {
     const isContractReady = await this.syncContractConfig();
     if (!isContractReady) return false;
 
+    const maintenance = await this.sdk.eraManager.maintenance();
+    if (maintenance) return false;
+
     const isBalanceSufficient = await this.contractService.hasSufficientBalance();
     if (!isBalanceSufficient) {
       getLogger('contract').warn(
         'insufficient balance for the controller account, please top up your controller account ASAP.',
       );
-      return;
+      return false;
     }
+
+    return true;
   }
 
   @Cron(CronExpression.EVERY_10_MINUTES)
