@@ -223,7 +223,7 @@ export class NetworkService implements OnApplicationBootstrap {
     logger.debug(`indexingProjects ${indexingProjects.length}`);
     if (isEmpty(indexingProjects)) return [];
     try {
-      await Promise.all(indexingProjects.map((project) => () => this.reportIndexingService(project)));
+      await Promise.all(indexingProjects.map((project) => this.reportIndexingService(project)));
     } catch (e) {
       logger.error(e, `reportIndexingServiceActions failed`);
     }
