@@ -1,20 +1,20 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {Injectable, OnApplicationBootstrap} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS} from '@subql/network-clients';
-import {Not, Repository} from 'typeorm';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { Not, Repository } from 'typeorm';
 
-import {Config} from '../configure/configure.module';
+import { Config } from '../configure/configure.module';
 
-import {AccountService} from "../core/account.service";
-import {ContractService} from '../core/contract.service';
-import {DockerService} from '../core/docker.service';
-import {QueryService} from '../core/query.service';
-import {IndexingStatus} from '../core/types';
-import {DB} from '../db/db.module';
-import {SubscriptionService} from '../subscription/subscription.service';
+import { AccountService } from '../core/account.service';
+import { ContractService } from '../core/contract.service';
+import { DockerService } from '../core/docker.service';
+import { QueryService } from '../core/query.service';
+import { IndexingStatus } from '../core/types';
+import { DB } from '../db/db.module';
+import { SubscriptionService } from '../subscription/subscription.service';
 import {
   canContainersRestart,
   composeFileExist,
@@ -28,11 +28,11 @@ import {
   schemaName,
   TemplateType,
 } from '../utils/docker';
-import {debugLogger, getLogger} from '../utils/logger';
-import {projectConfigChanged} from '../utils/project';
-import {GET_DEPLOYMENT, GET_INDEXER_PROJECTS} from '../utils/queries';
-import {ProjectEvent} from '../utils/subscription';
-import {PortService} from './port.service';
+import { debugLogger, getLogger } from '../utils/logger';
+import { projectConfigChanged } from '../utils/project';
+import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
+import { ProjectEvent } from '../utils/subscription';
+import { PortService } from './port.service';
 import {
   LogType,
   Payg,
@@ -47,7 +47,7 @@ import {
 } from './project.model';
 
 @Injectable()
-export class ProjectService implements OnApplicationBootstrap{
+export class ProjectService {
   private client: GraphqlQueryClient;
   private ipfsClient: IPFSClient;
 
@@ -67,11 +67,6 @@ export class ProjectService implements OnApplicationBootstrap{
     this.ipfsClient = new IPFSClient(IPFS_URLS.project);
     void this.restoreProjects();
   }
-
-  onApplicationBootstrap() {
-    // void this.restoreProjects();
-  }
-
 
   async getProject(id: string): Promise<Project> {
     return this.projectRepo.findOne({ id });
@@ -244,7 +239,7 @@ export class ProjectService implements OnApplicationBootstrap{
       await generateDockerComposeFile(templateItem);
       await this.docker.up(templateItem.deploymentID);
     } catch (e) {
-      getLogger('project').warn(e,`start project`);
+      getLogger('project').warn(e, `start project`);
     }
 
     //TODO: remove this after confirm other chains suppor POI feature
@@ -256,7 +251,7 @@ export class ProjectService implements OnApplicationBootstrap{
     project.status = IndexingStatus.INDEXING;
     project.chainType = config.chainType;
 
-    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: project});
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.projectRepo.save(project);
   }
 
@@ -269,7 +264,7 @@ export class ProjectService implements OnApplicationBootstrap{
 
     getLogger('project').info(`stop project: ${id}`);
     await this.docker.stop(projectContainers(id));
-    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: project});
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
     return this.updateProjectStatus(id, IndexingStatus.NOTINDEXING);
   }
 
@@ -309,7 +304,7 @@ export class ProjectService implements OnApplicationBootstrap{
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
 
-    await this.pubSub.publish(ProjectEvent.ProjectStarted, {projectChanged: payg});
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
   }
 

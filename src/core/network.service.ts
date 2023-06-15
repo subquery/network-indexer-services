@@ -236,7 +236,7 @@ export class NetworkService implements OnApplicationBootstrap {
     return !isEmpty(stakers) || !icrChangEra.eq(0);
   }
 
-  async geEraConfig() {
+  async getEraConfig() {
     const indexer = await this.accountService.getIndexer();
     const [currentEra, rewardInfo, lastSettledEra] = await Promise.all([
       this.sdk.eraManager.eraNumber(),
@@ -283,7 +283,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   collectAndDistributeRewardsAction() {
     return async () => {
-      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.getEraConfig();
       const canCollectRewards = this.canCollectRewards(currentEra, lastClaimedEra, lastSettledEra);
       if (!canCollectRewards) return;
 
@@ -306,7 +306,7 @@ export class NetworkService implements OnApplicationBootstrap {
     return async () => {
       const indexer = await this.accountService.getIndexer();
       const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
-      const { lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+      const { lastClaimedEra, lastSettledEra } = await this.getEraConfig();
 
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
@@ -320,7 +320,7 @@ export class NetworkService implements OnApplicationBootstrap {
   applyICRChangeAction() {
     return async () => {
       const indexer = await this.accountService.getIndexer();
-      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.getEraConfig();
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
@@ -389,7 +389,7 @@ export class NetworkService implements OnApplicationBootstrap {
     if (!(await this.checkControllerReady())) return;
 
     try {
-      for (const [idx, action] of this.networkActions().entries()) {
+      for (const action of this.networkActions()) {
         await action();
       }
     } catch (e) {
