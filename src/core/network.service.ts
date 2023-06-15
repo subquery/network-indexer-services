@@ -29,11 +29,24 @@ const MAX_RETRY = 3;
 
 const logger = getLogger('transaction');
 
+function wrapAndIgnoreError<T>(promiseFunc: () => Promise<T>, desc: string): () => Promise<T | void> {
+  return () => {
+    logger.debug(`${desc}: start`)
+    return promiseFunc().then((res: T) => {
+      logger.debug(`${desc}: done`)
+      return res;
+    }, (e) => {
+      logger.error(e, `${desc}: failed`);
+      return;
+    })
+  }
+}
+
 @Injectable()
 export class NetworkService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
   private client: GraphqlQueryClient;
-  private expiredAgreements: { [key: number]: BigNumber };
+  private expiredAgreements: Set<string> = new Set();
 
   private batchSize = 20;
 
@@ -46,7 +59,6 @@ export class NetworkService implements OnApplicationBootstrap {
     private queryService: QueryService,
     private readonly config: Config,
   ) {
-    this.expiredAgreements = {};
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(ProjectEntity);
   }
@@ -81,6 +93,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   private async updateExpiredAgreements() {
+    logger.debug(`updateExpiredAgreements start`)
     const indexer = await this.accountService.getIndexer();
     const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
     for (let i = 0; i < agreementCount.toNumber(); i++) {
@@ -90,10 +103,10 @@ export class NetworkService implements OnApplicationBootstrap {
       );
 
       if (agreementExpired) {
-        const id = agreementId.toNumber();
-        Object.assign(this.expiredAgreements, {[id]: agreementId});
+        this.expiredAgreements.add(agreementId.toString());
       }
     }
+    logger.debug(`updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(',')}`)
   }
 
   async syncContractConfig(): Promise<boolean> {
@@ -136,13 +149,14 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
-    await this.checkControllerReady();
+    logger.debug(`removeExpiredAgreements start`)
+    if (!(await this.checkControllerReady())) return;
     try {
       await this.updateExpiredAgreements();
     } catch {
-      getLogger('network').info('failed to update expired service agreements');
+      getLogger('network').error('failed to update expired service agreements');
     }
-    if (Object.keys(this.expiredAgreements).length === 0) return;
+    if (this.expiredAgreements.size === 0) return;
 
     try {
       const indexer = await this.accountService.getIndexer();
@@ -152,20 +166,21 @@ export class NetworkService implements OnApplicationBootstrap {
           .closedServiceAgreementIds(indexer, i)
           .then((id) => id.toNumber());
 
-        if (this.expiredAgreements[agreementId]) {
+        if (this.expiredAgreements.has(agreementId.toString())) {
           await this.sendTransaction(
             'remove expired service agreement',
             (overrides) => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
             `service agreement: ${agreementId}`,
           );
 
-          delete this.expiredAgreements[agreementId];
+          this.expiredAgreements.delete(agreementId.toString());
           break;
         }
       }
     } catch {
       getLogger('network').info('failed to remove expired service agreements');
     }
+    logger.info(`removeExpiredAgreements end`)
   }
 
   async reportIndexingService(project: Project) {
@@ -197,11 +212,18 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_2_HOURS)
   async reportIndexingServiceActions() {
-    await this.checkControllerReady();
+    logger.info(`reportIndexingServiceActions start`)
+    if (!(await this.checkControllerReady())) return;
     const indexingProjects = await this.getIndexingProjects();
+    logger.info(`indexingProjects ${indexingProjects.length}`)
     if (isEmpty(indexingProjects)) return [];
+    try {
+      await Promise.all(indexingProjects.map((project) => () => this.reportIndexingService(project)));
+    } catch (e) {
+      logger.error(e, `reportIndexingServiceActions failed`)
+    }
+    logger.info(`reportIndexingServiceActions end`)
 
-    return indexingProjects.map((project) => () => this.reportIndexingService(project));
   }
 
   async hasPendingChanges(indexer: string) {
@@ -212,17 +234,16 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async geEraConfig() {
     const indexer = await this.accountService.getIndexer();
-    const [currentEra, lastClaimedEra, lastSettledEra] = await Promise.all([
+    const [currentEra, rewardInfo, lastSettledEra] = await Promise.all([
       this.sdk.eraManager.eraNumber(),
-      (await this.sdk.rewardsDistributor.getRewardInfo(indexer)).lastClaimEra,
+      this.sdk.rewardsDistributor.getRewardInfo(indexer),
       this.sdk.rewardsStaking.getLastSettledEra(indexer),
     ]);
 
-    return {currentEra, lastClaimedEra, lastSettledEra};
+    return {currentEra, lastClaimedEra: rewardInfo.lastClaimEra, lastSettledEra};
   }
 
-  async canCollectRewards(): Promise<boolean> {
-    const {currentEra, lastClaimedEra, lastSettledEra} = await this.geEraConfig();
+  canCollectRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber): boolean {
     return lastClaimedEra.gt(0) && lastClaimedEra.lt(currentEra.sub(1)) && lastClaimedEra.lte(lastSettledEra);
   }
 
@@ -235,9 +256,6 @@ export class NetworkService implements OnApplicationBootstrap {
   async batchCollectAndDistributeRewards(indexer: string, currentEra: BigNumber, lastClaimedEra: BigNumber) {
     const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
     for (let i = 0; i < count; i++) {
-      const canCollectRewards = await this.canCollectRewards();
-      if (!canCollectRewards) return;
-
       await this.sendTransaction('batch collect and distribute rewards', (overrides) =>
         this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize, overrides),
       );
@@ -261,12 +279,11 @@ export class NetworkService implements OnApplicationBootstrap {
 
   collectAndDistributeRewardsAction() {
     return async () => {
-      const canCollectRewards = await this.canCollectRewards();
+      const {currentEra, lastClaimedEra, lastSettledEra} = await this.geEraConfig();
+      const canCollectRewards = this.canCollectRewards(currentEra, lastClaimedEra, lastSettledEra);
       if (!canCollectRewards) return;
 
-      const {currentEra, lastClaimedEra, lastSettledEra} = await this.geEraConfig();
-      const values = `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`;
-      getLogger('network').info(`${values}`);
+      getLogger('network').info(`currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`);
 
       const indexer = await this.accountService.getIndexer();
       const hasPendingChanges = await this.hasPendingChanges(indexer);
@@ -337,16 +354,17 @@ export class NetworkService implements OnApplicationBootstrap {
 
   private networkActions() {
     return [
-      this.updateEraNumberAction(),
-      this.collectAndDistributeRewardsAction(),
-      this.applyICRChangeAction(),
-      this.applyStakeChangesAction(),
-      this.closeExpiredStateChannelsAction(),
+      wrapAndIgnoreError(this.updateEraNumberAction(), 'updateEraNumberAction'),
+      wrapAndIgnoreError(this.collectAndDistributeRewardsAction(), 'collectAndDistributeRewardsAction'),
+      wrapAndIgnoreError(this.applyICRChangeAction(), 'applyICRChangeAction'),
+      wrapAndIgnoreError(this.applyStakeChangesAction(), 'applyStakeChangesAction'),
+      wrapAndIgnoreError(this.closeExpiredStateChannelsAction(), 'closeExpiredStateChannelsAction'),
     ];
   }
 
   private async checkControllerReady(): Promise<boolean> {
     const isContractReady = await this.syncContractConfig();
+    logger.debug(`syncContractConfig: ${String(isContractReady)}`);
     if (!isContractReady) return false;
 
     const isBalanceSufficient = await this.contractService.hasSufficientBalance();
@@ -354,17 +372,18 @@ export class NetworkService implements OnApplicationBootstrap {
       getLogger('contract').warn(
         'insufficient balance for the controller account, please top up your controller account ASAP.',
       );
-      return;
+      return false;
     }
+    logger.debug(`checkControllerReady: ready`);
+    return true;
   }
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async doNetworkActions() {
-    const isReady = await this.checkControllerReady();
-    if (!isReady) return;
+    if (!(await this.checkControllerReady())) return;
 
     try {
-      for (const action of this.networkActions()) {
+      for (const [idx, action] of this.networkActions().entries()) {
         await action();
       }
     } catch (e) {

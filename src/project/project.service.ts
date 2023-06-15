@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {Injectable} from '@nestjs/common';
+import {Injectable, OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS} from '@subql/network-clients';
 import {Not, Repository} from 'typeorm';
@@ -47,7 +47,7 @@ import {
 } from './project.model';
 
 @Injectable()
-export class ProjectService {
+export class ProjectService implements OnApplicationBootstrap{
   private client: GraphqlQueryClient;
   private ipfsClient: IPFSClient;
 
@@ -67,6 +67,11 @@ export class ProjectService {
     this.ipfsClient = new IPFSClient(IPFS_URLS.project);
     void this.restoreProjects();
   }
+
+  onApplicationBootstrap() {
+    // void this.restoreProjects();
+  }
+
 
   async getProject(id: string): Promise<Project> {
     return this.projectRepo.findOne({ id });
