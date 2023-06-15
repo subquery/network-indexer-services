@@ -1,29 +1,29 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {Injectable, OnApplicationBootstrap} from '@nestjs/common';
-import {Cron, CronExpression} from '@nestjs/schedule';
-import {ContractSDK} from '@subql/contract-sdk';
-import {cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS} from '@subql/network-clients';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { ContractSDK } from '@subql/contract-sdk';
+import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import {
   GetIndexerUnfinalisedPlans,
   GetIndexerUnfinalisedPlansQuery,
   GetIndexerUnfinalisedPlansQueryVariables,
 } from '@subql/network-query';
-import {BigNumber} from 'ethers';
-import {isEmpty} from 'lodash';
-import {Connection, Repository} from 'typeorm';
+import { BigNumber } from 'ethers';
+import { isEmpty } from 'lodash';
+import { Connection, Repository } from 'typeorm';
 
-import {Config} from '../configure/configure.module';
-import {Project, ProjectEntity} from '../project/project.model';
-import {colorText, debugLogger, getLogger, TextColor} from '../utils/logger';
-import {ZERO_BYTES32} from '../utils/project';
+import { Config } from '../configure/configure.module';
+import { Project, ProjectEntity } from '../project/project.model';
+import { colorText, debugLogger, getLogger, TextColor } from '../utils/logger';
+import { ZERO_BYTES32 } from '../utils/project';
 
-import {mutexPromise} from "../utils/promise";
-import {AccountService} from "./account.service";
-import {ContractService} from './contract.service';
-import {QueryService} from './query.service';
-import {IndexingStatus, TxFun} from './types';
+import { mutexPromise } from '../utils/promise';
+import { AccountService } from './account.service';
+import { ContractService } from './contract.service';
+import { QueryService } from './query.service';
+import { IndexingStatus, TxFun } from './types';
 
 const MAX_RETRY = 3;
 
@@ -31,15 +31,18 @@ const logger = getLogger('transaction');
 
 function wrapAndIgnoreError<T>(promiseFunc: () => Promise<T>, desc: string): () => Promise<T | void> {
   return () => {
-    logger.debug(`${desc}: start`)
-    return promiseFunc().then((res: T) => {
-      logger.debug(`${desc}: done`)
-      return res;
-    }, (e) => {
-      logger.error(e, `${desc}: failed`);
-      return;
-    })
-  }
+    logger.debug(`${desc}: start`);
+    return promiseFunc().then(
+      (res: T) => {
+        logger.debug(`${desc}: done`);
+        return res;
+      },
+      (e) => {
+        logger.error(e, `${desc}: failed`);
+        return;
+      },
+    );
+  };
 }
 
 @Injectable()
@@ -80,20 +83,20 @@ export class NetworkService implements OnApplicationBootstrap {
     const projects = await this.projectRepo.find();
     const indexingProjects = await Promise.all(
       projects.map(async (project) => {
-        const {status} = await this.contractService.deploymentStatusByIndexer(project.id, indexer);
+        const { status } = await this.contractService.deploymentStatusByIndexer(project.id, indexer);
         project.status = status;
         return await this.projectRepo.save(project);
       }),
     );
 
     return indexingProjects.filter(
-      ({queryEndpoint, status}) =>
+      ({ queryEndpoint, status }) =>
         !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status),
     );
   }
 
   private async updateExpiredAgreements() {
-    logger.debug(`updateExpiredAgreements start`)
+    logger.debug(`updateExpiredAgreements start`);
     const indexer = await this.accountService.getIndexer();
     const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
     for (let i = 0; i < agreementCount.toNumber(); i++) {
@@ -106,7 +109,9 @@ export class NetworkService implements OnApplicationBootstrap {
         this.expiredAgreements.add(agreementId.toString());
       }
     }
-    logger.debug(`updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(',')}`)
+    logger.debug(
+      `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(',')}`,
+    );
   }
 
   async syncContractConfig(): Promise<boolean> {
@@ -119,7 +124,7 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk = await this.contractService.updateContractSDK(indexer);
       return !!this.sdk;
     } catch (e) {
-      logger.error(e, 'syncContractConfig')
+      logger.error(e, 'syncContractConfig');
       return false;
     }
   }
@@ -149,7 +154,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
-    logger.debug(`removeExpiredAgreements start`)
+    logger.debug(`removeExpiredAgreements start`);
     if (!(await this.checkControllerReady())) return;
     try {
       await this.updateExpiredAgreements();
@@ -180,15 +185,15 @@ export class NetworkService implements OnApplicationBootstrap {
     } catch {
       getLogger('network').info('failed to remove expired service agreements');
     }
-    logger.info(`removeExpiredAgreements end`)
+    logger.debug(`removeExpiredAgreements end`);
   }
 
   async reportIndexingService(project: Project) {
-    const {id} = project;
+    const { id } = project;
     const poi = await this.queryService.getReportPoi(project);
     if (poi.blockHeight === 0) return;
 
-    const {blockHeight, mmrRoot} = poi;
+    const { blockHeight, mmrRoot } = poi;
     const mmrRootLog = mmrRoot !== ZERO_BYTES32 ? `| mmrRoot: ${mmrRoot}` : '';
     const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} ${mmrRootLog}`;
 
@@ -212,18 +217,17 @@ export class NetworkService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_2_HOURS)
   async reportIndexingServiceActions() {
-    logger.info(`reportIndexingServiceActions start`)
+    logger.debug(`reportIndexingServiceActions start`);
     if (!(await this.checkControllerReady())) return;
     const indexingProjects = await this.getIndexingProjects();
-    logger.info(`indexingProjects ${indexingProjects.length}`)
+    logger.debug(`indexingProjects ${indexingProjects.length}`);
     if (isEmpty(indexingProjects)) return [];
     try {
       await Promise.all(indexingProjects.map((project) => () => this.reportIndexingService(project)));
     } catch (e) {
-      logger.error(e, `reportIndexingServiceActions failed`)
+      logger.error(e, `reportIndexingServiceActions failed`);
     }
-    logger.info(`reportIndexingServiceActions end`)
-
+    logger.debug(`reportIndexingServiceActions end`);
   }
 
   async hasPendingChanges(indexer: string) {
@@ -240,7 +244,7 @@ export class NetworkService implements OnApplicationBootstrap {
       this.sdk.rewardsStaking.getLastSettledEra(indexer),
     ]);
 
-    return {currentEra, lastClaimedEra: rewardInfo.lastClaimEra, lastSettledEra};
+    return { currentEra, lastClaimedEra: rewardInfo.lastClaimEra, lastSettledEra };
   }
 
   canCollectRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber): boolean {
@@ -271,7 +275,7 @@ export class NetworkService implements OnApplicationBootstrap {
       GetIndexerUnfinalisedPlansQueryVariables
     >({
       query: GetIndexerUnfinalisedPlans,
-      variables: {indexer, now},
+      variables: { indexer, now },
     });
 
     return result.data.stateChannels.nodes;
@@ -279,11 +283,13 @@ export class NetworkService implements OnApplicationBootstrap {
 
   collectAndDistributeRewardsAction() {
     return async () => {
-      const {currentEra, lastClaimedEra, lastSettledEra} = await this.geEraConfig();
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
       const canCollectRewards = this.canCollectRewards(currentEra, lastClaimedEra, lastSettledEra);
       if (!canCollectRewards) return;
 
-      getLogger('network').info(`currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`);
+      getLogger('network').info(
+        `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`,
+      );
 
       const indexer = await this.accountService.getIndexer();
       const hasPendingChanges = await this.hasPendingChanges(indexer);
@@ -300,7 +306,7 @@ export class NetworkService implements OnApplicationBootstrap {
     return async () => {
       const indexer = await this.accountService.getIndexer();
       const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
-      const {lastClaimedEra, lastSettledEra} = await this.geEraConfig();
+      const { lastClaimedEra, lastSettledEra } = await this.geEraConfig();
 
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
@@ -314,7 +320,7 @@ export class NetworkService implements OnApplicationBootstrap {
   applyICRChangeAction() {
     return async () => {
       const indexer = await this.accountService.getIndexer();
-      const {currentEra, lastClaimedEra, lastSettledEra} = await this.geEraConfig();
+      const { currentEra, lastClaimedEra, lastSettledEra } = await this.geEraConfig();
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
