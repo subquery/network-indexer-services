@@ -1,4 +1,6 @@
-FROM node:16 AS BUILD_IMAGE
+FROM node:16-alpine AS BUILD_IMAGE
+
+RUN apk update && apk add --no-cache yarn curl bash tini git docker-cli docker-compose grep make python3 g++
 
 # Install node-prune
 RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
@@ -18,11 +20,11 @@ RUN npm prune --production
 
 FROM node:16-alpine
 
-RUN apk add --no-cache curl docker-cli grep
+RUN apk add --no-cache curl docker-cli docker-compose grep
 
-# Install Docker Compose
-RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose \
-    && chmod +x /usr/local/bin/docker-compose
+# Find the installed docker-compose and store its path
+RUN DOCKER_COMPOSE_PATH=$(find / -name docker-compose -print -quit) \
+    && ln -s $DOCKER_COMPOSE_PATH /usr/local/bin/docker-compose
 
 WORKDIR /usr/src/app
 
