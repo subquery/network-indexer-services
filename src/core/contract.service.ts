@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides } from 'ethers';
 import { Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import { Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
-import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
+import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { debugLogger, getLogger } from '../utils/logger';
 import { Controller } from './account.model';
@@ -30,16 +28,12 @@ export class ContractService {
   private chainID: ChainID;
   private existentialBalance: BigNumber;
 
-  constructor(
-    @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
-    private accountService: AccountService,
-    private config: Config,
-  ) {
+  constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = parseEther('0.05');
-    this.initProvider(config.wsEndpoint);
-    this.sdk = initContractSDK(this.provider, this.chainID);
+    const provider = initProvider(config.wsEndpoint, this.chainID);
+    this.sdk = initContractSDK(provider, this.chainID);
   }
 
   getSdk() {
@@ -49,10 +43,6 @@ export class ContractService {
   async getOverrides(): Promise<Overrides> {
     const gasPrice = await this.provider.getGasPrice();
     return { gasPrice };
-  }
-
-  initProvider(endpoint: string) {
-    this.provider = new providers.StaticJsonRpcProvider(endpoint, parseInt(this.chainID, 16));
   }
 
   async getBlockTime() {

@@ -7,32 +7,30 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { Wallet } from 'ethers';
+import { initContractSDK, initProvider, networkToChainID } from 'src/utils/contractSDK';
 import { ILike, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
 import { Config } from '../configure/configure.module';
-import { SubscriptionService } from '../subscription/subscription.service';
 import { encrypt } from '../utils/encrypt';
 import { getLogger } from '../utils/logger';
 import { Indexer, Controller, AccountMetaDataType } from './account.model';
-import { ContractService } from './contract.service';
 
 const logger = getLogger('account');
 
 @Injectable()
 export class AccountService {
   private indexer: string | undefined;
+  private sdk: ContractSDK;
 
   constructor(
     @InjectRepository(Indexer) private indexerRepo: Repository<Indexer>,
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
-    private contractService: ContractService,
-    private pubSub: SubscriptionService,
     private config: Config,
-  ) {}
-
-  get sdk(): ContractSDK {
-    return this.contractService.getSdk();
+  ) {
+    const chainID = networkToChainID[config.network];
+    const provider = initProvider(config.wsEndpoint, chainID);
+    this.sdk = initContractSDK(provider, chainID);
   }
 
   async getIndexer(): Promise<string> {
