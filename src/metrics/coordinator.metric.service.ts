@@ -19,30 +19,35 @@ export class CoordinatorMetricsService implements OnModuleInit {
     void this.pushServiceVersions();
   }
 
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  handleVersionsCron() {
+    void this.pushServiceVersions();
+  }
+
   @Cron(CronExpression.EVERY_10_SECONDS)
   async handleCron() {
     await this.fetchAllContainersStats();
   }
 
   async fetchAllContainersStats() {
-    // { all : false } excludes stopped containers
-    const containers = await this.docker.listContainers({ all: true });
-    for (const containerInfo of containers) {
-      const container = this.docker.getContainer(containerInfo.Id);
-      const data = await container.inspect();
+    const containers = await this.docker.listContainers();
 
-      const [image] = data.Config.Image.split(':');
+    await Promise.all(containers.map(async container => {
+      const { Id, Image } = container;
+      const [image] = Image.split(':');
       const metric = metricNameMap[image as Images];
       if (!metric) return;
 
+      const containerDetails = this.docker.getContainer(Id);
+      const data = await containerDetails.inspect();
       const status = this.fetchContainerStatus(data);
-      const stats = await this.fecthContainerCPUandMemoryUsage(container);
+      const stats = await this.fetchContainerCPUandMemoryUsage(containerDetails);
       this.eventEmitter.emit(metric, {
         cpu_usage: stats.cpuUsage,
         memory_usage: stats.memoryUsage,
         status,
       });
-    }
+    }));
   }
 
   fetchContainerStatus(data: Docker.ContainerInspectInfo): ContainerStatus {
@@ -63,7 +68,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     return status;
   }
 
-  async fecthContainerCPUandMemoryUsage(container: Docker.Container) {
+  async fetchContainerCPUandMemoryUsage(container: Docker.Container) {
     const stats = await container.stats({ stream: false });
 
     const { cpu_stats, precpu_stats } = stats;
@@ -90,13 +95,11 @@ export class CoordinatorMetricsService implements OnModuleInit {
   }
 
   async pushServiceVersions() {
-    const containers = await this.docker.listContainers({ all: false });
+    const containers = await this.docker.listContainers();
 
-    for (const containerInfo of containers) {
-      const container = this.docker.getContainer(containerInfo.Id);
-      const data = await container.inspect();
-
-      const [image, tag] = data.Config.Image.split(':');
+    containers.map((container) => {
+      const { Image } = container;
+      const [image, tag] = Image.split(':');
 
       if (image === Images.Coordinator && tag) {
         this.eventEmitter.emit(Metric.CoordinatorVersion, {
@@ -109,6 +112,6 @@ export class CoordinatorMetricsService implements OnModuleInit {
           proxy_version: tag,
         });
       }
-    }
+    });
   }
 }

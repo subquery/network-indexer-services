@@ -35,6 +35,13 @@ export class MetricEventListener {
     private dbDockerCpu: Gauge<string>,
     @InjectMetric(statusMetric(Metric.DbDockerStats))
     private dbDockerStatus: Gauge<string>,
+
+    @InjectMetric(memoryMetric(Metric.RedisDockerStats))
+    private redisDockerMemory: Gauge<string>,
+    @InjectMetric(cpuMetric(Metric.RedisDockerStats))
+    private redisDockerCpu: Gauge<string>,
+    @InjectMetric(statusMetric(Metric.RedisDockerStats))
+    private redisDockerStatus: Gauge<string>,
   ) {}
 
   @OnEvent(Metric.CoordinatorVersion)
@@ -77,6 +84,18 @@ export class MetricEventListener {
       this.dbDockerCpu,
       this.dbDockerMemory,
       this.dbDockerStatus,
+      cpu_usage,
+      memory_usage,
+      status,
+    );
+  }
+
+  @OnEvent(Metric.RedisDockerStats)
+  handleRedisStats({ cpu_usage, memory_usage, status }: DockerEventPayload) {
+    this.handleDockerStats(
+      this.redisDockerCpu,
+      this.redisDockerMemory,
+      this.redisDockerStatus,
       cpu_usage,
       memory_usage,
       status,
