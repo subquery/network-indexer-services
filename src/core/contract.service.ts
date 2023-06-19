@@ -117,8 +117,16 @@ export class ContractService {
     this.sdk = initContractSDK(this.wallet, this.chainID);
   }
 
-  async updateContractSDK(indexer: string): Promise<ContractSDK | undefined> {
+  async updateContractSDK(): Promise<ContractSDK | undefined> {
+    const indexer = await this.accountService.getIndexer();
+    if (!indexer) {
+      logger.error('No indexer configured');
+      return;
+    }
+
     const controller = await this.accountService.getActiveController();
+    if (!controller) return;
+
     const controllerAccount = controller?.address.toLowerCase() ?? '';
     if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
       debugLogger('contract', `contract sdk is connected to ${this.wallet?.address}`);
