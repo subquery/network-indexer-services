@@ -13,7 +13,7 @@ export function mutexPromise() {
       if (!PROMISES[lock]) {
         PROMISES[lock] = runOrigin();
       } else {
-        PROMISES[lock] = PROMISES[lock].then(runOrigin);
+        PROMISES[lock] = PROMISES[lock].then(runOrigin, runOrigin);
       }
       return PROMISES[lock];
     };

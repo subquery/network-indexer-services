@@ -20,8 +20,6 @@ RUN npm prune --production
 
 FROM node:16-alpine
 
-RUN apk add --no-cache curl docker-cli docker-compose grep
-
 # Find the installed docker-compose and store its path
 RUN DOCKER_COMPOSE_PATH=$(find / -name docker-compose -print -quit) \
     && ln -s $DOCKER_COMPOSE_PATH /usr/local/bin/docker-compose

@@ -12,6 +12,8 @@ services:
       DB_DATABASE: {{postgres.db}}
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
+    volumes:
+      - {{mmrPath}}/poi/{{deploymentID}}:{{mmrPath}}/poi/{{deploymentID}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
@@ -23,9 +25,9 @@ services:
       - --timeout={{timeout}}
       - --workers={{worker}}
       - --store-cache-threshold={{cache}}
-      - --proof-of-index={{poiEnabled}}
-      - --disable-historical={{disableHistorical}}
-      - --mmr-store-type=postgres
+      - --proof-of-index=true
+      - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
+      - --disable-historical=false
     healthcheck:
       test:
         [
