@@ -7,18 +7,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { bufferToHex, privateToAddress, toBuffer } from 'ethereumjs-util';
 import { Wallet } from 'ethers';
-import {ILike, Repository} from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
 import { Config } from '../configure/configure.module';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { encrypt } from '../utils/encrypt';
-import {getLogger} from "../utils/logger";
+import { getLogger } from '../utils/logger';
 import { AccountEvent } from '../utils/subscription';
 import { Indexer, Controller, AccountMetaDataType } from './account.model';
 import { ContractService } from './contract.service';
 
-const logger = getLogger('account')
+const logger = getLogger('account');
 
 @Injectable()
 export class AccountService {
@@ -30,8 +30,7 @@ export class AccountService {
     private contractService: ContractService,
     private pubSub: SubscriptionService,
     private config: Config,
-  ) {
-  }
+  ) {}
 
   get sdk(): ContractSDK {
     return this.contractService.getSdk();
@@ -54,17 +53,11 @@ export class AccountService {
     const controller = await this.getActiveController();
     return {
       indexer: this.indexer,
-      controller: controller ? controller.address : '',
-      encryptedKey: controller ? controller.encryptedKey : '',
+      controller: controller?.address ?? '',
+      encryptedKey: controller?.encryptedKey ?? '',
       network: this.config.network,
       wsEndpoint: this.config.wsEndpoint,
     };
-  }
-
-  async emitAccountChanged(): Promise<AccountMetaDataType> {
-    const accountMeta = await this.getAccountMetadata();
-    await this.pubSub.publish(AccountEvent.Indexer, {accountChanged: accountMeta});
-    return accountMeta;
   }
 
   async addIndexer(address: string): Promise<Indexer> {
@@ -76,25 +69,13 @@ export class AccountService {
       this.indexer = address;
       const indexerAccount = this.indexerRepo.create({ id: uuid(), address: address });
       await this.indexerRepo.save(indexerAccount);
-      await this.emitAccountChanged();
     }
 
     return { address: address, id: '' };
   }
 
-  onAddControllerEvent() {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    this.sdk.indexerRegistry.on('SetControllerAccount', async (indexer, controller) => {
-      if (this.indexer !== indexer) return;
-      await this.activeController(controller);
-      await this.emitAccountChanged();
-    });
-  }
-
   // create and add controller account
   async addController(): Promise<string> {
-    this.onAddControllerEvent();
-
     const pk = `0x${crypto.randomBytes(32).toString('hex')}`;
     const controller = new Wallet(pk);
     const encryptedKey = encrypt(controller.privateKey, this.config.secret);
@@ -122,8 +103,24 @@ export class AccountService {
     return controller;
   }
 
-  async getActiveController(): Promise<Controller> {
-    return this.controllerRepo.findOne({ where: { active: true } });
+  async getActiveController(): Promise<Controller | undefined> {
+    const controller = await this.sdk.indexerRegistry.getController(this.indexer);
+    const controllerAccount = controller ? controller.toLowerCase() : '';
+    if (!controllerAccount) {
+      logger.warn("Controller Account hasn't been set");
+      return;
+    }
+
+    const controllerObj = await this.controllerRepo.findOne({
+      where: {
+        address: ILike(`%${controllerAccount}%`), // case insensitive
+      },
+    });
+
+    if (!controllerObj) {
+      logger.warn("Don't have controller pk in db");
+      return;
+    }
   }
 
   async activeController(address: string): Promise<Controller> {
@@ -151,6 +148,6 @@ export class AccountService {
     await this.indexerRepo.clear();
     await this.controllerRepo.clear();
 
-    return this.emitAccountChanged();
+    return this.getAccountMetadata();
   }
 }

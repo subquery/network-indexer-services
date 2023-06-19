@@ -9,13 +9,14 @@ import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides } from 'ethers';
 import { Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import {ILike, Repository} from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { debugLogger, getLogger } from '../utils/logger';
-import {Controller} from "./account.model";
+import { Controller } from './account.model';
+import { AccountService } from './account.service';
 import { DeploymentStatus, IndexingStatus } from './types';
 
 const logger = getLogger('contract');
@@ -31,6 +32,7 @@ export class ContractService {
 
   constructor(
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
+    private accountService: AccountService,
     private config: Config,
   ) {
     this.chainID = networkToChainID[config.network];
@@ -110,18 +112,13 @@ export class ContractService {
 
       return true;
     } catch (e) {
-      logger.warn(e,`Fail to transfer all funds from controller to indexer`);
+      logger.warn(e, `Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
 
   isValidPrivateKey(key: string) {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
-  }
-
-  async indexerToController(indexer: string) {
-    const controller = await this.sdk.indexerRegistry.getController(indexer);
-    return controller ? controller.toLowerCase() : '';
   }
 
   updateSDK(key: string) {
@@ -131,19 +128,8 @@ export class ContractService {
   }
 
   async updateContractSDK(indexer: string): Promise<ContractSDK | undefined> {
-    const controllerAccount = await this.indexerToController(indexer);
-    if (!controllerAccount) {
-      logger.warn('Controller Account hasn\'t been set');
-      return;
-    }
-    const controller = await this.controllerRepo.findOne({where:{
-        address: ILike(`%${controllerAccount}%`), // case insensitive
-      }});
-
-    if (!controller) {
-      logger.warn('Don\'t have controller pk in db');
-      return;
-    }
+    const controller = await this.accountService.getActiveController();
+    const controllerAccount = controller?.address.toLowerCase() ?? '';
     if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
       debugLogger('contract', `contract sdk is connected to ${this.wallet?.address}`);
       return this.sdk;
@@ -166,7 +152,7 @@ export class ContractService {
       );
       return { status, blockHeight };
     } catch (e) {
-      getLogger('contract').error(e,`failed to get indexing status for project: ${id}`);
+      getLogger('contract').error(e, `failed to get indexing status for project: ${id}`);
       return this.emptyDeploymentStatus;
     }
   }
