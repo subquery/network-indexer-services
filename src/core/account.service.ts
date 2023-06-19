@@ -14,7 +14,6 @@ import { Config } from '../configure/configure.module';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { encrypt } from '../utils/encrypt';
 import { getLogger } from '../utils/logger';
-import { AccountEvent } from '../utils/subscription';
 import { Indexer, Controller, AccountMetaDataType } from './account.model';
 import { ContractService } from './contract.service';
 

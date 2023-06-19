@@ -9,7 +9,7 @@ import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides } from 'ethers';
 import { Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
