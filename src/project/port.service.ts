@@ -1,16 +1,16 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import portfinder from 'portfinder';
-import {Repository} from 'typeorm';
+import { Repository } from 'typeorm';
 
-import {Config} from '../configure/configure.module';
-import {getServicePort} from '../utils/docker';
-import {debugLogger} from '../utils/logger';
+import { Config } from '../configure/configure.module';
+import { getServicePort } from '../utils/docker';
+import { debugLogger } from '../utils/logger';
 
-import {ProjectEntity} from './project.model';
+import { ProjectEntity } from './project.model';
 
 @Injectable()
 export class PortService {
@@ -33,16 +33,14 @@ export class PortService {
   async getAvailablePort(): Promise<number> {
     let port: number;
     let startPort = this.defaultStartPort;
-    for (let i = 0; i < 10; i++) {
-      const _port = await portfinder.getPortPromise({port: startPort});
+    for (let i = 0; i < 15; i++) {
+      port = await portfinder.getPortPromise({ port: startPort });
       if (this.ports.includes(port)) {
-        startPort = _port+1;
+        startPort++;
       } else {
-        port = _port;
         break;
       }
     }
-    if (!port) throw new Error(`can not find available port`);
 
     debugLogger('node', `next port: ${port}`);
     this.addPort(port);
@@ -55,7 +53,7 @@ export class PortService {
     if (projects.length === 0) return [];
 
     return projects
-      .map(({queryEndpoint}) => getServicePort(queryEndpoint))
+      .map(({ queryEndpoint }) => getServicePort(queryEndpoint))
       .filter((p) => typeof p === 'number');
   }
 
