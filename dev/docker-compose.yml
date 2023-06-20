@@ -87,6 +87,12 @@ services:
       - --secret-key=vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3
       - --service-url=http://indexer_coordinator:8000
       - --bootstrap=/ip4/210.55.152.69/tcp/7370
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:8001/healthy >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   default:
     name: indexer_services
