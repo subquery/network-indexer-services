@@ -4,19 +4,8 @@
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
-import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
 
-export function projectConfigChanged(
-  project: Project,
-  baseConfig: ProjectBaseConfig,
-  advancedConfig: ProjectAdvancedConfig,
-): boolean {
-  return (
-    advancedConfig.purgeDB ||
-    !isEqual(project.baseConfig, baseConfig) ||
-    !isEqual(project.advancedConfig, advancedConfig)
-  );
-}
+import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
 
 // manifest types
 export type Runner = {
@@ -51,6 +40,18 @@ export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' |
 export const IPFS_URL = 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
 
+export function projectConfigChanged(
+  project: Project,
+  baseConfig: ProjectBaseConfig,
+  advancedConfig: ProjectAdvancedConfig,
+): boolean {
+  return (
+    advancedConfig.purgeDB ||
+    !isEqual(project.baseConfig, baseConfig) ||
+    !isEqual(project.advancedConfig, advancedConfig)
+  );
+}
+
 // TODO: migrate these logic to client sdk
 export async function getManifest(cid: string) {
   const projectYaml = await clientSDK.cat(cid);
@@ -80,5 +81,4 @@ export async function nodeConfigs(cid: string): Promise<{ chainType: ChainType; 
   return { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
 }
 
-// TODO: use from etherprojects
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';

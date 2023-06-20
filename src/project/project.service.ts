@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { Not, Repository } from 'typeorm';
@@ -25,7 +25,6 @@ import {
   projectId,
   queryEndpoint,
   schemaName,
-  TemplateType,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
 import { nodeConfigs, projectConfigChanged } from '../utils/project';
@@ -44,6 +43,7 @@ import {
   ProjectEntity,
   ProjectInfo,
 } from './project.model';
+import { MmrStoreType, TemplateType } from './types';
 
 @Injectable()
 export class ProjectService {
@@ -184,6 +184,17 @@ export class ProjectService {
     return await this.createAndStartProject(id, baseConfig, advancedConfig);
   }
 
+  async getMmrStoreType(id: string): Promise<MmrStoreType> {
+    const schema = schemaName(id);
+    const isDBExist = await this.db.checkSchemaExist(schema);
+    if (!isDBExist) return MmrStoreType.postgres;
+
+    const isMmrTableExist = await this.db.checkTableExist('_mmr', schema);
+    if (isMmrTableExist) return MmrStoreType.postgres;
+
+    return MmrStoreType.file;
+  }
+
   async configToTemplate(
     project: Project,
     baseConfig: ProjectBaseConfig,
@@ -191,6 +202,7 @@ export class ProjectService {
   ): Promise<TemplateType> {
     const port = await this.portService.getAvailablePort();
     const servicePort = getServicePort(project.queryEndpoint) ?? port;
+    const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
 
     const postgres = this.config.postgres;
@@ -202,6 +214,7 @@ export class ProjectService {
       projectID,
       servicePort,
       postgres,
+      mmrStoreType,
       dockerNetwork,
       ...baseConfig,
       ...advancedConfig,

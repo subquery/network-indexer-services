@@ -35,6 +35,17 @@ export class DB {
     }
   }
 
+  async checkTableExist(name: string, schema: string): Promise<boolean> {
+    const query = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema =${schema} AND table_name = ${name});`;
+    try {
+      const r = await this.dbClient.query(query);
+      // TODO: check table exist (t/f)
+      return r.rowCount > 0;
+    } catch {
+      return false;
+    }
+  }
+
   async createDBExtension() {
     await this.dbClient.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
     getLogger('db').info('Add btree_gist extension to db');
@@ -67,7 +78,7 @@ export class DBModule {
       providers: [
         {
           provide: DB,
-          useFactory: async ()=> {
+          useFactory: async () => {
             const db = new DB();
             await db.connect();
             return db;

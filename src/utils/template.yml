@@ -26,6 +26,7 @@ services:
       - --workers={{worker}}
       - --store-cache-threshold={{cache}}
       - --proof-of-index=true
+      - --mmr-store-type={{mmrStoreType}}
       - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
       - --disable-historical=false
     healthcheck:
