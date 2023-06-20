@@ -4,30 +4,10 @@
 import * as fs from 'fs';
 import { join } from 'path';
 import * as handlebars from 'handlebars';
-import { Postgres } from '../configure/configure.module';
+
+import { TemplateType } from '../project/types';
 import { getLogger } from './logger';
 import { nodeConfigs } from './project';
-
-// move to types folder
-export type TemplateType = {
-  deploymentID: string;
-  projectID: string;
-  networkEndpoint: string;
-  nodeVersion: string;
-  queryVersion: string;
-  servicePort: number;
-  poiEnabled: boolean;
-  networkDictionary?: string;
-  dbSchema: string;
-  postgres: Postgres;
-  dockerNetwork: string;
-  worker: number;
-  batchSize: number;
-  timeout: number;
-  cache: number;
-  cpu: number;
-  memory: number;
-};
 
 export function bytesToMegabytes(bytes: number): number {
   return bytes / (1024 * 1024);
