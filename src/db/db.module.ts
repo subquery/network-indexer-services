@@ -36,7 +36,7 @@ export class DB {
   }
 
   async checkTableExist(name: string, schema: string): Promise<boolean> {
-    const query = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '${schema}' AND table_name = '${name}');`;
+    const query = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '${schema}' AND table_name = '${name}')`;
     try {
       const r = await this.dbClient.query(query);
       // TODO: check table exist (t/f)
