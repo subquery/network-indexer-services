@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides } from 'ethers';
 import { Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-import {ILike, Repository} from 'typeorm';
 
 import { Config } from '../configure/configure.module';
-import { ChainID, initContractSDK, networkToChainID } from '../utils/contractSDK';
+import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { debugLogger, getLogger } from '../utils/logger';
-import {Controller} from "./account.model";
+import { Controller } from './account.model';
+import { AccountService } from './account.service';
 import { DeploymentStatus, IndexingStatus } from './types';
 
 const logger = getLogger('contract');
@@ -29,15 +28,12 @@ export class ContractService {
   private chainID: ChainID;
   private existentialBalance: BigNumber;
 
-  constructor(
-    @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
-    private config: Config,
-  ) {
+  constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = parseEther('0.05');
-    this.initProvider(config.wsEndpoint);
-    this.sdk = initContractSDK(this.provider, this.chainID);
+    const provider = initProvider(config.wsEndpoint, this.chainID);
+    this.sdk = initContractSDK(provider, this.chainID);
   }
 
   getSdk() {
@@ -47,10 +43,6 @@ export class ContractService {
   async getOverrides(): Promise<Overrides> {
     const gasPrice = await this.provider.getGasPrice();
     return { gasPrice };
-  }
-
-  initProvider(endpoint: string) {
-    this.provider = new providers.StaticJsonRpcProvider(endpoint, parseInt(this.chainID, 16));
   }
 
   async getBlockTime() {
@@ -110,7 +102,7 @@ export class ContractService {
 
       return true;
     } catch (e) {
-      logger.warn(e,`Fail to transfer all funds from controller to indexer`);
+      logger.warn(e, `Fail to transfer all funds from controller to indexer`);
       return false;
     }
   }
@@ -119,31 +111,23 @@ export class ContractService {
     return key.startsWith('0x') && isValidPrivate(toBuffer(key));
   }
 
-  async indexerToController(indexer: string) {
-    const controller = await this.sdk.indexerRegistry.getController(indexer);
-    return controller ? controller.toLowerCase() : '';
-  }
-
   updateSDK(key: string) {
     const keyBuffer = toBuffer(key);
     this.wallet = new Wallet(keyBuffer, this.provider);
     this.sdk = initContractSDK(this.wallet, this.chainID);
   }
 
-  async updateContractSDK(indexer: string): Promise<ContractSDK | undefined> {
-    const controllerAccount = await this.indexerToController(indexer);
-    if (!controllerAccount) {
-      logger.warn('Controller Account hasn\'t been set');
+  async updateContractSDK(): Promise<ContractSDK | undefined> {
+    const indexer = await this.accountService.getIndexer();
+    if (!indexer) {
+      logger.error('No indexer configured');
       return;
     }
-    const controller = await this.controllerRepo.findOne({where:{
-        address: ILike(`%${controllerAccount}%`), // case insensitive
-      }});
 
-    if (!controller) {
-      logger.warn('Don\'t have controller pk in db');
-      return;
-    }
+    const controller = await this.accountService.getActiveController();
+    if (!controller) return;
+
+    const controllerAccount = controller?.address.toLowerCase() ?? '';
     if (this.sdk && this.wallet?.address.toLowerCase() === controllerAccount) {
       debugLogger('contract', `contract sdk is connected to ${this.wallet?.address}`);
       return this.sdk;
@@ -166,7 +150,7 @@ export class ContractService {
       );
       return { status, blockHeight };
     } catch (e) {
-      getLogger('contract').error(e,`failed to get indexing status for project: ${id}`);
+      getLogger('contract').error(e, `failed to get indexing status for project: ${id}`);
       return this.emptyDeploymentStatus;
     }
   }

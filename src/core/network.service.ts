@@ -116,12 +116,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
   async syncContractConfig(): Promise<boolean> {
     try {
-      const indexer = await this.accountService.getIndexer();
-      if (!indexer) {
-        logger.error('No indexer configured');
-        return false;
-      }
-      this.sdk = await this.contractService.updateContractSDK(indexer);
+      this.sdk = await this.contractService.updateContractSDK();
       return !!this.sdk;
     } catch (e) {
       logger.error(e, 'syncContractConfig');
