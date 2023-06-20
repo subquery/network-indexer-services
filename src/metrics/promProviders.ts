@@ -51,4 +51,16 @@ export const PrometheusProviders = [
     name: statusMetric(Metric.DbDockerStats),
     help: 'Indexer DB container status',
   }),
+  makeGaugeProvider({
+    name: cpuMetric(Metric.RedisDockerStats),
+    help: 'Redis cpu usage (%)',
+  }),
+  makeGaugeProvider({
+    name: memoryMetric(Metric.RedisDockerStats),
+    help: 'Redis memory usage (MB)',
+  }),
+  makeGaugeProvider({
+    name: statusMetric(Metric.RedisDockerStats),
+    help: 'Redis container status',
+  }),
 ];

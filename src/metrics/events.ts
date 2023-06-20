@@ -21,7 +21,7 @@ export const metricNameMap: Record<Images, Metric> = {
   [Images.Coordinator]: Metric.CoordinatorDockerStats,
   [Images.Proxy]: Metric.ProxyDockerStats,
   [Images.Db]: Metric.DbDockerStats,
-  [Images.Redis]: Metric.DbDockerStats,
+  [Images.Redis]: Metric.RedisDockerStats,
 };
 
 export enum ContainerStatus {
