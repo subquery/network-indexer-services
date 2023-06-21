@@ -108,16 +108,12 @@ export class AccountService {
       return;
     }
 
-    const controllerObj = await this.controllerRepo.findOne({
-      where: {
-        address: ILike(`%${controllerAccount}%`), // case insensitive
-      },
-    });
+    const query = { where: { address: ILike(`%${controllerAccount}%`) } };
+    const controllerObj = await this.controllerRepo.findOne(query);
 
-    if (!controllerObj) {
-      logger.warn("Don't have controller pk in db");
-      return;
-    }
+    if (controllerObj) return controllerObj;
+
+    logger.warn("Don't have controller pk in db");
   }
 
   async activeController(address: string): Promise<Controller> {
