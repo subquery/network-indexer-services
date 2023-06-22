@@ -46,17 +46,6 @@ export class AccountService {
     return bufferToHex(privateToAddress(toBuffer(key))).toLowerCase();
   }
 
-  async getAccountMetadata(): Promise<AccountMetaDataType> {
-    const controller = await this.getActiveController();
-    return {
-      indexer: this.indexer,
-      controller: controller?.address ?? '',
-      encryptedKey: controller?.encryptedKey ?? '',
-      network: this.config.network,
-      wsEndpoint: this.config.wsEndpoint,
-    };
-  }
-
   async addIndexer(address: string): Promise<Indexer> {
     if (this.indexer !== undefined && address !== this.indexer) {
       throw new Error(`Indexer account already exists ${this.indexer}`);
@@ -100,6 +89,17 @@ export class AccountService {
     return controller;
   }
 
+  async getAccountMetadata(): Promise<AccountMetaDataType> {
+    const controller = await this.getActiveController();
+    return {
+      indexer: this.indexer,
+      controller: controller?.address ?? '',
+      encryptedKey: controller?.encryptedKey ?? '',
+      network: this.config.network,
+      wsEndpoint: this.config.wsEndpoint,
+    };
+  }
+
   async getActiveController(): Promise<Controller | undefined> {
     const controller = await this.sdk.indexerRegistry.getController(this.indexer);
     const controllerAccount = controller ? controller.toLowerCase() : '';
@@ -114,22 +114,6 @@ export class AccountService {
     if (controllerObj) return controllerObj;
 
     logger.warn("Don't have controller pk in db");
-  }
-
-  async activeController(address: string): Promise<Controller> {
-    const old = await this.getActiveController();
-    if (old) {
-      old.active = false;
-      await this.controllerRepo.save(old);
-    }
-
-    const controller = await this.controllerRepo.findOne({ where: { address: ILike(`%${address}%`) } });
-    if (controller) {
-      controller.active = true;
-      await this.controllerRepo.save(controller);
-    }
-
-    return controller;
   }
 
   async getControllers(): Promise<Controller[]> {

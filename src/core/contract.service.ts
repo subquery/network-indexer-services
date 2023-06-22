@@ -32,8 +32,8 @@ export class ContractService {
     this.chainID = networkToChainID[config.network];
     this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = parseEther('0.05');
-    const provider = initProvider(config.wsEndpoint, this.chainID);
-    this.sdk = initContractSDK(provider, this.chainID);
+    this.provider = initProvider(config.wsEndpoint, this.chainID);
+    this.sdk = initContractSDK(this.provider, this.chainID);
   }
 
   getSdk() {
