@@ -1,4 +1,4 @@
-name: "Node-to-docker"
+name: "Docker-Publish-Prod"
 on:
   workflow_dispatch:
     inputs:
