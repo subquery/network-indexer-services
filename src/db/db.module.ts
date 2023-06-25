@@ -4,13 +4,12 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { Client } from 'pg';
 import { getLogger } from '../utils/logger';
-import { getYargsOption, PostgresKeys } from '../yargs';
+import { argv, PostgresKeys } from '../yargs';
 
 export class DB {
   private dbClient: Client;
 
   constructor() {
-    const { argv } = getYargsOption();
     this.dbClient = new Client({
       host: argv[PostgresKeys.host],
       port: argv[PostgresKeys.port],

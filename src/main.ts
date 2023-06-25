@@ -9,7 +9,7 @@ import { argv } from './yargs';
 
 async function bootstrap() {
   try {
-    const port = argv('port') as number;
+    const port = argv.port;
     const app = await NestFactory.create(AppModule, { logger: new NestLogger() });
     await app.listen(port);
     getLogger(LogCategory.coordinator).info('coordinator service started');
@@ -20,4 +20,5 @@ async function bootstrap() {
     getLogger(LogCategory.coordinator).error(e, 'coordinator service failed');
   }
 }
+
 void bootstrap();

@@ -1,7 +1,8 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { join } from 'path';
+import { join, resolve } from 'path';
+import * as process from 'process';
 import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { GraphQLModule } from '@nestjs/graphql';
@@ -29,11 +30,11 @@ import { argv, PostgresKeys } from './yargs';
     ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: argv(PostgresKeys.host) as string,
-      port: argv(PostgresKeys.port) as number,
-      username: argv(PostgresKeys.username) as string,
-      password: argv(PostgresKeys.password) as string,
-      database: argv(PostgresKeys.database) as string,
+      host: argv[PostgresKeys.host],
+      port: argv[PostgresKeys.port],
+      username: argv[PostgresKeys.username],
+      password: argv[PostgresKeys.password],
+      database: argv[PostgresKeys.database],
       autoLoadEntities: true,
       synchronize: true,
     }),
@@ -53,7 +54,9 @@ import { argv, PostgresKeys } from './yargs';
     ConfigureModule.register(),
     DBModule.register(),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, 'indexer-admin'),
+      rootPath: process.env['indexer-admin-root']
+        ? resolve(process.env['indexer-admin-root'])
+        : join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),
   ],

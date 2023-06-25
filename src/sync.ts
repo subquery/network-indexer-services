@@ -1,23 +1,22 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {INestApplication} from '@nestjs/common';
-import {GraphqlQueryClient, NETWORK_CONFIGS, NetworkConfig} from '@subql/network-clients';
-import {GetStateChannels, GetStateChannelsQuery} from '@subql/network-query';
+import { INestApplication } from '@nestjs/common';
+import { GraphqlQueryClient, NETWORK_CONFIGS, NetworkConfig } from '@subql/network-clients';
+import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
 
-import {ContractService} from './core/contract.service';
-import {PaygService} from './payg/payg.service';
-import {getLogger, LogCategory} from './utils/logger';
-import {getYargsOption} from './yargs';
+import { ContractService } from './core/contract.service';
+import { PaygService } from './payg/payg.service';
+import { getLogger, LogCategory } from './utils/logger';
+import { argv } from './yargs';
 
 export async function sync(app: INestApplication) {
-  const {argv} = getYargsOption();
   const config = NETWORK_CONFIGS[argv['network']] as NetworkConfig;
   const client = new GraphqlQueryClient(config);
   const apolloClient = client.networkClient;
   const result = await apolloClient.query<GetStateChannelsQuery>({
     query: GetStateChannels,
-    variables: {status: 'OPEN'},
+    variables: { status: 'OPEN' },
   });
 
   const contractService: ContractService = app.get<ContractService>(ContractService);
@@ -25,21 +24,23 @@ export async function sync(app: INestApplication) {
   const sdk = contractService.getSdk();
 
   getLogger(LogCategory.coordinator).info(`sync from Subquery Project...`);
-  await Promise.all(result.data.stateChannels.nodes.map((stateChannel) =>
-    paygServicee.syncChannel(
-      stateChannel.id,
-      stateChannel.deployment.id,
-      stateChannel.indexer,
-      stateChannel.consumer,
-      stateChannel.total.toString(),
-      stateChannel.spent.toString(),
-      stateChannel.price.toString(),
-      new Date(stateChannel.expiredAt).valueOf() / 1000,
-      new Date(stateChannel.terminatedAt).valueOf() / 1000,
-      stateChannel.terminateByIndexer,
-      stateChannel.isFinal,
-    )
-  ));
+  await Promise.all(
+    result.data.stateChannels.nodes.map((stateChannel) =>
+      paygServicee.syncChannel(
+        stateChannel.id,
+        stateChannel.deployment.id,
+        stateChannel.indexer,
+        stateChannel.consumer,
+        stateChannel.total.toString(),
+        stateChannel.spent.toString(),
+        stateChannel.price.toString(),
+        new Date(stateChannel.expiredAt).valueOf() / 1000,
+        new Date(stateChannel.terminatedAt).valueOf() / 1000,
+        stateChannel.terminateByIndexer,
+        stateChannel.isFinal,
+      ),
+    ),
+  );
 
   const contract = sdk.stateChannel;
 
