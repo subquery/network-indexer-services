@@ -1,0 +1,86 @@
+name: "Prerelease"
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+
+jobs:
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+
+
+  Bump-Prerelease-Publish:
+    name: Bump-Prerelease-Publish
+    needs: pre-ci
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]') && !startsWith(github.event.head_commit.message, '[release]') && github.repository == 'subquery/indexer-coordinator'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 100
+          token: ${{ secrets.REPO_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: onfinality
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+
+      - uses: marceloprado/has-changed-path@v1
+        id: changed-coordinator
+        with:
+          paths: src
+
+      #Add remove-stable-version
+      - name: Bump coordinator
+        if: steps.changed-coordinator.outputs.changed == 'true'
+        uses: ./.github/actions/create-prerelease
+        with:
+          package-path: ./
+          npm-token: ${{ secrets.NPM_TOKEN }}
+
+      ## node
+      - name: Get updated coordinator version
+        id: get-coordinator-version
+        run: |
+          sh .github/workflows/scripts/coordinatorVersion.sh
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          platforms: amd64
+          file: ./Dockerfile
+          tags: onfinality/subql-coordinator-dev:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
+          build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v5
+        with:
+          message: '[SKIP CI] Prerelease'
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
