@@ -5,7 +5,7 @@ import { LoggerService } from '@nestjs/common';
 import { Logger } from '@subql/utils';
 import Pino from 'pino';
 
-import { getYargsOption } from '../yargs';
+import { argv } from '../yargs';
 
 export enum LogCategory {
   coordinator = 'indexer-coordinator',
@@ -25,17 +25,18 @@ export function colorText(text: string, color = TextColor.CYAN): string {
   return `\u001b[${color}m${text}\u001b[39m`;
 }
 
-const logger = new Logger({ level: 'info', outputFormat: 'colored', nestedKey: 'payload' });
+const logger = new Logger({
+  level: argv.debug ? 'debug' : 'info',
+  outputFormat: 'colored',
+  nestedKey: 'payload',
+});
 
 export function getLogger(category: string): Pino.Logger {
   return logger.getLogger(category);
 }
 
 export function debugLogger(category: string, msg: string) {
-  const { argv } = getYargsOption();
-  if (argv['debug']) {
-    getLogger(category).info(msg);
-  }
+  getLogger(category).debug(msg);
 }
 
 export function setLevel(level: Pino.LevelWithSilent): void {
