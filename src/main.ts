@@ -11,6 +11,7 @@ async function bootstrap() {
   try {
     const port = argv.port;
     const app = await NestFactory.create(AppModule, { logger: new NestLogger() });
+
     await app.listen(port);
     getLogger(LogCategory.coordinator).info('coordinator service started');
     getLogger(LogCategory.admin).info('indexer admin app started');
