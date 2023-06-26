@@ -62,11 +62,13 @@ jobs:
 
       ## node
       - name: Get updated coordinator version
+        if: steps.changed-coordinator.outputs.changed == 'true'
         id: get-coordinator-version
         run: |
           sh .github/workflows/scripts/coordinatorVersion.sh
 
       - name: Build and push
+        if: steps.changed-coordinator.outputs.changed == 'true'
         uses: docker/build-push-action@v2
         with:
           push: true
@@ -76,6 +78,7 @@ jobs:
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
 
       - name: Image digest
+        if: steps.changed-coordinator.outputs.changed == 'true'
         run: echo ${{ steps.docker_build.outputs.digest }}
 
       - name: Commit changes
