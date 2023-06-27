@@ -5,6 +5,7 @@ import { INestApplication } from '@nestjs/common';
 import { GraphqlQueryClient, NETWORK_CONFIGS, NetworkConfig } from '@subql/network-clients';
 import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
 
+import { BigNumber } from 'ethers';
 import { ContractService } from './core/contract.service';
 import { PaygService } from './payg/payg.service';
 import { getLogger, LogCategory } from './utils/logger';
@@ -27,7 +28,7 @@ export async function sync(app: INestApplication) {
   await Promise.all(
     result.data.stateChannels.nodes.map((stateChannel) =>
       paygServicee.syncChannel(
-        stateChannel.id,
+        BigNumber.from(stateChannel.id).toString(),
         stateChannel.deployment.id,
         stateChannel.indexer,
         stateChannel.consumer,
