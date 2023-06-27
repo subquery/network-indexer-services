@@ -11,43 +11,51 @@ import { PaygService } from './payg/payg.service';
 import { getLogger, LogCategory } from './utils/logger';
 import { argv } from './yargs';
 
-export async function sync(app: INestApplication) {
+export function sync(app: INestApplication) {
   const config = NETWORK_CONFIGS[argv['network']] as NetworkConfig;
   const client = new GraphqlQueryClient(config);
   const apolloClient = client.networkClient;
-  const result = await apolloClient.query<GetStateChannelsQuery>({
-    query: GetStateChannels,
-    variables: { status: 'OPEN' },
-  });
+
+  // FIXME
+  /* eslint-disable */
+
+  setInterval(async () => {
+    try {
+      getLogger(LogCategory.coordinator).info(`load from Subquery Project...`);
+      const result = await apolloClient.query<GetStateChannelsQuery>({
+        query: GetStateChannels,
+        variables: { status: 'OPEN' },
+      });
+
+      await Promise.all(
+        result.data.stateChannels.nodes.map((stateChannel) =>
+          paygServicee.syncChannel(
+            BigNumber.from(stateChannel.id).toString(),
+            stateChannel.deployment.id,
+            stateChannel.indexer,
+            stateChannel.consumer,
+            stateChannel.total.toString(),
+            stateChannel.spent.toString(),
+            stateChannel.price.toString(),
+            new Date(stateChannel.expiredAt).valueOf() / 1000,
+            new Date(stateChannel.terminatedAt).valueOf() / 1000,
+            stateChannel.terminateByIndexer,
+            stateChannel.isFinal,
+          ),
+        ),
+      );
+    } catch (e) {
+      getLogger(LogCategory.coordinator).error(e);
+    }
+  }, 10000);
+
+  getLogger(LogCategory.coordinator).info(`start listening events from chain ...`);
 
   const contractService: ContractService = app.get<ContractService>(ContractService);
   const paygServicee: PaygService = app.get<PaygService>(PaygService);
   const sdk = contractService.getSdk();
-
-  getLogger(LogCategory.coordinator).info(`sync from Subquery Project...`);
-  await Promise.all(
-    result.data.stateChannels.nodes.map((stateChannel) =>
-      paygServicee.syncChannel(
-        BigNumber.from(stateChannel.id).toString(),
-        stateChannel.deployment.id,
-        stateChannel.indexer,
-        stateChannel.consumer,
-        stateChannel.total.toString(),
-        stateChannel.spent.toString(),
-        stateChannel.price.toString(),
-        new Date(stateChannel.expiredAt).valueOf() / 1000,
-        new Date(stateChannel.terminatedAt).valueOf() / 1000,
-        stateChannel.terminateByIndexer,
-        stateChannel.isFinal,
-      ),
-    ),
-  );
-
   const contract = sdk.stateChannel;
 
-  getLogger(LogCategory.coordinator).info(`sync over, start listening`);
-  // FIXME
-  /* eslint-disable */
   contract.on(
     'ChannelOpen',
     async (channelId, indexer, consumer, total, price, expiredAt, deploymentId, callback) => {
