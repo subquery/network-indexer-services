@@ -5,7 +5,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import axios from 'axios';
 import LRU from 'lru-cache';
 import * as semver from 'semver';
-import { getYargsOption } from '../yargs';
+import { argv } from '../yargs';
 
 export enum DockerRegistry {
   query = 'onfinality/subql-query',
@@ -47,7 +47,6 @@ export class DockerRegistryService implements OnModuleInit {
   }
 
   private enablePrerelease(): boolean {
-    const { argv } = getYargsOption();
     return argv['use-prerelease'];
   }
 

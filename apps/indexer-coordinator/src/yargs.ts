@@ -19,7 +19,7 @@ export enum PostgresKeys {
   database = 'postgres-database',
 }
 
-export function getYargsOption() {
+function getYargsOption() {
   return yargs(hideBin(process.argv)).options({
     network: {
       demandOption: false,
@@ -132,6 +132,4 @@ export function getYargsOption() {
   });
 }
 
-export function argv(arg: string): unknown {
-  return getYargsOption().argv[arg];
-}
+export const argv = getYargsOption().argv;
