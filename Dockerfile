@@ -1,22 +1,26 @@
 FROM node:16-alpine AS BUILD_IMAGE
 
-RUN apk update && apk add --no-cache yarn curl bash tini git docker-cli docker-compose grep make python3 g++
-
-# Install node-prune
-RUN curl -sfL https://install.goreleaser.com/github.com/tj/node-prune.sh | bash -s -- -b /usr/local/bin
+RUN apk update && apk add --no-cache curl bash tini git docker-cli docker-compose grep make python3 g++
 
 WORKDIR /usr/src/app
 
-COPY package.json yarn.lock ./
+COPY ./apps/indexer-coordinator/package.json ./
 
-RUN yarn --network-timeout 600000 --frozen-lockfile
+RUN npm install -g @microsoft/rush
+
+RUN npm install -g pnpm
 
 COPY . .
 
-RUN yarn build
+RUN rush update
 
-# Remove development dependencies
-RUN npm prune --production
+RUN rush build
+
+# prune by reinstall producetion dependencies.
+WORKDIR /usr/src/app/apps/indexer-coordinator
+RUN rm -rf node_modules
+RUN pnpm config set node-linker hoisted
+RUN pnpm install -P
 
 FROM node:16-alpine
 
@@ -29,8 +33,9 @@ RUN DOCKER_COMPOSE_PATH=$(find / -name docker-compose -print -quit) \
 WORKDIR /usr/src/app
 
 # Copy from build image
-COPY --from=BUILD_IMAGE /usr/src/app/dist ./dist
-COPY --from=BUILD_IMAGE /usr/src/app/node_modules ./node_modules
-COPY --from=BUILD_IMAGE /usr/src/app/package.json package.json
+COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/package.json ./apps/indexer-coordinator/package.json
+COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/dist ./apps/indexer-coordinator/dist
+COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-admin/build ./apps/indexer-coordinator/dist/indexer-admin
+COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/node_modules ./apps/indexer-coordinator/node_modules
 
-ENTRYPOINT [ "node", "dist/main.js" ]
+ENTRYPOINT [ "node", "apps/indexer-coordinator/dist/main.js" ]

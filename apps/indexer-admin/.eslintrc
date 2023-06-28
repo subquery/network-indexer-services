@@ -1,0 +1,100 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "plugin:react/recommended",
+    "airbnb",
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+    "prettier/prettier",
+    "plugin:prettier/recommended",
+    "plugin:import/typescript"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+        "jsx": true
+    },
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
+  "plugins": ["react", "@typescript-eslint", "import", "simple-import-sort", "unused-imports", "react-hooks", "header"],
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto"
+      }
+    ],
+    "no-use-before-define": "off",
+    "react-hooks/exhaustive-deps": "error",
+    "unused-imports/no-unused-imports": "warn",
+    "@typescript-eslint/no-use-before-define": ["off"],
+    "@typescript-eslint/explicit-module-boundary-types": ["off"],
+    "react/jsx-filename-extension": ["warn", { "extensions": [".tsx"] }],
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off",
+    "import/prefer-default-export": "off",
+    "import/extensions": ["error", "ignorePackages", { "ts": "never", "tsx": "never" }],
+    "no-shadow": "off",
+    "no-console": "off",
+    "react/prop-types": "off",
+    "react/no-unused-prop-types": "off",
+    "react/jsx-props-no-spreading": "off",
+    "import/no-extraneous-dependencies": "off",
+    "global-require": "off",
+    "react/require-default-props": "off",
+    "no-restricted-properties": "off",
+    "no-unused-expressions": "off",
+    "react/no-array-index-key": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "@typescript-eslint/no-explicit-any":"off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "header/header": [2, "line", [
+      {
+        "pattern": " Copyright \\d{4}(-\\d{4})? SubQuery Pte Ltd authors & contributors",
+        "template": " Copyright 2020-2022 SubQuery Pte Ltd authors & contributors" },
+      " SPDX-License-Identifier: Apache-2.0"
+    ], 2]
+  },
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "project": "./tsconfig.json"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files": ["./src/**/*.{ts,tsx}"],
+      "rules": {
+        "simple-import-sort/imports": [
+          "error",
+          {
+            "groups": [
+              // Packages. `react` related packages come first.
+              ["^react", "^@?\\w"],
+              // Internal packages.
+              [
+                "^(src|containers|components|hooks|container|pages|types|utils|resources|contract)(/.*|$)"
+              ],
+              // Other local imports. Put same-folder imports and `.` last.
+              [
+                "^\\.\\.(?!/?$)",
+                "^\\.\\./?$",
+                "^\\./(?=.*/)(?!/?$)",
+                "^\\.(?!/?$)",
+                "^\\./?$"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
