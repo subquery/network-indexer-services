@@ -16,6 +16,11 @@ export const statusText = {
   [IndexingStatus.READY]: 'READY',
 };
 
+export enum OnlineStatus {
+  online = 'Accessible',
+  offline = 'Inaccessible',
+}
+
 // TODO: remove the old logic
 export const createAddProjectSteps = (onAddProject: FormSubmit) => ({
   [ProjectsAction.addProject]: [

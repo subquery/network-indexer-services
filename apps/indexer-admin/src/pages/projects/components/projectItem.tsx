@@ -15,7 +15,7 @@ import { ProjectDetails } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { calculateProgress } from 'utils/project';
 
-import { statusColor, statusText } from '../constant';
+import { OnlineStatus, statusColor, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, Progress, ProjectItemContainer } from '../styles';
 
 type Props = ProjectDetails;
@@ -59,10 +59,10 @@ const ProjectItem: FC<Props> = (props) => {
           state={onlineStatus ? 'success' : 'error'}
           style={{ height: '22px', lineHeight: '18px' }}
         >
-          {onlineStatus ? 'You are Connectable' : 'You are not Connectable'}
+          {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
         </Tag>
       </ItemContainer>
-      <ItemContainer flex={1}>
+      <ItemContainer flex={2}>
         {!isUndefined(status) ? (
           <StatusLabel text={statusText[status]} color={statusColor[status]} />
         ) : (

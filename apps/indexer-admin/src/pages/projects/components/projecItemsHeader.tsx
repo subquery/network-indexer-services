@@ -20,7 +20,7 @@ const projetHeaderItems = [
   { title: 'Project Name', flex: 7 },
   { title: 'Progress', flex: 6 },
   { title: 'Uptime', flex: 6 },
-  { title: 'Status', flex: 1 },
+  { title: 'Indexing Status', flex: 2 },
 ];
 
 const ProjecItemsHeader = () => (

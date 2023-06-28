@@ -24,6 +24,7 @@ export enum ProjectStatus {
   Indexing = 'INDEXING',
   Ready = 'READY',
   Terminated = 'TERMINATED',
+  Unhealthy = 'UNHEALTHY',
 }
 
 export enum PaygStatus {
@@ -106,6 +107,19 @@ export type ProjectServiceMetadata = {
   status: IndexingStatus;
 } & ProjectConfig;
 
+export enum dockerContainerEnum {
+  TERMINATED = 'TERMINATED',
+  HEALTHY = 'HEALTHY',
+  UNHEALTHY = 'UNHEALTHY',
+}
+
+// TODO: investigate all status
+// i am not very sure what exact status of it.
+export type dockerContainerStatus =
+  | dockerContainerEnum.TERMINATED
+  | dockerContainerEnum.HEALTHY
+  | dockerContainerEnum.UNHEALTHY;
+
 export type TQueryMetadata = {
   lastProcessedHeight: number;
   lastProcessedTimestamp: number;
@@ -116,8 +130,8 @@ export type TQueryMetadata = {
   indexerHealthy?: boolean;
   indexerNodeVersion: string;
   queryNodeVersion: string;
-  indexerStatus: string;
-  queryStatus: string;
+  indexerStatus: dockerContainerStatus;
+  queryStatus: dockerContainerStatus;
 };
 
 export type ProjectDetails = {

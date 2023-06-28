@@ -67,7 +67,6 @@ const ErrorFallback = ({ error, componentStack, resetError }: any) => {
 };
 
 const App: FC = () => (
-  // testsstsJ
   <Sentry.ErrorBoundary fallback={ErrorFallback} showDialog>
     <ApolloProvider client={createApolloClient(coordinatorServiceUrl)}>
       <Web3Provider>

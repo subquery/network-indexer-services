@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import Avatar from 'components/avatar';
 import { Separator, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
+import { OnlineStatus } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
 
 import { ProjectDetails, ProjectStatus } from '../types';
@@ -22,6 +23,7 @@ type Props = {
 const getProjectStatusTagState = (status: ProjectStatus): TagProps['state'] => {
   if (status === ProjectStatus.Ready) return 'success';
   if (status === ProjectStatus.Started || status === ProjectStatus.Indexing) return 'info';
+  if (status === ProjectStatus.Unhealthy) return 'error';
   return 'default';
 };
 
@@ -48,7 +50,7 @@ const ProjectDetailsHeader: FC<Props> = ({ id, projectStatus, project, onlineSta
             <Separator height={30} mr={36} ml={36} />
             <TagItem versionType="UPTIME" fw="normal">
               <Tag state={onlineStatus ? 'success' : 'error'}>
-                {onlineStatus ? 'You are Connectable' : 'You are not Connectable'}
+                {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
               </Tag>
             </TagItem>
           </VersionContainer>

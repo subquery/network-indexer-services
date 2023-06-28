@@ -15,7 +15,7 @@ const LoginPage = () => {
   const { account } = useAccount();
   const isIndexer = useIsIndexer();
   const { setPageLoading } = useLoading();
-  const { loading, load } = useCoordinatorIndexer();
+  const { loading, load, error } = useCoordinatorIndexer();
 
   useEffect(() => {
     load();
@@ -24,6 +24,16 @@ const LoginPage = () => {
   useEffect(() => {
     setPageLoading(loading || isUndefined(isIndexer));
   }, [loading, isIndexer]);
+
+  if (error || isUndefined(isIndexer)) {
+    return (
+      <div>
+        {error
+          ? 'Connect coordinator services error, please check your coordinator services and try again later.'
+          : 'Network unstable, please refresh the page or change the RPC URL and try again later.'}
+      </div>
+    );
+  }
 
   return (
     <Container>

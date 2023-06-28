@@ -7,6 +7,7 @@ import { formatUnits } from '@ethersproject/units';
 import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
+import { notificationMsg } from 'containers/notificationContext';
 import { useWeb3 } from 'hooks/web3Hook';
 import { Account, IndexerMetadata } from 'pages/account/types';
 import { HookDependency } from 'types/types';
@@ -32,6 +33,14 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
       const status = await sdk.indexerRegistry.isIndexer(account);
       updateIsRegisterIndexer(status);
     } catch (e) {
+      notificationMsg({
+        title: 'Error',
+        message: 'Failed to get indexer information from contract',
+        type: 'danger',
+        dismiss: {
+          duration: 15000,
+        },
+      });
       console.error('Failed to get isIndexer', e);
     }
   }, [account, isRegisterIndexer, sdk, updateIsRegisterIndexer]);

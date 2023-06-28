@@ -5,6 +5,7 @@ import * as React from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client';
 
 import { ADD_INDEXER, GET_COORDINATOR_INDEXER } from '../utils/queries';
+import { notificationMsg } from './notificationContext';
 import { createContainer } from './unstated';
 
 type CoordinatorIndexerContext = {
@@ -24,6 +25,20 @@ function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
   React.useEffect(() => {
     setIndexer(data?.accountMetadata?.indexer);
   }, [data]);
+
+  React.useEffect(() => {
+    if (error) {
+      notificationMsg({
+        title: 'Error',
+        message: 'Failed to get coordinator indexer information',
+        type: 'danger',
+        dismiss: {
+          duration: 15000,
+        },
+      });
+      console.error(error);
+    }
+  }, [error]);
 
   const updateIndexer = React.useCallback(
     async (indexer: string) => {

@@ -30,7 +30,7 @@ export async function connectWithMetaMask(activate: Function) {
 }
 
 export async function switchNetwork() {
-  const network = window.env.NETWORK;
+  const network = process.env.REACT_APP_NETWORK || window.env.NETWORK;
   const chainId = NetworkToChainID[network];
   if (!window?.ethereum || !network) return;
 

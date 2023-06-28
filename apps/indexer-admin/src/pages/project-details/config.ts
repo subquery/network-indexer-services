@@ -56,6 +56,11 @@ export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) =>
       onButtonClick(ProjectAction.AnnounceNotIndexing)
     ),
   ],
+  [ProjectStatus.Unhealthy]: [
+    createButtonItem('Announce Not Indexing', () =>
+      onButtonClick(ProjectAction.AnnounceNotIndexing)
+    ),
+  ],
 });
 
 export const createServiceButtonItems = (onButtonClick: (type: ProjectAction) => void) => ({
@@ -75,6 +80,10 @@ export const createServiceButtonItems = (onButtonClick: (type: ProjectAction) =>
     createButtonItem('Stop Indexing', () => onButtonClick(ProjectAction.StopIndexing)),
   ],
   [ProjectStatus.Terminated]: [
+    createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
+    createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
+  ],
+  [ProjectStatus.Unhealthy]: [
     createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
     createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
   ],
@@ -328,6 +337,11 @@ export const alertMessages = {
       'The current project has already been started. Check the progress and logs to make sure indexing is going well. Try pressing the Announce Indexing button to announce indexing for this project on SubQuery Network. You can also try restarting indexing if something goes wrong.',
   },
   [ProjectStatus.Terminated]: {
+    title: 'Inconsistent Status',
+    description:
+      'The current indexing service for this project has been terminated, but the indexing service status on the SubQuery Network still shows as "Indexing". We encourage you to click the "Announce Not Indexing" button to correct the online status to "Not Indexing".',
+  },
+  [ProjectStatus.Unhealthy]: {
     title: 'Inconsistent Status',
     description:
       'The current indexing service for this project has been terminated, but the indexing service status on the SubQuery Network still shows as "Indexing". We encourage you to click the "Announce Not Indexing" button to correct the online status to "Not Indexing".',

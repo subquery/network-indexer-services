@@ -14,6 +14,7 @@ import { useContractSDK } from 'containers/contractSdk';
 import { useNotification } from 'containers/notificationContext';
 import {
   ChainType,
+  dockerContainerEnum,
   DockerRegistry,
   IndexingStatus,
   PartialIpfsDeploymentManifest,
@@ -41,8 +42,8 @@ const metadataInitValue = {
   indexerHealthy: undefined,
   indexerNodeVersion: '',
   queryNodeVersion: '',
-  indexerStatus: 'TERMINATED',
-  queryStatus: 'TERMINATED',
+  indexerStatus: dockerContainerEnum.TERMINATED,
+  queryStatus: dockerContainerEnum.TERMINATED,
 };
 
 const coordinatorClient = createApolloClient(coordinatorServiceUrl);

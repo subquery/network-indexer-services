@@ -52,6 +52,7 @@ import {
 } from './config';
 import { Container, ContentContainer } from './styles';
 import {
+  dockerContainerEnum,
   IndexingStatus,
   ProjectAction,
   ProjectDetails,
@@ -112,22 +113,31 @@ const ProjectDetailsPage = () => {
   );
 
   const projectStatus = useMemo(() => {
-    if (!metadata) return ProjectStatus.NotIndexing;
-    const healthy = metadata?.indexerStatus === 'HEALTHY';
+    if (!metadata) return ProjectStatus.Terminated;
+
+    if (
+      metadata.indexerStatus === dockerContainerEnum.TERMINATED &&
+      metadata.queryStatus === dockerContainerEnum.TERMINATED
+    ) {
+      return ProjectStatus.Terminated;
+    }
+
+    const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
     switch (status) {
       case IndexingStatus.NOTINDEXING:
         return healthy ? ProjectStatus.Started : ProjectStatus.NotIndexing;
       case IndexingStatus.INDEXING:
-        return healthy ? ProjectStatus.Indexing : ProjectStatus.Terminated;
+        return healthy ? ProjectStatus.Indexing : ProjectStatus.Unhealthy;
       case IndexingStatus.READY:
-        return healthy ? ProjectStatus.Ready : ProjectStatus.Terminated;
+        return healthy ? ProjectStatus.Ready : ProjectStatus.Unhealthy;
       default:
         return ProjectStatus.NotIndexing;
     }
   }, [status, metadata]);
 
   const alertInfo = useMemo(() => {
-    if (projectStatus === ProjectStatus.Terminated) return { ...alertMessages[projectStatus] };
+    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy)
+      return { ...alertMessages[projectStatus] };
     return undefined;
   }, [projectStatus]);
 
