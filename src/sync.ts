@@ -21,7 +21,7 @@ export function sync(app: INestApplication) {
 
   setInterval(async () => {
     try {
-      getLogger(LogCategory.coordinator).info(`load from Subquery Project...`);
+      getLogger(LogCategory.coordinator).debug(`load from Subquery Project...`);
       const result = await apolloClient.query<GetStateChannelsQuery>({
         query: GetStateChannels,
         variables: { status: 'OPEN' },
