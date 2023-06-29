@@ -20,7 +20,6 @@ services:
       - --ipfs=https://authipfs.subquery.network/ipfs/api/v0
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
-      - --port={{servicePort}}
       - --batch-size={{batchSize}}
       - --timeout={{timeout}}
       - --workers={{worker}}
@@ -35,7 +34,7 @@ services:
           "CMD",
           "curl",
           "-f",
-          "http://node_{{projectID}}:{{servicePort}}/ready"
+          "http://node_{{projectID}}/ready"
         ]
       interval: 3s
       timeout: 5s
@@ -44,8 +43,6 @@ services:
   query_{{projectID}}:
     image: onfinality/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
-    ports:
-      - {{servicePort}}:{{servicePort}}
     depends_on:
       "node_{{projectID}}":
         condition: service_healthy
@@ -59,8 +56,7 @@ services:
     command:
       - --name={{dbSchema}}
       - --playground
-      - --indexer=http://node_{{projectID}}:{{servicePort}}
-      - --port={{servicePort}}
+      - --indexer=http://node_{{projectID}}
 
 networks:
   default:

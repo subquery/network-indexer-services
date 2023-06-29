@@ -26,10 +26,11 @@ export class PortService {
 
     void this.getUsedPorts().then((ports) => {
       this.ports = ports;
-      debugLogger('project', `Used ports: ${this.ports.join(',')}`);
+      // debugLogger('project', `Used ports: ${this.ports.join(',')}`);
     });
   }
 
+  // FIXME: there has issues for geting available port from host
   async getAvailablePort(): Promise<number> {
     let port: number;
     let startPort = this.defaultStartPort;
@@ -42,7 +43,7 @@ export class PortService {
       }
     }
 
-    debugLogger('node', `next port: ${port}`);
+    // debugLogger('node', `next port: ${port}`);
     this.addPort(port);
 
     return port;
