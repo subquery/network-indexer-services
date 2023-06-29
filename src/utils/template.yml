@@ -6,6 +6,8 @@ services:
     container_name: node_{{projectID}}
     restart: always
     cpus: {{cpu}}
+    expose:
+      - {{servicePort}}
     environment:
       DB_USER: {{postgres.user}}
       DB_PASS: {{postgres.pass}}
