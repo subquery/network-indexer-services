@@ -257,8 +257,8 @@ export class ProjectService {
     const nodeConfig = await nodeConfigs(id);
     project.baseConfig = baseConfig;
     project.advancedConfig = advancedConfig;
-    project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
-    project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
+    project.queryEndpoint = queryEndpoint(id);
+    project.nodeEndpoint = nodeEndpoint(id);
     project.status = IndexingStatus.INDEXING;
     project.chainType = nodeConfig.chainType;
 

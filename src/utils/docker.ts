@@ -21,12 +21,12 @@ export function getServicePort(queryEndpoint: string): number | undefined {
   return queryEndpoint ? Number(queryEndpoint.split(':')[2]) : undefined;
 }
 
-export function nodeEndpoint(cid: string, port: number): string {
-  return `http://node_${projectId(cid)}:${port}`;
+export function nodeEndpoint(cid: string): string {
+  return `http://node_${projectId(cid)}`;
 }
 
-export function queryEndpoint(cid: string, port: number): string {
-  return `http://query_${projectId(cid)}:${port}`;
+export function queryEndpoint(cid: string): string {
+  return `http://query_${projectId(cid)}`;
 }
 
 export function getComposeFileDirectory(cid: string): string {
