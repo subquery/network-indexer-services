@@ -73,8 +73,7 @@
     "yargs": "^17.2.1",
     "graphql": "15.7.2",
     "@apollo/client": "~3.7.16",
-    "@subql/contract-sdk": "~0.13.5",
-    "react": "^18.2.0"
+    "@subql/contract-sdk": "~0.13.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",
