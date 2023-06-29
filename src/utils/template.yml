@@ -45,7 +45,7 @@ services:
     image: onfinality/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
     ports:
-      - {{servicePort}}:{{servicePort}}
+      - {{servicePort}}
     depends_on:
       "node_{{projectID}}":
         condition: service_healthy

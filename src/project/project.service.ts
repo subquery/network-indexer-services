@@ -200,7 +200,7 @@ export class ProjectService {
     baseConfig: ProjectBaseConfig,
     advancedConfig: ProjectAdvancedConfig,
   ): Promise<TemplateType> {
-    const port = await this.portService.getAvailablePort();
+    const port = this.portService.getAvailablePort();
     const servicePort = getServicePort(project.queryEndpoint) ?? port;
     const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
