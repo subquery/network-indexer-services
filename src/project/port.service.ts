@@ -30,7 +30,12 @@ export class PortService {
     });
   }
 
-  async getAvailablePort(): Promise<number> {
+  getAvailablePort(): number {
+    return 3100;
+  }
+
+  // FIXME: This service has issue to find the real free port on host service
+  async _getAvailablePort(): Promise<number> {
     let port: number;
     let startPort = this.defaultStartPort;
     for (let i = 0; i < 15; i++) {

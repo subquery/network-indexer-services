@@ -18,7 +18,8 @@ export function projectId(cid: string): string {
 }
 
 export function getServicePort(queryEndpoint: string): number | undefined {
-  return queryEndpoint ? Number(queryEndpoint.split(':')[2]) : undefined;
+  const port = queryEndpoint ? queryEndpoint.split(':')[2] : undefined;
+  return !isNaN(Number(port)) ? Number(port) : undefined;
 }
 
 export function nodeEndpoint(cid: string, port: number): string {
