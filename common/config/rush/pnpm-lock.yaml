@@ -41,17 +41,17 @@ importers:
         specifier: ^1.0.1-76
         version: 1.0.1-83(@codemirror/language@6.0.0)(@types/node@12.20.55)(@types/react@18.2.13)(graphql-ws@5.14.0)(react-dom@18.2.0)(react-is@17.0.2)(react@18.2.0)
       '@subql/contract-sdk':
-        specifier: 0.13.5
-        version: 0.13.5
+        specifier: ^0.13.7
+        version: 0.13.7
       '@subql/network-clients':
-        specifier: ^0.3.4
-        version: 0.3.7(@subql/contract-sdk@0.13.5)(graphql-ws@5.14.0)(ipfs-http-client@54.0.2)(react-dom@18.2.0)(react@18.2.0)
+        specifier: ^0.3.11
+        version: 0.3.11(@subql/contract-sdk@0.13.7)(graphql-ws@5.14.0)(ipfs-http-client@54.0.2)(react-dom@18.2.0)(react@18.2.0)
       '@subql/network-query':
-        specifier: 0.3.4
-        version: 0.3.4
+        specifier: ^0.3.11
+        version: 0.3.11
       '@subql/react-hooks':
-        specifier: ^0.3.4
-        version: 0.3.7(@babel/core@7.22.5)(graphql@16.7.1)(react@18.2.0)
+        specifier: ^0.3.11
+        version: 0.3.11(@babel/core@7.22.5)(graphql@16.7.1)(react@18.2.0)
       '@subql/react-ui':
         specifier: ^1.0.1-21
         version: 1.0.1-22(eslint@8.43.0)(react-dom@18.2.0)(react@18.2.0)
@@ -262,7 +262,7 @@ importers:
     dependencies:
       '@apollo/client':
         specifier: ~3.7.16
-        version: 3.7.16(graphql@15.7.2)(react@18.2.0)
+        version: 3.7.16(graphql@15.7.2)
       '@nestjs/common':
         specifier: ^8.0.0
         version: 8.4.7(class-transformer@0.4.0)(class-validator@0.13.2)(reflect-metadata@0.1.13)(rxjs@7.8.1)
@@ -294,11 +294,11 @@ importers:
         specifier: ~0.13.5
         version: 0.13.5
       '@subql/network-clients':
-        specifier: ^0.3.4
-        version: 0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1)(react@18.2.0)
+        specifier: ^0.3.11
+        version: 0.3.11(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1)
       '@subql/network-query':
-        specifier: ^0.3.4
-        version: 0.3.7
+        specifier: ^0.3.11
+        version: 0.3.11
       '@subql/utils':
         specifier: ^1.0.0
         version: 1.5.0(pg@8.11.0)
@@ -334,7 +334,7 @@ importers:
         version: 2.0.0(graphql@15.7.2)
       graphql-tools:
         specifier: ^8.2.0
-        version: 8.3.20(graphql@15.7.2)(react@18.2.0)
+        version: 8.3.20(graphql@15.7.2)
       handlebars:
         specifier: ^4.7.7
         version: 4.7.7
@@ -365,9 +365,6 @@ importers:
       prom-client:
         specifier: ^14.2.0
         version: 14.2.0
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.13
@@ -719,7 +716,7 @@ packages:
       zen-observable-ts: 1.2.5
     dev: false
 
-  /@apollo/client@3.7.16(graphql@15.7.2)(react@18.2.0):
+  /@apollo/client@3.7.16(graphql@15.7.2):
     resolution: {integrity: sha512-rdhoc7baSD7ZzcjavEpYN8gZJle1KhjEKj4SJeMgBpcnO4as7oXUVU4LtFpotzZdFlo57qaLrNzfvppSTsKvZQ==}
     peerDependencies:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -746,7 +743,6 @@ packages:
       hoist-non-react-statics: 3.3.2
       optimism: 0.16.2
       prop-types: 15.8.1
-      react: 18.2.0
       response-iterator: 0.2.6
       symbol-observable: 4.0.0
       ts-invariant: 0.10.3
@@ -1017,7 +1013,7 @@ packages:
     resolution: {integrity: sha512-46MJZZo9y3o4kmhBVc7zW7i8dtR1oIK/sdO5NcfcZRhTGYi+KKJRtHNgsU6c4VUcJmUNV/LQdebD/9Dlv4K+Tg==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/types': 7.17.10
+      '@babel/types': 7.22.5
       '@jridgewell/gen-mapping': 0.1.1
       jsesc: 2.5.2
     dev: true
@@ -6180,45 +6176,23 @@ packages:
       '@openzeppelin/contracts-upgradeable': 4.9.2
     dev: false
 
-  /@subql/network-clients@0.3.7(@subql/contract-sdk@0.13.5)(graphql-ws@5.14.0)(ipfs-http-client@54.0.2)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-hSOPoYHVXtAH6dADdu5LtOeYzfiWPpWmI/WA/+X6moR+MajbaJdihDlnkcGEARuOPsuz8RrTa9aqB7VGPz8kJA==}
-    peerDependencies:
-      '@subql/contract-sdk': ^0.13.5
-      ipfs-http-client: ^53.0.1
+  /@subql/contract-sdk@0.13.7:
+    resolution: {integrity: sha512-Af6Jobsr7hxUIiijwlnS2WmLA6G4NQO1FNJsfItqHwZvmeajZMPllu7DTojYNpYjSbSB5w5I3OfN6YRNCefaMA==}
     dependencies:
-      '@apollo/client': 3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
-      '@ethersproject/bignumber': 5.7.0
-      '@subql/contract-sdk': 0.13.5
-      '@subql/network-config': 0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@54.0.2)
-      '@subql/network-query': 0.3.7
-      axios: 0.27.2
-      buffer: 6.0.3
-      cross-fetch: 3.1.6
-      ethers: 5.7.2
-      graphql: 16.7.1
-      ipfs-http-client: 54.0.2(node-fetch@2.6.7)
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
-      - graphql-ws
-      - react
-      - react-dom
-      - subscriptions-transport-ws
-      - utf-8-validate
+      '@openzeppelin/contracts-upgradeable': 4.9.2
     dev: false
 
-  /@subql/network-clients@0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1)(react@18.2.0):
-    resolution: {integrity: sha512-hSOPoYHVXtAH6dADdu5LtOeYzfiWPpWmI/WA/+X6moR+MajbaJdihDlnkcGEARuOPsuz8RrTa9aqB7VGPz8kJA==}
+  /@subql/network-clients@0.3.11(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1):
+    resolution: {integrity: sha512-+0Mobee5zheWfl7pEmNn4GAcLs58m6+YYAVyXVSaY2dG68/DEj26+zv7pPmR67Fq1OhRkg7az25aFMF1QNTg2g==}
     peerDependencies:
-      '@subql/contract-sdk': ^0.13.5
+      '@subql/contract-sdk': ^0.13.7
       ipfs-http-client: ^53.0.1
     dependencies:
       '@apollo/client': 3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
       '@ethersproject/bignumber': 5.7.0
       '@subql/contract-sdk': 0.13.5
-      '@subql/network-config': 0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1)
-      '@subql/network-query': 0.3.7
+      '@subql/network-config': 0.3.11(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1)
+      '@subql/network-query': 0.3.11
       axios: 0.27.2
       buffer: 6.0.3
       cross-fetch: 3.1.6
@@ -6236,40 +6210,62 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@subql/network-config@0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1):
-    resolution: {integrity: sha512-glc0hKLXWxZU8gHhTTKUBfToCQ4TKGMJHm0XBU3uWyi2Nt4MxetEHcIC0vGbGX1NqVyr4iEBKxDFdN5U2j1tBg==}
+  /@subql/network-clients@0.3.11(@subql/contract-sdk@0.13.7)(graphql-ws@5.14.0)(ipfs-http-client@54.0.2)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-+0Mobee5zheWfl7pEmNn4GAcLs58m6+YYAVyXVSaY2dG68/DEj26+zv7pPmR67Fq1OhRkg7az25aFMF1QNTg2g==}
     peerDependencies:
-      '@subql/contract-sdk': ^0.13.5
+      '@subql/contract-sdk': ^0.13.7
+      ipfs-http-client: ^53.0.1
+    dependencies:
+      '@apollo/client': 3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
+      '@ethersproject/bignumber': 5.7.0
+      '@subql/contract-sdk': 0.13.7
+      '@subql/network-config': 0.3.11(@subql/contract-sdk@0.13.7)(ipfs-http-client@54.0.2)
+      '@subql/network-query': 0.3.11
+      axios: 0.27.2
+      buffer: 6.0.3
+      cross-fetch: 3.1.6
+      ethers: 5.7.2
+      graphql: 16.7.1
+      ipfs-http-client: 54.0.2(node-fetch@2.6.7)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - graphql-ws
+      - react
+      - react-dom
+      - subscriptions-transport-ws
+      - utf-8-validate
+    dev: false
+
+  /@subql/network-config@0.3.11(@subql/contract-sdk@0.13.5)(ipfs-http-client@53.0.1):
+    resolution: {integrity: sha512-6i/fZXol4Y0eosGLnKxUpbZY4ojgopkEtDRIh0Yp4BYiCtitGdpqza6EqCQWLVpA0BOoN6GbzyWqH4xLHnGTKQ==}
+    peerDependencies:
+      '@subql/contract-sdk': ^0.13.7
       ipfs-http-client: ^53.0.1
     dependencies:
       '@subql/contract-sdk': 0.13.5
       ipfs-http-client: 53.0.1(node-fetch@2.6.7)
     dev: false
 
-  /@subql/network-config@0.3.7(@subql/contract-sdk@0.13.5)(ipfs-http-client@54.0.2):
-    resolution: {integrity: sha512-glc0hKLXWxZU8gHhTTKUBfToCQ4TKGMJHm0XBU3uWyi2Nt4MxetEHcIC0vGbGX1NqVyr4iEBKxDFdN5U2j1tBg==}
+  /@subql/network-config@0.3.11(@subql/contract-sdk@0.13.7)(ipfs-http-client@54.0.2):
+    resolution: {integrity: sha512-6i/fZXol4Y0eosGLnKxUpbZY4ojgopkEtDRIh0Yp4BYiCtitGdpqza6EqCQWLVpA0BOoN6GbzyWqH4xLHnGTKQ==}
     peerDependencies:
-      '@subql/contract-sdk': ^0.13.5
+      '@subql/contract-sdk': ^0.13.7
       ipfs-http-client: ^53.0.1
     dependencies:
-      '@subql/contract-sdk': 0.13.5
+      '@subql/contract-sdk': 0.13.7
       ipfs-http-client: 54.0.2(node-fetch@2.6.7)
     dev: false
 
-  /@subql/network-query@0.3.4:
-    resolution: {integrity: sha512-fc7oykqZcanC/MafPebADhSIUVbUxbig+rdMl0rw1QLOrrSR40PD5FjoZ/G2qBDHcXC1UsV//1Gksz3n4q2ZkQ==}
+  /@subql/network-query@0.3.11:
+    resolution: {integrity: sha512-YSmfhwpw27f87V4EQI78vKIEiqEFj87zOYtRzy93tXNn/ibN9F6yuCAP1FOvF2kZE/3QQ4k5/Uql8pqPLM5Z+Q==}
     dependencies:
       graphql: 16.7.1
     dev: false
 
-  /@subql/network-query@0.3.7:
-    resolution: {integrity: sha512-Va5JMoocf8KT+ocwvfxxlkEYO+cNzKsGRBvTAkY0UYC3StJjYwAPJqa0eF1HcRUWq+CJOtbv0gQR4ReyK/SdpA==}
-    dependencies:
-      graphql: 16.7.1
-    dev: false
-
-  /@subql/react-hooks@0.3.7(@babel/core@7.22.5)(graphql@16.7.1)(react@18.2.0):
-    resolution: {integrity: sha512-ygyDmYoINe48HFRT96AGpTckLRzVGR68lUSJlJ0RF9GhLvGXrTA+EyigvkumX9krNs9E9ZR44G8BxaamEIUWnA==}
+  /@subql/react-hooks@0.3.11(@babel/core@7.22.5)(graphql@16.7.1)(react@18.2.0):
+    resolution: {integrity: sha512-UrF8Uu9PE86ZeD2Bdb6FWb8j69b7KdQqnuN76kceE0HvezPb0YUwcK0HfCNHCXhGmpNfxM/cGhHryrYFCyGkdQ==}
     peerDependencies:
       graphql: ^16.5.0
       react: ^17
@@ -6277,7 +6273,7 @@ packages:
       '@graphql-tools/code-file-loader': 7.3.23(@babel/core@7.22.5)(graphql@16.7.1)
       '@graphql-tools/graphql-tag-pluck': 7.5.2(@babel/core@7.22.5)(graphql@16.7.1)
       '@graphql-tools/load': 7.8.14(graphql@16.7.1)
-      '@subql/network-query': 0.3.7
+      '@subql/network-query': 0.3.11
       class-transformer: 0.5.1
       class-validator: 0.14.0
       graphql: 16.7.1
@@ -13022,7 +13018,7 @@ packages:
       tslib: 2.5.3
     dev: false
 
-  /graphql-tools@8.3.20(graphql@15.7.2)(react@18.2.0):
+  /graphql-tools@8.3.20(graphql@15.7.2):
     resolution: {integrity: sha512-x3VkXkaGyPaZu1G0Vr2x/7yxTiuTB6xpY3RbH2uTjBv01Z+985J3//B81fooTtEf2eySBiyPplMYwFmAybOIrQ==}
     peerDependencies:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
@@ -13031,7 +13027,7 @@ packages:
       graphql: 15.7.2
       tslib: 2.5.3
     optionalDependencies:
-      '@apollo/client': 3.7.16(graphql@15.7.2)(react@18.2.0)
+      '@apollo/client': 3.7.16(graphql@15.7.2)
     transitivePeerDependencies:
       - graphql-ws
       - react
