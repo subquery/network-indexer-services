@@ -16,7 +16,8 @@ COPY . .
 RUN yarn build
 
 # Remove development dependencies
-RUN npm prune --production
+# we can remove --legacy-peer-deps once upgrade nestjs vesion
+RUN npm prune --production --legacy-peer-deps
 
 FROM node:16-alpine
 
