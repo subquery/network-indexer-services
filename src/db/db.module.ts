@@ -38,7 +38,6 @@ export class DB {
     const query = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '${schema}' AND table_name = '${name}')`;
     try {
       const r = await this.dbClient.query(query);
-      // TODO: check table exist (t/f)
       return r.rowCount > 0;
     } catch {
       return false;

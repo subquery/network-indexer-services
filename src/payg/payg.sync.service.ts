@@ -29,8 +29,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     void (() => {
       console.log('try sync pagy');
-      //this.syncStateChannelsPeriodically();
-      // this.subscribeStateChannelEvents();
+      this.syncStateChannelsPeriodically();
+      this.subscribeStateChannelEvents();
     })();
   }
 
@@ -52,6 +52,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
               stateChannel.deployment.id,
               stateChannel.indexer,
               stateChannel.consumer,
+              stateChannel.agent,
               stateChannel.total.toString(),
               stateChannel.spent.toString(),
               stateChannel.price.toString(),

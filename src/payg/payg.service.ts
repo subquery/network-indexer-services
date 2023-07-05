@@ -109,15 +109,13 @@ export class PaygService {
     // threshold value for checkpoint and spawn to other promise.
     if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
       // send to blockchain.
-      const tx = await this.network
-        .getSdk()
-        .stateChannel.checkpoint({
-          channelId: id,
-          isFinal: isFinal,
-          spent: channel.remote,
-          indexerSign: indexerSign,
-          consumerSign: consumerSign,
-        });
+      const tx = await this.network.getSdk().stateChannel.checkpoint({
+        channelId: id,
+        isFinal: isFinal,
+        spent: channel.remote,
+        indexerSign: indexerSign,
+        consumerSign: consumerSign,
+      });
       channel.onchain = channel.remote;
       channel.spent = channel.remote;
     }
@@ -196,6 +194,7 @@ export class PaygService {
     deploymentId: string,
     indexer: string,
     consumer: string,
+    agent: string,
     total: string,
     spent: string,
     price: string,
@@ -332,7 +331,7 @@ export class PaygService {
 
   async savePub(channel: Channel, event: PaygEvent): Promise<Channel> {
     const new_channel = await this.channelRepo.save(channel);
-    await this.pubSub.publish(event, {channelChanged: new_channel});
+    await this.pubSub.publish(event, { channelChanged: new_channel });
     return new_channel;
   }
 }
