@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "1.1.5-1",
+  "version": "1.1.5-2",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -41,8 +41,8 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "8.0.4",
     "@subql/common": "^1.0.0",
-    "@subql/network-clients": "^0.3.11",
-    "@subql/network-query": "^0.3.11",
+    "@subql/network-clients": "^0.3.13",
+    "@subql/network-query": "^0.3.13",
     "@subql/utils": "^1.0.0",
     "@willsoto/nestjs-prometheus": "^5.1.1",
     "apollo-server-core": "^3.5.0",
