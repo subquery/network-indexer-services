@@ -16,7 +16,7 @@ async function bootstrap() {
     getLogger(LogCategory.coordinator).info('coordinator service started');
     getLogger(LogCategory.admin).info('indexer admin app started');
 
-    await sync(app);
+    sync(app);
   } catch (e) {
     getLogger(LogCategory.coordinator).error(e, 'coordinator service failed');
   }

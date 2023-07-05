@@ -38,3 +38,5 @@ lerna-debug.log*
 .data
 .projects
 .eslintcache
+
+.env

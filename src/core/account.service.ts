@@ -35,8 +35,8 @@ export class AccountService {
 
   async getIndexer(): Promise<string> {
     if (!this.indexer) {
-      const indexer = await this.indexerRepo.findOne();
-      this.indexer = indexer?.address;
+      const indexer = await this.indexerRepo.find({ take: 1 });
+      this.indexer = indexer?.[0]?.address;
     }
 
     return this.indexer;

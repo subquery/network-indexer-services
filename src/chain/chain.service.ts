@@ -11,7 +11,7 @@ export class ChainService {
   constructor(@InjectRepository(Chain) private chainRepository: Repository<Chain>) {}
 
   getBlock(): Promise<Chain> {
-    return this.chainRepository.findOne('block');
+    return this.chainRepository.findOneBy({ name: 'block' });
   }
 
   async updateBlock(value: string): Promise<Chain> {
