@@ -8,10 +8,10 @@ import { CoreModule } from '../core/core.module';
 import { PaygEntity } from '../project/project.model';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
-import { PaygSyncService } from './pagy.sync.service';
 import { ChainInfo, Channel, ChannelLabor } from './payg.model';
 import { PaygResolver } from './payg.resolver';
 import { PaygService } from './payg.service';
+import { PaygSyncService } from './payg.sync.service';
 
 @Module({
   imports: [

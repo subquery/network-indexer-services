@@ -28,8 +28,9 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     void (() => {
-      this.syncStateChannelsPeriodically();
-      this.subscribeStateChannelEvents();
+      console.log('try sync pagy');
+      //this.syncStateChannelsPeriodically();
+      // this.subscribeStateChannelEvents();
     })();
   }
 
