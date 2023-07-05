@@ -16,27 +16,23 @@ import { AgreementController } from './agreement.controller';
 import { ChainModule } from './chain/chain.module';
 import { ConfigureModule } from './configure/configure.module';
 import { CoreModule } from './core/core.module';
+import { dbOption } from './data-source';
 import { DBModule } from './db/db.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { MonitorController } from './monitor.controller';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { argv, PostgresKeys } from './yargs';
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: argv[PostgresKeys.host],
-      port: argv[PostgresKeys.port],
-      username: argv[PostgresKeys.username],
-      password: argv[PostgresKeys.password],
-      database: argv[PostgresKeys.database],
+      ...dbOption,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
+      migrationsRun: true,
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: true,
