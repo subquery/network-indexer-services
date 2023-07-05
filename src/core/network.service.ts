@@ -273,6 +273,7 @@ export class NetworkService implements OnApplicationBootstrap {
       GetIndexerUnfinalisedPlansQuery,
       GetIndexerUnfinalisedPlansQueryVariables
     >({
+      // @ts-ignore
       query: GetIndexerUnfinalisedPlans,
       variables: { indexer, now },
     });
