@@ -50,8 +50,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     ConfigureModule.register(),
     DBModule.register(),
     ServeStaticModule.forRoot({
-      rootPath: process.env['indexer-admin-root']
-        ? resolve(process.env['indexer-admin-root'])
+      rootPath: process.env['INDEXER_ADMIN_ROOT']
+        ? resolve(process.env['INDEXER_ADMIN_ROOT'])
         : join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),

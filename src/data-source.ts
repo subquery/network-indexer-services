@@ -4,7 +4,7 @@
 import 'reflect-metadata';
 import process from 'process';
 import { DataSource } from 'typeorm';
-import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { argv, PostgresKeys } from './yargs';
 
 const isLocal = process.env.NODE_ENV === 'local';
@@ -17,7 +17,7 @@ export const dbOption: PostgresConnectionOptions = {
   password: process.env['DB_PASSWORD'] ?? argv[PostgresKeys.password] ?? 'postgres',
   database: process.env['DB_NAME'] ?? argv[PostgresKeys.database] ?? 'postgres',
   synchronize: false,
-  logging: true,
+  logging: isLocal,
   entities: [isLocal ? 'src/**/*.model.ts' : 'dist/**/*.model.js'],
   migrations: [isLocal ? 'src/migration/*.ts' : 'dist/migration/*.js'],
   subscribers: [],
