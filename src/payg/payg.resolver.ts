@@ -6,7 +6,7 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { PaygEvent } from '../utils/subscription';
 
-import { ChannelType, QueryType } from './payg.model';
+import { Channel as ChannelType, QueryType } from './payg.model';
 import { PaygService } from './payg.service';
 
 @Resolver(() => ChannelType)
