@@ -6,12 +6,14 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
 
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 import { Config } from '../configure/configure.module';
 import { ContractService } from '../core/contract.service';
-import { getLogger, LogCategory } from '../utils/logger';
+import { getLogger } from '../utils/logger';
 import { PaygService } from './payg.service';
+
+const logger = getLogger('pagy');
 
 @Injectable()
 export class PaygSyncService implements OnApplicationBootstrap {
@@ -28,7 +30,6 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     void (() => {
-      console.log('try sync pagy');
       this.syncStateChannelsPeriodically();
       this.subscribeStateChannelEvents();
     })();
@@ -38,7 +39,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setInterval(async (): Promise<void> => {
       try {
-        getLogger(LogCategory.coordinator).debug(`load from Subquery Project...`);
+        logger.debug(`load from Subquery Project...`);
         const result = await this.client.query<GetStateChannelsQuery>({
           // @ts-ignore
           query: GetStateChannels,
@@ -64,34 +65,54 @@ export class PaygSyncService implements OnApplicationBootstrap {
           ),
         );
       } catch (e) {
-        getLogger(LogCategory.coordinator).error(e);
+        logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
       }
     }, 10000);
   }
 
   subscribeStateChannelEvents(): void {
-    const contract = this.contractService.getSdk().stateChannel;
-    contract.on('ChannelOpen', (channelId, indexer, consumer, total, price, expiredAt, deploymentId) => {
-      void this.paygServicee.syncOpen(
-        channelId.toString(),
-        indexer,
-        consumer,
-        total.toString(),
-        price.toString(),
-        expiredAt.toNumber(),
-        deploymentId,
-      );
-    });
-    contract.on('ChannelExtend', (channelId, expiredAt) => {
+    const contractSDK = this.contractService.getSdk();
+    const stateChannel = contractSDK.stateChannel;
+
+    stateChannel.on(
+      'ChannelOpen',
+      (channelId, indexer, consumer, total, price, expiredAt, deploymentId, callback) => {
+        let agent = '';
+        let user = consumer;
+        try {
+          const consumerAddress = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
+          user = consumerAddress;
+          agent = consumer;
+        } catch {
+          logger.debug(`Channel created by user: ${consumer}`);
+        }
+
+        void this.paygServicee.syncOpen(
+          channelId.toString(),
+          indexer,
+          user,
+          agent,
+          total.toString(),
+          price.toString(),
+          expiredAt.toNumber(),
+          deploymentId,
+        );
+      },
+    );
+
+    stateChannel.on('ChannelExtend', (channelId, expiredAt) => {
       void this.paygServicee.syncExtend(channelId.toString(), expiredAt.toNumber());
     });
-    contract.on('ChannelFund', (channelId, total) => {
+
+    stateChannel.on('ChannelFund', (channelId, total) => {
       void this.paygServicee.syncFund(channelId.toString(), total.toString());
     });
-    contract.on('ChannelCheckpoint', (channelId, spent) => {
+
+    stateChannel.on('ChannelCheckpoint', (channelId, spent) => {
       void this.paygServicee.syncCheckpoint(channelId.toString(), spent.toString());
     });
-    contract.on('ChannelTerminate', (channelId, spent, terminatedAt, terminateByIndexer) => {
+
+    stateChannel.on('ChannelTerminate', (channelId, spent, terminatedAt, terminateByIndexer) => {
       void this.paygServicee.syncTerminate(
         channelId.toString(),
         spent.toString(),
@@ -99,11 +120,13 @@ export class PaygSyncService implements OnApplicationBootstrap {
         terminateByIndexer,
       );
     });
-    contract.on('ChannelFinalize', (channelId, total, remain) => {
+
+    stateChannel.on('ChannelFinalize', (channelId, total, remain) => {
       void this.paygServicee.syncFinalize(channelId.toString(), total.toNumber(), remain.toNumber());
     });
+
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    contract.on('ChannelLabor', async (deploymentId, indexer, amount) => {
+    stateChannel.on('ChannelLabor', async (deploymentId, indexer, amount) => {
       const chainLastBlock = await this.contractService.getLastBlockNumber();
       await this.paygServicee.syncLabor(deploymentId, indexer, amount.toString(), chainLastBlock);
     });

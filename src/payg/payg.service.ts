@@ -85,7 +85,7 @@ export class PaygService {
     const channel = await this.channelRepo.findOne({ id });
     const projectPayg = await this.paygRepo.findOne({ id: channel.deploymentId });
     if (!channel || !projectPayg) {
-      getLogger('channel or project').error(`channel or project not exist: ${id}`);
+      logger.error(`channel or project not exist: ${id}`);
       return;
     }
     const threshold = BigInt(projectPayg.threshold);
@@ -210,6 +210,7 @@ export class PaygService {
         deploymentId,
         indexer,
         consumer,
+        agent,
         total,
         price,
         expiredAt,
@@ -232,6 +233,7 @@ export class PaygService {
     id: string,
     indexer: string,
     consumer: string,
+    agent: string,
     total: string,
     price: string,
     expiredAt: number,
@@ -245,11 +247,13 @@ export class PaygService {
       if (indexer !== myIndexer) {
         return;
       }
+
       const channel = this.channelRepo.create({
         id,
         deploymentId,
         indexer,
         consumer,
+        agent,
         total,
         price,
         expiredAt,
@@ -269,6 +273,7 @@ export class PaygService {
       // update information (NOT CHANGE price and isFinal)
       channel.indexer = indexer;
       channel.consumer = consumer;
+      channel.agent = agent;
       channel.total = total;
       channel.expiredAt = expiredAt;
       channel.terminatedAt = expiredAt;
