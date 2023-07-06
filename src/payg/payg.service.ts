@@ -229,7 +229,7 @@ export class PaygService {
 
       await this.channelRepo.save(channel);
     } catch (e) {
-      logger.error(`Failed to sync state channels ${id} from Subquery Project: ${e}`);
+      logger.error(`Failed to sync state channel ${id} with error: ${e}`);
     }
   }
 

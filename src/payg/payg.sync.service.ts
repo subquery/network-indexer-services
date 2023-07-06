@@ -6,8 +6,8 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
-
 import { BigNumber, utils } from 'ethers';
+import { chunk } from 'lodash';
 
 import { Config } from '../configure/configure.module';
 import { ContractService } from '../core/contract.service';
@@ -44,24 +44,26 @@ export class PaygSyncService implements OnApplicationBootstrap {
         variables: { status: 'OPEN' },
       });
 
-      await Promise.all(
-        result.data.stateChannels.nodes.map((stateChannel) =>
-          this.paygServicee.syncChannel(
-            BigNumber.from(stateChannel.id).toString(),
-            stateChannel.deployment.id,
-            stateChannel.indexer,
-            stateChannel.consumer,
-            stateChannel.agent,
-            stateChannel.total.toString(),
-            stateChannel.spent.toString(),
-            stateChannel.price.toString(),
-            new Date(stateChannel.expiredAt).valueOf() / 1000,
-            new Date(stateChannel.terminatedAt).valueOf() / 1000,
-            stateChannel.terminateByIndexer,
-            stateChannel.isFinal,
+      for (const batch of chunk(result.data.stateChannels.nodes, 10)) {
+        await Promise.all(
+          batch.map((stateChannel) =>
+            this.paygServicee.syncChannel(
+              BigNumber.from(stateChannel.id).toString(),
+              stateChannel.deployment.id,
+              stateChannel.indexer,
+              stateChannel.consumer,
+              stateChannel.agent,
+              stateChannel.total.toString(),
+              stateChannel.spent.toString(),
+              stateChannel.price.toString(),
+              new Date(stateChannel.expiredAt).valueOf() / 1000,
+              new Date(stateChannel.terminatedAt).valueOf() / 1000,
+              stateChannel.terminateByIndexer,
+              stateChannel.isFinal,
+            ),
           ),
-        ),
-      );
+        );
+      }
     } catch (e) {
       logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
     }
