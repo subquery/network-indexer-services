@@ -15,7 +15,7 @@ import { PaygEvent } from '../utils/subscription';
 
 import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
 
-const logger = getLogger('PAYG');
+const logger = getLogger('payg');
 
 @Injectable()
 export class PaygService {
@@ -203,8 +203,10 @@ export class PaygService {
     terminateByIndexer: boolean,
     lastFinal: boolean,
   ) {
-    const channel = await this.channelRepo.findOneBy({ id });
-    if (!channel) {
+    try {
+      const _channel = await this.channelRepo.findOneBy({ id });
+      if (_channel) return;
+
       const channel = this.channelRepo.create({
         id,
         deploymentId,
@@ -226,6 +228,8 @@ export class PaygService {
       });
 
       await this.channelRepo.save(channel);
+    } catch (e) {
+      logger.error(`Failed to sync state channels ${id} from Subquery Project: ${e}`);
     }
   }
 

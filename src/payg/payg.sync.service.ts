@@ -3,6 +3,7 @@
 
 import { ApolloClient } from '@apollo/client/core';
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
 
@@ -13,7 +14,7 @@ import { ContractService } from '../core/contract.service';
 import { getLogger } from '../utils/logger';
 import { PaygService } from './payg.service';
 
-const logger = getLogger('pagy');
+const logger = getLogger('payg');
 
 @Injectable()
 export class PaygSyncService implements OnApplicationBootstrap {
@@ -30,44 +31,41 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     void (() => {
-      this.syncStateChannelsPeriodically();
       this.subscribeStateChannelEvents();
     })();
   }
 
-  syncStateChannelsPeriodically() {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    setInterval(async (): Promise<void> => {
-      try {
-        logger.debug(`load from Subquery Project...`);
-        const result = await this.client.query<GetStateChannelsQuery>({
-          // @ts-ignore
-          query: GetStateChannels,
-          variables: { status: 'OPEN' },
-        });
+  @Cron(CronExpression.EVERY_MINUTE)
+  async syncStateChannelsPeriodically() {
+    try {
+      logger.debug(`load from Subquery Project...`);
+      const result = await this.client.query<GetStateChannelsQuery>({
+        // @ts-ignore
+        query: GetStateChannels,
+        variables: { status: 'OPEN' },
+      });
 
-        await Promise.all(
-          result.data.stateChannels.nodes.map((stateChannel) =>
-            this.paygServicee.syncChannel(
-              BigNumber.from(stateChannel.id).toString(),
-              stateChannel.deployment.id,
-              stateChannel.indexer,
-              stateChannel.consumer,
-              stateChannel.agent,
-              stateChannel.total.toString(),
-              stateChannel.spent.toString(),
-              stateChannel.price.toString(),
-              new Date(stateChannel.expiredAt).valueOf() / 1000,
-              new Date(stateChannel.terminatedAt).valueOf() / 1000,
-              stateChannel.terminateByIndexer,
-              stateChannel.isFinal,
-            ),
+      await Promise.all(
+        result.data.stateChannels.nodes.map((stateChannel) =>
+          this.paygServicee.syncChannel(
+            BigNumber.from(stateChannel.id).toString(),
+            stateChannel.deployment.id,
+            stateChannel.indexer,
+            stateChannel.consumer,
+            stateChannel.agent,
+            stateChannel.total.toString(),
+            stateChannel.spent.toString(),
+            stateChannel.price.toString(),
+            new Date(stateChannel.expiredAt).valueOf() / 1000,
+            new Date(stateChannel.terminatedAt).valueOf() / 1000,
+            stateChannel.terminateByIndexer,
+            stateChannel.isFinal,
           ),
-        );
-      } catch (e) {
-        logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
-      }
-    }, 10000);
+        ),
+      );
+    } catch (e) {
+      logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
+    }
   }
 
   subscribeStateChannelEvents(): void {
