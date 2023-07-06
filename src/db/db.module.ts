@@ -32,7 +32,6 @@ export class DB implements OnApplicationBootstrap {
     const query = `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '${schema}' AND table_name = '${name}')`;
     try {
       const r = await this.dataSource.query(query);
-      // TODO: check table exist (t/f)
       return r?.[0].exists > 0;
     } catch {
       return false;

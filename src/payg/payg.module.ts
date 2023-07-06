@@ -11,6 +11,7 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { ChainInfo, Channel, ChannelLabor } from './payg.model';
 import { PaygResolver } from './payg.resolver';
 import { PaygService } from './payg.service';
+import { PaygSyncService } from './payg.sync.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PaygService } from './payg.service';
     CoreModule,
     TypeOrmModule.forFeature([Channel, ChannelLabor, ChainInfo, PaygEntity]),
   ],
-  providers: [PaygService, PaygResolver],
+  providers: [PaygService, PaygSyncService, PaygResolver],
   exports: [PaygService],
 })
 export class PaygModule {}

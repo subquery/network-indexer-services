@@ -15,7 +15,7 @@ import { PaygEvent } from '../utils/subscription';
 
 import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
 
-const logger = getLogger('PAYG');
+const logger = getLogger('payg');
 
 @Injectable()
 export class PaygService {
@@ -85,7 +85,7 @@ export class PaygService {
     const channel = await this.channelRepo.findOneBy({ id });
     const projectPayg = await this.paygRepo.findOneBy({ id: channel.deploymentId });
     if (!channel || !projectPayg) {
-      getLogger('channel or project').error(`channel or project not exist: ${id}`);
+      logger.error(`channel or project not exist: ${id}`);
       return;
     }
     const threshold = BigInt(projectPayg.threshold);
@@ -194,6 +194,7 @@ export class PaygService {
     deploymentId: string,
     indexer: string,
     consumer: string,
+    agent: string,
     total: string,
     spent: string,
     price: string,
@@ -202,13 +203,16 @@ export class PaygService {
     terminateByIndexer: boolean,
     lastFinal: boolean,
   ) {
-    const channel = await this.channelRepo.findOneBy({ id });
-    if (!channel) {
+    try {
+      const _channel = await this.channelRepo.findOneBy({ id });
+      if (_channel) return;
+
       const channel = this.channelRepo.create({
         id,
         deploymentId,
         indexer,
         consumer,
+        agent,
         total,
         price,
         expiredAt,
@@ -224,6 +228,8 @@ export class PaygService {
       });
 
       await this.channelRepo.save(channel);
+    } catch (e) {
+      logger.error(`Failed to sync state channel ${id} with error: ${e}`);
     }
   }
 
@@ -231,6 +237,7 @@ export class PaygService {
     id: string,
     indexer: string,
     consumer: string,
+    agent: string,
     total: string,
     price: string,
     expiredAt: number,
@@ -244,11 +251,13 @@ export class PaygService {
       if (indexer !== myIndexer) {
         return;
       }
+
       const channel = this.channelRepo.create({
         id,
         deploymentId,
         indexer,
         consumer,
+        agent,
         total,
         price,
         expiredAt,
@@ -268,6 +277,7 @@ export class PaygService {
       // update information (NOT CHANGE price and isFinal)
       channel.indexer = indexer;
       channel.consumer = consumer;
+      channel.agent = agent;
       channel.total = total;
       channel.expiredAt = expiredAt;
       channel.terminatedAt = expiredAt;
