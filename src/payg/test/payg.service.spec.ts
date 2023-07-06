@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { PaygService } from '../project.service';
+import { PaygService } from '../payg.service';
 
 describe('PaygService', () => {
   let service: PaygService;

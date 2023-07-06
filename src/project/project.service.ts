@@ -67,13 +67,13 @@ export class ProjectService {
     void this.restoreProjects();
   }
 
-  async getProject(id: string): Promise<Project> {
-    return this.projectRepo.findOne({ id });
+  getProject(id: string): Promise<Project> {
+    return this.projectRepo.findOneBy({ id });
   }
 
   async getProjectDetails(id: string): Promise<ProjectDetails> {
-    const project = await this.projectRepo.findOne({ id });
-    const payg = await this.paygRepo.findOne({ id });
+    const project = await this.projectRepo.findOneBy({ id });
+    const payg = await this.paygRepo.findOneBy({ id });
     const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
 
     return { ...project, metadata, payg };
@@ -157,7 +157,7 @@ export class ProjectService {
   }
 
   async updateProjectStatus(id: string, status: IndexingStatus): Promise<Project> {
-    const project = await this.projectRepo.findOne({ id });
+    const project = await this.projectRepo.findOneBy({ id });
     project.status = status;
     return this.projectRepo.save(project);
   }
@@ -303,7 +303,7 @@ export class ProjectService {
   }
 
   async updateProjectPayg(id: string, paygConfig: PaygConfig) {
-    const payg = await this.paygRepo.findOne({ id });
+    const payg = await this.paygRepo.findOneBy({ id });
     if (!payg) {
       getLogger('project').error(`project not exist: ${id}`);
       return;

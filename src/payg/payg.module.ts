@@ -17,10 +17,7 @@ import { PaygSyncService } from './payg.sync.service';
   imports: [
     SubscriptionModule,
     CoreModule,
-    TypeOrmModule.forFeature([Channel]),
-    TypeOrmModule.forFeature([ChannelLabor]),
-    TypeOrmModule.forFeature([ChainInfo]),
-    TypeOrmModule.forFeature([PaygEntity]),
+    TypeOrmModule.forFeature([Channel, ChannelLabor, ChainInfo, PaygEntity]),
   ],
   providers: [PaygService, PaygSyncService, PaygResolver],
   exports: [PaygService],
