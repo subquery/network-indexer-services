@@ -40,7 +40,6 @@ export class PaygSyncService implements OnApplicationBootstrap {
     try {
       logger.debug(`load from Subquery Project...`);
       const result = await this.client.query<GetStateChannelsQuery>({
-        // @ts-ignore
         query: GetStateChannels,
         variables: { status: 'OPEN' },
       });

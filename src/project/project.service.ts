@@ -100,7 +100,6 @@ export class ProjectService {
 
     try {
       const result = await networkClient.query({
-        // @ts-ignore
         query: GET_INDEXER_PROJECTS,
         variables: { indexer },
       });
@@ -117,7 +116,6 @@ export class ProjectService {
   async getProjectInfo(id: string): Promise<ProjectInfo> {
     const networkClient = this.client.networkClient;
     const result = await networkClient.query({
-      // @ts-ignore
       query: GET_DEPLOYMENT,
       variables: { id },
     });
