@@ -22,7 +22,7 @@ export class DB implements OnApplicationBootstrap {
                    WHERE schema_name = '${name}'`;
     try {
       const r = await this.dataSource.query(query);
-      return r.rowCount > 0;
+      return r?.[0].exists ?? false;
     } catch {
       return false;
     }
@@ -33,7 +33,7 @@ export class DB implements OnApplicationBootstrap {
     try {
       const r = await this.dataSource.query(query);
       // TODO: check table exist (t/f)
-      return r.rowCount > 0;
+      return r.length > 0;
     } catch {
       return false;
     }
