@@ -66,6 +66,7 @@ function dockerRegistryFromChain(chainType: ChainType): string {
     case 'flare':
     case 'near':
     case 'ethereum':
+      // TODO: migrate to ``subquerynetwork` host
       return `onfinality/subql-node-${chainType}`;
     default:
       return 'onfinality/subql-node';
