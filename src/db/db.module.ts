@@ -56,9 +56,8 @@ export class DB implements OnApplicationBootstrap {
 
   async clearMMRoot(name: string, blockHeight: number) {
     getLogger('docker').info('start purging mmrRoot...');
-    await this.dataSource.query(`UPDATE ${name}._poi
-                               SET "mmrRoot" = NULL
-                               WHERE id >= ${blockHeight}`);
+    await this.dataSource.query(`UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`);
+    await this.dataSource.query(`UPDATE ${name}._metadata SET "latestPoiWithMmr" = NULL`);
     getLogger('docker').info('clear mmrRoot completed');
   }
 }
