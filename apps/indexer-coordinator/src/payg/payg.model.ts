@@ -19,105 +19,115 @@ export class QueryState {
 }
 
 @Entity()
+@ObjectType('Channel')
 export class Channel {
   @PrimaryColumn()
+  @Field(() => ID)
   id: string; // channelId
 
   @Column()
+  @Field()
   status: ChannelStatus;
 
   @Column()
+  @Field()
   deploymentId: string;
 
   @Column()
+  @Field()
   indexer: string;
 
   @Column()
+  @Field()
   consumer: string;
 
   @Column({ default: '' })
+  @Field()
+  agent: string;
+
+  @Column({ default: '' })
+  @Field()
   total: string;
 
   @Column({ default: '' })
+  @Field()
   spent: string;
 
   @Column({ default: '' })
+  @Field()
   onchain: string;
 
   @Column({ default: '' })
+  @Field()
   remote: string;
 
   @Column({ default: '' })
+  @Field()
   price: string;
 
   @Column()
+  @Field()
   expiredAt: number;
 
   @Column()
+  @Field()
   terminatedAt: number;
 
   @Column()
+  @Field()
   terminateByIndexer: boolean;
 
   @Column({ default: false })
+  @Field()
   lastFinal: boolean;
 
   @Column({ default: '' })
+  @Field()
   lastIndexerSign: string;
 
   @Column({ default: '' })
+  @Field()
   lastConsumerSign: string;
 }
 
-@ObjectType('Channel')
-export class ChannelType {
+@Entity()
+@ObjectType('ChannelLabor')
+export class ChannelLabor {
+  @PrimaryGeneratedColumn()
   @Field(() => ID)
-  id: string;
+  id: number;
 
-  @Field(() => Int)
-  status: number;
-
+  @Column()
   @Field()
   deploymentId: string;
 
+  @Column()
   @Field()
   indexer: string;
 
-  @Field()
-  consumer: string;
-
+  @Column()
   @Field()
   total: string;
 
+  @Column()
   @Field()
-  spent: string;
+  createdAt: number;
+}
 
-  @Field()
-  onchain: string;
+@Entity()
+@ObjectType('ChainInfo')
+export class ChainInfo {
+  @PrimaryGeneratedColumn()
+  @Field(() => ID)
+  id: number;
 
+  @Column()
   @Field()
-  remote: string;
+  name: string;
 
+  @Column()
   @Field()
-  price: string;
-
-  @Field()
-  expiredAt: number;
-
-  @Field()
-  terminatedAt: number;
-
-  @Field()
-  terminateByIndexer: boolean;
-
-  @Field()
-  lastFinal: boolean;
-
-  @Field()
-  lastIndexerSign: string;
-
-  @Field()
-  lastConsumerSign: string;
+  value: string;
 }
 
 @ObjectType('QueryState')
@@ -136,64 +146,4 @@ export class QueryType {
 
   @Field()
   consumerSign: string;
-}
-
-@Entity()
-export class ChannelLabor {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  deploymentId: string;
-
-  @Column()
-  indexer: string;
-
-  @Column()
-  total: string;
-
-  @Column()
-  createdAt: number;
-}
-
-@ObjectType('ChannelLabor')
-export class ChannelLaborType {
-  @Field(() => ID)
-  id: number;
-
-  @Field()
-  deploymentId: string;
-
-  @Field()
-  indexer: string;
-
-  @Field()
-  total: string;
-
-  @Field()
-  createdAt: number;
-}
-
-@Entity()
-export class ChainInfo {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  name: string;
-
-  @Column()
-  value: string;
-}
-
-@ObjectType('ChainInfo')
-export class ChainInfoType {
-  @Field(() => ID)
-  id: number;
-
-  @Field()
-  name: string;
-
-  @Field()
-  value: string;
 }

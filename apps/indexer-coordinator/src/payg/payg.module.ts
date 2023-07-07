@@ -11,17 +11,15 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { ChainInfo, Channel, ChannelLabor } from './payg.model';
 import { PaygResolver } from './payg.resolver';
 import { PaygService } from './payg.service';
+import { PaygSyncService } from './payg.sync.service';
 
 @Module({
   imports: [
     SubscriptionModule,
     CoreModule,
-    TypeOrmModule.forFeature([Channel]),
-    TypeOrmModule.forFeature([ChannelLabor]),
-    TypeOrmModule.forFeature([ChainInfo]),
-    TypeOrmModule.forFeature([PaygEntity]),
+    TypeOrmModule.forFeature([Channel, ChannelLabor, ChainInfo, PaygEntity]),
   ],
-  providers: [PaygService, PaygResolver],
+  providers: [PaygService, PaygSyncService, PaygResolver],
   exports: [PaygService],
 })
 export class PaygModule {}

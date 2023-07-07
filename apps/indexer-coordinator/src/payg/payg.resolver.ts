@@ -6,7 +6,7 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { PaygEvent } from '../utils/subscription';
 
-import { ChannelType, QueryType } from './payg.model';
+import { Channel as ChannelType, QueryType } from './payg.model';
 import { PaygService } from './payg.service';
 
 @Resolver(() => ChannelType)
@@ -35,7 +35,7 @@ export class PaygResolver {
     @Args('consumer') consumer: string,
     @Args('total') total: string,
     @Args('deploymentId') deploymentId: string,
-    @Args('price') price: string,
+    @Args('price') price: string
   ) {
     return this.paygService.open(id, indexer, consumer, total, deploymentId, price);
   }
@@ -46,7 +46,7 @@ export class PaygResolver {
     @Args('spent') spent: string,
     @Args('isFinal') isFinal: boolean,
     @Args('indexerSign') indexerSign: string,
-    @Args('consumerSign') consumerSign: string,
+    @Args('consumerSign') consumerSign: string
   ) {
     return this.paygService.update(id, spent, isFinal, indexerSign, consumerSign);
   }

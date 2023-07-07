@@ -82,3 +82,8 @@ apps/indexer-coordinator/dist/*
 .data
 .projects
 .eslintcache
+<<<<<<< HEAD
+=======
+
+.env
+>>>>>>> main

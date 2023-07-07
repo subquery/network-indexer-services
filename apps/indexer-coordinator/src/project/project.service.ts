@@ -60,20 +60,20 @@ export class ProjectService {
     private account: AccountService,
     private config: Config,
     private portService: PortService,
-    private db: DB,
+    private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.ipfsClient = new IPFSClient(IPFS_URLS.project);
     void this.restoreProjects();
   }
 
-  async getProject(id: string): Promise<Project> {
-    return this.projectRepo.findOne({ id });
+  getProject(id: string): Promise<Project> {
+    return this.projectRepo.findOneBy({ id });
   }
 
   async getProjectDetails(id: string): Promise<ProjectDetails> {
-    const project = await this.projectRepo.findOne({ id });
-    const payg = await this.paygRepo.findOne({ id });
+    const project = await this.projectRepo.findOneBy({ id });
+    const payg = await this.paygRepo.findOneBy({ id });
     const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
 
     return { ...project, metadata, payg };
@@ -100,7 +100,6 @@ export class ProjectService {
 
     try {
       const result = await networkClient.query({
-        // @ts-ignore
         query: GET_INDEXER_PROJECTS,
         variables: { indexer },
       });
@@ -117,7 +116,6 @@ export class ProjectService {
   async getProjectInfo(id: string): Promise<ProjectInfo> {
     const networkClient = this.client.networkClient;
     const result = await networkClient.query({
-      // @ts-ignore
       query: GET_DEPLOYMENT,
       variables: { id },
     });
@@ -157,7 +155,7 @@ export class ProjectService {
   }
 
   async updateProjectStatus(id: string, status: IndexingStatus): Promise<Project> {
-    const project = await this.projectRepo.findOne({ id });
+    const project = await this.projectRepo.findOneBy({ id });
     project.status = status;
     return this.projectRepo.save(project);
   }
@@ -166,7 +164,7 @@ export class ProjectService {
   async startProject(
     id: string,
     baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig,
+    advancedConfig: ProjectAdvancedConfig
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
@@ -177,7 +175,12 @@ export class ProjectService {
     const containers = await this.docker.ps(projectContainers(id));
     const isConfigChanged = projectConfigChanged(project, baseConfig, advancedConfig);
 
-    if (isDBExist && composeFileExist(id) && !isConfigChanged && canContainersRestart(id, containers)) {
+    if (
+      isDBExist &&
+      composeFileExist(id) &&
+      !isConfigChanged &&
+      canContainersRestart(id, containers)
+    ) {
       return await this.restartProject(id);
     }
 
@@ -198,7 +201,7 @@ export class ProjectService {
   async configToTemplate(
     project: Project,
     baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig,
+    advancedConfig: ProjectAdvancedConfig
   ): Promise<TemplateType> {
     const servicePort = this.portService.getAvailablePort();
     const mmrStoreType = await this.getMmrStoreType(project.id);
@@ -225,7 +228,7 @@ export class ProjectService {
   async createAndStartProject(
     id: string,
     baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig,
+    advancedConfig: ProjectAdvancedConfig
   ) {
     let project = await this.getProject(id);
     if (!project) {
@@ -303,7 +306,7 @@ export class ProjectService {
   }
 
   async updateProjectPayg(id: string, paygConfig: PaygConfig) {
-    const payg = await this.paygRepo.findOne({ id });
+    const payg = await this.paygRepo.findOneBy({ id });
     if (!payg) {
       getLogger('project').error(`project not exist: ${id}`);
       return;

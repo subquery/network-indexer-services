@@ -26,7 +26,7 @@ export class AccountService {
   constructor(
     @InjectRepository(Indexer) private indexerRepo: Repository<Indexer>,
     @InjectRepository(Controller) private controllerRepo: Repository<Controller>,
-    private config: Config,
+    private config: Config
   ) {
     const chainID = networkToChainID[config.network];
     const provider = initProvider(config.wsEndpoint, chainID);
@@ -35,8 +35,8 @@ export class AccountService {
 
   async getIndexer(): Promise<string> {
     if (!this.indexer) {
-      const indexer = await this.indexerRepo.findOne();
-      this.indexer = indexer?.address;
+      const indexer = await this.indexerRepo.find({ take: 1 });
+      this.indexer = indexer?.[0]?.address;
     }
 
     return this.indexer;
@@ -72,7 +72,7 @@ export class AccountService {
         active: false,
         address: controller.address,
         encryptedKey,
-      }),
+      })
     );
 
     return controller.address;
