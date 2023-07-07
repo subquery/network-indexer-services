@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export enum Images {
-  Coordinator = 'onfinality/subql-coordinator',
-  Proxy = 'onfinality/subql-indexer-proxy',
+  Coordinator = 'subquerynetwork/indexer-coordinator',
+  Proxy = 'subquerynetwork/indexer-proxy',
   Db = 'postgres',
   Redis = 'redis',
 }

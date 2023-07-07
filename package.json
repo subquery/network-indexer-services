@@ -9,7 +9,7 @@
     "/bin"
   ],
   "bin": {
-    "subql-coordinator": "./bin/run"
+    "indexer-coordinator": "./bin/run"
   },
   "scripts": {
     "prebuild": "rimraf dist",

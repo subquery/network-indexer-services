@@ -47,7 +47,7 @@ docker exec -i "coordinator-server" psql -U postgres -c "create database \"coord
 
 ```sh
 # Run the `help` command line
-subql-coordinator -help
+indexer-coordinator -help
 
 # All the parameters
 Indexer Coordinator
@@ -72,7 +72,7 @@ Options:
 2. Start coordinator service
 
 ```sh
-subql-coordinator --network testnet \
+indexer-coordinator --network testnet \
     --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' \
     --postgres-host localhost \
     --postgres-database coordinator \

@@ -39,8 +39,8 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
-          username: onfinality
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: subquerynetwork
+          password: ${{ secrets.SQ_DOCKERHUB_TOKEN }}
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
@@ -74,7 +74,7 @@ jobs:
           push: true
           platforms: amd64
           file: ./Dockerfile
-          tags: onfinality/subql-coordinator-dev:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
+          tags: subquerynetwork/indexer-coordinator-dev:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
 
       - name: Image digest
