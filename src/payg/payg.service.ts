@@ -45,36 +45,6 @@ export class PaygService {
     });
   }
 
-  async open(
-    id: string,
-    indexer: string,
-    consumer: string,
-    total: string,
-    deploymentId: string,
-    price: string,
-  ): Promise<Channel> {
-    const channel = this.channelRepo.create({
-      id,
-      deploymentId,
-      indexer,
-      consumer,
-      total,
-      expiredAt: 0,
-      lastIndexerSign: '',
-      lastConsumerSign: '',
-      status: ChannelStatus.OPEN,
-      spent: '0',
-      onchain: '0',
-      remote: '0',
-      terminatedAt: 0,
-      terminateByIndexer: false,
-      lastFinal: true, // until receive open event.
-      price,
-    });
-
-    return this.channelRepo.save(channel);
-  }
-
   async update(
     id: string,
     spent: string,
