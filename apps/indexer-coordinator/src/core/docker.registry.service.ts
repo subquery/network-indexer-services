@@ -7,6 +7,7 @@ import LRU from 'lru-cache';
 import * as semver from 'semver';
 import { argv } from '../yargs';
 
+// TODO: migrate to ``subquerynetwork` host
 export enum DockerRegistry {
   query = 'onfinality/subql-query',
   node = 'onfinality/subql-node',

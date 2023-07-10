@@ -10,13 +10,11 @@ Start all the services: `db service` `coordinator service` and `proxy service` t
 
 <img width="900" alt="1" src="https://user-images.githubusercontent.com/8177474/157581858-ffe19d45-540b-4eb4-a299-6aeafa0e720a.png">
 
-
 ### Indexer Management with Admin App
 
 For the default configuration, open the indexer admin app with `http://localhost:8000`
 
 <img width="1628" alt="2" src="https://user-images.githubusercontent.com/8177474/157581741-10a1ffb1-604d-4375-b3ca-30cccbea2e0a.png">
-
 
 ## Start With CLI
 
@@ -47,7 +45,7 @@ docker exec -i "coordinator-server" psql -U postgres -c "create database \"coord
 
 ```sh
 # Run the `help` command line
-subql-coordinator -help
+indexer-coordinator -help
 
 # All the parameters
 Indexer Coordinator
@@ -72,7 +70,7 @@ Options:
 2. Start coordinator service
 
 ```sh
-subql-coordinator --network testnet \
+indexer-coordinator --network testnet \
     --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' \
     --postgres-host localhost \
     --postgres-database coordinator \

@@ -43,7 +43,7 @@ const clientSDK = new IPFSClient(IPFS_URL);
 export function projectConfigChanged(
   project: Project,
   baseConfig: ProjectBaseConfig,
-  advancedConfig: ProjectAdvancedConfig,
+  advancedConfig: ProjectAdvancedConfig
 ): boolean {
   return (
     advancedConfig.purgeDB ||
@@ -66,13 +66,16 @@ function dockerRegistryFromChain(chainType: ChainType): string {
     case 'flare':
     case 'near':
     case 'ethereum':
+      // TODO: migrate to ``subquerynetwork` host
       return `onfinality/subql-node-${chainType}`;
     default:
       return 'onfinality/subql-node';
   }
 }
 
-export async function nodeConfigs(cid: string): Promise<{ chainType: ChainType; dockerRegistry: string }> {
+export async function nodeConfigs(
+  cid: string
+): Promise<{ chainType: ChainType; dockerRegistry: string }> {
   const manifest = await getManifest(cid);
   const { dataSources } = manifest;
   const runtime = dataSources[0].kind;
