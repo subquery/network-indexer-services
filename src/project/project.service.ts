@@ -304,7 +304,7 @@ export class ProjectService {
     const payg = await this.paygRepo.findOneBy({ id });
     if (!payg) {
       getLogger('project').error(`project not exist: ${id}`);
-      return;
+      throw new Error(`project not exist: ${id}`);
     }
 
     payg.price = paygConfig.price;

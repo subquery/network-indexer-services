@@ -6,7 +6,7 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { PaygEvent } from '../utils/subscription';
 
-import { Channel as ChannelType, QueryType } from './payg.model';
+import { Channel as ChannelType } from './payg.model';
 import { PaygService } from './payg.service';
 
 @Resolver(() => ChannelType)
@@ -24,11 +24,11 @@ export class PaygResolver {
   }
 
   @Query(() => [ChannelType])
-  getAliveChannels() {
+  getAliveChannelTypes() {
     return this.paygService.getAliveChannels();
   }
 
-  @Mutation(() => QueryType)
+  @Mutation(() => ChannelType)
   channelUpdate(
     @Args('id') id: string,
     @Args('spent') spent: string,
