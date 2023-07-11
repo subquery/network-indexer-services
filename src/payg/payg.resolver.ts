@@ -24,7 +24,7 @@ export class PaygResolver {
   }
 
   @Query(() => [ChannelType])
-  getAliveChannelTypes() {
+  getAliveChannels() {
     return this.paygService.getAliveChannels();
   }
 
