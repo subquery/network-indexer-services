@@ -29,7 +29,10 @@ const MAX_RETRY = 3;
 
 const logger = getLogger('transaction');
 
-function wrapAndIgnoreError<T>(promiseFunc: () => Promise<T>, desc: string): () => Promise<T | void> {
+function wrapAndIgnoreError<T>(
+  promiseFunc: () => Promise<T>,
+  desc: string
+): () => Promise<T | void> {
   return () => {
     logger.debug(`${desc}: start`);
     return promiseFunc().then(
@@ -40,7 +43,7 @@ function wrapAndIgnoreError<T>(promiseFunc: () => Promise<T>, desc: string): () 
       (e) => {
         logger.error(e, `${desc}: failed`);
         return;
-      },
+      }
     );
   };
 }
@@ -60,7 +63,7 @@ export class NetworkService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private accountService: AccountService,
     private queryService: QueryService,
-    private readonly config: Config,
+    private readonly config: Config
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.projectRepo = connection.getRepository(ProjectEntity);
@@ -83,15 +86,18 @@ export class NetworkService implements OnApplicationBootstrap {
     const projects = await this.projectRepo.find();
     const indexingProjects = await Promise.all(
       projects.map(async (project) => {
-        const { status } = await this.contractService.deploymentStatusByIndexer(project.id, indexer);
+        const { status } = await this.contractService.deploymentStatusByIndexer(
+          project.id,
+          indexer
+        );
         project.status = status;
         return await this.projectRepo.save(project);
-      }),
+      })
     );
 
     return indexingProjects.filter(
       ({ queryEndpoint, status }) =>
-        !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status),
+        !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status)
     );
   }
 
@@ -100,17 +106,21 @@ export class NetworkService implements OnApplicationBootstrap {
     const indexer = await this.accountService.getIndexer();
     const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
     for (let i = 0; i < agreementCount.toNumber(); i++) {
-      const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(indexer, i);
-      const agreementExpired = await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(
-        agreementId,
+      const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(
+        indexer,
+        i
       );
+      const agreementExpired =
+        await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
 
       if (agreementExpired) {
         this.expiredAgreements.add(agreementId.toString());
       }
     }
     logger.debug(
-      `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(',')}`,
+      `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(
+        ','
+      )}`
     );
   }
 
@@ -173,8 +183,9 @@ export class NetworkService implements OnApplicationBootstrap {
         if (this.expiredAgreements.has(agreementId.toString())) {
           await this.sendTransaction(
             'remove expired service agreement',
-            (overrides) => this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
-            `service agreement: ${agreementId}`,
+            (overrides) =>
+              this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
+            `service agreement: ${agreementId}`
           );
 
           this.expiredAgreements.delete(agreementId.toString());
@@ -207,10 +218,10 @@ export class NetworkService implements OnApplicationBootstrap {
           blockHeight,
           mmrRoot,
           timestamp,
-          overrides,
+          overrides
         );
       },
-      desc,
+      desc
     );
   }
 
@@ -246,26 +257,40 @@ export class NetworkService implements OnApplicationBootstrap {
     return { currentEra, lastClaimedEra: rewardInfo.lastClaimEra, lastSettledEra };
   }
 
-  canCollectRewards(currentEra: BigNumber, lastClaimedEra: BigNumber, lastSettledEra: BigNumber): boolean {
-    return lastClaimedEra.gt(0) && lastClaimedEra.lt(currentEra.sub(1)) && lastClaimedEra.lte(lastSettledEra);
+  canCollectRewards(
+    currentEra: BigNumber,
+    lastClaimedEra: BigNumber,
+    lastSettledEra: BigNumber
+  ): boolean {
+    return (
+      lastClaimedEra.gt(0) &&
+      lastClaimedEra.lt(currentEra.sub(1)) &&
+      lastClaimedEra.lte(lastSettledEra)
+    );
   }
 
   async collectAndDistributeReward(indexer: string) {
     await this.sendTransaction('collect and distribute rewards', (overrides) =>
-      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides),
+      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides)
     );
   }
 
-  async batchCollectAndDistributeRewards(indexer: string, currentEra: BigNumber, lastClaimedEra: BigNumber) {
+  async batchCollectAndDistributeRewards(
+    indexer: string,
+    currentEra: BigNumber,
+    lastClaimedEra: BigNumber
+  ) {
     const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
     for (let i = 0; i < count; i++) {
       await this.sendTransaction('batch collect and distribute rewards', (overrides) =>
-        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize, overrides),
+        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize, overrides)
       );
     }
   }
 
-  async getExpiredStateChannels(): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+  async getExpiredStateChannels(): Promise<
+    GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']
+  > {
     const apolloClient = this.client.networkClient;
     const now = new Date();
     const indexer = await this.accountService.getIndexer();
@@ -273,6 +298,7 @@ export class NetworkService implements OnApplicationBootstrap {
       GetIndexerUnfinalisedPlansQuery,
       GetIndexerUnfinalisedPlansQueryVariables
     >({
+      // @ts-ignore
       query: GetIndexerUnfinalisedPlans,
       variables: { indexer, now },
     });
@@ -287,7 +313,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (!canCollectRewards) return;
 
       getLogger('network').info(
-        `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`,
+        `currentEra: ${currentEra.toNumber()} | lastClaimedEra: ${lastClaimedEra.toNumber()} | lastSettledEra: ${lastSettledEra.toNumber()}`
       );
 
       const indexer = await this.accountService.getIndexer();
@@ -311,7 +337,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       getLogger('network').info(`new stakers ${stakers.join(',')}`);
       await this.sendTransaction('apply stake changes', async (overrides) =>
-        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides),
+        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides)
       );
     };
   }
@@ -324,7 +350,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
         await this.sendTransaction('apply ICR changes', async (overrides) =>
-          this.sdk.rewardsStaking.applyICRChange(indexer, overrides),
+          this.sdk.rewardsStaking.applyICRChange(indexer, overrides)
         );
       }
     };
@@ -339,7 +365,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
         await this.sendTransaction('update era number', async (overrides) =>
-          this.sdk.eraManager.safeUpdateAndGetEra(overrides),
+          this.sdk.eraManager.safeUpdateAndGetEra(overrides)
         );
       }
     };
@@ -350,8 +376,9 @@ export class NetworkService implements OnApplicationBootstrap {
       const unfinalisedPlans = await this.getExpiredStateChannels();
 
       for (const node of unfinalisedPlans) {
-        await this.sendTransaction(`claim unfinalized plan for ${node.consumer}`, async (overrides) =>
-          this.sdk.stateChannel.claim(node.id, overrides),
+        await this.sendTransaction(
+          `claim unfinalized plan for ${node.consumer}`,
+          async (overrides) => this.sdk.stateChannel.claim(node.id, overrides)
         );
       }
     };
@@ -360,7 +387,10 @@ export class NetworkService implements OnApplicationBootstrap {
   private networkActions() {
     return [
       wrapAndIgnoreError(this.updateEraNumberAction(), 'updateEraNumberAction'),
-      wrapAndIgnoreError(this.collectAndDistributeRewardsAction(), 'collectAndDistributeRewardsAction'),
+      wrapAndIgnoreError(
+        this.collectAndDistributeRewardsAction(),
+        'collectAndDistributeRewardsAction'
+      ),
       wrapAndIgnoreError(this.applyICRChangeAction(), 'applyICRChangeAction'),
       wrapAndIgnoreError(this.applyStakeChangesAction(), 'applyStakeChangesAction'),
       wrapAndIgnoreError(this.closeExpiredStateChannelsAction(), 'closeExpiredStateChannelsAction'),
@@ -378,7 +408,7 @@ export class NetworkService implements OnApplicationBootstrap {
     const isBalanceSufficient = await this.contractService.hasSufficientBalance();
     if (!isBalanceSufficient) {
       getLogger('contract').warn(
-        'insufficient balance for the controller account, please top up your controller account ASAP.',
+        'insufficient balance for the controller account, please top up your controller account ASAP.'
       );
       return false;
     }

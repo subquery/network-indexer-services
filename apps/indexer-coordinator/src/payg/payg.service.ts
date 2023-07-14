@@ -45,36 +45,6 @@ export class PaygService {
     });
   }
 
-  async open(
-    id: string,
-    indexer: string,
-    consumer: string,
-    total: string,
-    deploymentId: string,
-    price: string
-  ): Promise<Channel> {
-    const channel = this.channelRepo.create({
-      id,
-      deploymentId,
-      indexer,
-      consumer,
-      total,
-      expiredAt: 0,
-      lastIndexerSign: '',
-      lastConsumerSign: '',
-      status: ChannelStatus.OPEN,
-      spent: '0',
-      onchain: '0',
-      remote: '0',
-      terminatedAt: 0,
-      terminateByIndexer: false,
-      lastFinal: true, // until receive open event.
-      price,
-    });
-
-    return this.channelRepo.save(channel);
-  }
-
   async update(
     id: string,
     spent: string,
@@ -86,7 +56,7 @@ export class PaygService {
     const projectPayg = await this.paygRepo.findOneBy({ id: channel.deploymentId });
     if (!channel || !projectPayg) {
       logger.error(`channel or project not exist: ${id}`);
-      return;
+      throw new Error(`channel or project not exist: ${id}`);
     }
     const threshold = BigInt(projectPayg.threshold);
 
@@ -116,6 +86,7 @@ export class PaygService {
         indexerSign: indexerSign,
         consumerSign: consumerSign,
       });
+      await tx.wait(1);
       channel.onchain = channel.remote;
       channel.spent = channel.remote;
     }
@@ -126,7 +97,7 @@ export class PaygService {
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOneBy({ id });
     if (channel.onchain === channel.remote) {
-      return;
+      return channel;
     }
 
     // checkpoint
@@ -137,6 +108,7 @@ export class PaygService {
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign,
     });
+    await tx.wait(1);
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
@@ -147,7 +119,7 @@ export class PaygService {
   async terminate(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOneBy({ id });
     if (channel.onchain === channel.remote) {
-      return;
+      return channel;
     }
 
     // terminate
@@ -158,11 +130,13 @@ export class PaygService {
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign,
     });
+    await tx.wait(1);
 
     channel.status = ChannelStatus.TERMINATING;
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
     channel.lastFinal = true;
+    await tx.wait(1);
 
     return this.savePub(channel, PaygEvent.State);
   }
@@ -170,7 +144,7 @@ export class PaygService {
   async respond(id: string): Promise<Channel> {
     const channel = await this.channelRepo.findOneBy({ id });
     if (channel.onchain === channel.remote) {
-      return;
+      return channel;
     }
 
     // respond to chain
@@ -181,6 +155,7 @@ export class PaygService {
       indexerSign: channel.lastIndexerSign,
       consumerSign: channel.lastConsumerSign,
     });
+    await tx.wait(1);
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;
@@ -248,9 +223,7 @@ export class PaygService {
     if (!channel) {
       // check if self.
       const myIndexer = await this.account.getIndexer();
-      if (indexer !== myIndexer) {
-        return;
-      }
+      if (indexer !== myIndexer) return;
 
       const channel = this.channelRepo.create({
         id,
