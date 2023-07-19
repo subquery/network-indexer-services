@@ -10,7 +10,7 @@ import { nodeContainer, queryContainer } from '../utils/docker';
 import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from '../utils/project';
 
-import {AccountService} from "./account.service";
+import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { ServiceStatus, Poi, PoiItem } from './types';
@@ -22,7 +22,8 @@ export class QueryService {
   constructor(
     private docker: DockerService,
     private accountService: AccountService,
-    private contract: ContractService) {
+    private contract: ContractService,
+  ) {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
 
@@ -131,7 +132,6 @@ export class QueryService {
   }
 
   async getLastPoi(id: string, endpoint: string): Promise<Poi> {
-    // TODO: will replace with another api to get the latest mmrRoot value
     const queryBody = JSON.stringify({
       query: `{
         _pois(last: 100) {
@@ -176,28 +176,5 @@ export class QueryService {
     if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
 
     return this.getLastPoi(id, queryEndpoint);
-  }
-
-  async getReportPoi(project: Project): Promise<Poi> {
-    const { id } = project;
-    try {
-      const poi = await this.getValidPoi(project);
-      const { blockHeight, mmrRoot } = poi;
-      debugLogger('poi', `project: ${project.id} | ${poi.blockHeight} | ${poi.mmrRoot}`);
-      if (blockHeight === 0) return poi;
-      const indexer = await this.accountService.getIndexer();
-      const indexingStatus = await this.contract.deploymentStatusByIndexer(id, indexer);
-      if (indexingStatus.blockHeight.lt(blockHeight)) return poi;
-
-      const shortId = id.substring(0, 15);
-      debugLogger(
-        'report',
-        `project: ${shortId} | network block height: ${indexingStatus.blockHeight.toNumber()} lg ${blockHeight} mmrRoot: ${mmrRoot}`,
-      );
-    } catch (e) {
-      debugLogger('report', `failed to get report poi: ${String(e)}`);
-    }
-
-    return this.emptyPoi;
   }
 }
