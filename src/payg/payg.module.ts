@@ -9,6 +9,7 @@ import { PaygEntity } from '../project/project.model';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
 import { ChainInfo, Channel, ChannelLabor } from './payg.model';
+import { PaygQueryService } from './payg.query.service';
 import { PaygResolver } from './payg.resolver';
 import { PaygService } from './payg.service';
 import { PaygSyncService } from './payg.sync.service';
@@ -19,7 +20,7 @@ import { PaygSyncService } from './payg.sync.service';
     CoreModule,
     TypeOrmModule.forFeature([Channel, ChannelLabor, ChainInfo, PaygEntity]),
   ],
-  providers: [PaygService, PaygSyncService, PaygResolver],
+  providers: [PaygService, PaygSyncService, PaygQueryService, PaygResolver],
   exports: [PaygService],
 })
 export class PaygModule {}

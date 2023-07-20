@@ -26,7 +26,7 @@ export class PaygQueryService {
     this.client = queryClient.networkClient;
   }
 
-  async getStateChannels(): Promise<StateChannel[] | undefined> {
+  async getStateChannels(): Promise<StateChannel[]> {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
         query: GetStateChannels,
@@ -36,8 +36,8 @@ export class PaygQueryService {
       const channels = result.data.stateChannels.nodes;
       return channels;
     } catch (e) {
-      logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
-      return;
+      logger.error(`Failed to get state channels from Subquery Project: ${e}`);
+      return [];
     }
   }
 
@@ -51,7 +51,7 @@ export class PaygQueryService {
       const channel = result.data.stateChannel;
       return channel;
     } catch (e) {
-      logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
+      logger.error(`Failed to get channel ${id} from Subquery Project: ${e}`);
       return;
     }
   }

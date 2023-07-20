@@ -1,33 +1,25 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ApolloClient } from '@apollo/client/core';
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
-import { GetStateChannels, GetStateChannelsQuery } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 import { chunk } from 'lodash';
 
-import { Config } from '../configure/configure.module';
 import { ContractService } from '../core/contract.service';
 import { getLogger } from '../utils/logger';
+import { PaygQueryService } from './payg.query.service';
 import { PaygService } from './payg.service';
 
 const logger = getLogger('payg');
 
 @Injectable()
 export class PaygSyncService implements OnApplicationBootstrap {
-  private client: ApolloClient<unknown>;
-
   constructor(
     private contractService: ContractService,
+    private paygQueryService: PaygQueryService,
     private paygServicee: PaygService,
-    private readonly config: Config,
-  ) {
-    const queryClient = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
-    this.client = queryClient.networkClient;
-  }
+  ) {}
 
   onApplicationBootstrap() {
     void (() => {
@@ -39,12 +31,9 @@ export class PaygSyncService implements OnApplicationBootstrap {
   async syncStateChannelsPeriodically() {
     try {
       logger.debug(`load from Subquery Project...`);
-      const result = await this.client.query<GetStateChannelsQuery>({
-        query: GetStateChannels,
-        variables: { status: 'OPEN' },
-      });
+      const channels = await this.paygQueryService.getStateChannels();
 
-      for (const batch of chunk(result.data.stateChannels.nodes, 10)) {
+      for (const batch of chunk(channels, 10)) {
         await Promise.all(
           batch.map((stateChannel) =>
             this.paygServicee.syncChannel(
