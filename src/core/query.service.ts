@@ -115,9 +115,8 @@ export class QueryService {
       const response = await fetch(url);
       const data = await response.json();
       const mmrRoot = data.mmrRoot;
-      if (!mmrRoot) return ZERO_BYTES32;
 
-      return mmrRoot.replace('\\', '0').substring(0, 66);
+      return mmrRoot ?? ZERO_BYTES32;
     } catch {
       return ZERO_BYTES32;
     }
