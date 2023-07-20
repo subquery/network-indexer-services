@@ -58,8 +58,8 @@ export class PaygService {
       logger.error(`channel or project not exist: ${id}`);
       throw new Error(`channel or project not exist: ${id}`);
     }
-    const threshold = BigInt(projectPayg.threshold);
 
+    const threshold = BigInt(projectPayg.threshold);
     const currentRemote = BigInt(spent);
     const prevSpent = BigInt(channel.spent);
     const prevRemote = BigInt(channel.remote);
