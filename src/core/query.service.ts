@@ -10,7 +10,7 @@ import { nodeContainer, queryContainer } from '../utils/docker';
 import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from '../utils/project';
 
-import {AccountService} from "./account.service";
+import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { ServiceStatus, Poi, PoiItem } from './types';
@@ -22,7 +22,8 @@ export class QueryService {
   constructor(
     private docker: DockerService,
     private accountService: AccountService,
-    private contract: ContractService) {
+    private contract: ContractService,
+  ) {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
 
@@ -108,23 +109,14 @@ export class QueryService {
     }
   }
 
-  async getMmrRoot(id: string, endpoint: string, blockHeight: number): Promise<string> {
-    const queryBody = JSON.stringify({
-      query: `{
-        _poi(id: ${blockHeight}) {
-          id
-          mmrRoot
-        }
-      }`,
-    });
-
+  async getMmrRoot(endpoint: string, blockHeight: number): Promise<string> {
     try {
-      const response = await this.queryRequest(endpoint, queryBody);
+      const url = new URL(`mmrs/${blockHeight}`, endpoint);
+      const response = await fetch(url);
       const data = await response.json();
-      if (!data.data._poi) return ZERO_BYTES32;
+      const mmrRoot = data.mmrRoot;
 
-      const mmrRoot = data.data._poi.mmrRoot;
-      return mmrRoot.replace('\\', '0').substring(0, 66);
+      return mmrRoot ?? ZERO_BYTES32;
     } catch {
       return ZERO_BYTES32;
     }
@@ -163,6 +155,7 @@ export class QueryService {
     const {
       id,
       queryEndpoint,
+      nodeEndpoint,
       advancedConfig: { poiEnabled },
     } = project;
 
@@ -172,7 +165,7 @@ export class QueryService {
 
     if (!poiEnabled) return { blockHeight, mmrRoot: ZERO_BYTES32 };
 
-    const mmrRoot = await this.getMmrRoot(id, queryEndpoint, blockHeight);
+    const mmrRoot = await this.getMmrRoot(nodeEndpoint, blockHeight);
     if (mmrRoot !== ZERO_BYTES32) return { blockHeight, mmrRoot };
 
     return this.getLastPoi(id, queryEndpoint);
