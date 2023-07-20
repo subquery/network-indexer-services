@@ -34,24 +34,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
       const channels = await this.paygQueryService.getStateChannels();
 
       for (const batch of chunk(channels, 10)) {
-        await Promise.all(
-          batch.map((stateChannel) =>
-            this.paygServicee.syncChannel(
-              BigNumber.from(stateChannel.id).toString(),
-              stateChannel.deployment.id,
-              stateChannel.indexer,
-              stateChannel.consumer,
-              stateChannel.agent,
-              stateChannel.total.toString(),
-              stateChannel.spent.toString(),
-              stateChannel.price.toString(),
-              new Date(stateChannel.expiredAt).valueOf() / 1000,
-              new Date(stateChannel.terminatedAt).valueOf() / 1000,
-              stateChannel.terminateByIndexer,
-              stateChannel.isFinal,
-            ),
-          ),
-        );
+        await Promise.all(batch.map((channel) => this.paygServicee.syncChannel(channel)));
       }
     } catch (e) {
       logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
