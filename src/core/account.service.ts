@@ -33,6 +33,10 @@ export class AccountService {
     this.sdk = initContractSDK(provider, chainID);
   }
 
+  get emtpyAccount() {
+    return { indexer: '', controller: '', encryptedKey: '', network: '', wsEndpoint: '' };
+  }
+
   async getIndexer(): Promise<string> {
     if (!this.indexer) {
       const indexer = await this.indexerRepo.find({ take: 1 });
@@ -90,14 +94,20 @@ export class AccountService {
   }
 
   async getAccountMetadata(): Promise<AccountMetaDataType> {
-    const controller = await this.getActiveController();
-    return {
-      indexer: this.indexer,
-      controller: controller?.address ?? '',
-      encryptedKey: controller?.encryptedKey ?? '',
-      network: this.config.network,
-      wsEndpoint: this.config.wsEndpoint,
-    };
+    try {
+      const { network, wsEndpoint } = this.config;
+      const controller = await this.getActiveController();
+      return {
+        indexer: this.indexer,
+        controller: controller?.address ?? '',
+        encryptedKey: controller?.encryptedKey ?? '',
+        network,
+        wsEndpoint,
+      };
+    } catch (e) {
+      logger.debug(`Failed to get account metadata: ${e}`);
+      return this.emtpyAccount;
+    }
   }
 
   async getActiveController(): Promise<Controller | undefined> {
