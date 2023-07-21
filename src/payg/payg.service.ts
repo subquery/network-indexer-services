@@ -102,6 +102,8 @@ export class PaygService {
         channel.spent = channel.remote;
       }
 
+      logger.debug(`Updated state channel ${id}`);
+
       return this.savePub(channel, PaygEvent.State);
     } catch (e) {
       logger.error(`Failed to update state channel ${id} with error: ${e}`);
@@ -126,6 +128,8 @@ export class PaygService {
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
+
+    logger.debug(`Checkpointed state channel ${id}`);
 
     return this.savePub(channel, PaygEvent.State);
   }
@@ -152,6 +156,8 @@ export class PaygService {
     channel.lastFinal = true;
     await tx.wait(1);
 
+    logger.debug(`Terminated state channel ${id}`);
+
     return this.savePub(channel, PaygEvent.State);
   }
 
@@ -175,6 +181,8 @@ export class PaygService {
     channel.spent = channel.remote;
     channel.lastFinal = true;
 
+    logger.debug(`Responded state channel ${id}`);
+
     return this.savePub(channel, PaygEvent.State);
   }
 
@@ -185,7 +193,7 @@ export class PaygService {
       if (_channel) return;
 
       const {
-        deploymentId,
+        deployment,
         indexer,
         consumer,
         agent,
@@ -200,7 +208,7 @@ export class PaygService {
 
       const channelObj = {
         id,
-        deploymentId,
+        deploymentId: deployment.id,
         indexer,
         consumer,
         agent,
@@ -220,6 +228,7 @@ export class PaygService {
 
       const channelEntity = this.channelRepo.create(channelObj);
       await this.channelRepo.save(channelEntity);
+      logger.debug(`Synced state channel ${id}`);
 
       return channelEntity;
     } catch (e) {
