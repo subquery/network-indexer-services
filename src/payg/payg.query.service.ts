@@ -34,6 +34,7 @@ export class PaygQueryService {
       });
 
       const channels = result.data.stateChannels.nodes;
+      // @ts-ignore TODO: fix type
       return channels;
     } catch (e) {
       logger.error(`Failed to get state channels from Subquery Project: ${e}`);
@@ -49,6 +50,7 @@ export class PaygQueryService {
       });
 
       const channel = result.data.stateChannel;
+      // @ts-ignore TODO: fix type
       return channel;
     } catch (e) {
       logger.error(`Failed to get channel ${id} from Subquery Project: ${e}`);

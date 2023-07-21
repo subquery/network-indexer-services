@@ -3,7 +3,7 @@
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 import { chunk } from 'lodash';
 
 import { ContractService } from '../core/contract.service';
