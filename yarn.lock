@@ -3807,10 +3807,10 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/indexer-admin@^1.1.5-5":
-  version "1.1.5-5"
-  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-1.1.5-5.tgz#c8d730396d8d4deca67a5e55e674d774aa7dc05b"
-  integrity sha512-uYqG3U+1YNpwlAOhR/iDoiD05AsiuWbQBqch4qRmMgehoJbtwvV1dTrM7Q4OHwZYNFHKrO7OmAThIDdSQbLBkg==
+"@subql/indexer-admin@^1.1.5-6":
+  version "1.1.5-6"
+  resolved "https://registry.yarnpkg.com/@subql/indexer-admin/-/indexer-admin-1.1.5-6.tgz#822b1e610b4681b42946e61865e92eec8ebee6a4"
+  integrity sha512-TlPV+Wkcx6NLJfgsaEdElPd6uxPi9+NHWqGiizz6yIlDKwRhhwq8MWTsVKW27okNqp81APYuu4T0dYUaFVpI1A==
   dependencies:
     "@apollo/client" "^3.4.17"
     "@emotion/react" "^11.8.2"
@@ -3884,6 +3884,13 @@
   version "0.3.13"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.13.tgz#c9ea14931b4afbfed36ba5f3845855fdd7e3859f"
   integrity sha512-/I7A4u5smySA9hlhG8ARO4uW2GU+G72LlqeCx1BMz56xQdIbcPvL93qWHX3zlvK6V+uMxlqlP95Q1qZrIvcyQg==
+  dependencies:
+    graphql "^16.5.0"
+
+"@subql/network-query@0.3.14-3":
+  version "0.3.14-3"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.14-3.tgz#112e43a12a40635a5c4d3673eb8a4f37d857b6e5"
+  integrity sha512-do8FRCwdnU327bbBcXZI+L5wlbcpFPa3Tzo9BBY483lsGv6y1kSt4yTG4MCaK+vQYTEZ+yLNlemMQbFqupCBMw==
   dependencies:
     graphql "^16.5.0"
 
