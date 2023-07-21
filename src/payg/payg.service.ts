@@ -185,7 +185,7 @@ export class PaygService {
       if (_channel) return;
 
       const {
-        deploymentId,
+        deployment,
         indexer,
         consumer,
         agent,
@@ -200,7 +200,7 @@ export class PaygService {
 
       const channelObj = {
         id,
-        deploymentId,
+        deploymentId: deployment.id,
         indexer,
         consumer,
         agent,
