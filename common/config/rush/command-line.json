@@ -1,0 +1,19 @@
+{
+  "commands": [
+    {
+      "name": "lint-staged",
+      "commandKind": "global",
+      "summary": "Used by the pre-commit Git hook. This command invokes lint-staged to reformat staged changes.",
+    
+      "autoinstallerName": "rush-husky",
+    
+      "shellCommand": "lint-staged"
+    },
+    {
+      "commandKind": "global",
+      "name": "test",
+      "summary": "Builds all projects and runs their tests.",
+      "shellCommand": "echo no test"
+    }
+  ]
+}

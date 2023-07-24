@@ -1,0 +1,1 @@
+cp ./src/utils/template.yml ./dist/utils/template.yml

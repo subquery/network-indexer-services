@@ -1,0 +1,83 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  min-width: 700px;
+  height: 100vh;
+  background-color: #f6f9fc;
+}
+
+.Main {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  margin: auto;
+  padding-top: 30px;
+  overflow: scroll;
+}
+
+.ant-modal-header {
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.ant-modal-mask {
+  background-color: rgba(0, 0, 0, 0.65);
+}
+
+.ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+}
+
+.pf-c-log-viewer__text {
+  color: white;
+  font-size: var(--sq-font-body);
+}
+
+.pf-c-log-viewer__index {
+  color: white;
+  font-size: var(--sq-font-body);
+}
+
+.rnc__notification-title {
+  color: var(--sq-gray900);
+  font-size: var(--sq-font-body);
+}
+
+.rnc__notification-message {
+  color: var(--sq-gray600);
+  font-size: var(--sq-font-medium);
+}
+
+.rnc__notification-item--success {
+  background-color: var(--sq-gray100);
+  border-left: 8px solid var(--sq-success);
+}
+
+.rnc__notification-item--default {
+  background-color: var(--sq-gray100);
+  border-left: 8px solid var(--sq-info);
+}
+
+.rnc__notification-item--warning {
+  background-color: var(--sq-gray100);
+  border-left: 8px solid var(--sq-warning);
+}
+
+.rnc__notification-item--danger {
+  background-color: var(--sq-gray100);
+  border-left: 8px solid var(--sq-error);
+}
+
+.errorFallback {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tableStyle {
+  width: 100%;
+}

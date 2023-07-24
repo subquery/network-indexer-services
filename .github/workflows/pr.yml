@@ -6,7 +6,7 @@ name: PR
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   pull_request:
-    branches: [ master ]
+    branches: [main]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -27,9 +27,8 @@ jobs:
         uses: actions/setup-node@v2.4.1
         with:
           node-version: 16
-          
-      - run: yarn
-      
-      - run: yarn build
-      
-      - run: yarn test
+      - run: npm install -g @microsoft/rush
+
+      - run: rush update
+
+      - run: rush build

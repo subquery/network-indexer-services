@@ -1,4 +1,4 @@
-PACKAGE_VERSION=$(cat ./package.json \
+PACKAGE_VERSION=$(cat ./apps/indexer-coordinator/package.json \
   | grep version \
   | head -1 \
   | awk -F: '{ print $2 }' \
