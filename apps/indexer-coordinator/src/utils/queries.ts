@@ -4,6 +4,7 @@
 import { gql } from '@apollo/client/core';
 import { DocumentNode } from 'graphql';
 
+// @ts-ignore
 export const GET_DEPLOYMENT: DocumentNode = gql`
   query GetDeployment($id: String!) {
     deployment(id: $id) {
@@ -20,6 +21,7 @@ export const GET_DEPLOYMENT: DocumentNode = gql`
   }
 `;
 
+// @ts-ignore
 export const GET_INDEXER_PROJECTS: DocumentNode = gql`
   query GetIndexerProjects($indexer: String!) {
     deploymentIndexers(filter: { indexerId: { equalTo: $indexer } }) {
