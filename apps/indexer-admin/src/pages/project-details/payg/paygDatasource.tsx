@@ -1,8 +1,11 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { BigNumber } from 'ethers';
+
 import { ChannelStatus, FlexPlanStatus, Plan } from 'hooks/paygHook';
 import { createTagColumn, createTextColumn } from 'utils/table';
+import { formatValue } from 'utils/units';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
 import prompts from '../prompts';
@@ -13,7 +16,7 @@ type TableKey = 'consumer' | 'price' | 'spent' | 'deposit' | 'expiration' | 'sta
 
 export const planColumns = [
   createTextColumn<TableKey>('consumer', 'CONSUMER'),
-  createTextColumn<TableKey>('price', 'PRICE', 'The price of this flex plan'),
+  createTextColumn<TableKey>('price', 'PRICE', 'The price of each request in this flex plan'),
   createTextColumn<TableKey>(
     'spent',
     'SPENT',
@@ -55,17 +58,19 @@ export function tabToStatus(tabItem: FlexPlanStatus): ChannelStatus {
 }
 
 export function plansToDatasource(id: string, plans: Plan[] | undefined, tabItem: FlexPlanStatus) {
-  if (!plans) return [];
-  // TODO: update `price` from onchain data
-  return plans.map((p) => ({
-    consumer: p.consumer,
-    price: `500 ${TOKEN_SYMBOL}`,
-    spent: `${p.spent} ${TOKEN_SYMBOL}`,
-    deposit: `${p.total - p.spent} ${TOKEN_SYMBOL}`,
-    expiration: new Date(p.expiredAt).toLocaleDateString(),
-    status: getTagState(tabItem),
-    action: { status: p.status, id },
-  }));
+  return (
+    plans?.map((p) => ({
+      consumer: p.consumer,
+      price: `${formatValue(p.price)} ${TOKEN_SYMBOL}`,
+      spent: `${formatValue(p.spent)} ${TOKEN_SYMBOL}`,
+      deposit: `${formatValue(
+        BigNumber.from(p.total).sub(BigNumber.from(p.spent))
+      )} ${TOKEN_SYMBOL}`,
+      expiration: new Date(p.expiredAt).toLocaleDateString(),
+      status: getTagState(tabItem),
+      action: { status: p.status, id },
+    })) ?? []
+  );
 }
 
 export const tabItems = [

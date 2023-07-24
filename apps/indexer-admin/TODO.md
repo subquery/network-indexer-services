@@ -1,4 +1,24 @@
 ## Plan to refactor this projet
 
-- [ ] Use tailwindcss
-- etc
+- Part 1 for the whole project
+
+  - [ ] Use Vite
+  - [ ] Arrange environments.
+  - [ ] Refactor Route part like this https://github.com/subquery/network-explorer/issues/424
+  - [ ] Use less or sass
+  - [ ] Use css module replace css-in-js(maybe not)
+  - [ ] Migrate css-in-js to css module(like above)
+  - [ ] Remove sentry.
+  - [ ] Migrate `loadingProvider`, `NotificationProvider`, `ModalProvider` to static method.
+  - [ ] Use tailwindcss
+        ...
+
+- Part 2 for the query and contract
+
+  - [ ] Move the relative codes to togather.
+  - [ ] Wrap ContractSDK.
+        ...
+
+- Part 3 for the pages and hooks.
+
+  ...

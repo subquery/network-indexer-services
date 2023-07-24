@@ -12,6 +12,7 @@ import { FormikHelpers, FormikValues } from 'formik';
 import { useAccount } from 'containers/account';
 import { ProjectFormKey } from 'types/schemas';
 import { PAYG_PRICE } from 'utils/queries';
+import { network } from 'utils/web3';
 
 import { useProjectDetails } from './projectHook';
 
@@ -81,14 +82,15 @@ export type Plan = {
   indexer: string;
   consumer: string;
   status: ChannelStatus;
-  total: number; // deposit SQT amount
-  spent: number;
+  price: string;
+  total: string; // deposit SQT amount
+  spent: string;
   isFinal: boolean;
   expiredAt: string;
   terminatedAt: string;
 };
 
-const config = NETWORK_CONFIGS.kepler;
+const config = NETWORK_CONFIGS[network];
 const client = new GraphqlQueryClient(config);
 const { networkClient } = client;
 

@@ -5,7 +5,6 @@ import { FC, useCallback, useState } from 'react';
 import { Tabs } from '@subql/components';
 
 import { projectId } from 'utils/project';
-import { FLEX_PLAN_FEATURE } from 'utils/web3';
 
 import ProjectLogView from '../../../components/logView';
 import { ProjectPAYG } from '../payg/projectPayg';
@@ -31,13 +30,10 @@ const tabItems = [
   {
     label: 'Service Log',
   },
+  {
+    label: 'Flex Plan',
+  },
 ];
-
-const flexplanTab = {
-  label: 'Flex Plan',
-};
-
-const updatedTabItems = FLEX_PLAN_FEATURE ? [...tabItems, flexplanTab] : tabItems;
 
 const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
   const [value, setValue] = useState<TabbarItem>(TabbarItem.ProjectDetails);
@@ -62,7 +58,7 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
 
   return (
     <div style={{ marginTop: 30 }}>
-      <Tabs tabs={updatedTabItems} onTabClick={handleChange} />
+      <Tabs tabs={tabItems} onTabClick={handleChange} />
       {renderContent()}
     </div>
   );
