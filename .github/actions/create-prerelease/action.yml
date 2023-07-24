@@ -18,7 +18,7 @@ runs:
       run: node ${{ github.action_path }}/remove-stable-version.js ${{ github.workspace }}/${{ inputs.package-path }}
       shell: bash
     - working-directory: ${{ github.workspace }}
-      run: npm install -g pnpm
+      run: npm install -g pnpm@8.6.3
       shell: bash
 
     - working-directory: ${{ inputs.package-path }}
