@@ -90,17 +90,20 @@ export class AccountService {
   }
 
   async getAccountMetadata(): Promise<AccountMetaDataType> {
+    const { network, wsEndpoint } = this.config;
     const controller = await this.getActiveController();
     return {
-      indexer: this.indexer,
+      indexer: this.indexer ?? '',
       controller: controller?.address ?? '',
       encryptedKey: controller?.encryptedKey ?? '',
-      network: this.config.network,
-      wsEndpoint: this.config.wsEndpoint,
+      network,
+      wsEndpoint,
     };
   }
 
   async getActiveController(): Promise<Controller | undefined> {
+    if (!this.indexer) return;
+
     const controller = await this.sdk.indexerRegistry.getController(this.indexer);
     const controllerAccount = controller ? controller.toLowerCase() : '';
     if (!controllerAccount) {

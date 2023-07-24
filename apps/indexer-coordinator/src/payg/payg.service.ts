@@ -3,9 +3,10 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { StateChannel } from '@subql/network-query';
+import { BigNumber } from 'ethers';
 import { Repository, MoreThan } from 'typeorm';
 
-import { Config } from '../configure/configure.module';
 import { AccountService } from '../core/account.service';
 import { NetworkService } from '../core/network.service';
 import { PaygEntity } from '../project/project.model';
@@ -14,6 +15,7 @@ import { getLogger } from '../utils/logger';
 import { PaygEvent } from '../utils/subscription';
 
 import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
+import { PaygQueryService } from './payg.query.service';
 
 const logger = getLogger('payg');
 
@@ -24,9 +26,9 @@ export class PaygService {
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     @InjectRepository(ChannelLabor) private laborRepo: Repository<ChannelLabor>,
     private pubSub: SubscriptionService,
-    private config: Config,
     private network: NetworkService,
-    private account: AccountService
+    private account: AccountService,
+    private paygQuery: PaygQueryService
   ) {}
 
   channel(id: string): Promise<Channel> {
@@ -52,46 +54,60 @@ export class PaygService {
     indexerSign: string,
     consumerSign: string
   ): Promise<Channel> {
-    const channel = await this.channelRepo.findOneBy({ id });
-    const projectPayg = await this.paygRepo.findOneBy({ id: channel.deploymentId });
-    if (!channel || !projectPayg) {
-      logger.error(`channel or project not exist: ${id}`);
-      throw new Error(`channel or project not exist: ${id}`);
+    try {
+      let channel = await this.channelRepo.findOneBy({ id });
+      if (!channel) {
+        const stateChannel = await this.paygQuery.getStateChannel(id);
+        channel = await this.syncChannel(stateChannel);
+      }
+
+      if (!channel) {
+        throw new Error(`channel not exist: ${id}`);
+      }
+
+      const projectPayg = await this.paygRepo.findOneBy({ id: channel.deploymentId });
+      if (!projectPayg) {
+        throw new Error(`project payg not exist: ${channel.deploymentId}`);
+      }
+
+      const threshold = BigInt(projectPayg.threshold);
+      const currentRemote = BigInt(spent);
+      const prevSpent = BigInt(channel.spent);
+      const prevRemote = BigInt(channel.remote);
+      const price = BigInt(channel.price);
+
+      // add a price every time
+      channel.spent = (prevSpent + price).toString();
+
+      // if remote is less than own, just add spent
+      if (prevRemote < currentRemote) {
+        channel.remote = spent;
+        channel.lastFinal = isFinal;
+        channel.lastIndexerSign = indexerSign;
+        channel.lastConsumerSign = consumerSign;
+      }
+
+      // threshold value for checkpoint and spawn to other promise.
+      if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
+        // send to blockchain.
+        const tx = await this.network.getSdk().stateChannel.checkpoint({
+          channelId: id,
+          isFinal: isFinal,
+          spent: channel.remote,
+          indexerSign: indexerSign,
+          consumerSign: consumerSign,
+        });
+        await tx.wait(1);
+        channel.onchain = channel.remote;
+        channel.spent = channel.remote;
+      }
+
+      logger.debug(`Updated state channel ${id}`);
+
+      return this.savePub(channel, PaygEvent.State);
+    } catch (e) {
+      logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
-    const threshold = BigInt(projectPayg.threshold);
-
-    const currentRemote = BigInt(spent);
-    const prevSpent = BigInt(channel.spent);
-    const prevRemote = BigInt(channel.remote);
-    const price = BigInt(channel.price);
-
-    // add a price every time
-    channel.spent = (prevSpent + price).toString();
-
-    // if remote is less than own, just add spent
-    if (prevRemote < currentRemote) {
-      channel.remote = spent;
-      channel.lastFinal = isFinal;
-      channel.lastIndexerSign = indexerSign;
-      channel.lastConsumerSign = consumerSign;
-    }
-
-    // threshold value for checkpoint and spawn to other promise.
-    if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
-      // send to blockchain.
-      const tx = await this.network.getSdk().stateChannel.checkpoint({
-        channelId: id,
-        isFinal: isFinal,
-        spent: channel.remote,
-        indexerSign: indexerSign,
-        consumerSign: consumerSign,
-      });
-      await tx.wait(1);
-      channel.onchain = channel.remote;
-      channel.spent = channel.remote;
-    }
-
-    return this.savePub(channel, PaygEvent.State);
   }
 
   async checkpoint(id: string): Promise<Channel> {
@@ -112,6 +128,8 @@ export class PaygService {
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
+
+    logger.debug(`Checkpointed state channel ${id}`);
 
     return this.savePub(channel, PaygEvent.State);
   }
@@ -138,6 +156,8 @@ export class PaygService {
     channel.lastFinal = true;
     await tx.wait(1);
 
+    logger.debug(`Terminated state channel ${id}`);
+
     return this.savePub(channel, PaygEvent.State);
   }
 
@@ -161,50 +181,58 @@ export class PaygService {
     channel.spent = channel.remote;
     channel.lastFinal = true;
 
+    logger.debug(`Responded state channel ${id}`);
+
     return this.savePub(channel, PaygEvent.State);
   }
 
-  async syncChannel(
-    id: string,
-    deploymentId: string,
-    indexer: string,
-    consumer: string,
-    agent: string,
-    total: string,
-    spent: string,
-    price: string,
-    expiredAt: number,
-    terminatedAt: number,
-    terminateByIndexer: boolean,
-    lastFinal: boolean
-  ) {
+  async syncChannel(channel: StateChannel): Promise<Channel> {
     try {
+      const id = BigNumber.from(channel.id).toString();
       const _channel = await this.channelRepo.findOneBy({ id });
       if (_channel) return;
 
-      const channel = this.channelRepo.create({
-        id,
-        deploymentId,
+      const {
+        deployment,
         indexer,
         consumer,
         agent,
         total,
+        spent,
         price,
         expiredAt,
-        lastIndexerSign: '',
-        lastConsumerSign: '',
-        status: ChannelStatus.OPEN,
-        spent,
-        onchain: '0',
-        remote: '0',
         terminatedAt,
         terminateByIndexer,
-        lastFinal,
-      });
+        isFinal,
+      } = channel;
 
-      await this.channelRepo.save(channel);
+      const channelObj = {
+        id,
+        deploymentId: deployment.id,
+        indexer,
+        consumer,
+        agent,
+        spent: spent.toString(),
+        total: total.toString(),
+        price: price.toString(),
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        onchain: '0',
+        remote: '0',
+        status: ChannelStatus.OPEN,
+        expiredAt: new Date(expiredAt).valueOf() / 1000,
+        terminatedAt: new Date(terminatedAt).valueOf() / 1000,
+        terminateByIndexer,
+        lastFinal: isFinal,
+      };
+
+      const channelEntity = this.channelRepo.create(channelObj);
+      await this.channelRepo.save(channelEntity);
+      logger.debug(`Synced state channel ${id}`);
+
+      return channelEntity;
     } catch (e) {
-      logger.error(`Failed to sync state channel ${id} with error: ${e}`);
+      logger.error(`Failed to sync state channel ${channel.id} with error: ${e}`);
     }
   }
 
