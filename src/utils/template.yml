@@ -19,7 +19,7 @@ services:
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
-      - --ipfs=https://authipfs.subquery.network/ipfs/api/v0
+      - --ipfs={{ipfs_url}}
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}

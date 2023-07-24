@@ -37,6 +37,8 @@ services:
     depends_on:
       "postgres":
         condition: service_healthy
+      "ipfs":
+        condition: service_healthy
     restart: always
     volumes:
       - .projects:/usr/projects
@@ -51,6 +53,7 @@ services:
       - --use-prerelease
       - --port=8000
       - --debug
+      - --ipfs=http://indexer_ipfs:8080/api/v0/
     healthcheck:
       test:
         [
@@ -92,6 +95,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  ipfs:
+    image: ipfs/kubo:master-2023-07-20-1fe17a4
+    container_name: indexer_ipfs
+    volumes:
+      - .ipfs/export:/export
+      - .ipfs/data:/data/ipfs
+    ports:
+      - 4001:4001
+      - 4001:4001/udp
+      - 127.0.0.1:5001:5001
+    expose:
+      - 8080
 
 networks:
   default:

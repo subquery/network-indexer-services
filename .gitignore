@@ -38,5 +38,6 @@ lerna-debug.log*
 .data
 .projects
 .eslintcache
+.ipfs
 
 .env

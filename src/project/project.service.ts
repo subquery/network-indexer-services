@@ -27,7 +27,7 @@ import {
   schemaName,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import { nodeConfigs, projectConfigChanged } from '../utils/project';
+import { nodeConfigs, projectConfigChanged, IPFS_URL } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -215,6 +215,7 @@ export class ProjectService {
       postgres,
       mmrStoreType,
       dockerNetwork,
+      ipfs_url: IPFS_URL,
       ...baseConfig,
       ...advancedConfig,
     };
