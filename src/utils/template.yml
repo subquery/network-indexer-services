@@ -19,7 +19,7 @@ services:
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
-      - --ipfs={{ipfs_url}}
+      - --ipfs={{ipfsUrl}}
       - --network-endpoint={{{networkEndpoint}}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}

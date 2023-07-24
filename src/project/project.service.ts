@@ -215,7 +215,7 @@ export class ProjectService {
       postgres,
       mmrStoreType,
       dockerNetwork,
-      ipfs_url: IPFS_URL,
+      ipfsUrl: IPFS_URL,
       ...baseConfig,
       ...advancedConfig,
     };
