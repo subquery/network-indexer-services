@@ -33,9 +33,9 @@ RUN DOCKER_COMPOSE_PATH=$(find / -name docker-compose -print -quit) \
 WORKDIR /usr/src/app
 
 # Copy from build image
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/package.json ./apps/indexer-coordinator/package.json
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/dist ./apps/indexer-coordinator/dist
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-admin/build ./apps/indexer-coordinator/dist/indexer-admin
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/node_modules ./apps/indexer-coordinator/node_modules
+COPY --from=BUILD_IMAGE /usr/src/app/package.json ./package.json
+COPY --from=BUILD_IMAGE /usr/src/app/dist ./dist
+COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-admin/build ./dist/indexer-admin
+COPY --from=BUILD_IMAGE /usr/src/app/node_modules ./node_modules
 
-ENTRYPOINT [ "node", "apps/indexer-coordinator/dist/main.js" ]
+ENTRYPOINT [ "node", "dist/main.js" ]
