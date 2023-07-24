@@ -82,5 +82,6 @@ apps/indexer-coordinator/dist/*
 .data
 .projects
 .eslintcache
+.ipfs
 
 .env
