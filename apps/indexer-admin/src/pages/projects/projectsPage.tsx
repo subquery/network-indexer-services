@@ -12,6 +12,7 @@ import { Button, Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
 import { ProjectDetails, ProjectsAction } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
+import { parseError } from 'utils/error';
 import { ADD_PROJECT, GET_PROJECTS } from 'utils/queries';
 
 import ProjecItemsHeader from './components/projecItemsHeader';
@@ -37,6 +38,7 @@ const Projects = () => {
       setVisible(false);
     } catch (_) {
       helper.setErrors({ [ProjectFormKey.deploymentId]: 'Invalid deployment id' });
+      parseError(_, { alert: true, rawMsg: true });
     }
   });
 

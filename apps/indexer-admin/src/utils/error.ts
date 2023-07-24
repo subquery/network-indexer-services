@@ -19,14 +19,18 @@ export const mapContractError = (error: any) => {
   return revertCode ? contractErrorCodes[revertCode] : undefined;
 };
 
-export const parseError = (error: any, conf: { alert: boolean } = { alert: false }) => {
-  const { alert } = conf;
+export const parseError = (
+  error: any,
+  conf: { alert?: boolean; rawMsg?: boolean } = { alert: false, rawMsg: false }
+) => {
+  const { alert = false, rawMsg = false } = conf;
   // logger to dev tools
   // TODO: will update print msg.
   logger.e(error);
 
   // show tips to users.
-  const msg = mapContractError(error) ?? 'Unfortunately, something went wrong.';
+  const msg =
+    mapContractError(error) ?? rawMsg ? getErrorMsg(error) : 'Unfortunately, something went wrong.';
 
   if (alert) {
     notificationMsg({

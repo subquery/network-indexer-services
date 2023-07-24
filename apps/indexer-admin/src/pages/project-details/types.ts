@@ -25,6 +25,7 @@ export enum ProjectStatus {
   Ready = 'READY',
   Terminated = 'TERMINATED',
   Unhealthy = 'UNHEALTHY',
+  Starting = 'STARTING',
 }
 
 export enum PaygStatus {
@@ -111,6 +112,7 @@ export enum dockerContainerEnum {
   TERMINATED = 'TERMINATED',
   HEALTHY = 'HEALTHY',
   UNHEALTHY = 'UNHEALTHY',
+  STARTING = 'STARTING',
 }
 
 // TODO: investigate all status
@@ -118,7 +120,8 @@ export enum dockerContainerEnum {
 export type dockerContainerStatus =
   | dockerContainerEnum.TERMINATED
   | dockerContainerEnum.HEALTHY
-  | dockerContainerEnum.UNHEALTHY;
+  | dockerContainerEnum.UNHEALTHY
+  | dockerContainerEnum.STARTING;
 
 export type TQueryMetadata = {
   lastProcessedHeight: number;

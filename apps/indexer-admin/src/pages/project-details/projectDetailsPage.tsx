@@ -122,6 +122,13 @@ const ProjectDetailsPage = () => {
       return ProjectStatus.Terminated;
     }
 
+    if (
+      metadata.indexerStatus === dockerContainerEnum.STARTING ||
+      metadata.queryStatus === dockerContainerEnum.STARTING
+    ) {
+      return ProjectStatus.Starting;
+    }
+
     const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
     switch (status) {
       case IndexingStatus.NOTINDEXING:
@@ -136,10 +143,13 @@ const ProjectDetailsPage = () => {
   }, [status, metadata]);
 
   const alertInfo = useMemo(() => {
-    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy)
-      return { ...alertMessages[projectStatus] };
+    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
+      if (status !== IndexingStatus.NOTINDEXING) {
+        return { ...alertMessages[projectStatus] };
+      }
+    }
     return undefined;
-  }, [projectStatus]);
+  }, [projectStatus, status]);
 
   const networkBtnItems = createNetworkButtonItems((type: ProjectAction) => {
     setActionType(type);
@@ -153,8 +163,13 @@ const ProjectDetailsPage = () => {
 
   const networkActionItems = useMemo(() => {
     if (isUndefined(projectStatus)) return [];
+    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
+      if (status === IndexingStatus.NOTINDEXING) {
+        return [];
+      }
+    }
     return networkBtnItems[projectStatus];
-  }, [networkBtnItems, projectStatus]);
+  }, [networkBtnItems, projectStatus, status]);
 
   const serviceActionItems = useMemo(() => {
     if (isUndefined(projectStatus)) return [];

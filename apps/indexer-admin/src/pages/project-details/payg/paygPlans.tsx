@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button, Table, TableTitle, Tabs } from '@subql/components';
+import { useMount } from 'ahooks';
 
 import { Text } from 'components/primary';
 import { ChannelStatus, FlexPlanStatus, usePAYGPlans } from 'hooks/paygHook';
@@ -46,6 +47,10 @@ export function PAYGPlan({ deploymentId, onTerminate }: Props) {
     title: <TableTitle title="ACTION" />,
     render: teminateBtn,
   };
+
+  useMount(() => {
+    getPlans(deploymentId, tabItem);
+  });
 
   return (
     <PlansContainer>
