@@ -40,6 +40,7 @@ const createButtonItem = (title: string, action: () => void, color?: string): Bu
 
 export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) => void) => ({
   [ProjectStatus.NotIndexing]: [],
+  [ProjectStatus.Starting]: [],
   [ProjectStatus.Started]: [
     createButtonItem('Announce Indexing', () => onButtonClick(ProjectAction.AnnounceIndexing)),
   ],
@@ -69,6 +70,9 @@ export const createServiceButtonItems = (onButtonClick: (type: ProjectAction) =>
     createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
   ],
   [ProjectStatus.Started]: [
+    createButtonItem('Stop Project', () => onButtonClick(ProjectAction.StopProject)),
+  ],
+  [ProjectStatus.Starting]: [
     createButtonItem('Stop Project', () => onButtonClick(ProjectAction.StopProject)),
   ],
   [ProjectStatus.Indexing]: [

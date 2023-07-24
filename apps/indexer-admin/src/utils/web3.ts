@@ -3,7 +3,7 @@
 
 import { networks } from '@subql/contract-sdk';
 
-const network = process.env.REACT_APP_NETWORK || window.env.NETWORK;
+export const network = (process.env.REACT_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
 
 export const SUPPORTED_NETWORK = (network ?? 'testnet') as keyof typeof networks;
 
@@ -40,11 +40,6 @@ export const RPC_URLS: Record<number, string> = {
   137: process?.env?.RPC_ENDPOINT ?? 'https://polygon-rpc.com/',
 };
 
-export const NETWORK_CONFIGS = {
-  [ChainID.testnet]: networks.testnet,
-  [ChainID.kepler]: networks.kepler,
-};
-
 export function hexToInt(hex: string) {
   return parseInt(hex, 16);
 }
@@ -53,5 +48,3 @@ export const SUPPORTED_NETWORK_PROJECTS_EXPLORER =
   network === PRODUCTION_NETWORK
     ? 'https://kepler.subquery.network/'
     : 'https://kepler.thechaindata.com/';
-
-export const FLEX_PLAN_FEATURE = network !== PRODUCTION_NETWORK;

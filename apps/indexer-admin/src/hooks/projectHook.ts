@@ -64,7 +64,7 @@ export const useProjectDetails = (deploymentId: string) => {
 };
 
 export const useIndexingStatus = (deploymentId: string): IndexingStatus | undefined => {
-  const [status, setStatus] = useState<IndexingStatus>();
+  const [status, setStatus] = useState<IndexingStatus>(IndexingStatus.NOTINDEXING);
   const { account } = useAccount();
   const notificationContext = useNotification();
   const sdk = useContractSDK();
