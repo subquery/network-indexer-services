@@ -30,7 +30,7 @@ services:
     container_name: indexer_coordinator
     image: coordinator:latest
     build:
-      context: ../
+      context: ../../../
       dockerfile: Dockerfile
     ports:
       - 8000:8000

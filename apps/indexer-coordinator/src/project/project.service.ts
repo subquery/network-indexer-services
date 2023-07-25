@@ -44,6 +44,7 @@ import {
   ProjectInfo,
 } from './project.model';
 import { MmrStoreType, TemplateType } from './types';
+import { argv } from 'src/yargs';
 
 @Injectable()
 export class ProjectService {
@@ -221,6 +222,7 @@ export class ProjectService {
       mmrStoreType,
       dockerNetwork,
       ipfsUrl: IPFS_URL,
+      mmrPath: argv['mmrPath'],
       ...baseConfig,
       ...advancedConfig,
     };
