@@ -30,7 +30,7 @@ services:
     container_name: indexer_coordinator
     image: coordinator:latest
     build:
-      context: ../
+      context: ../../../
       dockerfile: Dockerfile
     ports:
       - 8000:8000
@@ -54,6 +54,7 @@ services:
       - --port=8000
       - --debug
       - --ipfs=http://indexer_ipfs:8080/api/v0/
+      - --mmrPath=''
     healthcheck:
       test:
         [
