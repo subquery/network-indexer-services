@@ -21,6 +21,7 @@ export type TemplateType = {
   dbSchema: string;
   postgres: Postgres;
   dockerNetwork: string;
+  ipfsUrl: string;
   worker: number;
   batchSize: number;
   timeout: number;

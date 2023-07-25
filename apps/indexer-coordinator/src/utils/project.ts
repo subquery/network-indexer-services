@@ -4,8 +4,8 @@
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
-
 import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
+import { argv } from '../yargs';
 
 // manifest types
 export type Runner = {
@@ -37,7 +37,7 @@ export type PartialIpfsDeploymentManifest = {
 
 export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
 
-export const IPFS_URL = 'https://authipfs.subquery.network/ipfs/api/v0';
+export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
 
 export function projectConfigChanged(
