@@ -103,6 +103,7 @@ services:
     volumes:
       - .ipfs/export:/export
       - .ipfs/data:/data/ipfs
+      - ./ipfs.sh:/container-init.d/ipfs.sh
     ports:
       - 4001:4001
       - 4001:4001/udp
