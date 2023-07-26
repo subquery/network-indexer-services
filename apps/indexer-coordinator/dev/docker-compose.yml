@@ -30,12 +30,14 @@ services:
     container_name: indexer_coordinator
     image: coordinator:latest
     build:
-      context: ../
+      context: ../../../
       dockerfile: Dockerfile
     ports:
       - 8000:8000
     depends_on:
       "postgres":
+        condition: service_healthy
+      "ipfs":
         condition: service_healthy
     restart: always
     volumes:
@@ -43,7 +45,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
-      - --ws-endpoint="https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
+      - --ws-endpoint=https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
       - --postgres-host=postgres
       - --postgres-password=pos_z8X
       # use the same password in the db config
@@ -51,6 +53,8 @@ services:
       - --use-prerelease
       - --port=8000
       - --debug
+      - --ipfs=http://indexer_ipfs:8080/api/v0/
+      - --mmrPath=/home
     healthcheck:
       test:
         [
@@ -92,6 +96,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  ipfs:
+    image: ipfs/kubo:master-2023-07-20-1fe17a4
+    container_name: indexer_ipfs
+    volumes:
+      - .ipfs/export:/export
+      - .ipfs/data:/data/ipfs
+      - ./ipfs.sh:/container-init.d/ipfs.sh
+    ports:
+      - 4001:4001
+      - 4001:4001/udp
+      - 127.0.0.1:5001:5001
+    expose:
+      - 8080
 
 networks:
   default:

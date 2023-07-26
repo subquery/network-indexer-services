@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
@@ -27,7 +28,7 @@ import {
   schemaName,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import { nodeConfigs, projectConfigChanged } from '../utils/project';
+import { nodeConfigs, projectConfigChanged, IPFS_URL } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -212,6 +213,8 @@ export class ProjectService {
     const postgres = this.config.postgres;
     const dockerNetwork = this.config.dockerNetwork;
 
+    const mmrPath = argv['mmrPath'].replace(/\/$/, '');
+
     const item: TemplateType = {
       deploymentID: project.id,
       dbSchema: schemaName(project.id),
@@ -220,6 +223,8 @@ export class ProjectService {
       postgres,
       mmrStoreType,
       dockerNetwork,
+      ipfsUrl: IPFS_URL,
+      mmrPath,
       ...baseConfig,
       ...advancedConfig,
     };
