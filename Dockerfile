@@ -14,7 +14,7 @@ COPY . .
 
 RUN rush update
 
-RUN rush build
+RUN rush build -o indexer-coordinator
 
 # prune by reinstall producetion dependencies.
 WORKDIR /usr/src/app/apps/indexer-coordinator
@@ -35,7 +35,9 @@ WORKDIR /usr/src/app
 # Copy from build image
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/package.json ./package.json
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/dist ./dist
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-admin/build ./dist/indexer-admin
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/node_modules ./node_modules
+
+# please build indexer-admin first
+COPY ./apps/indexer-admin/build ./dist/indexer-admin
 
 ENTRYPOINT [ "node", "dist/main.js" ]
