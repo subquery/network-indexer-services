@@ -6,14 +6,13 @@ WORKDIR /usr/src/app
 
 COPY ./apps/indexer-coordinator/package.json ./
 
+# build coordinator
 RUN npm install -g @microsoft/rush
-
 RUN npm install -g pnpm@8.6.3
-
 COPY . .
-
+# remove rush temp from context
+RUN rm -rf ./common/temp 
 RUN rush update --purge
-
 RUN rush build -o indexer-coordinator
 
 # prune by reinstall producetion dependencies.
