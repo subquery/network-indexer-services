@@ -20,7 +20,6 @@ export interface IConfig {
   readonly port: number;
   readonly postgres: Postgres;
   readonly debug: boolean;
-  readonly dev: boolean;
   readonly secret: string;
   readonly startPort: number;
   readonly dockerNetwork: string;
@@ -41,7 +40,6 @@ export class Config implements IConfig {
       wsEndpoint: argv['ws-endpoint'],
       port: argv['port'],
       debug: argv['debug'],
-      dev: argv['dev'],
       secret: argv['secret-key'],
       startPort: argv['start-port'],
       dockerNetwork: argv['docker-network'],
@@ -69,10 +67,6 @@ export class Config implements IConfig {
 
   get debug(): boolean {
     return this._config.debug;
-  }
-
-  get dev(): boolean {
-    return this._config.dev;
   }
 
   get secret(): string {
