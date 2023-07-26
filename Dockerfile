@@ -12,7 +12,7 @@ RUN npm install -g pnpm@8.6.3
 
 COPY . .
 
-RUN rush update
+RUN rush update --purge
 
 RUN rush build -o indexer-coordinator
 
