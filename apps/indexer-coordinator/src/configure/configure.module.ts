@@ -71,10 +71,6 @@ export class Config implements IConfig {
     return this._config.debug;
   }
 
-  get dev(): boolean {
-    return this._config.dev;
-  }
-
   get secret(): string {
     return this._config.secret;
   }
