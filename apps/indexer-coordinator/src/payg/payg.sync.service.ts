@@ -95,8 +95,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     stateChannel.on('ChannelFinalize', (channelId, total, remain) => {
       void this.paygServicee.syncFinalize(
         channelId.toString(),
-        total.toNumber(),
-        remain.toNumber()
+        total,
+        remain
       );
     });
 
