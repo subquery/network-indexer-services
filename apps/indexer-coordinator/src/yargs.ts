@@ -36,13 +36,6 @@ function getYargsOption() {
       default: 'https://polygon-rpc.com',
       group: Groups.coordinator,
     },
-    'start-block': {
-      type: 'number',
-      describe: 'Specify the block hight start sync',
-      demandOption: true,
-      default: 33168664,
-      group: Groups.coordinator,
-    },
     ipfs: {
       type: 'string',
       describe: 'Specify ipfs endpoint for this network',
@@ -58,12 +51,6 @@ function getYargsOption() {
     debug: {
       type: 'boolean',
       describe: 'Enable debug mode',
-      default: false,
-      group: Groups.coordinator,
-    },
-    dev: {
-      type: 'boolean',
-      describe: 'Enable dev mode',
       default: false,
       group: Groups.coordinator,
     },

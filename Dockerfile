@@ -6,15 +6,14 @@ WORKDIR /usr/src/app
 
 COPY ./apps/indexer-coordinator/package.json ./
 
+# build coordinator
 RUN npm install -g @microsoft/rush
-
 RUN npm install -g pnpm@8.6.3
-
 COPY . .
-
-RUN rush update
-
-RUN rush build
+# remove rush temp from context
+RUN rm -rf ./common/temp 
+RUN rush update --purge
+RUN rush build -o indexer-coordinator
 
 # prune by reinstall producetion dependencies.
 WORKDIR /usr/src/app/apps/indexer-coordinator
@@ -35,7 +34,9 @@ WORKDIR /usr/src/app
 # Copy from build image
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/package.json ./package.json
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/dist ./dist
-COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-admin/build ./dist/indexer-admin
 COPY --from=BUILD_IMAGE /usr/src/app/apps/indexer-coordinator/node_modules ./node_modules
+
+# please build indexer-admin first
+COPY ./apps/indexer-admin/build ./dist/indexer-admin
 
 ENTRYPOINT [ "node", "dist/main.js" ]

@@ -29,6 +29,15 @@ jobs:
           username: subquerynetwork
           password: ${{ secrets.SQ_DOCKERHUB_TOKEN }}
 
+      # build admin
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+      - run: npm install -g @microsoft/rush
+      - run: rush update
+      - run: rush build -o indexer-admin
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
         with:
@@ -39,7 +48,7 @@ jobs:
         with:
           paths: ./apps
 
-      #Add remove-stable-version
+      # Add remove-stable-version
       - name: Bump coordinator
         if: steps.changed-coordinator.outputs.changed == 'true'
         uses: ./.github/actions/create-prerelease
@@ -58,6 +67,7 @@ jobs:
         if: steps.changed-coordinator.outputs.changed == 'true'
         uses: docker/build-push-action@v2
         with:
+          context: .
           push: true
           platforms: amd64
           file: ./Dockerfile

@@ -320,9 +320,9 @@ export class PaygService {
     await this.savePub(channel, PaygEvent.State);
   }
 
-  async syncFinalize(id: string, total: number, remain: number) {
+  async syncFinalize(id: string, total: BigNumber, remain: BigNumber) {
     const channel = await this.channelRepo.findOneBy({ id });
-    channel.onchain = (total - remain).toString();
+    channel.onchain = total.sub(remain).toString();
     channel.status = ChannelStatus.FINALIZED;
     channel.lastFinal = true;
 
