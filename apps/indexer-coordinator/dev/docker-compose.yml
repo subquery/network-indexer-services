@@ -101,8 +101,8 @@ services:
     image: ipfs/kubo:master-2023-07-20-1fe17a4
     container_name: indexer_ipfs
     volumes:
-      - .ipfs/export:/export
-      - .ipfs/data:/data/ipfs
+      - .data/ipfs/export:/export
+      - .data/ipfs/data:/data/ipfs
       - ./ipfs.sh:/container-init.d/ipfs.sh
     ports:
       - 4001:4001

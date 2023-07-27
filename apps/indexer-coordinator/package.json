@@ -28,9 +28,9 @@
     "start:help": "yarn start:prod --help",
     "start:testnet": "sh ./scripts/start-testnet.sh",
     "start:db": "docker-compose -f ./dev/docker-db.yml up -d",
-    "migrate:generate": "ts-node -r dotenv/config ./node_modules/.bin/typeorm migration:generate -d ./src/data-source.ts",
-    "migrate:up": "ts-node -r dotenv/config ./node_modules/.bin/typeorm migration:run -d ./src/data-source.ts",
-    "migrate:down": "ts-node -r dotenv/config ./node_modules/.bin/typeorm migration:revert -d ./src/data-source.ts",
+    "migrate:generate": "ts-node -r dotenv/config ./node_modules/typeorm/cli.js migration:generate -d ./src/data-source.ts",
+    "migrate:up": "ts-node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
+    "migrate:down": "ts-node -r dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/data-source.ts",
     "build:docker-compose": "docker-compose -f ./dev/docker-compose.yml build --no-cache",
     "start:docker-compose": "docker-compose -f ./dev/docker-compose.yml up -d"
   },
