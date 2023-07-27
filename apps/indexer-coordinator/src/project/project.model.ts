@@ -62,7 +62,7 @@ export class MetadataType {
 }
 
 export interface IProjectBaseConfig {
-  networkEndpoint: string;
+  networkEndpoints: string[];
   networkDictionary: string;
   nodeVersion: string;
   queryVersion: string;
@@ -81,8 +81,8 @@ export interface IProjectAdvancedConfig {
 @InputType('ProjectBaseConfigInput')
 @ObjectType('ProjectBaseConfig')
 export class ProjectBaseConfig implements IProjectBaseConfig {
-  @Field()
-  networkEndpoint: string;
+  @Field((type) => [String])
+  networkEndpoints: string[];
   @Field()
   networkDictionary: string;
   @Field()
@@ -113,7 +113,7 @@ export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
 }
 
 const defaultBaseConfig: IProjectBaseConfig = {
-  networkEndpoint: '',
+  networkEndpoints: [],
   networkDictionary: '',
   nodeVersion: '',
   queryVersion: '',
