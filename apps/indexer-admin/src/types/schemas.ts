@@ -84,7 +84,7 @@ export const initialControllerValues = {
 // add project
 export enum ProjectFormKey {
   deploymentId = 'deploymentId',
-  networkEndpoint = 'networkEndpoint',
+  networkEndpoints = 'networkEndpoints',
   indexDictionary = 'indexDictionary',
   networkDictionary = 'networkDictionary',
   nodeVersion = 'nodeVersion',
@@ -115,10 +115,10 @@ export const initialProjectValues = {
 };
 
 export const StartIndexingSchema = yup.object({
-  [ProjectFormKey.networkEndpoint]: yup
+  [ProjectFormKey.networkEndpoints]: yup
     .string()
-    .required('Network endpoint is required')
-    .min(1, 'Network endpoint cannot be empty'),
+    .required('Network endpoints is required')
+    .min(1, 'Network endpoints cannot be empty'),
   [ProjectFormKey.networkDictionary]: yup.string().optional(),
   [ProjectFormKey.nodeVersion]: yup
     .string()

@@ -11,7 +11,7 @@ export enum MmrStoreType {
 export type TemplateType = {
   deploymentID: string;
   projectID: string;
-  networkEndpoint: string;
+  networkEndpoints: string[];
   nodeVersion: string;
   queryVersion: string;
   servicePort: number;

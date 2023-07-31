@@ -29,13 +29,21 @@ const { project, announce, payg } = prompts;
 export type ButtonItem = {
   title: string;
   action: () => void;
-  color?: string;
+  options?: {
+    color?: string;
+    type?: 'primary' | 'secondary' | 'link';
+    size?: 'large' | 'medium' | 'small';
+  };
 };
 
-const createButtonItem = (title: string, action: () => void, color?: string): ButtonItem => ({
+const createButtonItem = (
+  title: string,
+  action: () => void,
+  options?: ButtonItem['options']
+): ButtonItem => ({
   title,
   action,
-  color,
+  options,
 });
 
 export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) => void) => ({
@@ -66,7 +74,9 @@ export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) =>
 
 export const createServiceButtonItems = (onButtonClick: (type: ProjectAction) => void) => ({
   [ProjectStatus.NotIndexing]: [
-    createButtonItem('Start Indexing', () => onButtonClick(ProjectAction.StartIndexing)),
+    createButtonItem('Start Indexing', () => onButtonClick(ProjectAction.StartIndexing), {
+      type: 'primary',
+    }),
     createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
   ],
   [ProjectStatus.Started]: [
@@ -76,19 +86,19 @@ export const createServiceButtonItems = (onButtonClick: (type: ProjectAction) =>
     createButtonItem('Stop Project', () => onButtonClick(ProjectAction.StopProject)),
   ],
   [ProjectStatus.Indexing]: [
-    createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
+    createButtonItem('Update Indexing', () => onButtonClick(ProjectAction.RestartProject)),
     createButtonItem('Stop Indexing', () => onButtonClick(ProjectAction.StopIndexing)),
   ],
   [ProjectStatus.Ready]: [
-    createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
+    createButtonItem('Update Indexing', () => onButtonClick(ProjectAction.RestartProject)),
     createButtonItem('Stop Indexing', () => onButtonClick(ProjectAction.StopIndexing)),
   ],
   [ProjectStatus.Terminated]: [
-    createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
+    createButtonItem('Update Indexing', () => onButtonClick(ProjectAction.RestartProject)),
     createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
   ],
   [ProjectStatus.Unhealthy]: [
-    createButtonItem('Restart Indexing', () => onButtonClick(ProjectAction.RestartProject)),
+    createButtonItem('Update Indexing', () => onButtonClick(ProjectAction.RestartProject)),
     createButtonItem('Remove Project', () => onButtonClick(ProjectAction.RemoveProject)),
   ],
 });
@@ -108,8 +118,8 @@ export const PAYGActionName = {
 };
 
 export const ProjectActionName = {
-  [ProjectAction.StartIndexing]: 'Start Indexing Project',
-  [ProjectAction.RestartProject]: 'Restart Indexing Project',
+  [ProjectAction.StartIndexing]: 'Start Indexing',
+  [ProjectAction.RestartProject]: 'Update Indexing',
   [ProjectAction.AnnounceIndexing]: 'Announce Indexing Project',
   [ProjectAction.AnnounceReady]: 'Publish Indexing to Ready',
   [ProjectAction.StopProject]: 'Stop Project',
@@ -144,7 +154,7 @@ const startProjectForms = (
   onFormSubmit,
   items: [
     {
-      formKey: ProjectFormKey.networkEndpoint,
+      formKey: ProjectFormKey.networkEndpoints,
       title: 'Indexing Network Endpoint',
       placeholder: 'wss://polkadot.api.onfinality.io/public-ws',
     },

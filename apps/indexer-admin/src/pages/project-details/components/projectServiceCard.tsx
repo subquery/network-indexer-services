@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { Tag } from '@subql/components';
+import { Button, Tag } from '@subql/components';
 import styled from 'styled-components';
 
-import { Button, Text } from 'components/primary';
+import { Text } from 'components/primary';
 import { useAccount } from 'containers/account';
 import { useGetIndexerMetadata } from 'hooks/projectHook';
 import { statusCode } from 'utils/project';
@@ -87,8 +87,15 @@ const ProjectServiceCard: FC<Props> = ({ id, actionItems, data }) => {
         />
       </ContentContainer>
       <ActionContainer>
-        {actionItems.map(({ title, action }) => (
-          <Button mt={10} key={title} width={265} title={title} onClick={action} />
+        {actionItems.map(({ title, action, options = { type: 'secondary' } }) => (
+          <Button
+            key={title}
+            title={title}
+            onClick={action}
+            type={options.type}
+            label={title}
+            style={{ width: '200px', marginBottom: 15 }}
+          />
         ))}
       </ActionContainer>
     </CardContainer>
