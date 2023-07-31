@@ -19,8 +19,10 @@ export class UpdateProjectBaseConfigToSupportMultipleEndpoint1690365333094
     const projects = await queryRunner.query(`SELECT id, "baseConfig" FROM project_entity`);
     for (const project of projects) {
       const baseConfig: IProjectBaseConfig = project.baseConfig;
-      if (baseConfig.networkEndpoint && !baseConfig.networkEndpoints) {
-        baseConfig.networkEndpoints = [baseConfig.networkEndpoint];
+      if (!baseConfig.networkEndpoints) {
+        baseConfig.networkEndpoints = baseConfig.networkEndpoint
+          ? [baseConfig.networkEndpoint]
+          : [];
         delete baseConfig.networkEndpoint;
       }
       await queryRunner.query(`UPDATE project_entity SET "baseConfig" = $1 WHERE id = $2`, [
@@ -34,7 +36,7 @@ export class UpdateProjectBaseConfigToSupportMultipleEndpoint1690365333094
     const projects = await queryRunner.query(`SELECT id, "baseConfig" FROM project_entity`);
     for (const project of projects) {
       const baseConfig: IProjectBaseConfig = project.baseConfig;
-      if (baseConfig.networkEndpoints) {
+      if (!baseConfig.networkEndpoint) {
         baseConfig.networkEndpoint = baseConfig.networkEndpoints[0] ?? '';
         delete baseConfig.networkEndpoints;
       }
