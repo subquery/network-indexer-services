@@ -4,7 +4,12 @@
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { NOTIFICATION_TYPE } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
-import { InfoCircleOutlined, MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import {
+  InfoCircleOutlined,
+  MinusCircleOutlined,
+  PlusCircleOutlined,
+  SketchOutlined,
+} from '@ant-design/icons';
 import { useMutation } from '@apollo/client';
 import { Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
@@ -300,27 +305,39 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
                 <Switch />
               </Form.Item>
             </HorizonReverse>
-            <Collapse defaultActiveKey="1">
-              <Collapse.Panel header="Advanced Options" key="1">
-                {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
-                  <Form.Item
-                    key={id}
-                    name={name}
-                    label={label}
-                    tooltip={defaultTooltipProps(tooltip)}
-                  >
-                    <Slider
-                      min={min}
-                      max={max}
-                      marks={{
-                        [min]: min,
-                        [max]: max,
-                      }}
-                    />
-                  </Form.Item>
-                ))}
-              </Collapse.Panel>
-            </Collapse>
+            <RowReverse>
+              <Collapse defaultActiveKey="1">
+                <Collapse.Panel
+                  header={
+                    <Typography style={{ display: 'flex', alignItems: 'center' }}>
+                      <SketchOutlined
+                        style={{ fontSize: 16, color: 'var(--sq-blue600)', marginRight: 8 }}
+                      />
+                      Advanced Options
+                    </Typography>
+                  }
+                  key="1"
+                >
+                  {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
+                    <Form.Item
+                      key={id}
+                      name={name}
+                      label={label}
+                      tooltip={defaultTooltipProps(tooltip)}
+                    >
+                      <Slider
+                        min={min}
+                        max={max}
+                        marks={{
+                          [min]: min,
+                          [max]: max,
+                        }}
+                      />
+                    </Form.Item>
+                  ))}
+                </Collapse.Panel>
+              </Collapse>
+            </RowReverse>
             <Form.Item>
               <ButtonContainer align="right" mt={30}>
                 <Button type="primary" onClick={() => form.submit()} shape="round" size="large">
@@ -366,5 +383,11 @@ const HorizonReverse = styled.div`
   .ant-col.ant-form-item-control {
     width: auto;
     flex: none;
+  }
+`;
+
+const RowReverse = styled.div`
+  .ant-collapse-header {
+    flex-direction: row-reverse;
   }
 `;
