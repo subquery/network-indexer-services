@@ -144,7 +144,7 @@ const startProjectForms = (
   onFormSubmit,
   items: [
     {
-      formKey: ProjectFormKey.networkEndpoint,
+      formKey: ProjectFormKey.networkEndpoints,
       title: 'Indexing Network Endpoint',
       placeholder: 'wss://polkadot.api.onfinality.io/public-ws',
     },

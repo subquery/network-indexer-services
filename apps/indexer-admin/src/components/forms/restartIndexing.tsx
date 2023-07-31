@@ -4,6 +4,7 @@
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { NOTIFICATION_TYPE } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
+import { MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { useMutation } from '@apollo/client';
 import { Button } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
@@ -60,6 +61,7 @@ const advancedOptionsConfig = [
 const getYupRule = (field: string) => ({
   validator(_: any, value: any) {
     try {
+      console.warn(field, { [field]: value });
       StartIndexingSchema.validateSyncAt(field, { [field]: value });
       return Promise.resolve();
     } catch (error) {
@@ -155,7 +157,8 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
     error: () => <>Unable to get default values</>,
     data: ({ project }) => {
       const { baseConfig, advancedConfig } = project;
-
+      baseConfig.networkEndpoints =
+        baseConfig?.networkEndpoints.length === 0 ? [''] : baseConfig?.networkEndpoints;
       return (
         <Form
           form={form}
@@ -164,13 +167,39 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
           onFinish={handleSubmit(setVisible)}
           initialValues={{ ...baseConfig, ...advancedConfig }}
         >
-          <Form.Item
-            label="Network Endpoint"
-            name={ProjectFormKey.networkEndpoint}
-            rules={[getYupRule(ProjectFormKey.networkEndpoint)]}
-          >
-            <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
-          </Form.Item>
+          <Form.List name={ProjectFormKey.networkEndpoints}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map((field, index) => (
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                    <Form.Item
+                      {...field}
+                      label={index === 0 ? 'Network Endpoints' : ''}
+                      key={field.key}
+                      rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
+                      style={{ marginBottom: 0, flex: 1 }}
+                    >
+                      <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
+                    </Form.Item>
+                    {index === 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="ant-col ant-form-item-label">&nbsp;</div>
+                        <PlusCircleOutlined
+                          style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                          onClick={() => add()}
+                        />
+                      </div>
+                    ) : (
+                      <MinusCircleOutlined
+                        style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                        onClick={() => remove(field.name)}
+                      />
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+          </Form.List>
 
           <Form.Item label="Is Project Dictionary" valuePropName="checked">
             <Switch onChange={onSwitchChange} defaultChecked checked={showInput} />

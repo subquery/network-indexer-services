@@ -216,7 +216,7 @@ const ProjectDetailsPage = () => {
         onPopoverClose();
         projectStateChange(ProjectNotification.Started);
       } catch (e) {
-        formHelper.setErrors({ [ProjectFormKey.networkEndpoint]: 'Invalid service endpoint' });
+        formHelper.setErrors({ [ProjectFormKey.networkEndpoints]: 'Invalid service endpoint' });
       }
     },
     [startProjectRequest, onPopoverClose, projectStateChange, id]

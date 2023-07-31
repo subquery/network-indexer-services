@@ -10,6 +10,9 @@ importers:
 
   ../../apps/indexer-admin:
     dependencies:
+      '@ant-design/icons':
+        specifier: ~5.1.4
+        version: 5.1.4(react-dom@18.2.0)(react@18.2.0)
       '@apollo/client':
         specifier: ^3.4.17
         version: 3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
