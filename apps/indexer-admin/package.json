@@ -20,7 +20,7 @@
     "@patternfly/react-log-viewer": "^4.43.19",
     "@sentry/react": "^6.19.4",
     "@sentry/tracing": "^6.19.4",
-    "@subql/components": "^1.0.1-76",
+    "@subql/components": "1.0.3-5",
     "@subql/contract-sdk": "^0.13.7",
     "@subql/network-clients": "^0.3.13",
     "@subql/network-query": "^0.3.13",

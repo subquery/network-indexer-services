@@ -17,7 +17,9 @@ import { FieldItem } from './formItem';
 import { ButtonContainer, Text } from './primary';
 
 const Title: FC<{ title: string }> = ({ title }) => (
-  <Typography.Title level={4}>{title || 'Modal'}</Typography.Title>
+  <Typography.Title level={4} style={{ marginBottom: 0 }}>
+    {title || 'Modal'}
+  </Typography.Title>
 );
 
 interface PopupView {
@@ -162,6 +164,7 @@ export const PopupView: FC<TModal> = ({
       {popupType === 'drawer' && (
         <Drawer
           open={visible}
+          rootClassName="popupViewDrawer"
           width="30%"
           onClose={onClose}
           title={<Title title={title ?? ''} />}

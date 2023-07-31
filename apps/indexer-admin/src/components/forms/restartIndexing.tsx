@@ -4,11 +4,13 @@
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { NOTIFICATION_TYPE } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
-import { MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, MinusCircleOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { useMutation } from '@apollo/client';
-import { Button } from '@subql/components';
+import { Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
-import { Col, Collapse, Form, Input, Row, Select, Slider, Switch } from 'antd';
+import { Button, Col, Collapse, Form, Input, Row, Select, Slider, Switch, Tooltip } from 'antd';
+import Link from 'antd/es/typography/Link';
+import styled from 'styled-components';
 
 import { LoadingSpinner } from 'components/loading';
 import { ButtonContainer } from 'components/primary';
@@ -77,6 +79,36 @@ function displayVersion(versions: string[]) {
     </Select.Option>
   ));
 }
+
+const defaultTooltipProps = (title: React.ReactNode) => ({
+  title: <Typography variant="medium">{title}</Typography>,
+  color: 'white',
+  children: (
+    <InfoCircleOutlined style={{ fontSize: 14, color: 'var(--sq-gray500)', marginLeft: 6 }} />
+  ),
+  icon: <InfoCircleOutlined style={{ fontSize: 14, color: 'var(--sq-gray500)', marginLeft: 6 }} />,
+});
+
+const NetworkEndpointsTooltip = () => (
+  <Tooltip
+    {...defaultTooltipProps(
+      <Typography variant="medium" color="var(--gray-900)" style={{ width: 368 }}>
+        We recommend offering multiple endpoints for the following advantages: <br />
+        <StrongInter>Increased speed</StrongInter> - When enabled with worker threads, RPC calls are
+        distributed and parallelised among RPC providers. Historically, RPC latency is often the
+        limiting factor with SubQuery.
+        <br />
+        <StrongInter>Increased reliability</StrongInter> - If an endpoint goes offline, SubQuery
+        will automatically switch to other RPC providers to continue indexing without interruption.
+        <br />
+        <StrongInter>Reduced load on RPC providers</StrongInter> - Indexing is a computationally
+        expensive process on RPC providers, by distributing requests among RPC providers you are
+        lowering the chance that your project will be rate limited.
+      </Typography>
+    )}
+    overlayInnerStyle={{ padding: 16, width: 400 }}
+  />
+);
 
 type Props = {
   setVisible: Dispatch<SetStateAction<boolean>>;
@@ -160,106 +192,179 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
       baseConfig.networkEndpoints =
         baseConfig?.networkEndpoints.length === 0 ? [''] : baseConfig?.networkEndpoints;
       return (
-        <Form
-          form={form}
-          name="form"
-          layout="vertical"
-          onFinish={handleSubmit(setVisible)}
-          initialValues={{ ...baseConfig, ...advancedConfig }}
-        >
-          <Form.List name={ProjectFormKey.networkEndpoints}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map((field, index) => (
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                    <Form.Item
-                      {...field}
-                      label={index === 0 ? 'Network Endpoints' : ''}
-                      key={field.key}
-                      rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
-                      style={{ marginBottom: 0, flex: 1 }}
-                    >
-                      <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
-                    </Form.Item>
-                    {index === 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div className="ant-col ant-form-item-label">&nbsp;</div>
-                        <PlusCircleOutlined
-                          style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
-                          onClick={() => add()}
-                        />
-                      </div>
-                    ) : (
-                      <MinusCircleOutlined
-                        style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
-                        onClick={() => remove(field.name)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </Form.List>
-
-          <Form.Item label="Is Project Dictionary" valuePropName="checked">
-            <Switch onChange={onSwitchChange} defaultChecked checked={showInput} />
-          </Form.Item>
-
-          {!showInput && (
-            <Item
-              label="Dictionary Endpoint"
-              name={ProjectFormKey.networkDictionary}
-              rules={[getYupRule(ProjectFormKey.networkDictionary)]}
-            >
-              <Input placeholder="https://api.subquery.network/sq/subquery/dictionary-polkadot" />
-            </Item>
-          )}
-          <Row gutter={16}>
-            <Col span={12}>
-              <Item
-                label="Indexer Version"
-                name={ProjectFormKey.nodeVersion}
-                rules={[getYupRule(ProjectFormKey.nodeVersion)]}
-              >
-                <Select>{displayVersion(nodeVersions)}</Select>
-              </Item>
-            </Col>
-            <Col span={12}>
-              <Item
-                label="Query Version"
-                name={ProjectFormKey.queryVersion}
-                rules={[getYupRule(ProjectFormKey.queryVersion)]}
-              >
-                <Select>{displayVersion(queryVersions)}</Select>
-              </Item>
-            </Col>
-          </Row>
-          <Form.Item
-            name="purgeDB"
-            label="Purge POI"
-            valuePropName="checked"
-            tooltip="Clean the MMR root values on start of indexing."
+        <StartINdexingForm>
+          <Form
+            form={form}
+            name="form"
+            layout="vertical"
+            onFinish={handleSubmit(setVisible)}
+            initialValues={{ ...baseConfig, ...advancedConfig }}
           >
-            <Switch />
-          </Form.Item>
-          <Collapse defaultActiveKey="1">
-            <Collapse.Panel header="Advanced Options" key="1">
-              {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
-                <Form.Item key={id} name={name} label={label} tooltip={tooltip}>
-                  <Slider min={min} max={max} />
-                </Form.Item>
-              ))}
-            </Collapse.Panel>
-          </Collapse>
-          <Form.Item>
-            <ButtonContainer align="right" mt={30}>
-              <Button label="Submit" type="secondary" onClick={() => form.submit()}>
-                Submit
-              </Button>
-            </ButtonContainer>
-          </Form.Item>
-        </Form>
+            <Typography variant="medium" style={{ marginBottom: 24 }}>
+              <InfoCircleOutlined
+                style={{ fontSize: 14, color: 'var(--sq-blue600)', marginRight: 8 }}
+              />
+              Need help? Visit our docs on{' '}
+              <Link
+                style={{ color: 'var(--sq-blue600)' }}
+                href="https://academy.subquery.network/subquery_network/kepler/indexers/index-project.html#indexing-a-subquery-project"
+              >
+                Indexing project
+              </Link>
+            </Typography>
+            <Form.List name={ProjectFormKey.networkEndpoints}>
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map((field, index) => (
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                      <Form.Item
+                        {...field}
+                        label={
+                          index === 0 ? (
+                            <div>
+                              Network Endpoints
+                              <NetworkEndpointsTooltip />
+                            </div>
+                          ) : (
+                            ''
+                          )
+                        }
+                        key={field.key}
+                        rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
+                        style={{ marginBottom: 0, flex: 1 }}
+                      >
+                        <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
+                      </Form.Item>
+                      {index === 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <div className="ant-col ant-form-item-label">&nbsp;</div>
+                          <PlusCircleOutlined
+                            style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                            onClick={() => add()}
+                          />
+                        </div>
+                      ) : (
+                        <MinusCircleOutlined
+                          style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                          onClick={() => remove(field.name)}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+            </Form.List>
+
+            <HorizonReverse>
+              <Form.Item label="Is Project Dictionary" valuePropName="checked">
+                <Switch onChange={onSwitchChange} defaultChecked checked={showInput} />
+              </Form.Item>
+            </HorizonReverse>
+
+            {!showInput && (
+              <Item
+                label="Dictionary Endpoint"
+                name={ProjectFormKey.networkDictionary}
+                rules={[getYupRule(ProjectFormKey.networkDictionary)]}
+              >
+                <Input placeholder="https://api.subquery.network/sq/subquery/dictionary-polkadot" />
+              </Item>
+            )}
+            <Row gutter={16}>
+              <Col span={12}>
+                <Item
+                  label="Indexer Version"
+                  name={ProjectFormKey.nodeVersion}
+                  rules={[getYupRule(ProjectFormKey.nodeVersion)]}
+                >
+                  <Select>{displayVersion(nodeVersions)}</Select>
+                </Item>
+              </Col>
+              <Col span={12}>
+                <Item
+                  label="Query Version"
+                  name={ProjectFormKey.queryVersion}
+                  rules={[getYupRule(ProjectFormKey.queryVersion)]}
+                >
+                  <Select>{displayVersion(queryVersions)}</Select>
+                </Item>
+              </Col>
+            </Row>
+            <HorizonReverse>
+              <Form.Item
+                name="purgeDB"
+                label="Purge Database"
+                valuePropName="checked"
+                tooltip={defaultTooltipProps('Clean the MMR root values on start of indexing.')}
+              >
+                <Switch />
+              </Form.Item>
+            </HorizonReverse>
+            <Collapse defaultActiveKey="1">
+              <Collapse.Panel header="Advanced Options" key="1">
+                {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
+                  <Form.Item
+                    key={id}
+                    name={name}
+                    label={label}
+                    tooltip={defaultTooltipProps(tooltip)}
+                  >
+                    <Slider
+                      min={min}
+                      max={max}
+                      marks={{
+                        [min]: min,
+                        [max]: max,
+                      }}
+                    />
+                  </Form.Item>
+                ))}
+              </Collapse.Panel>
+            </Collapse>
+            <Form.Item>
+              <ButtonContainer align="right" mt={30}>
+                <Button type="primary" onClick={() => form.submit()} shape="round" size="large">
+                  {/* If re-staring project, there must have network endpoints and must more than 1 length */}
+                  {project?.baseConfig?.networkEndpoints?.every((i: string) => i.length > 1)
+                    ? 'Update'
+                    : 'Start'}
+                </Button>
+              </ButtonContainer>
+            </Form.Item>
+          </Form>
+        </StartINdexingForm>
       );
     },
   });
 };
+
+const StrongInter = styled.strong`
+  font-family: Inter-Bold;
+`;
+
+const StartINdexingForm = styled.div`
+  .ant-form-item-label label {
+    font-family: var(--sq-font-family);
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--sq-gray900);
+  }
+`;
+
+const HorizonReverse = styled.div`
+  .ant-row.ant-form-item-row {
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+
+  .ant-col.ant-form-item-label {
+    flex: 1;
+    margin-left: 16px;
+    padding: 0;
+  }
+
+  .ant-col.ant-form-item-control {
+    width: auto;
+    flex: none;
+  }
+`;

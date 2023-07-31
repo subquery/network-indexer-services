@@ -40,3 +40,7 @@ code {
 iframe {
   display: none!important;
 }
+
+:root {
+  --ant-primary-color: var(--sq-blue600);
+}

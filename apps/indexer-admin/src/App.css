@@ -81,3 +81,7 @@
 .tableStyle {
   width: 100%;
 }
+
+.popupViewDrawer .ant-drawer-header-title {
+  flex-direction: row-reverse;
+}

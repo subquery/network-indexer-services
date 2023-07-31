@@ -108,8 +108,8 @@ export const PAYGActionName = {
 };
 
 export const ProjectActionName = {
-  [ProjectAction.StartIndexing]: 'Start Indexing Project',
-  [ProjectAction.RestartProject]: 'Restart Indexing Project',
+  [ProjectAction.StartIndexing]: 'Start Indexing',
+  [ProjectAction.RestartProject]: 'Restart Indexing',
   [ProjectAction.AnnounceIndexing]: 'Announce Indexing Project',
   [ProjectAction.AnnounceReady]: 'Publish Indexing to Ready',
   [ProjectAction.StopProject]: 'Stop Project',
