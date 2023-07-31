@@ -71,3 +71,7 @@ If use vscode need to add below config in Preference -> setting -> workspace -> 
 ```
 
 for support eslint in different workfolder.
+
+# Husky
+
+Define at `common/config/rush/command-line.json`, `common/git-hooks/pre-commit` and `common/autoinstallers/rush-husky`.
