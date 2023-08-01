@@ -1,23 +1,27 @@
 # Indexer Admin App
 
+## Install dependencies
+
+Please check the root readme [indexer-coordinator](https://github.com/subquery/indexer-coordinator)
+
 ## Development
 
 1. Create your own `.env.local` file:
 
 ```conf
-REACT_APP_NETWORK=testnet
-REACT_APP_COORDINATOR_SERVICE_URL=http://cyrbuzz.space:8000/graphql
-REACT_APP_COORDINATOR_SERVICE_PORT=8000
+VITE_APP_NETWORK=testnet
+VITE_APP_COORDINATOR_SERVICE_URL=http://cyrbuzz.space:8000/graphql
+VITE_APP_COORDINATOR_SERVICE_PORT=8000
 ```
 
-2. Start [indexer-coordinator](https://github.com/subquery/indexer-coordinator) service.
-3. Run `yarn start` to start the web server.
+2. Start [indexer-coordinator](https://github.com/subquery/indexer-coordinator/apps/indexer-coordinator) service.
+3. Run `pnpm start`(or `yarn`, `npm`, recommend to use `pnpm`).
 
 ## Testing with testnet
 
-Start [indexer-coordinator](https://github.com/subquery/indexer-coordinator) service locally.
+Start [indexer-coordinator](https://github.com/subquery/indexer-coordinator/apps/indexer-coordinator) service locally.
 
-Open `localhost:8000` to play with the app.
+Open `localhost:8008` to play with the app.
 
 ## Tools
 

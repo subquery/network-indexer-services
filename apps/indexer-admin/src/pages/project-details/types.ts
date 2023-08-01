@@ -80,7 +80,7 @@ export interface AsyncMemoReturn<T> extends AsyncData<T> {
 
 export type ProjectConfig = {
   baseConfig: {
-    networkEndpoint: string;
+    networkEndpoints: string[];
     networkDictionary: string;
     nodeVersion: string;
     queryVersion: string;

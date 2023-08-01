@@ -12,9 +12,7 @@ import { providers } from 'ethers';
 import { useWeb3 } from 'hooks/web3Hook';
 import { ChainID, hexToInt, NetworkToChainID, RPC_URLS } from 'utils/web3';
 
-console.warn(process.env);
-
-export const SUPPORTED_NETWORK = (process.env.REACT_APP_NETWORK ||
+export const SUPPORTED_NETWORK = (import.meta.env.VITE_APP_NETWORK ||
   window.env.NETWORK) as keyof typeof NetworkToChainID;
 export const defaultChainId = parseInt(networks[SUPPORTED_NETWORK].chainId, 16);
 
@@ -22,7 +20,7 @@ const injectedConntector = new InjectedConnector({
   supportedChainIds: [defaultChainId],
 });
 
-const injectNetwork = (process.env.REACT_APP_NETWORK ||
+const injectNetwork = (import.meta.env.VITE_APP_NETWORK ||
   window.env.NETWORK) as keyof typeof NetworkToChainID;
 
 const networkConnector = new NetworkConnector({

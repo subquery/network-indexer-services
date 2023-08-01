@@ -3,7 +3,7 @@
 
 import { networks } from '@subql/contract-sdk';
 
-export const network = (process.env.REACT_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
+export const network = (import.meta.env.VITE_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
 
 export const SUPPORTED_NETWORK = (network ?? 'testnet') as keyof typeof networks;
 
@@ -37,7 +37,7 @@ export const isSupportNetwork = (chaiId: ChainID) => ChainIDs.includes(chaiId);
 
 export const RPC_URLS: Record<number, string> = {
   80001: 'https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78',
-  137: process?.env?.RPC_ENDPOINT ?? 'https://polygon-rpc.com/',
+  137: import.meta.env.VITE_APP_RPC_ENDPOINT ?? 'https://polygon-rpc.com/',
 };
 
 export function hexToInt(hex: string) {
