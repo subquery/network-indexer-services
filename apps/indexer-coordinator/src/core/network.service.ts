@@ -73,7 +73,6 @@ export class NetworkService implements OnApplicationBootstrap {
     void (async () => {
       await this.doNetworkActions();
       await this.removeExpiredAgreements();
-      await this.reportIndexingServiceActions();
     })();
   }
 
@@ -196,48 +195,6 @@ export class NetworkService implements OnApplicationBootstrap {
       getLogger('network').info('failed to remove expired service agreements');
     }
     logger.debug(`removeExpiredAgreements end`);
-  }
-
-  async reportIndexingService(project: Project) {
-    const { id } = project;
-    const poi = await this.queryService.getReportPoi(project);
-    if (poi.blockHeight === 0) return;
-
-    const { blockHeight, mmrRoot } = poi;
-    const mmrRootLog = mmrRoot !== ZERO_BYTES32 ? `| mmrRoot: ${mmrRoot}` : '';
-    const desc = `| project ${id.substring(0, 15)} | block height: ${blockHeight} ${mmrRootLog}`;
-
-    const timestamp = await this.contractService.getBlockTime();
-    const indexer = await this.accountService.getIndexer();
-    await this.sendTransaction(
-      `report project status`,
-      async (overrides) => {
-        return await this.sdk.queryRegistry.reportIndexingStatus(
-          indexer,
-          cidToBytes32(id.trim()),
-          blockHeight,
-          mmrRoot,
-          timestamp,
-          overrides
-        );
-      },
-      desc
-    );
-  }
-
-  @Cron(CronExpression.EVERY_2_HOURS)
-  async reportIndexingServiceActions() {
-    logger.debug(`reportIndexingServiceActions start`);
-    if (!(await this.checkControllerReady())) return;
-    const indexingProjects = await this.getIndexingProjects();
-    logger.debug(`indexingProjects ${indexingProjects.length}`);
-    if (isEmpty(indexingProjects)) return [];
-    try {
-      await Promise.all(indexingProjects.map((project) => this.reportIndexingService(project)));
-    } catch (e) {
-      logger.error(e, `reportIndexingServiceActions failed`);
-    }
-    logger.debug(`reportIndexingServiceActions end`);
   }
 
   async hasPendingChanges(indexer: string) {

@@ -20,7 +20,9 @@ services:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
       - --ipfs={{ipfsUrl}}
-      - --network-endpoint={{{networkEndpoint}}}
+      {{#each networkEndpoints}}
+      - --network-endpoint={{{this}}}
+      {{/each}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
       - --batch-size={{batchSize}}

@@ -25,7 +25,7 @@ const ProjectFields = `
     updatedTimestamp
   }
   baseConfig {
-    networkEndpoint
+    networkEndpoints
     networkDictionary
     nodeVersion
     queryVersion
@@ -82,7 +82,7 @@ export const START_PROJECT = gql`
     $queryVersion: String!
     $nodeVersion: String!
     $networkDictionary: String!
-    $networkEndpoint: String!
+    $networkEndpoints: [String!]!
     $batchSize: Int!
     $workers: Int!
     $timeout: Int!
@@ -94,7 +94,7 @@ export const START_PROJECT = gql`
     startProject(
       id: $id
       baseConfig: {
-        networkEndpoint: $networkEndpoint
+        networkEndpoints: $networkEndpoints
         networkDictionary: $networkDictionary
         nodeVersion: $nodeVersion
         queryVersion: $queryVersion
