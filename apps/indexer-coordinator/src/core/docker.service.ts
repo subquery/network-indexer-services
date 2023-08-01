@@ -1,12 +1,11 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {exec} from 'child_process';
+import { exec } from 'child_process';
 import * as fs from 'fs';
-import {Injectable} from '@nestjs/common';
-
-import {getComposeFilePath, getImageVersion, projectContainers, projectId} from '../utils/docker';
-import {getLogger} from '../utils/logger';
+import { Injectable } from '@nestjs/common';
+import { getComposeFilePath, getImageVersion, projectContainers, projectId } from '../utils/docker';
+import { getLogger } from '../utils/logger';
 
 @Injectable()
 export class DockerService {
@@ -15,7 +14,9 @@ export class DockerService {
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       await this.rm(projectContainers(fileName));
-      const result = await this.execute(`docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`);
+      const result = await this.execute(
+        `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`
+      );
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').warn(`file: ${filePath} not exist`);
@@ -24,9 +25,17 @@ export class DockerService {
 
   async start(containers: string[]): Promise<string> {
     try {
-      return this.execute(`docker start ${containers.join(' ')}`);
+      return await this.execute(`docker start ${containers.join(' ')}`);
     } catch (e) {
-      getLogger('docker').error(e,`failed to restart the containers`);
+      getLogger('docker').error(e, `failed to restart the containers`);
+    }
+  }
+
+  async restart(containers: string[]): Promise<string> {
+    try {
+      return await this.execute(`docker restart ${containers.join(' ')}`);
+    } catch (e) {
+      getLogger('docker').error(e, `failed to restart the containers`);
     }
   }
 
@@ -34,7 +43,7 @@ export class DockerService {
     try {
       return await this.execute(`docker stop ${containers.join(' ')}`);
     } catch (e) {
-      getLogger('docker').warn(e,`failed to stop the containers`);
+      getLogger('docker').warn(e, `failed to stop the containers`);
     }
   }
 
@@ -50,7 +59,9 @@ export class DockerService {
 
   async ps(containers: string[]): Promise<string> {
     try {
-      const result = await this.execute(`docker container ps -a | grep -E '${containers.join('|')}'`);
+      const result = await this.execute(
+        `docker container ps -a | grep -E '${containers.join('|')}'`
+      );
       return result;
     } catch (_) {
       return '';
@@ -67,7 +78,7 @@ export class DockerService {
   }
 
   async logs(container: string): Promise<string> {
-    return this.execute(`docker logs -n 30 ${container}`);
+    return await this.execute(`docker logs -n 30 ${container}`);
   }
 
   async deleteFile(path: string) {

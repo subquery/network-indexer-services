@@ -23,6 +23,7 @@ import { MonitorController } from './monitor.controller';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
         : join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
     }),
+    MonitorModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })
