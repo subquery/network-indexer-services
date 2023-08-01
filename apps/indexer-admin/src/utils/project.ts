@@ -42,7 +42,7 @@ export function isTrue(value: boolean | string): boolean {
 }
 
 export const wrapGqlUrl = ({ indexer, url }: { indexer: string; url: string }) => {
-  const gqlProxy = process.env.REACT_APP_GQL_PROXY;
+  const gqlProxy = import.meta.env.VITE_APP_GQL_PROXY;
 
   return new URL(`${indexer}/?to=${encodeURIComponent(url)}`, gqlProxy).toString();
 };

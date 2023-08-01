@@ -6,9 +6,11 @@ import { ApolloClient, gql, InMemoryCache } from '@apollo/client';
 import { PRODUCTION_NETWORK } from './web3';
 
 const COORDINATOR_SERVICE_URL =
-  process.env.REACT_APP_COORDINATOR_SERVICE_URL || window.env.COORDINATOR_SERVICE_URL;
+  import.meta.env.VITE_APP_COORDINATOR_SERVICE_URL || window.env.COORDINATOR_SERVICE_URL;
 
-const NETWORK = process.env.REACT_APP_NETWORK || window.env.NETWORK;
+console.warn(import.meta);
+
+const NETWORK = import.meta.env.VITE_APP_NETWORK || window.env.NETWORK;
 
 const defaultCoordinatorUrl = '/graphql';
 

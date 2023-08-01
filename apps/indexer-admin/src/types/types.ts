@@ -8,7 +8,7 @@ export type FormValues = {
 export type HookDependency = boolean | number | string;
 
 export interface IProjectBaseConfig {
-  networkEndpoint: string | undefined;
+  networkEndpoints: string | undefined;
   networkDictionary: string | undefined;
   nodeVersion: string | undefined;
   queryVersion: string | undefined;

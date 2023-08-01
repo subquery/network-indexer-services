@@ -3,7 +3,7 @@
 
 import { networks } from '@subql/contract-sdk';
 
-export const network = (process.env.REACT_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
+export const network = (import.meta.env.VITE_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
 
 export const SUPPORTED_NETWORK = (network ?? 'testnet') as keyof typeof networks;
 
