@@ -30,17 +30,6 @@ code {
     monospace;
 }
 
-/*
-  A painful experience
-  The solve method are not working at all.
-  https://stackoverflow.com/questions/70368760/react-uncaught-referenceerror-process-is-not-defined
-  
-  Use a simple but rude. But useful way to solve.
-*/
-iframe {
-  display: none!important;
-}
-
 :root {
   --ant-primary-color: var(--sq-blue600);
 }

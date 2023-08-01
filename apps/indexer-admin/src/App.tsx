@@ -4,8 +4,6 @@
 import { FC } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
-import * as Sentry from '@sentry/react';
-import { Button, Typography } from '@subql/react-ui';
 
 import Loading from 'components/loading';
 import { AccountProvider } from 'containers/account';
@@ -55,39 +53,26 @@ const AppContents = () => {
   );
 };
 
-const ErrorFallback = ({ error, componentStack, resetError }: any) => {
-  return (
-    <div className="errorFallback">
-      <Typography className="errorText">Something went wrong:</Typography>
-      <Typography className="errorText">{error?.message || error.toString()}</Typography>
-      <Typography>{componentStack}</Typography>
-      <Button onClick={resetError} colorScheme="gradient" label="Try again." />
-    </div>
-  );
-};
-
 const App: FC = () => (
-  <Sentry.ErrorBoundary fallback={ErrorFallback} showDialog>
-    <ApolloProvider client={createApolloClient(coordinatorServiceUrl)}>
-      <Web3Provider>
-        <ContractSDKProvider>
-          <CoordinatorIndexerProvider>
-            <AccountProvider>
-              <LoadingProvider>
-                <ModalProvider>
-                  <NotificationProvider>
-                    <div className="App">
-                      <AppContents />
-                    </div>
-                  </NotificationProvider>
-                </ModalProvider>
-              </LoadingProvider>
-            </AccountProvider>
-          </CoordinatorIndexerProvider>
-        </ContractSDKProvider>
-      </Web3Provider>
-    </ApolloProvider>
-  </Sentry.ErrorBoundary>
+  <ApolloProvider client={createApolloClient(coordinatorServiceUrl)}>
+    <Web3Provider>
+      <ContractSDKProvider>
+        <CoordinatorIndexerProvider>
+          <AccountProvider>
+            <LoadingProvider>
+              <ModalProvider>
+                <NotificationProvider>
+                  <div className="App">
+                    <AppContents />
+                  </div>
+                </NotificationProvider>
+              </ModalProvider>
+            </LoadingProvider>
+          </AccountProvider>
+        </CoordinatorIndexerProvider>
+      </ContractSDKProvider>
+    </Web3Provider>
+  </ApolloProvider>
 );
 
 export default App;

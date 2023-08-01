@@ -40,7 +40,7 @@ const ProjectItem: FC<Props> = (props) => {
 
   return (
     <ProjectItemContainer onClick={pushDetailPage}>
-      <ItemContainer pl={15} flex={7}>
+      <ItemContainer pl={15} flex={6.5}>
         <Avatar address={cidToBytes32(id)} size={70} />
         <ProfileContainer>
           <Text fw="600" size={18}>
@@ -62,7 +62,7 @@ const ProjectItem: FC<Props> = (props) => {
           {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
         </Tag>
       </ItemContainer>
-      <ItemContainer flex={2}>
+      <ItemContainer flex={3}>
         {!isUndefined(status) ? (
           <StatusLabel text={statusText[status]} color={statusColor[status]} />
         ) : (
