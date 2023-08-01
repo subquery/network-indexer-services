@@ -22,9 +22,7 @@ export default defineConfig({
     },
   },
   plugins: [EnvironmentPlugin('all')],
-  define: {
-    // By default, Vite doesn't include shims for NodeJS/
-    // necessary for segment analytics lib to work
-    global: {},
+  build: {
+    outDir: 'build',
   },
 });

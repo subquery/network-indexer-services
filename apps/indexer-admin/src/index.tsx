@@ -6,9 +6,12 @@ import { Buffer } from 'buffer';
 
 import App from './App';
 
+import '../public/env.js';
 import './index.css';
 
 window.Buffer = Buffer;
+// @ts-ignore
+window.global ||= window;
 
 let container = document.getElementById('root');
 
