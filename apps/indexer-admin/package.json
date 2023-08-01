@@ -64,8 +64,8 @@
     "@vitejs/plugin-react": "~4.0.4"
   },
   "devDependencies": {
-    "@craco/craco": "^6.4.3",
-    "@sentry/types": "^6.19.6",
+    
+    
     "@types/jest": "^26.0.15",
     "@types/js-yaml": "^4.0.5",
     "@types/lodash": "^4.14.177",
@@ -90,7 +90,6 @@
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "eslint-plugin-jsx-a11y": "~6.7.1",
-    "husky": "^7.0.2",
     "lint-staged": "^11.2.3",
     "prettier": "^2.4.1",
     "tailwindcss": "^3.3.1",
