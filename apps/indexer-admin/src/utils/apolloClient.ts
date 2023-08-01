@@ -15,7 +15,9 @@ const NETWORK = import.meta.env.VITE_APP_NETWORK || window.env.NETWORK;
 const defaultCoordinatorUrl = '/graphql';
 
 export const coordinatorServiceUrl =
-  process?.env?.NODE_ENV !== 'production' ? COORDINATOR_SERVICE_URL : defaultCoordinatorUrl;
+  import.meta.env.VITE_APP_NODE_ENV !== 'production'
+    ? COORDINATOR_SERVICE_URL
+    : defaultCoordinatorUrl;
 
 export const excellencyServiceUrl =
   NETWORK === PRODUCTION_NETWORK

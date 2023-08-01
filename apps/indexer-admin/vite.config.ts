@@ -4,6 +4,7 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 import EnvironmentPlugin from 'vite-plugin-environment';
+import react from '@vitejs/plugin-react';
 
 const { resolve } = path;
 
@@ -21,7 +22,7 @@ export default defineConfig({
       contract: resolve(__dirname, 'src/contract/'),
     },
   },
-  plugins: [EnvironmentPlugin('all')],
+  plugins: [EnvironmentPlugin('all'), react()],
   build: {
     outDir: 'build',
   },
