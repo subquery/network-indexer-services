@@ -16,7 +16,11 @@ docker-compose -f docker-compose.yml up -d
 cd ../../
 pwd
 
-rush build
+if [ -z "$2" ]; then
+  echo "bypass rush build"
+else
+  rush build
+fi
 
 FE_DIR="apps/indexer-admin/build"
 BE_DIR="apps/indexer-coordinator/dist/indexer-admin"
