@@ -1,0 +1,108 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:12-alpine
+    container_name: indexer_db
+    ports:
+      - 5432:5432
+    volumes:
+      - .data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: pos_z8X
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: indexer_cache
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+
+  ipfs:
+    image: ipfs/kubo:v0.20.0
+    container_name: indexer_ipfs
+    volumes:
+      - .data/ipfs/export:/export
+      - .data/ipfs/data:/data/ipfs
+      - ./ipfs/ipfs.sh:/container-init.d/ipfs.sh:ro
+    ports:
+      - 4001:4001
+      - 4001:4001/udp
+      - 5001:5001
+      - 8080:8080
+
+  proxy:
+    image: subquerynetwork/indexer-proxy:latest
+    container_name: indexer_proxy
+    ports:
+      - 7370:7370/udp
+      - 8001:8001
+    restart: always
+    command:
+      - --port=8001
+      - --auth
+      - --debug
+      - --jwt-secret=JwtSecret
+      - --secret-key=SecretKey
+      - --metrics-token=MetricsToken
+      - --token-duration=8 # query auth token validity [hours]
+      - --network=testnet
+      - --service-url=http://host.docker.internal:8000
+      - --network-endpoint=https://polygon-rpc.com
+      - --redis-endpoint=redis://indexer_cache
+    healthcheck:
+      test: ['CMD-SHELL', 'curl http://localhost:8001/healthy >/dev/null 2>&1 || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Build and run the coordinator service
+  coordinator:
+    container_name: indexer_coordinator
+    image: coordinator:latest
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    restart: always
+    volumes:
+      - .projects:/usr/projects
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --network=testnet
+      - --ws-endpoint=https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
+      - --postgres-host=postgres
+      - --postgres-password=pos_z8X
+      - --postgres-port=5432
+      - --use-prerelease
+      - --port=8000
+      - --debug
+      - --ipfs=http://indexer_ipfs:8080/api/v0/
+      - --mmrPath=/home
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-i",
+          "-X POST",
+          "http://indexer_coordinator:8000/graphql",
+          "-H 'Content-Type: application/json'",
+          "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    name: indexer_services
