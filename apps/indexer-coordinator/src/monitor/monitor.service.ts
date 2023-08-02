@@ -28,10 +28,16 @@ export class MonitorService {
         if (result.data.status === 'ok') {
           this.nodeUnhealthTimesMap.set(project.id, 0);
         } else {
-          this.nodeUnhealthTimesMap.set(project.id, this.nodeUnhealthTimesMap.get(project.id) + 1);
+          this.nodeUnhealthTimesMap.set(
+            project.id,
+            (this.nodeUnhealthTimesMap.get(project.id) ?? 0) + 1
+          );
         }
       } catch (e) {
-        this.nodeUnhealthTimesMap.set(project.id, this.nodeUnhealthTimesMap.get(project.id) + 1);
+        this.nodeUnhealthTimesMap.set(
+          project.id,
+          (this.nodeUnhealthTimesMap.get(project.id) ?? 0) + 1
+        );
       }
     }
     await this.restartUnhealthyNode();
@@ -41,7 +47,7 @@ export class MonitorService {
   async restartUnhealthyNode() {
     let containersToRestart = [];
     for (const [id, times] of this.nodeUnhealthTimesMap) {
-      if (times > this.nodeUnhealthTimes) {
+      if (times >= this.nodeUnhealthTimes) {
         containersToRestart.push(nodeContainer(id));
       }
     }
