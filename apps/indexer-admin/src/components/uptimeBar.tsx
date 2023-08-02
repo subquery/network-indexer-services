@@ -34,7 +34,6 @@ const filterTooltipMsg = (uptime: groupByUptime) => {
 
 const UptimeBar: FC<IProps> = (props) => {
   const { header, uptimeData } = props;
-
   const uptimeRate = useMemo(() => {
     if (!uptimeData.length) return 0;
     const online = uptimeData.filter((i) => i.nodeSuccess);
@@ -43,7 +42,7 @@ const UptimeBar: FC<IProps> = (props) => {
   }, [uptimeData]);
 
   // TODO: maybe need backend group by.
-  const groypByUptime = useMemo(() => {
+  const groupByUptime = useMemo(() => {
     // need to group by date
     const newUptimeData: groupByUptime[] = [];
     const groupByDate = groupBy(uptimeData, (i) => dayjs(i.timestamp).format('YYYY-MM-DD'));
@@ -64,6 +63,25 @@ const UptimeBar: FC<IProps> = (props) => {
     return newUptimeData.slice(0, 90).reverse();
   }, [uptimeData]);
 
+  const notEnoughUptimeChunks = useMemo(() => {
+    const today = dayjs();
+    const groupedUptimeLength = groupByUptime.length;
+    if (!groupedUptimeLength) {
+      return {
+        prefix: new Array(90).fill(0),
+        suffix: [],
+      };
+    }
+
+    const lastRecordDay = groupByUptime.at(-1);
+    const suffix = new Array(today.diff(dayjs(lastRecordDay?.timestamp), 'day')).fill(0);
+    const prefixLength = 90 - groupedUptimeLength - suffix.length;
+    return {
+      suffix,
+      prefix: new Array(prefixLength < 0 ? 0 : prefixLength).fill(0),
+    };
+  }, [groupByUptime]);
+
   return (
     <div
       style={{
@@ -81,20 +99,20 @@ const UptimeBar: FC<IProps> = (props) => {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          width: groypByUptime.length ? '1260px' : 'auto',
+          width: groupByUptime.length ? '1260px' : 'auto',
         }}
       >
-        {groypByUptime.length ? (
+        {groupByUptime.length ? (
           <div
             style={{
               display: 'flex',
               margin: '16px 0',
             }}
           >
-            {new Array(90 - groypByUptime.length).fill(0).map((_, index) => (
+            {notEnoughUptimeChunks.prefix.map((_, index) => (
               <StatusLine key={index} bg="var(--sq-gray300)" />
             ))}
-            {groypByUptime.map((uptime, index) => {
+            {groupByUptime.map((uptime, index) => {
               return (
                 <Tooltip
                   key={index}
@@ -120,6 +138,9 @@ const UptimeBar: FC<IProps> = (props) => {
                 </Tooltip>
               );
             })}
+            {notEnoughUptimeChunks.suffix.map((_, index) => (
+              <StatusLine key={index} bg="var(--sq-gray300)" />
+            ))}
           </div>
         ) : (
           <div
