@@ -186,7 +186,9 @@ export class PaygService {
     return this.savePub(channel, PaygEvent.State);
   }
 
-  async syncChannel(channel: StateChannel): Promise<Channel> {
+  async syncChannel(channel: StateChannel): Promise<Channel | undefined> {
+    if (!channel) return;
+
     try {
       const id = BigNumber.from(channel.id).toString();
       const _channel = await this.channelRepo.findOneBy({ id });
