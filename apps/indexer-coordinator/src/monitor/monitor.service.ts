@@ -1,8 +1,11 @@
+// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import { Injectable } from '@nestjs/common';
-import { DockerService } from '../core/docker.service';
-import { ProjectService } from '../project/project.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import axios from 'axios';
+import { DockerService } from '../core/docker.service';
+import { ProjectService } from '../project/project.service';
 import { nodeContainer } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
@@ -18,14 +21,14 @@ export class MonitorService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkNodeHealth() {
     getLogger('monitor').info(`check node health started`);
-    let projects = await this.projectService.getAliveProjects();
+    const projects = await this.projectService.getAliveProjects();
     getLogger('monitor').info(`projects's length: ${projects.length}`);
     for (const project of projects) {
       try {
         const result = await axios.get(`${project.nodeEndpoint}/health`, {
           timeout: 5000,
         });
-        if (result.data.status === 'ok') {
+        if (result.status === 200) {
           this.nodeUnhealthTimesMap.set(project.id, 0);
         } else {
           this.nodeUnhealthTimesMap.set(
@@ -45,7 +48,7 @@ export class MonitorService {
   }
 
   async restartUnhealthyNode() {
-    let containersToRestart = [];
+    const containersToRestart = [];
     for (const [id, times] of this.nodeUnhealthTimesMap) {
       if (times >= this.nodeUnhealthTimes) {
         containersToRestart.push(nodeContainer(id));
