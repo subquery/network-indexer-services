@@ -34,6 +34,7 @@ module.exports = {
     "@typescript-eslint/no-unsafe-call": "off",
     "@typescript-eslint/no-unsafe-member-access": "off",
     "@typescript-eslint/no-unsafe-return": "off",
+    "@typescript-eslint/no-floating-promises": "off",
     "complexity": [
       "error", 20],
     "curly": [
@@ -56,7 +57,8 @@ module.exports = {
     "header/header": [2, "line", [
       {
         "pattern": " Copyright \\d{4}(-\\d{4})? SubQuery Pte Ltd authors & contributors",
-        "template": " Copyright 2020-2022 SubQuery Pte Ltd authors & contributors" },
+        "template": " Copyright 2020-2022 SubQuery Pte Ltd authors & contributors"
+      },
       " SPDX-License-Identifier: Apache-2.0"
     ], 2]
   }
