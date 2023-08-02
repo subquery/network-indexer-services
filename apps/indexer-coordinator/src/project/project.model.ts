@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -164,6 +164,18 @@ export class ProjectEntity {
   @Column('jsonb', { default: defaultAdvancedConfig })
   @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
+
+  // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
+  @BeforeInsert()
+  setupDefaultValuesOnInsert: () => void = () => {
+    this.chainType = this.chainType ?? '';
+    this.nodeEndpoint = this.nodeEndpoint ?? '';
+    this.queryEndpoint = this.queryEndpoint ?? '';
+    // @ts-ignore
+    this.details = this.details ?? {};
+    this.baseConfig = this.baseConfig ?? defaultBaseConfig;
+    this.advancedConfig = this.advancedConfig ?? defaultAdvancedConfig;
+  };
 }
 
 @InputType('PaygConfigInput')
