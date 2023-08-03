@@ -2,8 +2,8 @@
 
 - Part 1 for the whole project
 
-  - [ ] Use Vite
-  - [ ] Arrange environments.
+  - [x] Use Vite
+  - [x] Arrange environments.
   - [ ] Refactor Route part like this https://github.com/subquery/network-explorer/issues/424
   - [ ] Use less or sass
   - [ ] Use css module replace css-in-js(maybe not)

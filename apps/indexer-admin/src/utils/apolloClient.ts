@@ -8,16 +8,13 @@ import { PRODUCTION_NETWORK } from './web3';
 const COORDINATOR_SERVICE_URL =
   import.meta.env.VITE_APP_COORDINATOR_SERVICE_URL || window.env.COORDINATOR_SERVICE_URL;
 
-console.warn(import.meta);
-
 const NETWORK = import.meta.env.VITE_APP_NETWORK || window.env.NETWORK;
 
 const defaultCoordinatorUrl = '/graphql';
 
-export const coordinatorServiceUrl =
-  import.meta.env.VITE_APP_NODE_ENV !== 'production'
-    ? COORDINATOR_SERVICE_URL
-    : defaultCoordinatorUrl;
+export const coordinatorServiceUrl = import.meta.env.DEV
+  ? COORDINATOR_SERVICE_URL
+  : defaultCoordinatorUrl;
 
 export const excellencyServiceUrl =
   NETWORK === PRODUCTION_NETWORK
