@@ -15,14 +15,15 @@ export class MonitorService {
     this.checkNodeHealth();
   }
 
+  private readonly logger = getLogger('monitor');
   private readonly nodeUnhealthTimes = 3;
   private nodeUnhealthTimesMap = new Map<string, number>();
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkNodeHealth() {
-    getLogger('monitor').info(`check node health started`);
+    this.logger.info(`check node health started`);
     const projects = await this.projectService.getAliveProjects();
-    getLogger('monitor').info(`projects's length: ${projects.length}`);
+    this.logger.info(`projects's length: ${projects.length}`);
     for (const project of projects) {
       try {
         const result = await axios.get(`${project.nodeEndpoint}/health`, {
@@ -44,7 +45,7 @@ export class MonitorService {
       }
     }
     await this.restartUnhealthyNode();
-    getLogger('monitor').info(`check node health finished`);
+    this.logger.info(`check node health finished`);
   }
 
   async restartUnhealthyNode() {
@@ -55,7 +56,7 @@ export class MonitorService {
       }
     }
     if (containersToRestart.length > 0) {
-      getLogger('monitor').info(`restart unhealthy nodes: ${containersToRestart.join(',')}`);
+      this.logger.info(`restart unhealthy nodes: ${containersToRestart.join(',')}`);
       await this.docker.restart(containersToRestart);
     }
   }
