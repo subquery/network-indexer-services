@@ -5,10 +5,10 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import {SubscriptionModule} from "../subscription/subscription.module";
-import {Controller, Indexer} from "./account.model";
-import {AccountResolver} from "./account.resolver";
-import {AccountService} from "./account.service";
+import { SubscriptionModule } from '../subscription/subscription.module';
+import { Controller, Indexer } from './account.model';
+import { AccountResolver } from './account.resolver';
+import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerRegistryService } from './docker.registry.service';
 import { DockerService } from './docker.service';
@@ -19,7 +19,7 @@ import { ServiceResolver } from './service.resolver';
 @Module({
   imports: [
     SubscriptionModule,
-    TypeOrmModule.forFeature([Controller,Indexer]),
+    TypeOrmModule.forFeature([Controller, Indexer]),
     ScheduleModule.forRoot(),
   ],
   providers: [
@@ -32,6 +32,13 @@ import { ServiceResolver } from './service.resolver';
     AccountService,
     AccountResolver,
   ],
-  exports: [ContractService, DockerRegistryService, DockerService, NetworkService, QueryService, AccountService],
+  exports: [
+    ContractService,
+    DockerRegistryService,
+    DockerService,
+    NetworkService,
+    QueryService,
+    AccountService,
+  ],
 })
 export class CoreModule {}
