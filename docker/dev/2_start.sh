@@ -16,7 +16,7 @@ docker-compose -f docker-compose.yml up -d
 cd ../../
 pwd
 
-if [ -z "$2" ]; then
+if [ "$1" = "bypass" ]; then
   echo "bypass rush build"
 else
   rush build
