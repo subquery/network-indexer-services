@@ -55,7 +55,7 @@ services:
       - --metrics-token=MetricsToken
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
-      - --service-url=http://host.docker.internal:8000
+      - --service-url=http://indexer_coordinator:8000
       - --network-endpoint=https://polygon-rpc.com
       - --redis-endpoint=redis://indexer_cache
     healthcheck:
@@ -67,7 +67,7 @@ services:
   # Build and run the coordinator service
   coordinator:
     container_name: indexer_coordinator
-    image: coordinator:latest
+    image: subquerynetwork/indexer-coordinator-dev:v1.3.5-6
     build:
       context: ../../
       dockerfile: Dockerfile
