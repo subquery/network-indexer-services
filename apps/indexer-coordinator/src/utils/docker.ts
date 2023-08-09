@@ -78,6 +78,8 @@ export async function generateDockerComposeFile(data: TemplateType) {
   const { deploymentID } = data;
   createDirectory(getComposeFileDirectory(deploymentID));
 
+  handlebars.registerHelper('eq', (a, b) => a === b);
+
   try {
     const config = await nodeConfigs(deploymentID);
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
@@ -85,7 +87,10 @@ export async function generateDockerComposeFile(data: TemplateType) {
     fs.writeFileSync(getComposeFilePath(deploymentID), template({ ...data, ...config }));
     getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
-    getLogger('docker').error(e, `fail to generate new docker compose file for ${data.deploymentID}`);
+    getLogger('docker').error(
+      e,
+      `fail to generate new docker compose file for ${data.deploymentID}`
+    );
   }
 }
 
