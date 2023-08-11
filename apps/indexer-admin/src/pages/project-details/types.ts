@@ -135,6 +135,7 @@ export type TQueryMetadata = {
   queryNodeVersion: string;
   indexerStatus: dockerContainerStatus;
   queryStatus: dockerContainerStatus;
+  startHeight?: number;
 };
 
 export type ProjectDetails = {
