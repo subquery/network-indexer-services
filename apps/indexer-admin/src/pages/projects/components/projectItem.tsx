@@ -4,6 +4,7 @@
 import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Spinner, Tag } from '@subql/components';
+import { indexingProgress } from '@subql/network-clients';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
@@ -13,7 +14,6 @@ import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
 import { ProjectDetails } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
-import { calculateProgress } from 'utils/project';
 
 import { OnlineStatus, statusColor, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, Progress, ProjectItemContainer } from '../styles';
@@ -32,8 +32,12 @@ const ProjectItem: FC<Props> = (props) => {
   });
   const progress = useMemo(() => {
     if (!metadata) return 0;
-    const { targetHeight, lastProcessedHeight } = metadata;
-    return calculateProgress(targetHeight, lastProcessedHeight);
+    const { targetHeight, lastProcessedHeight, startHeight = 0 } = metadata;
+    return indexingProgress({
+      startHeight: startHeight ?? 0,
+      targetHeight,
+      currentHeight: lastProcessedHeight,
+    });
   }, [metadata]);
 
   const pushDetailPage = () => history.push(`/project/${id}`, { data: { ...props, status } });
