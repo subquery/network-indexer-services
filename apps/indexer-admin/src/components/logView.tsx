@@ -4,7 +4,7 @@
 import { useEffect, useMemo, VFC } from 'react';
 import { useLazyQuery } from '@apollo/client';
 import { LogViewer } from '@patternfly/react-log-viewer';
-import { Button, Spinner } from '@subql/react-ui';
+import { Button, Spinner } from '@subql/components';
 import styled from 'styled-components';
 
 import { GET_LOG } from 'utils/queries';

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { Button as SubButton, Spinner } from '@subql/react-ui';
+import { Button as SubButton, Spinner } from '@subql/components';
 import { Form } from 'formik';
 import styled from 'styled-components';
 

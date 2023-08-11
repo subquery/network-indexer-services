@@ -15,7 +15,7 @@
     "@emotion/styled": "^11.8.1",
     "@mui/material": "^5.5.1",
     "@patternfly/react-log-viewer": "^4.43.19",
-    "@subql/components": "1.0.3-5",
+    "@subql/components": "1.0.3-8",
     "@subql/contract-sdk": "^0.13.7",
     "@subql/network-clients": "^0.3.13",
     "@subql/network-query": "^0.3.13",

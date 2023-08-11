@@ -23,6 +23,7 @@ import * as Pages from './pages';
 import 'react-notifications-component/dist/theme.css';
 import 'antd/dist/reset.css';
 import './App.css';
+import '@subql/components/dist/subquery-components.css';
 
 const AppContents = () => {
   const showMetaMask = useShowMetaMask();

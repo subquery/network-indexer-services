@@ -4,6 +4,7 @@
 import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Spinner, Tag } from '@subql/components';
+import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
@@ -16,7 +17,7 @@ import { cidToBytes32 } from 'utils/ipfs';
 import { calculateProgress } from 'utils/project';
 
 import { OnlineStatus, statusColor, statusText } from '../constant';
-import { ItemContainer, ProfileContainer, Progress, ProjectItemContainer } from '../styles';
+import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
 
 type Props = ProjectDetails;
 
@@ -52,7 +53,7 @@ const ProjectItem: FC<Props> = (props) => {
         </ProfileContainer>
       </ItemContainer>
       <ItemContainer flex={6}>
-        <Progress progress={progress / 100} />
+        <Progress percent={progress} />
       </ItemContainer>
       <ItemContainer flex={6}>
         <Tag
