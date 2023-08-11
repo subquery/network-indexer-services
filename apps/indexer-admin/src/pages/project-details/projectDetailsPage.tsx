@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
+import { indexingProgress } from '@subql/network-clients';
 import { renderAsync } from '@subql/react-hooks';
 import { useInterval } from 'ahooks';
 import { FormikHelpers, FormikValues } from 'formik';
@@ -27,7 +28,7 @@ import { useIndexingAction } from 'hooks/transactionHook';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
 import { ProjectNotification } from 'utils/notification';
-import { calculateProgress, isTrue } from 'utils/project';
+import { isTrue } from 'utils/project';
 import { REMOVE_PROJECT, START_PROJECT, STOP_PROJECT } from 'utils/queries';
 
 import ProjectDetailsHeader from './components/projectDetailHeader';
@@ -288,7 +289,14 @@ const ProjectDetailsPage = () => {
   ]);
 
   useEffect(() => {
-    metadata && setProgress(calculateProgress(metadata.targetHeight, metadata.lastProcessedHeight));
+    metadata &&
+      setProgress(
+        indexingProgress({
+          startHeight: metadata.startHeight ?? 0,
+          targetHeight: metadata.targetHeight,
+          currentHeight: metadata.lastProcessedHeight,
+        })
+      );
   }, [metadata]);
 
   useEffect(() => {
