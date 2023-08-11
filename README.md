@@ -19,6 +19,10 @@ rush add -p library-name --all
 rush remove -p library-name --all
 ```
 
+# Change source or something update
+
+e.g: When you update the `common/config/.npmrc`. Please run `rush update` first or delete `common/temp` manually.
+
 Add(remove) for one of the projects(in packages path):
 
 ```
