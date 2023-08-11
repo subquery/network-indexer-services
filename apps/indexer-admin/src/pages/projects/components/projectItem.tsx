@@ -34,7 +34,7 @@ const ProjectItem: FC<Props> = (props) => {
     if (!metadata) return 0;
     const { targetHeight, lastProcessedHeight, startHeight = 0 } = metadata;
     return indexingProgress({
-      startHeight,
+      startHeight: startHeight ?? 0,
       targetHeight,
       currentHeight: lastProcessedHeight,
     });
