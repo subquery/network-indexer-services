@@ -18,7 +18,7 @@ import { Config } from '../configure/configure.module';
 import { ProjectEntity } from '../project/project.model';
 import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 
-import { ChannelStatus } from 'src/payg/payg.model';
+import { ChannelStatus } from '../payg/payg.model';
 import { mutexPromise } from '../utils/promise';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
