@@ -7,3 +7,7 @@ import { BigNumberish } from 'ethers';
 export function formatValue(value: BigNumberish) {
   return Number(formatUnits(value, 18)).toFixed(2);
 }
+
+export function formatValueToFixed(val: number, fixed = 2) {
+  return +val.toFixed(fixed);
+}

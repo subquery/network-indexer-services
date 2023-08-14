@@ -11,6 +11,7 @@ import { Button, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { statusText } from 'pages/projects/constant';
 import { indexingStatusCode } from 'utils/project';
+import { formatValueToFixed } from 'utils/units';
 
 import { ButtonItem } from '../config';
 import { ActionContainer, CardContainer } from '../styles';
@@ -72,7 +73,7 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
             />
           </TagsContainer>
         )}
-        <Progress percent={percent * 100} />
+        <Progress percent={formatValueToFixed(percent * 100)} />
       </ContentContainer>
       <ActionContainer>
         {actionItems.map(({ title, action }) => (
