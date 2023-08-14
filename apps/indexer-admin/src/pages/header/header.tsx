@@ -4,8 +4,7 @@
 // @ts-nocheck
 import { useCallback, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Address, Dropdown } from '@subql/react-ui';
-import buttonStyles from '@subql/react-ui/dist/components/Button/Button.module.css';
+import { Address, Dropdown } from '@subql/components';
 import styled from 'styled-components';
 
 import { Separator } from 'components/primary';
@@ -31,6 +30,29 @@ const TabBar = styled(NavLink)`
   font-size: 16px;
   :hover {
     text-decoration: underline;
+  }
+`;
+
+const OverrideDropdown = styled.div`
+  .headerDropdown {
+    padding: 15px;
+    position: relative;
+    height: 54px;
+
+    &::before {
+      background: var(--sq-gradient);
+      border-radius: 50px;
+      bottom: 0;
+      content: '';
+      left: 0;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      padding: 1px;
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
   }
 `;
 
@@ -85,13 +107,15 @@ const Header = () => {
     isRootPage ? (
       <Address address={account} size="large" />
     ) : (
-      <Dropdown
-        items={accountDetails}
-        onSelected={onSelected}
-        dropdownClass={{ ...buttonStyles.secondary, ...dropdownStyle }}
-      >
-        <Address address={account} size="large" />
-      </Dropdown>
+      <OverrideDropdown>
+        <Dropdown
+          className="headerDropdown"
+          menuitem={accountDetails}
+          onSelected={onSelected}
+          label=" "
+          LeftLabelIcon={<Address address={account} size="large" />}
+        />
+      </OverrideDropdown>
     );
 
   return (
