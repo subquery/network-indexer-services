@@ -15,6 +15,7 @@ import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
 import { ProjectDetails } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
+import { formatValueToFixed } from 'utils/units';
 
 import { OnlineStatus, statusColor, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
@@ -57,7 +58,7 @@ const ProjectItem: FC<Props> = (props) => {
         </ProfileContainer>
       </ItemContainer>
       <ItemContainer flex={6}>
-        <Progress percent={progress * 100} />
+        <Progress percent={formatValueToFixed(progress * 100)} />
       </ItemContainer>
       <ItemContainer flex={6}>
         <Tag
