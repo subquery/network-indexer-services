@@ -133,7 +133,7 @@ export class DockerService {
   validateFilePath(path: string): boolean {
     const result = /^[(/|\\)a-zA-Z0-9_.-]+$/.test(path);
     if (!result) {
-      getLogger('docker').error(`invalid file path: ${path}`);
+      throw new Error(`invalid file path: ${path}`);
     }
     return result;
   }
@@ -141,7 +141,7 @@ export class DockerService {
   validateFileName(name: string): boolean {
     const result = /^[a-zA-Z0-9_.-]+$/.test(name);
     if (!result) {
-      getLogger('docker').error(`invalid file name: ${name}`);
+      throw new Error(`invalid file name: ${name}`);
     }
     return result;
   }
@@ -149,7 +149,7 @@ export class DockerService {
   validateContainerName(name: string): boolean {
     const result = /^[a-zA-Z0-9_.-]+$/.test(name);
     if (!result) {
-      getLogger('docker').error(`invalid container name: ${name}`);
+      throw new Error(`invalid container name: ${name}`);
     }
     return result;
   }
