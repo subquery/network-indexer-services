@@ -72,7 +72,7 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
             />
           </TagsContainer>
         )}
-        <Progress percent={percent} />
+        <Progress percent={percent * 100} />
       </ContentContainer>
       <ActionContainer>
         {actionItems.map(({ title, action }) => (
