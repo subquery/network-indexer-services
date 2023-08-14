@@ -17,7 +17,8 @@ cd ../../
 pwd
 
 if [ "$1" = "bypass" ]; then
-  echo "bypass rush build"
+  echo "bypass admin build"
+  rush build -o @subql/indexer-coordinator
 else
   rush build
 fi
