@@ -57,7 +57,7 @@ const ProjectItem: FC<Props> = (props) => {
         </ProfileContainer>
       </ItemContainer>
       <ItemContainer flex={6}>
-        <Progress percent={progress} />
+        <Progress percent={progress * 100} />
       </ItemContainer>
       <ItemContainer flex={6}>
         <Tag
