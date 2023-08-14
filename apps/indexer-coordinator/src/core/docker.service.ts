@@ -10,6 +10,9 @@ import { getLogger } from '../utils/logger';
 @Injectable()
 export class DockerService {
   async up(fileName: string) {
+    if (!this.validateFileName(fileName)) {
+      return;
+    }
     const filePath = getComposeFilePath(fileName);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
@@ -24,6 +27,9 @@ export class DockerService {
   }
 
   async start(containers: string[]): Promise<string> {
+    if (!this.validateContainerNames(containers)) {
+      return;
+    }
     try {
       return await this.execute(`docker start ${containers.join(' ')}`);
     } catch (e) {
@@ -32,6 +38,9 @@ export class DockerService {
   }
 
   async restart(containers: string[]): Promise<string> {
+    if (!this.validateContainerNames(containers)) {
+      return;
+    }
     try {
       return await this.execute(`docker restart ${containers.join(' ')}`);
     } catch (e) {
@@ -40,6 +49,9 @@ export class DockerService {
   }
 
   async stop(containers: string[]): Promise<string> {
+    if (!this.validateContainerNames(containers)) {
+      return;
+    }
     try {
       return await this.execute(`docker stop ${containers.join(' ')}`);
     } catch (e) {
@@ -48,6 +60,9 @@ export class DockerService {
   }
 
   async rm(containers: string[]) {
+    if (!this.validateContainerNames(containers)) {
+      return;
+    }
     try {
       getLogger('docker').info(`remove the old containers`);
       const result = await this.execute(`docker container rm ${containers.join(' ')}`);
@@ -58,6 +73,9 @@ export class DockerService {
   }
 
   async ps(containers: string[]): Promise<string> {
+    if (!this.validateContainerNames(containers)) {
+      return;
+    }
     try {
       const result = await this.execute(
         `docker container ps -a | grep -E '${containers.join('|')}'`
@@ -69,6 +87,9 @@ export class DockerService {
   }
 
   async imageVersion(container: string) {
+    if (!this.validateContainerName(container)) {
+      return '';
+    }
     try {
       const info = await this.ps([container]);
       return getImageVersion(info);
@@ -78,10 +99,16 @@ export class DockerService {
   }
 
   async logs(container: string): Promise<string> {
+    if (!this.validateContainerName(container)) {
+      return '';
+    }
     return await this.execute(`docker logs -n 30 ${container}`);
   }
 
   async deleteFile(path: string) {
+    if (!this.validateFilePath(path)) {
+      return;
+    }
     try {
       await this.execute(`rm -rf ${path}`);
       getLogger('docker').info(`delete: ${path}`);
@@ -90,7 +117,7 @@ export class DockerService {
     }
   }
 
-  execute(cmd: string): Promise<string> {
+  private execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
@@ -101,5 +128,33 @@ export class DockerService {
         resolve(stdout);
       });
     });
+  }
+
+  validateFilePath(path: string): boolean {
+    const result = /^[(/|\\)a-zA-Z0-9_.-]+$/.test(path);
+    if (!result) {
+      getLogger('docker').error(`invalid file path: ${path}`);
+    }
+    return result;
+  }
+
+  validateFileName(name: string): boolean {
+    const result = /^[a-zA-Z0-9_.-]+$/.test(name);
+    if (!result) {
+      getLogger('docker').error(`invalid file name: ${name}`);
+    }
+    return result;
+  }
+
+  validateContainerName(name: string): boolean {
+    const result = /^[a-zA-Z0-9_.-]+$/.test(name);
+    if (!result) {
+      getLogger('docker').error(`invalid container name: ${name}`);
+    }
+    return result;
+  }
+
+  validateContainerNames(names: string[]): boolean {
+    return names.every((name) => this.validateContainerName(name));
   }
 }
