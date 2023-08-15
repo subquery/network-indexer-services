@@ -218,7 +218,7 @@ export class PaygEntity {
 
   @Column({ default: '' })
   @Field()
-  token: number;
+  token: string;
 }
 
 @ObjectType('Project')
