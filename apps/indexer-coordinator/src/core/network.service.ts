@@ -4,7 +4,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContractSDK } from '@subql/contract-sdk';
-import { cidToBytes32, GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import {
   GetIndexerUnfinalisedPlans,
   GetIndexerUnfinalisedPlansQuery,
@@ -15,10 +15,10 @@ import { isEmpty } from 'lodash';
 import { Connection, Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
-import { Project, ProjectEntity } from '../project/project.model';
-import { colorText, debugLogger, getLogger, TextColor } from '../utils/logger';
-import { ZERO_BYTES32 } from '../utils/project';
+import { ProjectEntity } from '../project/project.model';
+import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 
+import { ChannelStatus } from '../payg/payg.model';
 import { mutexPromise } from '../utils/promise';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
@@ -333,6 +333,14 @@ export class NetworkService implements OnApplicationBootstrap {
       const unfinalisedPlans = await this.getExpiredStateChannels();
 
       for (const node of unfinalisedPlans) {
+        const channel = await this.sdk.stateChannel.channel(node.id);
+        const { status, expiredAt, terminatedAt } = channel;
+        const now = Math.floor(Date.now() / 1000);
+
+        const isOpenChannelClaimable = (status === ChannelStatus.OPEN && expiredAt.lt(now))
+        const isTerminateChannelClaimable = (status === ChannelStatus.TERMINATING && terminatedAt.lt(now))
+        if (!isOpenChannelClaimable && !isTerminateChannelClaimable) continue;
+
         await this.sendTransaction(
           `claim unfinalized plan for ${node.consumer}`,
           async (overrides) => this.sdk.stateChannel.claim(node.id, overrides)
