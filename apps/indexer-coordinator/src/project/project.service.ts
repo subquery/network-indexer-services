@@ -89,6 +89,10 @@ export class ProjectService {
     return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
   }
 
+  async getAllProjects(): Promise<Project[]> {
+    return this.projectRepo.find();
+  }
+
   async getAlivePaygs(): Promise<Payg[]> {
     return this.paygRepo.find({ where: { price: Not('') } });
   }
