@@ -282,11 +282,11 @@ importers:
         specifier: ^1.0.0
         version: 1.8.1(node-fetch@2.6.7)
       '@subql/contract-sdk':
-        specifier: ^0.13.7
-        version: 0.13.7
+        specifier: ^0.15.0
+        version: registry.npmjs.org/@subql/contract-sdk@0.15.0
       '@subql/network-clients':
-        specifier: ^0.3.16-0
-        version: registry.npmjs.org/@subql/network-clients@0.3.16-0(@subql/contract-sdk@0.13.7)(ipfs-http-client@53.0.1)
+        specifier: ^0.3.17
+        version: registry.npmjs.org/@subql/network-clients@0.3.17(@subql/contract-sdk@0.15.0)(ipfs-http-client@53.0.1)
       '@subql/network-query':
         specifier: 0.3.16-0
         version: registry.npmjs.org/@subql/network-query@0.3.16-0
@@ -4630,10 +4630,6 @@ packages:
     deprecated: Deprecated in favor of @oclif/core
     dev: true
 
-  /@openzeppelin/contracts-upgradeable@4.9.2:
-    resolution: {integrity: sha512-siviV3PZV/fHfPaoIC51rf1Jb6iElkYWnNYZ0leO23/ukXuvOyoC/ahy8jqiV7g+++9Nuo3n/rk5ajSN/+d/Sg==}
-    dev: false
-
   /@patternfly/react-core@4.276.8(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-dn322rEzBeiVztZEuCZMUUittNb8l1hk30h9ZN31FLZLLVtXGlThFNV9ieqOJYA9zrYxYZrHMkTnOxSWVacMZg==}
     peerDependencies:
@@ -5377,12 +5373,6 @@ packages:
       - ra-core
       - react-is
       - subscriptions-transport-ws
-    dev: false
-
-  /@subql/contract-sdk@0.13.7:
-    resolution: {integrity: sha512-Af6Jobsr7hxUIiijwlnS2WmLA6G4NQO1FNJsfItqHwZvmeajZMPllu7DTojYNpYjSbSB5w5I3OfN6YRNCefaMA==}
-    dependencies:
-      '@openzeppelin/contracts-upgradeable': 4.9.2
     dev: false
 
   /@subql/network-query@0.3.13:
@@ -22369,7 +22359,7 @@ packages:
       graceful-fs: 4.2.11
       json-parse-even-better-errors: 2.3.1
       loader-runner: 4.3.0
-      mime-types: 2.1.35
+      mime-types: registry.npmjs.org/mime-types@2.1.35
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.2.1
@@ -24782,37 +24772,6 @@ packages:
       '@openzeppelin/contracts-upgradeable': registry.npmjs.org/@openzeppelin/contracts-upgradeable@4.9.2
     dev: false
 
-  registry.npmjs.org/@subql/network-clients@0.3.16-0(@subql/contract-sdk@0.13.7)(ipfs-http-client@53.0.1):
-    resolution: {integrity: sha512-aeCDO1iX2Re2E2z79lhEmzr4Qz2JU4I39J78DsuZTwObsSwAwh4Pmvnoiqcj3CrKmwkECcZp+z5urD7G6oEw1w==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@subql/network-clients/-/network-clients-0.3.16-0.tgz}
-    id: registry.npmjs.org/@subql/network-clients/0.3.16-0
-    name: '@subql/network-clients'
-    version: 0.3.16-0
-    peerDependencies:
-      '@subql/contract-sdk': ^0.13.7
-      ipfs-http-client: ^53.0.1
-    dependencies:
-      '@apollo/client': registry.npmjs.org/@apollo/client@3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
-      '@ethersproject/bignumber': registry.npmjs.org/@ethersproject/bignumber@5.7.0
-      '@subql/contract-sdk': 0.13.7
-      '@subql/network-config': registry.npmjs.org/@subql/network-config@0.3.13(@subql/contract-sdk@0.13.7)(ipfs-http-client@53.0.1)
-      '@subql/network-query': registry.npmjs.org/@subql/network-query@0.3.16-0
-      axios: registry.npmjs.org/axios@0.27.2
-      buffer: registry.npmjs.org/buffer@6.0.3
-      cross-fetch: registry.npmjs.org/cross-fetch@3.1.6
-      ethers: registry.npmjs.org/ethers@5.7.2
-      graphql: registry.npmjs.org/graphql@16.7.1
-      ipfs-http-client: 53.0.1(node-fetch@2.6.7)
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
-      - graphql-ws
-      - react
-      - react-dom
-      - subscriptions-transport-ws
-      - utf-8-validate
-    dev: false
-
   registry.npmjs.org/@subql/network-clients@0.3.17(@subql/contract-sdk@0.15.0)(graphql-ws@5.14.0)(ipfs-http-client@54.0.2)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-o4fOgnmgLc8wDoUiW/ocUI3N2W2TRW6c1l2AXaP+WAIzy9H1DupfO4CYeSTf8WNPNhpQs/45vlTp5yNB0/qKsg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@subql/network-clients/-/network-clients-0.3.17.tgz}
     id: registry.npmjs.org/@subql/network-clients/0.3.17
@@ -24844,16 +24803,47 @@ packages:
       - utf-8-validate
     dev: false
 
-  registry.npmjs.org/@subql/network-config@0.3.13(@subql/contract-sdk@0.13.7)(ipfs-http-client@53.0.1):
-    resolution: {integrity: sha512-jX38TOnhrTmCoKB9gjiW5R/cQgYK6efco1ME2vJfaY3uFm6/p69uvWRN2gUU8kVh9aHdrSqSoSE6Oj/VK7dCOQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@subql/network-config/-/network-config-0.3.13.tgz}
-    id: registry.npmjs.org/@subql/network-config/0.3.13
-    name: '@subql/network-config'
-    version: 0.3.13
+  registry.npmjs.org/@subql/network-clients@0.3.17(@subql/contract-sdk@0.15.0)(ipfs-http-client@53.0.1):
+    resolution: {integrity: sha512-o4fOgnmgLc8wDoUiW/ocUI3N2W2TRW6c1l2AXaP+WAIzy9H1DupfO4CYeSTf8WNPNhpQs/45vlTp5yNB0/qKsg==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@subql/network-clients/-/network-clients-0.3.17.tgz}
+    id: registry.npmjs.org/@subql/network-clients/0.3.17
+    name: '@subql/network-clients'
+    version: 0.3.17
     peerDependencies:
-      '@subql/contract-sdk': ^0.13.7
+      '@subql/contract-sdk': ^0.15.0
       ipfs-http-client: ^53.0.1
     dependencies:
-      '@subql/contract-sdk': 0.13.7
+      '@apollo/client': registry.npmjs.org/@apollo/client@3.7.16(graphql-ws@5.14.0)(graphql@16.7.1)(react-dom@18.2.0)(react@18.2.0)
+      '@ethersproject/bignumber': registry.npmjs.org/@ethersproject/bignumber@5.7.0
+      '@subql/contract-sdk': registry.npmjs.org/@subql/contract-sdk@0.15.0
+      '@subql/network-config': registry.npmjs.org/@subql/network-config@0.3.14(@subql/contract-sdk@0.15.0)(ipfs-http-client@53.0.1)
+      '@subql/network-query': registry.npmjs.org/@subql/network-query@0.3.16-0
+      axios: registry.npmjs.org/axios@0.27.2
+      buffer: registry.npmjs.org/buffer@6.0.3
+      cross-fetch: registry.npmjs.org/cross-fetch@3.1.6
+      ethers: registry.npmjs.org/ethers@5.7.2
+      graphql: registry.npmjs.org/graphql@16.7.1
+      ipfs-http-client: 53.0.1(node-fetch@2.6.7)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - graphql-ws
+      - react
+      - react-dom
+      - subscriptions-transport-ws
+      - utf-8-validate
+    dev: false
+
+  registry.npmjs.org/@subql/network-config@0.3.14(@subql/contract-sdk@0.15.0)(ipfs-http-client@53.0.1):
+    resolution: {integrity: sha512-kRgsyhBFB/7fylCtgUB7URyfd1m1GtPVzDMIDNCuoaq8N7cp+yxnhfODkZIqjgvnGiw2x7T9EiVJbhUQAK6lsQ==, registry: https://registry.npmjs.com/, tarball: https://registry.npmjs.org/@subql/network-config/-/network-config-0.3.14.tgz}
+    id: registry.npmjs.org/@subql/network-config/0.3.14
+    name: '@subql/network-config'
+    version: 0.3.14
+    peerDependencies:
+      '@subql/contract-sdk': ^0.15.0
+      ipfs-http-client: ^53.0.1
+    dependencies:
+      '@subql/contract-sdk': registry.npmjs.org/@subql/contract-sdk@0.15.0
       ipfs-http-client: 53.0.1(node-fetch@2.6.7)
     dev: false
 
