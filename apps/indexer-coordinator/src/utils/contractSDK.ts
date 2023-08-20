@@ -5,7 +5,7 @@ import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
 import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
-import { providers, Signer } from 'ethers';
+import { Signer, providers } from 'ethers';
 
 const deployments = {
   testnet: testnetDeployment,
@@ -25,6 +25,7 @@ type SubqueryNetwork = 'mainnet' | 'kepler' | 'testnet';
 
 function createContractOptions(network: SubqueryNetwork): SdkOptions {
   return {
+    // @ts-ignore
     deploymentDetails: deployments[network],
     network,
   };
