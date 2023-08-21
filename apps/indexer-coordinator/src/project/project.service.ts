@@ -227,6 +227,7 @@ export class ProjectService {
       mmrPath,
       ...baseConfig,
       ...advancedConfig,
+      primaryNetworkEndpoint: baseConfig.networkEndpoints[0] || '',
     };
 
     return item;
