@@ -6,6 +6,7 @@ import { join } from 'path';
 import * as handlebars from 'handlebars';
 
 import { TemplateType } from '../project/types';
+import { argv } from '../yargs';
 import { getLogger } from './logger';
 import { nodeConfigs } from './project';
 
@@ -31,7 +32,7 @@ export function queryEndpoint(cid: string, port: number): string {
 }
 
 export function getComposeFileDirectory(cid: string): string {
-  return join('/usr', `projects/${cid}`);
+  return join(argv['compose-file-directory'], `projects/${cid}`);
 }
 
 export function getComposeFilePath(cid: string): string {
