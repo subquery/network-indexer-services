@@ -17,6 +17,8 @@ import { createContainer } from './unstated';
 const deployments: Record<SubqueryNetwork, ContractDeployment> = {
   testnet: testnetDeployment,
   kepler: keplerDeployment,
+  // TODO: FIXME
+  // @ts-ignore
   mainnet: mainnetDeployment,
 };
 
