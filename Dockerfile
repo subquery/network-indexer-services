@@ -7,19 +7,23 @@ WORKDIR /usr/src/app
 COPY ./apps/indexer-coordinator/package.json ./
 
 # build coordinator
-RUN npm install -g @microsoft/rush
-RUN npm install -g pnpm@8.6.3
+# RUN npm install -g @microsoft/rush
+# RUN npm install -g pnpm@8.6.3
 COPY . .
 # remove rush temp from context
-RUN rm -rf ./common/temp 
-RUN rush update --purge
-RUN rush build -o indexer-coordinator
+# RUN rm -rf ./common/temp
+# RUN rush update --purge
+# RUN rush build -o indexer-coordinator
 
 # prune by reinstall producetion dependencies.
 WORKDIR /usr/src/app/apps/indexer-coordinator
+# RUN pnpm config set node-linker hoisted
+
+RUN yarn install --prefer-offline --link-duplicates
+RUN yarn run build
+
 RUN rm -rf node_modules
-RUN pnpm config set node-linker hoisted
-RUN pnpm install -P
+RUN yarn install --prod --prefer-offline --link-duplicates
 
 FROM node:16-alpine
 
