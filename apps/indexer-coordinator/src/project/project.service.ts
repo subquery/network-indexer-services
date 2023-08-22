@@ -174,8 +174,9 @@ export class ProjectService {
       project = await this.addProject(id);
     }
 
-    baseConfig.usePrimaryNetworkEndpoint =
-      baseConfig.usePrimaryNetworkEndpoint === false ? false : true;
+    if (baseConfig.usePrimaryNetworkEndpoint !== false) {
+      baseConfig.usePrimaryNetworkEndpoint = true;
+    }
 
     const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
@@ -218,8 +219,9 @@ export class ProjectService {
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
 
-    baseConfig.usePrimaryNetworkEndpoint =
-      baseConfig.usePrimaryNetworkEndpoint === false ? false : true;
+    if (baseConfig.usePrimaryNetworkEndpoint !== false) {
+      baseConfig.usePrimaryNetworkEndpoint = true;
+    }
 
     const item: TemplateType = {
       deploymentID: project.id,
