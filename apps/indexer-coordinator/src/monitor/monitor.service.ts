@@ -4,11 +4,11 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import axios from 'axios';
+import { DesiredStatus } from 'src/core/types';
 import { DockerService } from '../core/docker.service';
 import { ProjectService } from '../project/project.service';
 import { nodeContainer } from '../utils/docker';
 import { getLogger } from '../utils/logger';
-import { IndexingStatus } from 'src/core/types';
 
 @Injectable()
 export class MonitorService {
@@ -26,7 +26,7 @@ export class MonitorService {
     const projects = await this.projectService.getAllProjects();
     this.logger.info(`projects's length: ${projects.length}`);
     for (const project of projects) {
-      if (project.status == IndexingStatus.NOTINDEXING) {
+      if (project.status === DesiredStatus.STOPPED) {
         this.nodeUnhealthTimesMap.delete(project.id);
         continue;
       }

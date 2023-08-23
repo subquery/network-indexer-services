@@ -15,15 +15,15 @@ import { isEmpty } from 'lodash';
 import { Connection, Repository } from 'typeorm';
 
 import { Config } from '../configure/configure.module';
+import { ChannelStatus } from '../payg/payg.model';
 import { ProjectEntity } from '../project/project.model';
 import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 
-import { ChannelStatus } from '../payg/payg.model';
 import { mutexPromise } from '../utils/promise';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { QueryService } from './query.service';
-import { IndexingStatus, TxFun } from './types';
+import { DesiredStatus, TxFun } from './types';
 
 const MAX_RETRY = 3;
 
@@ -96,7 +96,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
     return indexingProjects.filter(
       ({ queryEndpoint, status }) =>
-        !isEmpty(queryEndpoint) && [IndexingStatus.INDEXING, IndexingStatus.READY].includes(status)
+        !isEmpty(queryEndpoint) && [DesiredStatus.HEALTHY].includes(status)
     );
   }
 
@@ -337,8 +337,9 @@ export class NetworkService implements OnApplicationBootstrap {
         const { status, expiredAt, terminatedAt } = channel;
         const now = Math.floor(Date.now() / 1000);
 
-        const isOpenChannelClaimable = (status === ChannelStatus.OPEN && expiredAt.lt(now))
-        const isTerminateChannelClaimable = (status === ChannelStatus.TERMINATING && terminatedAt.lt(now))
+        const isOpenChannelClaimable = status === ChannelStatus.OPEN && expiredAt.lt(now);
+        const isTerminateChannelClaimable =
+          status === ChannelStatus.TERMINATING && terminatedAt.lt(now);
         if (!isOpenChannelClaimable && !isTerminateChannelClaimable) continue;
 
         await this.sendTransaction(
