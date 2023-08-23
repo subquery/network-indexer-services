@@ -325,7 +325,7 @@ export class ProjectService {
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
-    payg.token = paygConfig.token ?? defaultToken;
+    payg.token = paygConfig.token || defaultToken;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
