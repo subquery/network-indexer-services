@@ -319,11 +319,13 @@ export class ProjectService {
       throw new Error(`project not exist: ${id}`);
     }
 
+    const defaultToken = this.contract.getSdk().sqToken.address;
+
     payg.price = paygConfig.price;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
-    payg.token = paygConfig.token;
+    payg.token = paygConfig.token ?? defaultToken;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
