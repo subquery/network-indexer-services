@@ -174,6 +174,8 @@ export class ProjectService {
       project = await this.addProject(id);
     }
 
+    this.setDefaultConfigValue(baseConfig);
+
     const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
     const isConfigChanged = projectConfigChanged(project, baseConfig, advancedConfig);
@@ -188,6 +190,12 @@ export class ProjectService {
     }
 
     return await this.createAndStartProject(id, baseConfig, advancedConfig);
+  }
+
+  private setDefaultConfigValue(baseConfig: ProjectBaseConfig) {
+    if (baseConfig.usePrimaryNetworkEndpoint === undefined) {
+      baseConfig.usePrimaryNetworkEndpoint = true;
+    }
   }
 
   async getMmrStoreType(id: string): Promise<MmrStoreType> {
@@ -215,6 +223,8 @@ export class ProjectService {
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
 
+    this.setDefaultConfigValue(baseConfig);
+
     const item: TemplateType = {
       deploymentID: project.id,
       dbSchema: schemaName(project.id),
@@ -227,6 +237,7 @@ export class ProjectService {
       mmrPath,
       ...baseConfig,
       ...advancedConfig,
+      primaryNetworkEndpoint: baseConfig.networkEndpoints[0] || '',
     };
 
     return item;

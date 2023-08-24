@@ -66,6 +66,7 @@ export interface IProjectBaseConfig {
   networkDictionary: string;
   nodeVersion: string;
   queryVersion: string;
+  usePrimaryNetworkEndpoint?: boolean;
 }
 
 export interface IProjectAdvancedConfig {
@@ -89,6 +90,8 @@ export class ProjectBaseConfig implements IProjectBaseConfig {
   nodeVersion: string;
   @Field()
   queryVersion: string;
+  @Field({ nullable: true, defaultValue: true })
+  usePrimaryNetworkEndpoint?: boolean;
 }
 
 @InputType('ProjectAdvancedConfigInput')
@@ -117,6 +120,7 @@ const defaultBaseConfig: IProjectBaseConfig = {
   networkDictionary: '',
   nodeVersion: '',
   queryVersion: '',
+  usePrimaryNetworkEndpoint: true,
 };
 
 const defaultAdvancedConfig: IProjectAdvancedConfig = {

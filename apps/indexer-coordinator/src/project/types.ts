@@ -29,4 +29,6 @@ export type TemplateType = {
   cache: number;
   cpu: number;
   memory: number;
+  usePrimaryNetworkEndpoint?: boolean;
+  primaryNetworkEndpoint?: string;
 };

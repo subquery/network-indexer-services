@@ -23,6 +23,9 @@ services:
       {{#each networkEndpoints}}
       - --network-endpoint={{{this}}}
       {{/each}}
+      {{#if usePrimaryNetworkEndpoint}}
+      - --primary-network-endpoint={{primaryNetworkEndpoint}}
+      {{/if}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
       - --batch-size={{batchSize}}
