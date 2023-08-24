@@ -1,16 +1,20 @@
-# Package manage
+# SubQuery Network - Indexer Services
+
+Services that Indexers run to connect and serve data to the SubQuery Network
+
+## Package management
 
 `pnpm@8.6.3`.
 
 The version and package manager specify in `rush.json`.
 
-# Install dependencies
+## Install dependencies
 
 `npm install -g @microsoft/rush`
 
 `rush update` or `rush install`
 
-# Add a new dependency & remove a dependency
+## Add a new dependency & remove a dependency
 
 Add(remove) for all projects(in root path):
 
@@ -19,7 +23,7 @@ rush add -p library-name --all
 rush remove -p library-name --all
 ```
 
-# Change source or something update
+## Change source or something update
 
 e.g: When you update the `common/config/.npmrc`. Please run `rush update` first or delete `common/temp` manually.
 
@@ -30,25 +34,25 @@ cd apps/indexer-admin && rush add -p library-name
 cd apps/indexer-admin && rush remove -p library-name
 ```
 
-# Remove cache
+## Remove cache
 
 ```
 rush purge
 ```
 
-# Remove & re-build pnpm lock file
+## Remove & re-build pnpm lock file
 
 In `common/config/rush`, remove `pnpm-lock.yaml` and run `rush update`.
 
-# Build all projects
+## Build all projects
 
 `rush build`
 
-# Build one of the projects.
+## Build one of the projects.
 
 `rush build -o @subql/indexer-coordinator`
 
-# Add a new project
+## Add a new project
 
 In `rush.json`:
 
@@ -61,7 +65,7 @@ projects: [
 ]
 ```
 
-# Eslint
+## Eslint
 
 If use vscode need to add below config in Preference -> setting -> workspace -> eslint -> edit setting.json:
 
@@ -76,6 +80,16 @@ If use vscode need to add below config in Preference -> setting -> workspace -> 
 
 for support eslint in different workfolder.
 
-# Husky
+## Husky
 
 Define at `common/config/rush/command-line.json`, `common/git-hooks/pre-commit` and `common/autoinstallers/rush-husky`.
+
+## Dev environment
+
+To start a local dev environment, you could look into folder `docker/dev/` and find some useful scripts.
+To change the default dev env values, copy the `docker/dev/.env.example` file as `docker/dev/.env`, and change any value as needed.
+And there is one value MUST be changed: `LOCAL_IP`.
+
+Make sure you have docker and docker-compose installed and running already.
+
+To start the dev environment, please run `bash docker/dev/1_install.sh` to install node modules and `bash docker/dev/2_start.sh` to start the dev server.
