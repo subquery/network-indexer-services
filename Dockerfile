@@ -1,15 +1,15 @@
 FROM node:16-alpine AS BUILD_IMAGE
 
-RUN apk update && apk add --no-cache curl bash tini git docker-cli docker-compose grep make python3 g++
+# RUN apk update && apk add --no-cache curl bash tini git docker-cli docker-compose grep make python3 g++
 
 WORKDIR /usr/src/app
 
-COPY ./apps/indexer-coordinator/package.json ./
+COPY ./apps/indexer-coordinator/ ./apps/indexer-coordinator/
 
 # build coordinator
 # RUN npm install -g @microsoft/rush
 # RUN npm install -g pnpm@8.6.3
-COPY . .
+# COPY . .
 # remove rush temp from context
 # RUN rm -rf ./common/temp
 # RUN rush update --purge
@@ -19,11 +19,12 @@ COPY . .
 WORKDIR /usr/src/app/apps/indexer-coordinator
 # RUN pnpm config set node-linker hoisted
 
-RUN yarn install --prefer-offline --link-duplicates
+RUN yarn install
 RUN yarn run build
 
 RUN rm -rf node_modules
-RUN yarn install --prod --prefer-offline --link-duplicates
+RUN yarn install --prod --link-duplicates
+
 
 FROM node:16-alpine
 
