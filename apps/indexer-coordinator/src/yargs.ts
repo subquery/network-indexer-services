@@ -72,6 +72,12 @@ function getYargsOption() {
       default: '/home',
       group: Groups.node,
     },
+    'compose-file-directory': {
+      type: 'string',
+      describe: 'The local path to store the generated compose file',
+      default: '/usr',
+      group: Groups.node,
+    },
     'docker-network': {
       type: 'string',
       describe: 'The default docker network',
