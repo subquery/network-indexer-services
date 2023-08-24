@@ -96,7 +96,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
     return indexingProjects.filter(
       ({ queryEndpoint, status }) =>
-        !isEmpty(queryEndpoint) && [DesiredStatus.HEALTHY].includes(status)
+        !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
     );
   }
 

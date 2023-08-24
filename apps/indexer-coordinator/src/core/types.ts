@@ -5,7 +5,7 @@ import { BigNumber, ContractTransaction, Overrides } from 'ethers';
 
 export enum DesiredStatus {
   STOPPED,
-  HEALTHY,
+  RUNNING,
 }
 
 export enum IndexingStatus {

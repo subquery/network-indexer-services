@@ -272,7 +272,7 @@ export class ProjectService {
     project.advancedConfig = advancedConfig;
     project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
-    project.status = DesiredStatus.HEALTHY;
+    project.status = DesiredStatus.RUNNING;
     project.chainType = nodeConfig.chainType;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
@@ -295,7 +295,7 @@ export class ProjectService {
   async restartProject(id: string) {
     getLogger('project').info(`restart project: ${id}`);
     await this.docker.start(projectContainers(id));
-    return this.updateProjectStatus(id, DesiredStatus.HEALTHY);
+    return this.updateProjectStatus(id, DesiredStatus.RUNNING);
   }
 
   async removeProject(id: string): Promise<Project[]> {
