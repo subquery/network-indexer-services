@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import Dockerode from 'dockerode';
 import DockerodeCompose from 'dockerode-compose';
-import { getComposeFilePath, getImageVersion, projectContainers, projectId } from '../utils/docker';
+import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
 @Injectable()
@@ -175,9 +175,12 @@ export class DockerService {
   }
 
   async logsWithApi(container: string): Promise<string> {
-    return (
-      await this.getContainer(container).logs({ tail: 30, stdout: true, stderr: true })
-    ).toString('utf8');
+    const buffer = await this.getContainer(container).logs({
+      tail: 30,
+      stdout: true,
+      stderr: true,
+    });
+    return `\n${buffer.toString('utf8')}`.replace(/\n.{8}/gm, '\n').trim();
   }
 
   // async deleteFile(path: string) {
