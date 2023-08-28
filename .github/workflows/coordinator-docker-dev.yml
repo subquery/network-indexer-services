@@ -1,4 +1,4 @@
-name: 'Docker-Publish-Dev'
+name: 'Coordinator-Docker-Dev'
 on:
   workflow_dispatch:
     inputs:
