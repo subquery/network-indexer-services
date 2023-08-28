@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::env::args;
 use subql_contracts::CURRENT_NETWORK;
-use subql_utils::request::GraphQLQuery;
+use subql_indexer_utils::request::GraphQLQuery;
 
 const METADATA_QUERY: &str = r#"query {
   _metadata { indexerHealthy }

@@ -42,9 +42,9 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt
-      - name: check fmt
+      - name: proxy check fmt
         run: cargo fmt -- --check
-      - name: check lint
+      - name: proxy check lint
         run: cargo clippy --workspace
-      - name: check test
+      - name: proxy check test
         run: cargo test

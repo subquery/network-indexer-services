@@ -1,5 +1,5 @@
 use redis::{AsyncCommands, RedisResult};
-use subql_utils::request::REQUEST_CLIENT;
+use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{CpuExt, DiskExt, System, SystemExt};
 use tokio::sync::{Mutex, OnceCell};
 

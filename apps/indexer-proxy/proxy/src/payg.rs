@@ -33,7 +33,7 @@ use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::time::Instant;
-use subql_utils::{
+use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, OpenState, QueryState},
     request::{graphql_request, GraphQLQuery},

@@ -26,7 +26,7 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use subql_utils::{error::Error, types::Result};
+use subql_indexer_utils::{error::Error, types::Result};
 
 use crate::cli::{redis, COMMAND};
 use crate::contracts::check_agreement_and_consumer;

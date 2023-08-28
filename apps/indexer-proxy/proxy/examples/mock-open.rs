@@ -5,7 +5,7 @@ use ethers::{
 use std::env::args;
 use std::sync::Arc;
 use subql_contracts::{plan_manager, service_agreement_registry, sqtoken, Network};
-use subql_utils::{
+use subql_indexer_utils::{
     error::Error,
     tools::{cid_deployment, deployment_cid},
 };

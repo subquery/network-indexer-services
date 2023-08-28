@@ -26,7 +26,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use subql_contracts::{
     consumer_host, consumer_host_parse, consumer_registry, plan_manager, service_agreement_registry,
 };
-use subql_utils::error::Error;
+use subql_indexer_utils::error::Error;
 use tdn::prelude::PeerId;
 
 use crate::cli::COMMAND;

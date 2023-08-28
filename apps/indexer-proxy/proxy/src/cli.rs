@@ -26,7 +26,7 @@ use redis::aio::Connection;
 use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
-use subql_utils::{
+use subql_indexer_utils::{
     constants::{BOOTSTRAP, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };

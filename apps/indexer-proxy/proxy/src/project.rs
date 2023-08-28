@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::time::{Instant, SystemTime};
-use subql_utils::{
+use subql_indexer_utils::{
     error::Error,
     request::{graphql_request, proxy_request, GraphQLQuery},
     types::Result,

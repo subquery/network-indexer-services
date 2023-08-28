@@ -27,7 +27,7 @@ use axum_auth::AuthBearer;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use subql_utils::{
+use subql_indexer_utils::{
     constants::HEADERS,
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,

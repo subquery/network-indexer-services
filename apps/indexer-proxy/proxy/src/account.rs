@@ -22,7 +22,7 @@ use ethers::{
 };
 use once_cell::sync::Lazy;
 use serde_json::Value;
-use subql_utils::{error::Error, types::Result};
+use subql_indexer_utils::{error::Error, types::Result};
 use tdn::prelude::PeerKey;
 use tokio::sync::RwLock;
 

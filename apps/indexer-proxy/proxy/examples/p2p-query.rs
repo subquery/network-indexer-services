@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::{collections::HashMap, net::SocketAddr};
 use subql_contracts::{service_agreement_registry, Network};
-use subql_utils::{
+use subql_indexer_utils::{
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
     tools::deployment_cid,
 };

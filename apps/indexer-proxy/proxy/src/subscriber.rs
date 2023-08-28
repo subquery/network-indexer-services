@@ -18,7 +18,7 @@
 
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use subql_utils::request::{graphql_request, GraphQLQuery};
+use subql_indexer_utils::request::{graphql_request, GraphQLQuery};
 
 use crate::account::handle_account;
 use crate::cli::COMMAND;

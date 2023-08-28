@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use std::io::Result;
 use std::path::PathBuf;
 use std::sync::Arc;
-use subql_utils::{
+use subql_indexer_utils::{
     error::Error,
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
     request::GraphQLQuery,
