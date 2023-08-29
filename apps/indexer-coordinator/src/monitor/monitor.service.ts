@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import axios from 'axios';
+import { DesiredStatus } from 'src/core/types';
 import { DockerService } from '../core/docker.service';
 import { ProjectService } from '../project/project.service';
 import { nodeContainer } from '../utils/docker';
@@ -22,9 +23,13 @@ export class MonitorService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkNodeHealth() {
     this.logger.info(`check node health started`);
-    const projects = await this.projectService.getAliveProjects();
+    const projects = await this.projectService.getAllProjects();
     this.logger.info(`projects's length: ${projects.length}`);
     for (const project of projects) {
+      if (project.status === DesiredStatus.STOPPED) {
+        this.nodeUnhealthTimesMap.delete(project.id);
+        continue;
+      }
       try {
         const result = await axios.get(`${project.nodeEndpoint}/health`, {
           timeout: 5000,
