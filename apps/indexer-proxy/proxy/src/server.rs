@@ -192,7 +192,7 @@ async fn query_limit_handler(
 }
 
 async fn payg_price() -> Result<Json<Value>, Error> {
-    let projects = merket_price(None).await;
+    let projects = merket_price(None).await?;
     Ok(Json(projects))
 }
 

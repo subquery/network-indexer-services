@@ -15,17 +15,30 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-#![allow(clippy::map_clone)]
-#![allow(clippy::or_fun_call)]
-#![allow(clippy::too_many_arguments)]
 
-pub mod constants;
-pub mod eip712;
-pub mod error;
-pub mod p2p;
-pub mod payg;
-pub mod price_oracle;
-pub mod request;
-pub mod tools;
-pub mod traits;
-pub mod types;
+use ethers::prelude::*;
+use std::sync::Arc;
+use subql_contracts::{price_oracle, Network};
+
+use crate::error::Error;
+
+pub async fn convert_price<M: Middleware>(
+    asset_from: Address,
+    asset_to: Address,
+    amount_from: U256,
+    client: Arc<M>,
+    network: Network,
+) -> Result<U256, Error> {
+    if asset_from == Address::default() || asset_from == asset_to {
+        return Ok(amount_from);
+    }
+
+    let contract = price_oracle(client, network).map_err(|_| Error::ServiceException(1023))?;
+
+    contract
+        .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
+        .map_err(|_| Error::ServiceException(1028))?
+        .call()
+        .await
+        .map_err(|_| Error::ServiceException(1028))
+}

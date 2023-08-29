@@ -44,6 +44,10 @@ pub struct OpenState {
     pub callback: Vec<u8>,
     pub indexer_sign: Signature,
     pub consumer_sign: Signature,
+    pub price_price: U256,
+    pub price_token: Address,
+    pub price_expired: i64,
+    pub price_sign: Signature,
 }
 
 impl OpenState {
@@ -56,6 +60,10 @@ impl OpenState {
         expiration: U256,
         deployment_id: H256,
         callback: Vec<u8>,
+        price_price: U256,
+        price_token: Address,
+        price_expired: i64,
+        price_sign: Signature,
         key: &impl Signer,
     ) -> Result<Self, Error> {
         let channel_id = if let Some(channel_id) = channel_id {
@@ -80,6 +88,10 @@ impl OpenState {
             callback,
             consumer_sign: default_sign(),
             indexer_sign: default_sign(),
+            price_price,
+            price_token,
+            price_expired,
+            price_sign,
         };
         state.sign(key, true).await?;
         Ok(state)
@@ -173,6 +185,40 @@ impl OpenState {
                 .ok_or(Error::Serialize(1115))?,
         );
 
+        let price_price: U256 = if params.get("pricePrice").is_some() {
+            U256::from_dec_str(
+                params["pricePrice"]
+                    .as_str()
+                    .ok_or(Error::Serialize(1110))?,
+            )
+            .map_err(|_e| Error::Serialize(1110))?
+        } else {
+            price
+        };
+        let price_token: Address = if params.get("priceToken").is_some() {
+            params["priceToken"]
+                .as_str()
+                .ok_or(Error::Serialize(1137))?
+                .parse()
+                .map_err(|_e| Error::Serialize(1137))?
+        } else {
+            Address::default()
+        };
+
+        let price_expired: i64 = if params.get("priceExpired").is_some() {
+            params["priceExpired"]
+                .as_i64()
+                .ok_or(Error::Serialize(1138))?
+        } else {
+            0
+        };
+
+        let price_sign: Signature = if params.get("priceSign").is_some() {
+            convert_string_to_sign(params["priceSign"].as_str().ok_or(Error::Serialize(1139))?)
+        } else {
+            default_sign()
+        };
+
         Ok(Self {
             channel_id,
             indexer,
@@ -184,6 +230,10 @@ impl OpenState {
             callback,
             indexer_sign,
             consumer_sign,
+            price_price,
+            price_token,
+            price_expired,
+            price_sign,
         })
     }
 
@@ -199,6 +249,10 @@ impl OpenState {
             "callback": hex::encode(&self.callback),
             "indexerSign": convert_sign_to_string(&self.indexer_sign),
             "consumerSign": convert_sign_to_string(&self.consumer_sign),
+            "pricePrice": self.price_price.to_string(),
+            "priceToken": format!("{:?}", self.price_token),
+            "priceExpired": self.price_expired,
+            "priceSign": convert_sign_to_string(&self.price_sign)
         })
     }
 }
@@ -388,4 +442,31 @@ pub fn convert_sign_to_bytes(sign: &Signature) -> [u8; 65] {
     recovery_id += 27; // Because in ETH.
     bytes[64] = recovery_id;
     bytes
+}
+
+pub fn price_recover(
+    price: U256,
+    token: Address,
+    expired: i64,
+    sign: Signature,
+) -> Result<Address, Error> {
+    let payload = encode(&[price.into_token(), token.into_token(), expired.into_token()]);
+    let hash = keccak256(payload);
+    let signer = sign.recover(&hash[..])?;
+    Ok(signer)
+}
+
+pub async fn price_sign(
+    price: U256,
+    token: Address,
+    expired: i64,
+    key: &impl Signer,
+) -> Result<Signature, Error> {
+    let payload = encode(&[price.into_token(), token.into_token(), expired.into_token()]);
+    let hash = keccak256(payload);
+    let sign = key
+        .sign_message(hash)
+        .await
+        .map_err(|_| Error::InvalidSignature(1041))?;
+    Ok(sign)
 }

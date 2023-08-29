@@ -716,11 +716,12 @@ async fn handle_group(
                     drop(ledger);
                 }
                 Event::ProjectInfo(project) => {
-                    let payg = merket_price(project).await;
-                    let e = Event::ProjectInfoRes(serde_json::to_string(&payg)?);
+                    if let Ok(payg) = merket_price(project).await {
+                        let e = Event::ProjectInfoRes(serde_json::to_string(&payg)?);
 
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
                 }
                 Event::ProjectPoi(project, block) => {
                     let res = match project_poi(&project, block, MetricsNetwork::P2P).await {

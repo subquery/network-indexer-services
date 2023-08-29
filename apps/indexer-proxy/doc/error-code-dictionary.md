@@ -21,7 +21,7 @@
 - `1030` - Invalid auth header: query invalid or missing Bearer.
 - `1031` - Invalid auth header: payg invalid or missing Bearer.
 - `1032` - Invalid project id: indexer not index this project.
-- `1033` - Invalid project price: open channel price < project price.
+- `1033` - Invalid project price: open channel price < project price or expired.
 - `1034` - Invalid project price: query next state < local state + price.
 - `1035` - Invalid project expiration: open channel expiration > project exception.
 - `1036` - Invalid service endpoint: fetch account from coordinator failure.
@@ -35,6 +35,7 @@
 - `1045` - Invalid request: payg indexer not match current indexer.
 - `1046` - Invalid request: payg query cannot fetch data from graphql.
 - `1047` - Invalid request: payg query missing project and query field.
+- `1048` - Invalid project price: price signer is not controller.
 - `1050` - Payg conflict: local state > remote state + price * max_conflict_number.
 - `1051` - Daily limit: reach the max limit in 24h.
 - `1052` - Rate limit: reach the max limit in 1min.
@@ -78,3 +79,6 @@
 - `1134` - Serialize: contract template info 1 is not daily limit.
 - `1135` - Serialize: contract template info 2 is not rate limit.
 - `1136` - Serialize: payg cache.
+- `1137` - Serialize: payg price token.
+- `1138` - Serialize: payg price expired.
+- `1139` - Serialize: payg price signature.
