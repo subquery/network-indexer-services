@@ -3,6 +3,11 @@
 
 import { BigNumber, ContractTransaction, Overrides } from 'ethers';
 
+export enum DesiredStatus {
+  STOPPED,
+  RUNNING,
+}
+
 export enum IndexingStatus {
   NOTINDEXING,
   INDEXING,

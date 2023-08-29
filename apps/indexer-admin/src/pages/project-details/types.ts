@@ -100,6 +100,7 @@ export type ProjectConfig = {
     threshold: number;
     expiration: number;
     price: string;
+    token: string;
   };
 };
 

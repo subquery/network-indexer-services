@@ -193,6 +193,8 @@ export class PaygConfig {
   threshold: number;
   @Field()
   overflow: number;
+  @Field()
+  token: string;
 }
 
 @Entity()
@@ -217,6 +219,10 @@ export class PaygEntity {
   @Column({ default: 5 })
   @Field()
   overflow: number;
+
+  @Column({ default: '' })
+  @Field()
+  token: string;
 }
 
 @ObjectType('Project')

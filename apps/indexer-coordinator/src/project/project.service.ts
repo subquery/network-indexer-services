@@ -13,7 +13,7 @@ import { AccountService } from '../core/account.service';
 import { ContractService } from '../core/contract.service';
 import { DockerService } from '../core/docker.service';
 import { QueryService } from '../core/query.service';
-import { IndexingStatus } from '../core/types';
+import { DesiredStatus } from '../core/types';
 import { DB } from '../db/db.module';
 import { SubscriptionService } from '../subscription/subscription.service';
 import {
@@ -89,6 +89,10 @@ export class ProjectService {
     return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
   }
 
+  async getAllProjects(): Promise<Project[]> {
+    return this.projectRepo.find();
+  }
+
   async getAlivePaygs(): Promise<Payg[]> {
     return this.paygRepo.find({ where: { price: Not('') } });
   }
@@ -157,7 +161,7 @@ export class ProjectService {
     return this.projectRepo.save(projectEntity);
   }
 
-  async updateProjectStatus(id: string, status: IndexingStatus): Promise<Project> {
+  async updateProjectStatus(id: string, status: DesiredStatus): Promise<Project> {
     const project = await this.projectRepo.findOneBy({ id });
     project.status = status;
     return this.projectRepo.save(project);
@@ -279,7 +283,7 @@ export class ProjectService {
     project.advancedConfig = advancedConfig;
     project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
-    project.status = IndexingStatus.INDEXING;
+    project.status = DesiredStatus.RUNNING;
     project.chainType = nodeConfig.chainType;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
@@ -296,13 +300,13 @@ export class ProjectService {
     getLogger('project').info(`stop project: ${id}`);
     await this.docker.stop(projectContainers(id));
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
-    return this.updateProjectStatus(id, IndexingStatus.NOTINDEXING);
+    return this.updateProjectStatus(id, DesiredStatus.STOPPED);
   }
 
   async restartProject(id: string) {
     getLogger('project').info(`restart project: ${id}`);
     await this.docker.start(projectContainers(id));
-    return this.updateProjectStatus(id, IndexingStatus.INDEXING);
+    return this.updateProjectStatus(id, DesiredStatus.RUNNING);
   }
 
   async removeProject(id: string): Promise<Project[]> {
@@ -330,10 +334,13 @@ export class ProjectService {
       throw new Error(`project not exist: ${id}`);
     }
 
+    const defaultToken = this.contract.getSdk().sqToken.address;
+
     payg.price = paygConfig.price;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
+    payg.token = paygConfig.token || defaultToken;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
