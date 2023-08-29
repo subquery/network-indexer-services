@@ -11,6 +11,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  CARGO_TERM_COLOR: always
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -32,3 +35,16 @@ jobs:
       - run: rush update
 
       - run: rush build
+
+      # Indexer proxy check
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - name: proxy check fmt
+        run: cargo fmt -- --check
+      - name: proxy check lint
+        run: cargo clippy --workspace
+      - name: proxy check test
+        run: cargo test

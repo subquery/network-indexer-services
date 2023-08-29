@@ -1,0 +1,80 @@
+# Error code directory
+
+- `1000` - JWT token create: now - timestamp < 120000 ms (2min).
+- `1001` - JWT token create: agreement and consumer verify failure.
+- `1002` - JWT token create: indexer is not current indexer service.
+- `1003` - JWT token create: encode failure, maybe caused by jwt-secret config.
+- `1004` - JWT token verify: deployment in auth not eq project id.
+- `1005` - JWT token verify: decode failure.
+- `1006` - JWT token expired.
+- `1010` - GraphQL query error.
+- `1011` - GraphQL internal error.
+- `1020` - Permission deny: missing AUTHORIZATION header.
+- `1021` - Service exception: Redis not work.
+- `1022` - Service exception: chain node provider cannot reach.
+- `1023` - Service exception: contract address and ABI cannot match.
+- `1024` - Service exception: contract call (getClosedServiceAgreement) not work.
+- `1025` - Service exception: contract call (consumerAuthAllows) not work.
+- `1026` - Service exception: contract call (getPlanTemplate) not work.
+- `1027` - Service exception: contract call (channelConsumer) not work.
+- `1028` - Service exception: contract call (getSigners) not work.
+- `1030` - Invalid auth header: query invalid or missing Bearer.
+- `1031` - Invalid auth header: payg invalid or missing Bearer.
+- `1032` - Invalid project id: indexer not index this project.
+- `1033` - Invalid project price: open channel price < project price.
+- `1034` - Invalid project price: query next state < local state + price.
+- `1035` - Invalid project expiration: open channel expiration > project exception.
+- `1036` - Invalid service endpoint: fetch account from coordinator failure.
+- `1038` - Invalid controller: parse controller sk to LocalWallet failure.
+- `1039` - Invalid controller: parse controller sk as p2p key failure.
+- `1040` - Invalid signature: cannot recover address from siganture.
+- `1041` - Invalid signature: cannot sign message.
+- `1042` - Invalid encrypt: cannot convert hex to bytes from ciphertext.
+- `1043` - Invalid encrypt: encrypt key not match the ciphertext.
+- `1044` - Invalid encrypt: plaintext not a string.
+- `1045` - Invalid request: payg indexer not match current indexer.
+- `1046` - Invalid request: payg query cannot fetch data from graphql.
+- `1047` - Invalid request: payg query missing project and query field.
+- `1050` - Payg conflict: local state > remote state + price * max_conflict_number.
+- `1051` - Daily limit: reach the max limit in 24h.
+- `1052` - Rate limit: reach the max limit in 1min.
+- `1053` - Expired: consumer host service signers is empty.
+- `1054` - Expired: payg channel is missing in redis. Maybe not set or expired.
+- `1055` - Invalid signature: payg channel signer not include in redis cache.
+- `1056` - Overflow: payg channel query is overflow total limit.
+- `1100` - Serialize: hex convert failure.
+- `1101` - Serialize: rustc_hex convert failure.
+- `1102` - Serialize: uint convert failure.
+- `1103` - Serialize: ethereum_types convert failure.
+- `1104` - Serialize: eip712 signature string to ethers::Signature failure.
+- `1105` - Serialize: eip712 type data encode failure.
+- `1106` - Serialize: payg channel hex id string to U256 failure.
+- `1107` - Serialize: payg indexer string to Address failure.
+- `1108` - Serialize: payg consumer string to Address failure.
+- `1109` - Serialize: payg total int string to U256 failure.
+- `1110` - Serialize: payg price int string to U256 failure.
+- `1111` - Serialize: payg expiration int string to U256 failure.
+- `1112` - Serialize: payg deploymentId cid string to H256 failure.
+- `1113` - Serialize: payg callback hex to bytes failure.
+- `1114` - Serialize: payg indexer sign parse failure.
+- `1115` - Serialize: payg consumer sign parse failure.
+- `1116` - Serialize: payg spent int string to U256 failure.
+- `1117` - Serialize: payg remote int string to U256 failure.
+- `1118` - Serialize: payg isFinal bool failure.
+- `1120` - Serialize: handle channel id int string to U256 failure.
+- `1121` - Serialize: handle channel consumer address failure.
+- `1122` - Serialize: handle channel total failure.
+- `1123` - Serialize: handle channel spent failure.
+- `1124` - Serialize: handle channel remote failure.
+- `1125` - Serialize: handle channel price failure.
+- `1126` - Serialize: contract agreement int id to U256 failure.
+- `1127` - Serialize: contract agreement info not eq 6.
+- `1128` - Serialize: contract agreement 0 is not consumer address.
+- `1129` - Serialize: contract agreement 4 is not start time.
+- `1130` - Serialize: contract agreement 5 is not period time.
+- `1131` - Serialize: contract agreement 7 is not template id.
+- `1132` - Serialize: contract consumerAuthAllows is not bool.
+- `1133` - Serialize: contract getPlanTemplate info not eq 3.
+- `1134` - Serialize: contract template info 1 is not daily limit.
+- `1135` - Serialize: contract template info 2 is not rate limit.
+- `1136` - Serialize: payg cache.
