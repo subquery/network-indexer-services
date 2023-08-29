@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 COPY ./apps/indexer-coordinator/package.json ./
 
 # build coordinator
-RUN npm install -g @microsoft/rush
+RUN npm install -g @microsoft/rush@5.100.2
 RUN npm install -g pnpm@8.6.3
 COPY . .
 # remove rush temp from context
