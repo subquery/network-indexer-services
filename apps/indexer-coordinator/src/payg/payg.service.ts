@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel } from '@subql/network-query';
 import { BigNumber } from 'ethers';
-import { Repository, MoreThan } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 
 import { AccountService } from '../core/account.service';
 import { NetworkService } from '../core/network.service';
@@ -14,7 +14,7 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { getLogger } from '../utils/logger';
 import { PaygEvent } from '../utils/subscription';
 
-import { Channel, ChannelStatus, ChannelLabor } from './payg.model';
+import { Channel, ChannelLabor, ChannelStatus } from './payg.model';
 import { PaygQueryService } from './payg.query.service';
 
 const logger = getLogger('payg');
@@ -29,7 +29,7 @@ export class PaygService {
     private network: NetworkService,
     private account: AccountService,
     private paygQuery: PaygQueryService
-  ) {}
+  ) { }
 
   channel(id: string): Promise<Channel> {
     return this.channelRepo.findOneBy({ id });
@@ -55,7 +55,7 @@ export class PaygService {
     consumerSign: string
   ): Promise<Channel> {
     try {
-      let channel = await this.channelRepo.findOneBy({ id });
+      let channel = await this.channel(id);
       if (!channel) {
         const stateChannel = await this.paygQuery.getStateChannel(id);
         channel = await this.syncChannel(stateChannel);
@@ -111,7 +111,7 @@ export class PaygService {
   }
 
   async checkpoint(id: string): Promise<Channel> {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
     if (channel.onchain === channel.remote) {
       return channel;
     }
@@ -135,7 +135,7 @@ export class PaygService {
   }
 
   async terminate(id: string): Promise<Channel> {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
     if (channel.onchain === channel.remote) {
       return channel;
     }
@@ -162,7 +162,7 @@ export class PaygService {
   }
 
   async respond(id: string): Promise<Channel> {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
     if (channel.onchain === channel.remote) {
       return channel;
     }
@@ -191,7 +191,7 @@ export class PaygService {
 
     try {
       const id = BigNumber.from(channel.id).toString();
-      const _channel = await this.channelRepo.findOneBy({ id });
+      const _channel = await this.channel(id);
       if (_channel) return;
 
       const {
@@ -249,7 +249,7 @@ export class PaygService {
     deploymentId: string
   ) {
     // update the channel.
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
     if (!channel) {
       // check if self.
       const myIndexer = await this.account.getIndexer();
@@ -292,27 +292,34 @@ export class PaygService {
   }
 
   async syncExtend(id: string, expiredAt: number) {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
+    if (!channel) return;
+
     channel.expiredAt = expiredAt;
     channel.terminatedAt = expiredAt;
     await this.channelRepo.save(channel);
   }
 
   async syncFund(id: string, total: string) {
-    const channel = await this.channelRepo.findOneBy({ id });
-    channel.total = total;
+    const channel = await this.channel(id);
+    if (!channel) return;
 
+    channel.total = total;
     await this.savePub(channel, PaygEvent.State);
   }
 
   async syncCheckpoint(id: string, onchain: string) {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
+    if (!channel) return;
+
     channel.onchain = onchain;
     await this.channelRepo.save(channel);
   }
 
   async syncTerminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean) {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
+    if (!channel) return;
+
     channel.onchain = onchain;
     channel.status = ChannelStatus.TERMINATING;
     channel.terminatedAt = terminatedAt;
@@ -323,7 +330,9 @@ export class PaygService {
   }
 
   async syncFinalize(id: string, total: BigNumber, remain: BigNumber) {
-    const channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channel(id);
+    if (!channel) return;
+
     channel.onchain = total.sub(remain).toString();
     channel.status = ChannelStatus.FINALIZED;
     channel.lastFinal = true;
