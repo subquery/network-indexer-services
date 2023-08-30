@@ -84,3 +84,8 @@ apps/indexer-coordinator/dist/*
 .eslintcache
 
 .env
+
+# indexer-proxy
+/target
+**/*.rs.bk
+Cargo.lock
