@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=cargo_bin,target=~/.cargo/bin/ \
     --mount=type=cache,id=cargo_reg_cache,target=~/.cargo/registry/cache/ \
     --mount=type=cache,id=cargo_git,target=~/.cargo/git/db/ \
     --mount=type=cache,id=target,target=/subql/target/ \
-    cargo update && cargo build --release && mv /subql/target/release/subql-proxy /subql/
+    cargo update && cargo build --release && mv /subql/target/release/subql-indexer-proxy /subql/
 
 # Final image
 FROM debian:buster-slim
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /subql
 
 # Copy our build
-COPY --from=builder /subql/subql-proxy .
+COPY --from=builder /subql/subql-indexer-proxy .
 
 # Use an unprivileged user.
 RUN groupadd --gid 10001 subql && \
@@ -40,4 +40,4 @@ RUN mkdir -p /subql/.local/share && \
 	ln -s /subql/data /subql/.local/share
 USER subql:subql
 
-ENTRYPOINT ["./subql-proxy"]
+ENTRYPOINT ["./subql-indexer-proxy"]
