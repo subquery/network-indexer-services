@@ -16,7 +16,20 @@ export const mapContractError = (error: any) => {
   const revertCode = Object.keys(contractErrorCodes).find((key) =>
     getErrorMsg(error).toString().match(`reverted: ${key}`)
   ) as keyof typeof contractErrorCodes;
-  return revertCode ? contractErrorCodes[revertCode] : undefined;
+
+  const getExtraExplain = (revertCode: 'IR004' | 'RS002') => {
+    const msg = {
+      IR004: 'Please change all projects to not indexing',
+      RS002: 'Please check controller account balance enough to do transaction',
+    };
+
+    return msg[revertCode];
+  };
+
+  const extraExplain =
+    revertCode === 'IR004' || revertCode === 'RS002' ? getExtraExplain(revertCode) : '';
+
+  return revertCode ? `${contractErrorCodes[revertCode]}. ${extraExplain}` : undefined;
 };
 
 export const parseError = (
@@ -29,8 +42,9 @@ export const parseError = (
   logger.e(error);
 
   // show tips to users.
-  const msg =
-    mapContractError(error) ?? rawMsg ? getErrorMsg(error) : 'Unfortunately, something went wrong.';
+  const msg = rawMsg
+    ? getErrorMsg(error)
+    : mapContractError(error) ?? 'Unfortunately, something went wrong.';
 
   if (alert) {
     notificationMsg({
