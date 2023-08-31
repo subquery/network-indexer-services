@@ -3,7 +3,7 @@
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ChannelStatus, StateChannel } from '@subql/network-query';
+import { StateChannel } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 import { chunk } from 'lodash';
 
@@ -13,7 +13,7 @@ import { PaygEvent } from 'src/utils/subscription';
 import { Repository } from 'typeorm';
 import { ContractService } from '../core/contract.service';
 import { getLogger } from '../utils/logger';
-import { Channel, ChannelLabor } from './payg.model';
+import { Channel, ChannelLabor, ChannelStatus } from './payg.model';
 import { PaygQueryService } from './payg.query.service';
 import { PaygService } from './payg.service';
 
@@ -57,10 +57,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
       const id = BigNumber.from(channel.id).toString().toLowerCase();
       const _channel = await this.channelRepo.findOneBy({ id });
 
-      // update channel price and agent
       if (_channel && _channel.price === '0') {
         _channel.agent = channel.agent;
+        _channel.consumer = channel.consumer;
         _channel.price = channel.price.toString();
+        _channel.lastFinal = channel.isFinal;
         await this.channelRepo.save(_channel);
         return;
       };
@@ -113,29 +114,19 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     stateChannel.on(
       'ChannelOpen',
-      async (channelId, indexer, consumer, total, price, expiredAt, deploymentId, callback) => {
+      async (channelId, indexer, _consumer, total, price, expiredAt, deploymentId, callback) => {
         const hostIndexer = await this.account.getIndexer();
         if (indexer !== hostIndexer) return;
 
-        let agent = '';
-        let user = consumer;
+        let [agent, consumer] = ['', _consumer];
         try {
-          const consumerAddress = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
-          user = consumerAddress;
+          consumer = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
           agent = consumer;
         } catch {
           logger.debug(`Channel created by user: ${consumer}`);
         }
 
-        void this.syncOpen(
-          channelId.toString(),
-          agent,
-          price.toString(),
-          agent,
-          {
-
-          }
-        );
+        void this.syncOpen(channelId.toString(), consumer, agent, price.toString());
       }
     );
 
@@ -175,16 +166,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
     });
   }
 
-
-  /// functions called by contract event listener
-  async syncOpen(
-    id: string,
-    agent: string,
-    price: string,
-  ) {
+  async syncOpen(id: string, consumer: string, agent: string, price: string) {
     const channel = await this.paygService.channel(id);
     if (channel) return;
 
+    channel.consumer = consumer;
     channel.agent = agent;
     channel.price = price;
     await this.paygService.savePub(channel, PaygEvent.Opened);
@@ -248,5 +234,4 @@ export class PaygSyncService implements OnApplicationBootstrap {
     });
     await this.laborRepo.save(labor);
   }
-
 }
