@@ -164,7 +164,11 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut new_projects = vec![];
     for item in projects {
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
-        let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
+        let payg_token: Address = item.payg_token.parse().unwrap_or(
+            "0x7E65A71046170A5b1AaB5C5cC64242EDF95CaBEA"
+                .parse()
+                .unwrap(), //Address::zero()
+        );
         let payg_overflow = item.payg_overflow.into();
         project_ids.push(item.id.clone());
         let project = Project {
