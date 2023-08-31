@@ -18,9 +18,9 @@ pwd
 
 if [ "$1" = "bypass" ]; then
   echo "bypass admin build"
-  rush build -o @subql/indexer-coordinator
+  yarn build:admin
 else
-  rush build
+  yarn build
 fi
 
 FE_DIR="apps/indexer-admin/build"

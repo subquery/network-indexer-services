@@ -7,11 +7,18 @@
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
+    "start": "yarn start:docker",
+    "start:docker": "yarn install && sh docker/dev/2_start.sh",
+    "start:admin": "cd apps/indexer-admin && yarn start",
+    "start:coordinator": "cd apps/indexer-coordinator && yarn start",
     "install": "yarn install:admin && yarn install:coordinator",
     "install:admin": "cd apps/indexer-admin && yarn install",
     "install:coordinator": "cd apps/indexer-coordinator && yarn install",
     "build": "yarn build:admin && yarn build:coordinator",
     "build:admin": "cd apps/indexer-admin && yarn build",
-    "build:coordinator": "cd apps/indexer-coordinator && yarn build"
+    "build:coordinator": "cd apps/indexer-coordinator && yarn build",
+    "lint-staged": "yarn lint-staged:admin && yarn lint-staged:coordinator",
+    "lint-staged:admin": "cd apps/indexer-admin && yarn lint-staged",
+    "lint-staged:coordinator": "cd apps/indexer-coordinator && yarn lint-staged"
   }
 }
