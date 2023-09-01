@@ -30,11 +30,8 @@ jobs:
         uses: actions/setup-node@v2.4.1
         with:
           node-version: 16
-      - run: npm install -g @microsoft/rush@5.100.2
-
-      - run: rush update
-
-      - run: rush build
+      - run: yarn install
+      - run: yarn build
 
       # Indexer proxy check
       - uses: actions-rs/toolchain@v1
