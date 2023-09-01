@@ -16,9 +16,9 @@ docker-compose -f docker-compose.yml up -d
 cd ../../
 pwd
 
-if [ "$1" = "bypass" ]; then
+if [ "$1" = "bypass" ] || [ "$2" = "bypass" ]; then
   echo "bypass admin build"
-  yarn build:admin
+  yarn build:coordinator
 else
   yarn build
 fi

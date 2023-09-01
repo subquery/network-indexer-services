@@ -80,6 +80,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
   createDirectory(getComposeFileDirectory(deploymentID));
 
   handlebars.registerHelper('eq', (a, b) => a === b);
+  handlebars.registerHelper('ge', (a, b) => a >= b);
 
   try {
     const config = await nodeConfigs(deploymentID);
