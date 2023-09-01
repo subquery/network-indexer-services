@@ -24,7 +24,9 @@ services:
       - --network-endpoint={{{this}}}
       {{/each}}
       {{#if usePrimaryNetworkEndpoint}}
-      - --primary-network-endpoint={{primaryNetworkEndpoint}}
+      {{#if (ge networkEndpoints.length 2)}}
+      - --primary-network-endpoint={{{primaryNetworkEndpoint}}}
+      {{/if}}
       {{/if}}
       - --db-schema={{dbSchema}}
       - --port={{servicePort}}
