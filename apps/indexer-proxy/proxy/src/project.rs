@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use chrono::Utc;
 use ethers::{
     abi::{encode, Tokenizable},
     signers::Signer,
@@ -306,14 +307,19 @@ pub async fn project_query(
             let indexer = lock.indexer.clone();
             drop(lock);
 
-            let payload = encode(&[indexer.into_token(), bytes.into_token(), time.into_token()]);
+            let timestamp = Utc::now().timestamp();
+            let payload = encode(&[
+                indexer.into_token(),
+                bytes.into_token(),
+                timestamp.into_token(),
+            ]);
             let hash = keccak256(payload);
             let sign = controller
                 .sign_message(hash)
                 .await
                 .unwrap_or(default_sign());
 
-            let signature = format!("{} {}", time, convert_sign_to_string(&sign));
+            let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
             query.insert("_signature".to_owned(), signature.into());
         }
     }
