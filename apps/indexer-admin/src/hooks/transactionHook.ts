@@ -95,6 +95,8 @@ export const useGetIndexerMetadataCid = (indexer: string) => {
   const [metadataCid, setMetadataCid] = useState<string>();
 
   const getIndexerMetadata = async () => {
+    if (!sdk) return;
+
     const res = await getIndexMetadata(sdk, signer, indexer);
     setMetadataCid(res);
   };

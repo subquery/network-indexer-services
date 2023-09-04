@@ -159,7 +159,7 @@ const Account = () => {
           setVisible={setVisible}
           visible={visible}
           title={AccountActionName[actionType]}
-          onClose={onModalClose}
+          onClose={() => onModalClose()}
           steps={steps[actionType]}
           currentStep={currentStep}
           type={actionType}
