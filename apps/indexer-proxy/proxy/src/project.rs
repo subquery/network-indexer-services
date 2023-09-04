@@ -29,6 +29,7 @@ use std::collections::HashMap;
 use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
+    payg::{convert_sign_to_string, default_sign},
     request::{graphql_request, proxy_request, GraphQLQuery},
     types::Result,
 };
@@ -292,8 +293,30 @@ pub async fn project_query(
     let project = get_project(id).await?;
 
     let now = Instant::now();
-    let res = graphql_request(&project.query_endpoint, query).await;
+    let mut res = graphql_request(&project.query_endpoint, query).await;
     let time = now.elapsed().as_millis() as u64;
+
+    if let Ok(data) = &mut res {
+        if let Some(query) = data.as_object_mut() {
+            let bytes = serde_json::to_vec(query).unwrap_or(vec![]);
+
+            // sign the response
+            let lock = ACCOUNT.read().await;
+            let controller = lock.controller.clone();
+            let indexer = lock.indexer.clone();
+            drop(lock);
+
+            let payload = encode(&[indexer.into_token(), bytes.into_token(), time.into_token()]);
+            let hash = keccak256(payload);
+            let sign = controller
+                .sign_message(hash)
+                .await
+                .unwrap_or(default_sign());
+
+            let signature = format!("{} {}", time, convert_sign_to_string(&sign));
+            query.insert("_signature".to_owned(), signature.into());
+        }
+    }
 
     add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
 
