@@ -115,16 +115,19 @@ pub async fn update_metrics_projects(new_deployments: Vec<String>) {
 }
 
 pub async fn get_services_version() -> u64 {
-    // proxy: 0.3.3-4
+    // proxy: 0.3.3-beta.1
     let mut version = [0u8; 4];
     let slice = PROXY_VERSION.split(".").collect::<Vec<&str>>();
-    if slice.len() == 3 {
+    if slice.len() > 2 {
         version[0] = slice[0].parse().unwrap_or(0);
         version[1] = slice[1].parse().unwrap_or(0);
         let next = slice[2].split("-").collect::<Vec<&str>>();
         version[2] = next[0].parse().unwrap_or(0);
         if next.len() == 2 {
             version[3] = next[1].parse().unwrap_or(0);
+        }
+        if slice.len() == 4 {
+            version[3] = slice[3].parse().unwrap_or(0);
         }
     }
 
