@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use chrono::Utc;
+use digest::Digest;
 use ethers::{
     abi::{encode, Tokenizable},
     signers::Signer,
@@ -299,7 +300,9 @@ pub async fn project_query(
 
     if let Ok(data) = &mut res {
         if let Some(query) = data.as_object_mut() {
-            let bytes = serde_json::to_vec(query).unwrap_or(vec![]);
+            let mut hasher = sha2::Sha256::new();
+            serde_json::to_writer(&mut hasher, query).map_err(|_| Error::ServiceException(1029))?;
+            let bytes = hasher.finalize().to_vec();
 
             // sign the response
             let lock = ACCOUNT.read().await;
