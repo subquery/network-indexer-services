@@ -17,5 +17,5 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_with={ version = "3.0", features = ["json"] }
 uint = "0.9"
-ethers = { git = "https://github.com/gakonst/ethers-rs.git", tag = "ethers-v2.0.7" }
+ethers = { git = "https://github.com/gakonst/ethers-rs.git", tag = "ethers-v2.0.10" }
 ethereum-types = "0.14"
