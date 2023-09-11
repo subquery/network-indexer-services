@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 services:
   postgres:
@@ -12,87 +12,86 @@ services:
     environment:
       POSTGRES_PASSWORD: <replace with you own password>
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
       retries: 5
 
   coordinator:
-    image: subquerynetwork/indexer-coordinator:v1.3.4
+    image: subquerynetwork/indexer-coordinator:v1.3.13
     container_name: indexer_coordinator
     restart: always
     ports:
       - 8000:8000
     depends_on:
-      "postgres":
+      'postgres':
         condition: service_healthy
-      "ipfs":
+      'ipfs':
         condition: service_healthy
     volumes:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --network=kepler              # Change to the network you want to index [testnet | kepler | mainnet]
+      - --network=kepler # Change to the network you want to index [testnet | kepler | mainnet]
       - --postgres-host=postgres
       - --ws-endpoint=https://polygon-rpc.com
-      - --postgres-password=<replace with you own password>   # Change to your postgres password
+      - --postgres-password=<replace with you own password> # Change to your postgres password
       - --postgres-port=5432
       - --port=8000
-      - --start-port=3100             # The start port number for the indexer node, by default: 3001
-      - --secret-key=<a random str>           # Change to your own secret key to encrypt the controller privatekey which store in db
-      - --mmrPath=/home               # Change to the path where you want to store the poi data
+      - --start-port=3100 # The start port number for the indexer node, by default: 3001
+      - --secret-key=<a random str> # Change to your own secret key to encrypt the controller privatekey which store in db
       - --ipfs=http://indexer_ipfs:8080/api/v0/ # Use docker/local ipfs endpoint or
       #- --ipfs=https://unauthipfs.subquery.network/ipfs/api/v0 # subquery's ipfs (heavily ratelimited)
     healthcheck:
       test:
         [
-          "CMD",
-          "curl",
-          "-i",
-          "-X POST",
-          "http://indexer_coordinator:8000/graphql",
+          'CMD',
+          'curl',
+          '-i',
+          '-X POST',
+          'http://indexer_coordinator:8000/graphql',
           "-H 'Content-Type: application/json'",
-          "-d '{ \"query\": \"query { accountMetadata { network } }\" }'"
+          '-d ''{ "query": "query { accountMetadata { network } }" }''',
         ]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
-      image: redis:7-alpine
-      container_name: indexer_cache
-      restart: always
-      expose:
-        - 6379
-      environment:
-        - ALLOW_EMPTY_PASSWORD=yes
-      healthcheck:
-        test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+    image: redis:7-alpine
+    container_name: indexer_cache
+    restart: always
+    expose:
+      - 6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
 
   proxy:
-    image: subquerynetwork/indexer-proxy:v1.2.0
+    image: subquerynetwork/indexer-proxy:v1.2.6
     container_name: indexer_proxy
     restart: always
     ports:
       - 7370:7370/udp
       - 80:80
     depends_on:
-      "coordinator":
+      'coordinator':
         condition: service_healthy
     command:
       - --host=0.0.0.0
       - --port=80
       - --auth
-      - --network=kepler                                   # network type, need to be same with coordinator
-      - --jwt-secret=<a random str>                         # change to any random string value
-      - --secret-key=<a random str>                                # keep same with coordinator secret key
+      - --network=kepler # network type, need to be same with coordinator
+      - --jwt-secret=<a random str> # change to any random string value
+      - --secret-key=<a random str> # keep same with coordinator secret key
       - --service-url=http://indexer_coordinator:8000
-      - --network-endpoint=https://polygon-rpc.com         # network endpoint, can choose your own endpoint
-      - --token-duration=24                                # query auth token validity [hours]
+      - --network-endpoint=https://polygon-rpc.com # network endpoint, can choose your own endpoint
+      - --token-duration=24 # query auth token validity [hours]
       - --redis-endpoint=redis://indexer_cache
-      - --metrics-token=thisismyAuthtoken                  # change to any random string value
+      - --metrics-token=thisismyAuthtoken # change to any random string value
     healthcheck:
-      test: ["CMD-SHELL", "curl http://localhost:80/healthy >/dev/null 2>&1 || exit 1"]
+      test: ['CMD-SHELL', 'curl http://localhost:80/healthy >/dev/null 2>&1 || exit 1']
       interval: 30s
       timeout: 30s
       retries: 5
