@@ -75,7 +75,7 @@ export class ProjectService {
   async getProjectDetails(id: string): Promise<ProjectDetails> {
     const project = await this.projectRepo.findOneBy({ id });
     const payg = await this.paygRepo.findOneBy({ id });
-    const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
+    const metadata = await this.query.getQueryMetaData(id, project?.queryEndpoint);
 
     return { ...project, metadata, payg };
   }
