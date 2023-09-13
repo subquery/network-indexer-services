@@ -5,7 +5,6 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import Dockerode from 'dockerode';
-// import DockerodeCompose from 'dockerode-compose';
 import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
@@ -38,24 +37,17 @@ export class DockerService {
       const result = await this.execute(
         `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`
       );
-      // const result = await this.upWithApi(filePath, projectId(fileName));
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').warn(`file: ${filePath} not exist`);
     }
   }
 
-  // async upWithApi(filePath: string, projectId: string) {
-  //   const compose = new DockerodeCompose(this.docker, filePath, projectId);
-  //   return await compose.up();
-  // }
-
   async start(containers: string[]): Promise<string> {
     if (!this.validateContainerNames(containers)) {
       return;
     }
     try {
-      // return await this.execute(`docker start ${containers.join(' ')}`);
       return await this.startWithApi(containers);
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
@@ -73,7 +65,6 @@ export class DockerService {
       return;
     }
     try {
-      // return await this.execute(`docker restart ${containers.join(' ')}`);
       return await this.restartWithApi(containers);
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
@@ -91,7 +82,6 @@ export class DockerService {
       return;
     }
     try {
-      // return await this.execute(`docker stop ${containers.join(' ')}`);
       return await this.stopWithApi(containers);
     } catch (e) {
       getLogger('docker').warn(e, `failed to stop the containers`);
@@ -108,7 +98,6 @@ export class DockerService {
     }
     try {
       getLogger('docker').info(`remove the old containers`);
-      // const result = await this.execute(`docker container rm ${containers.join(' ')}`);
       const result = await this.rmWithApi(containers);
       getLogger('docker').info(result);
     } catch (_) {
@@ -127,10 +116,6 @@ export class DockerService {
       return;
     }
     try {
-      // const result = await this.execute(
-      //   `docker container ps -a | grep -E '${containers.join('|')}'`
-      // );
-      // return result;
       return await this.psWithApi(containers);
     } catch (_) {
       return [];
@@ -154,8 +139,6 @@ export class DockerService {
       return '';
     }
     try {
-      // const info = await this.ps([container]);
-      // return getImageVersion(info);
       return await this.imageVersionWithApi(container);
     } catch {
       return '';
@@ -172,7 +155,6 @@ export class DockerService {
       return '';
     }
     try {
-      // return await this.execute(`docker logs -n 30 ${container}`);
       return await this.logsWithApi(container);
     } catch (e) {
       getLogger('docker').error(e, `failed to get the logs of ${container}`);
@@ -188,18 +170,6 @@ export class DockerService {
     });
     return `\n${buffer.toString('utf8')}`.replace(/\n.{8}/gm, '\n').trim();
   }
-
-  // async deleteFile(path: string) {
-  //   if (!this.validateFilePath(path)) {
-  //     return;
-  //   }
-  //   try {
-  //     await this.execute(`rm -rf ${path}`);
-  //     getLogger('docker').info(`delete: ${path}`);
-  //   } catch {
-  //     getLogger('docker').info(`failed to delete: ${path}`);
-  //   }
-  // }
 
   private execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
