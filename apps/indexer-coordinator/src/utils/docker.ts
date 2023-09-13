@@ -96,11 +96,12 @@ export async function generateDockerComposeFile(data: TemplateType) {
   }
 }
 
-export function canContainersRestart(id: string, containersInfo: string): boolean {
+export function canContainersRestart(id: string, containerStates: any[]): boolean {
+  const containerNames = containerStates.map((container) => container.Name);
   const containersExist =
-    containersInfo.includes(nodeContainer(id)) && containersInfo.includes(queryContainer(id));
-  const isContainerAborted =
-    containersInfo.includes('Exited (134)') || containersInfo.includes('Exited (137)');
+    containerNames.includes(nodeContainer(id)) && containerNames.includes(queryContainer(id));
+  const exitCodes = containerStates.map((container) => container.ExitCode);
+  const isContainerAborted = exitCodes.includes(137) || exitCodes.includes(143);
 
   return containersExist && !isContainerAborted;
 }

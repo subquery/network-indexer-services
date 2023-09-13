@@ -122,7 +122,7 @@ export class DockerService {
     );
   }
 
-  async ps(containers: string[]): Promise<string> {
+  async ps(containers: string[]): Promise<any[]> {
     if (!this.validateContainerNames(containers)) {
       return;
     }
@@ -133,14 +133,20 @@ export class DockerService {
       // return result;
       return await this.psWithApi(containers);
     } catch (_) {
-      return '';
+      return [];
     }
   }
 
-  async psWithApi(containers: string[]): Promise<string> {
-    return (await Promise.all(containers.map((name) => this.getContainer(name).inspect()))).join(
-      '\n'
+  async psWithApi(containers: string[]): Promise<any[]> {
+    const result = await Promise.all(
+      containers.map(async (name) => {
+        const container = await this.getContainer(name).inspect();
+        delete container?.State?.Health?.Log;
+
+        return { ...(container?.State ?? {}), Name: container?.Name?.replace('/', '') ?? '' };
+      })
     );
+    return result;
   }
 
   async imageVersion(container: string) {

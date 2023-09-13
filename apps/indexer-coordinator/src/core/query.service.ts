@@ -27,14 +27,14 @@ export class QueryService {
     this.emptyPoi = { blockHeight: 0, mmrRoot: ZERO_BYTES32 };
   }
 
-  private serviceStatus(info: string): ServiceStatus {
-    if (isEmpty(info)) {
+  private serviceStatus(state: any): ServiceStatus {
+    if (!state || Object.keys(state).length === 0) {
       return ServiceStatus.NotStarted;
-    } else if (info.includes('starting')) {
+    } else if (state?.Health?.Status === 'starting') {
       return ServiceStatus.Starting;
-    } else if (info.includes('healthy')) {
+    } else if (state?.Health?.Status === 'healthy') {
       return ServiceStatus.Healthy;
-    } else if (info.includes('Exited')) {
+    } else if (state?.Status === 'exited') {
       return ServiceStatus.Terminated;
     }
     return ServiceStatus.UnHealthy;
@@ -52,8 +52,8 @@ export class QueryService {
     id: string
   ): Promise<{ indexerStatus: string; queryStatus: string }> {
     try {
-      const indexerInfo = await this.docker.ps([nodeContainer(id)]);
-      const queryInfo = await this.docker.ps([queryContainer(id)]);
+      const indexerInfo = (await this.docker.ps([nodeContainer(id)]))[0];
+      const queryInfo = (await this.docker.ps([queryContainer(id)]))[0];
       const indexerStatus = this.serviceStatus(indexerInfo);
       const queryStatus = this.serviceStatus(queryInfo);
 
