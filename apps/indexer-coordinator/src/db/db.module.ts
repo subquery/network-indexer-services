@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { DynamicModule, Global, Module, OnApplicationBootstrap } from '@nestjs/common';
@@ -59,7 +59,9 @@ export class DB implements OnApplicationBootstrap {
     await this.dataSource.query(
       `UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`
     );
-    await this.dataSource.query(`UPDATE ${name}._metadata SET "latestPoiWithMmr" = NULL`);
+    await this.dataSource.query(
+      `UPDATE ${name}._metadata SET "value" = NULL WHERE "key" = 'latestPoiWithMmr'`
+    );
     getLogger('docker').info('clear mmrRoot completed');
   }
 }

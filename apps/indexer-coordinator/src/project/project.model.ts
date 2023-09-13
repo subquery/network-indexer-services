@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
@@ -193,6 +193,8 @@ export class PaygConfig {
   threshold: number;
   @Field()
   overflow: number;
+  @Field()
+  token: string;
 }
 
 @Entity()
@@ -217,6 +219,10 @@ export class PaygEntity {
   @Column({ default: 5 })
   @Field()
   overflow: number;
+
+  @Column({ default: '' })
+  @Field()
+  token: string;
 }
 
 @ObjectType('Project')

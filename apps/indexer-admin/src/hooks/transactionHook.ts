@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -95,6 +95,8 @@ export const useGetIndexerMetadataCid = (indexer: string) => {
   const [metadataCid, setMetadataCid] = useState<string>();
 
   const getIndexerMetadata = async () => {
+    if (!sdk) return;
+
     const res = await getIndexMetadata(sdk, signer, indexer);
     setMetadataCid(res);
   };

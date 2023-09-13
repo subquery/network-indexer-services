@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { gql } from '@apollo/client';
@@ -65,6 +65,7 @@ const PaygFields = `
     threshold
     expiration
     price
+    token
   }
 `;
 
@@ -292,6 +293,7 @@ export const GET_REGISTRY_VERSIONS = gql`
 export const PAYG_PRICE = gql`
   mutation updateProjectPayg(
     $paygPrice: String!
+    $paygToken: String!
     $paygExpiration: Float!
     $paygThreshold: Float!
     $paygOverflow: Float!
@@ -300,6 +302,7 @@ export const PAYG_PRICE = gql`
     updateProjectPayg(
       paygConfig: {
         price: $paygPrice
+        token: $paygToken
         expiration: $paygExpiration
         threshold: $paygThreshold
         overflow: $paygOverflow
@@ -319,6 +322,7 @@ export const GET_ALL_ALIVEPAYG = gql`
       price
       overflow
       threshold
+      token
     }
   }
 `;

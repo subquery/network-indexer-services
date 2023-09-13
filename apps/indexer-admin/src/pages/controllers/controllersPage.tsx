@@ -1,9 +1,9 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect, useState } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client';
-import { isEmpty, isUndefined } from 'lodash';
+import { cloneDeep, isEmpty, isUndefined } from 'lodash';
 
 import IntroductionView from 'components/introductionView';
 import { PopupView } from 'components/popupView';
@@ -63,7 +63,7 @@ const controllersPage = () => {
       return address.toLowerCase() === currentController?.toLowerCase();
     };
 
-    const rawControllers = controllerData?.controllers;
+    const rawControllers = cloneDeep(controllerData?.controllers);
     const index = rawControllers.findIndex((c) => isActivedController(c.address));
     if (index !== -1) {
       const [item] = rawControllers.splice(index, 1);

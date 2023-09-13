@@ -6,4 +6,6 @@ SCRIPT_DIR="$(dirname "$0")"
 cd $SCRIPT_DIR/../../
 pwd
 
-rush update
+yarn install
+
+# no need to run this script any more

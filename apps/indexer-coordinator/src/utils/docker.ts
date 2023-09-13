@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import * as fs from 'fs';
@@ -80,6 +80,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
   createDirectory(getComposeFileDirectory(deploymentID));
 
   handlebars.registerHelper('eq', (a, b) => a === b);
+  handlebars.registerHelper('ge', (a, b) => a >= b);
 
   try {
     const config = await nodeConfigs(deploymentID);

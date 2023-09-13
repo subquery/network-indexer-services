@@ -1,4 +1,4 @@
-name: 'Docker-Publish-Prod'
+name: 'Coordinator-Docker-Prod'
 on:
   workflow_dispatch:
     inputs:
@@ -21,9 +21,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 16
-      - run: npm install -g @microsoft/rush
-      - run: rush update
-      - run: rush build -o indexer-admin
+      - run: yarn install:admin
+      - run: yarn build:admin
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1

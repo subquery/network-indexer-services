@@ -1,0 +1,17 @@
+global:
+  scrape_interval:     20s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: query_docker_stats
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['host.docker.internal:8000'] # this is targeting coordinator endpoint.
+
+  - job_name: query_count
+    metrics_path: /metrics
+    scheme: http
+    bearer_token: 'thisismyAuthtoken'          # this is same as proxy metrics-token
+    static_configs:
+      - targets: ['host.docker.internal:80']   # this is targeting proxy endpoint.

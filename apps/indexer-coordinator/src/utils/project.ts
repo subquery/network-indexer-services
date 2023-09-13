@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { IPFSClient } from '@subql/network-clients';
@@ -83,5 +83,7 @@ export async function nodeConfigs(
 
   return { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
 }
+
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';

@@ -1,4 +1,4 @@
-// Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -47,6 +47,7 @@ export function usePAYGConfig(deploymentId: string) {
         await paygPriceRequest({
           variables: {
             paygPrice: price.div(1000).toString(),
+            paygToken: '',
             paygExpiration: Number(paygPeriod * daySeconds),
             // TODO: remove these 2 param on coordinator service side
             paygThreshold: 10,

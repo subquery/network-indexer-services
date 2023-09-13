@@ -17,5 +17,5 @@ jobs:
           color: '#6499ff'
           avatarUrl: https://github.githubassets.com/images/modules/logos_page/Octocat.png
           details: ${{ github.event.release.body }}
-          description: "[Release] indexer-coordinator ${{ github.event.release.name }}"
+          description: "[Release] ${{ github.event.release.name }}"
           footer: ${{ github.event.release.html_url }}
