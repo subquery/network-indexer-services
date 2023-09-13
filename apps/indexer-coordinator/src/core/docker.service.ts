@@ -5,7 +5,7 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import Dockerode from 'dockerode';
-import DockerodeCompose from 'dockerode-compose';
+// import DockerodeCompose from 'dockerode-compose';
 import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
@@ -45,10 +45,10 @@ export class DockerService {
     }
   }
 
-  async upWithApi(filePath: string, projectId: string) {
-    const compose = new DockerodeCompose(this.docker, filePath, projectId);
-    return await compose.up();
-  }
+  // async upWithApi(filePath: string, projectId: string) {
+  //   const compose = new DockerodeCompose(this.docker, filePath, projectId);
+  //   return await compose.up();
+  // }
 
   async start(containers: string[]): Promise<string> {
     if (!this.validateContainerNames(containers)) {
