@@ -39,7 +39,7 @@ services:
       - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
       - --disable-historical=false
       {{#if (eq chainType "ethereum")}}
-      - --block-confirmations=200
+      - --block-confirmations=100
       {{/if}}
     healthcheck:
       test:

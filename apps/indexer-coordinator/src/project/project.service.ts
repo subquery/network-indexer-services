@@ -268,7 +268,8 @@ export class ProjectService {
 
     // HOTFIX: purge poi
     const projectSchemaName = schemaName(projectID);
-    if (advancedConfig.purgeDB) {
+    const isDBExist = await this.db.checkSchemaExist(projectSchemaName);
+    if (advancedConfig.purgeDB && isDBExist) {
       await this.db.clearMMRoot(projectSchemaName, 0);
     }
 

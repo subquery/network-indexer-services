@@ -7,12 +7,10 @@ import { formatEther, parseEther } from '@ethersproject/units';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
-import { FormikHelpers, FormikValues } from 'formik';
 
 import { useAccount } from 'containers/account';
-import { ProjectFormKey } from 'types/schemas';
 import { PAYG_PRICE } from 'utils/queries';
-import { network } from 'utils/web3';
+import { network, TOKEN_SYMBOL } from 'utils/web3';
 
 import { useProjectDetails } from './projectHook';
 
@@ -31,24 +29,26 @@ export function usePAYGConfig(deploymentId: string) {
   const paygConfig = useMemo(() => {
     const { data: { project: { payg } } = { project: { payg: {} } } } = projectQuery;
     if (!payg || !payg.price) {
-      return { paygPrice: '', paygExpiration: 0 };
+      return { paygPrice: '', paygExpiration: 0, token: TOKEN_SYMBOL };
     }
+
     return {
       paygPrice: formatEther(BigNumber.from(payg.price).mul(1000)),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
+      token: payg.token,
     };
   }, [projectQuery]);
 
   const changePAYGCofnig = useCallback(
-    async (values: FormikValues, formHelper: FormikHelpers<FormikValues>) => {
+    async (values: { price: string; token: string; validity: string }) => {
       try {
-        const { paygPrice, paygPeriod } = values;
-        const price = parseEther(paygPrice);
+        const { price, validity, token } = values;
+        const paygPrice = parseEther(price);
         await paygPriceRequest({
           variables: {
-            paygPrice: price.div(1000).toString(),
-            paygToken: '',
-            paygExpiration: Number(paygPeriod * daySeconds),
+            paygPrice: paygPrice.div(1000).toString(),
+            paygToken: token,
+            paygExpiration: Number(+validity * daySeconds),
             // TODO: remove these 2 param on coordinator service side
             paygThreshold: 10,
             paygOverflow: 10,
@@ -60,7 +60,8 @@ export function usePAYGConfig(deploymentId: string) {
 
         return true;
       } catch (e) {
-        formHelper.setErrors({ [ProjectFormKey.paygPrice]: `Invalid PAYG: ${e}` });
+        // formHelper.setErrors({ [ProjectFormKey.paygPrice]: `Invalid PAYG: ${e}` });
+        return { status: false, msg: `Invalid PAYG: ${e}` };
       }
 
       return false;
