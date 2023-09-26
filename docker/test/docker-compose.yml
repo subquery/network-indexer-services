@@ -56,7 +56,7 @@ services:
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
       - --service-url=http://indexer_coordinator:8000
-      - --network-endpoint=https://polygon-rpc.com
+      - --network-endpoint=https://rpc-mumbai.matic.today
       - --redis-endpoint=redis://indexer_cache
     healthcheck:
       test: ['CMD-SHELL', 'curl http://localhost:8001/healthy >/dev/null 2>&1 || exit 1']
