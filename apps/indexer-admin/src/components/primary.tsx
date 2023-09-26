@@ -43,7 +43,7 @@ export const Text = styled.div<TextProps>`
   margin-top: ${({ mt }) => mt ?? 0}px;
   margin-bottom: ${({ mb }) => mb ?? 0}px;
   min-width: ${({ mw }) => mw ?? 10}px;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 `;
 
 export const Label = styled.label<TextProps>`
