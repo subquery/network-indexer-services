@@ -44,7 +44,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
   });
 
   const [paygConf, setPaygConf] = useState({
-    token: TOKEN_SYMBOL,
+    token: '',
     price: '',
     validity: '',
   });
@@ -105,10 +105,10 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
     setPaygConf({
       price: paygConfig.paygPrice,
       validity: `${paygConfig.paygExpiration}`,
-      token: paygConfig.token,
+      token: paygConfig.token || sdk?.sqToken.address || '',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paygConfig]);
+  }, [paygConfig, sdk]);
 
   return (
     <Container>
