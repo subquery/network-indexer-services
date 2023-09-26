@@ -51,7 +51,7 @@ services:
       - --auth
       - --debug
       - --jwt-secret=JwtSecret
-      - --secret-key=SecretKey
+      - --secret-key=ThisIsYourSecret
       - --metrics-token=MetricsToken
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
