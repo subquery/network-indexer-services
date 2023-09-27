@@ -322,8 +322,8 @@ pub async fn project_query(
                 .await
                 .unwrap_or(default_sign());
 
-            let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
-            query.insert("_signature".to_owned(), signature.into());
+            let _signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
+            // query.insert("_signature".to_owned(), signature.into()); TMP comment it.
         }
     }
 
