@@ -172,6 +172,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                 type="number"
                 addonAfter={
                   <Select
+                    disabled
                     value={paygConf.token}
                     onChange={(e) => {
                       setPaygConf({
