@@ -237,7 +237,6 @@ export const GET_QUERY_METADATA = gql`
   query QueryMetadata($id: String!) {
     queryMetadata(id: $id) {
       lastProcessedHeight
-      startHeight
       targetHeight
       lastProcessedTimestamp
       specName
