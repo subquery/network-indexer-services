@@ -16,6 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use chrono::Utc;
+use digest::Digest;
 use ethers::{
     abi::{encode, Tokenizable},
     signers::Signer,
@@ -29,6 +31,7 @@ use std::collections::HashMap;
 use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
+    payg::{convert_sign_to_string, default_sign},
     request::{graphql_request, proxy_request, GraphQLQuery},
     types::Result,
 };
@@ -292,8 +295,37 @@ pub async fn project_query(
     let project = get_project(id).await?;
 
     let now = Instant::now();
-    let res = graphql_request(&project.query_endpoint, query).await;
+    let mut res = graphql_request(&project.query_endpoint, query).await;
     let time = now.elapsed().as_millis() as u64;
+
+    if let Ok(data) = &mut res {
+        if let Some(query) = data.as_object_mut() {
+            let mut hasher = sha2::Sha256::new();
+            serde_json::to_writer(&mut hasher, query).map_err(|_| Error::ServiceException(1029))?;
+            let bytes = hasher.finalize().to_vec();
+
+            // sign the response
+            let lock = ACCOUNT.read().await;
+            let controller = lock.controller.clone();
+            let indexer = lock.indexer.clone();
+            drop(lock);
+
+            let timestamp = Utc::now().timestamp();
+            let payload = encode(&[
+                indexer.into_token(),
+                bytes.into_token(),
+                timestamp.into_token(),
+            ]);
+            let hash = keccak256(payload);
+            let sign = controller
+                .sign_message(hash)
+                .await
+                .unwrap_or(default_sign());
+
+            let _signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
+            // query.insert("_signature".to_owned(), signature.into()); TMP comment it.
+        }
+    }
 
     add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
 

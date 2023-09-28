@@ -18,6 +18,7 @@
 - `1026` - Service exception: contract call (getPlanTemplate) not work.
 - `1027` - Service exception: contract call (channelConsumer) not work.
 - `1028` - Service exception: contract call (getSigners) not work.
+- `1029` - Service exception: query to serde json when signature.
 - `1030` - Invalid auth header: query invalid or missing Bearer.
 - `1031` - Invalid auth header: payg invalid or missing Bearer.
 - `1032` - Invalid project id: indexer not index this project.
