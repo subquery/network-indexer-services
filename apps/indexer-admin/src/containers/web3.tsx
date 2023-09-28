@@ -14,6 +14,12 @@ import { ChainID, hexToInt, NetworkToChainID, RPC_URLS } from 'utils/web3';
 
 export const SUPPORTED_NETWORK = (import.meta.env.VITE_APP_NETWORK ||
   window.env.NETWORK) as keyof typeof NetworkToChainID;
+
+export const STABLE_COIN_ADDRESS =
+  SUPPORTED_NETWORK === 'testnet'
+    ? '0x7E65A71046170A5b1AaB5C5cC64242EDF95CaBEA'
+    : '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+
 export const defaultChainId = parseInt(networks[SUPPORTED_NETWORK].chainId, 16);
 
 const injectedConntector = new InjectedConnector({
