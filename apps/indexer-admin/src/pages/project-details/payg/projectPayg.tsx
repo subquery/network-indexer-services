@@ -122,12 +122,12 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
       {paygEnabled ? (
         <PAYGConfig
           sqtPrice={
-            paygConfig.token === TOKEN_SYMBOL
+            paygConfig.token === sdk?.sqToken.address
               ? paygConfig.paygPrice
               : BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()
           }
           usdcPrice={
-            paygConfig.token === TOKEN_SYMBOL
+            paygConfig.token === sdk?.sqToken.address
               ? BigNumber(paygConfig.paygPrice).multipliedBy(rates.sqtToUsdc).toFixed()
               : paygConfig.paygPrice
           }
