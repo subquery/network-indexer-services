@@ -12,6 +12,7 @@ import moment from 'moment';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
+import { STABLE_COIN_ADDRESS } from 'containers/web3';
 import { usePAYGConfig } from 'hooks/paygHook';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
@@ -74,7 +75,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
   const getPriceOracle = async () => {
     if (!sdk) return;
     const assetPrice = await sdk.priceOracle.getAssetPrice(
-      import.meta.env.VITE_STABLE_TOKEN_ADDRESS,
+      STABLE_COIN_ADDRESS,
       sdk.sqToken.address
     );
 
@@ -181,7 +182,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                     }}
                     options={[
                       {
-                        value: import.meta.env.VITE_STABLE_TOKEN_ADDRESS,
+                        value: STABLE_COIN_ADDRESS,
                         label: (
                           <div style={{ display: 'flex', alignItems: 'center' }}>
                             <img
