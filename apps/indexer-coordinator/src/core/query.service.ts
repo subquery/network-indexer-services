@@ -70,6 +70,7 @@ export class QueryService {
         _metadata {
           lastProcessedHeight
           lastProcessedTimestamp
+          startHeight
           targetHeight
           chain
           specName
