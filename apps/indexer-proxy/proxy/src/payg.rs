@@ -45,7 +45,7 @@ use crate::cli::{redis, COMMAND};
 use crate::contracts::{
     check_consumer_controller, check_convert_price, check_state_channel_consumer,
 };
-use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
+use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, project_query, Project};
 
