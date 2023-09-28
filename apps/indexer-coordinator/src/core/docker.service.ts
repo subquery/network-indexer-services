@@ -4,8 +4,14 @@
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
+import { v2 as compose } from 'docker-compose';
 import Dockerode from 'dockerode';
-import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
+import {
+  getComposeFileDirectory,
+  getComposeFilePath,
+  projectContainers,
+  projectId,
+} from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
 @Injectable()
@@ -37,6 +43,24 @@ export class DockerService {
       const result = await this.execute(
         `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`
       );
+      getLogger('docker').info(`start new project completed: ${result}`);
+    } else {
+      getLogger('docker').warn(`file: ${filePath} not exist`);
+    }
+  }
+
+  async upWithApi(fileName: string) {
+    const workingDir = getComposeFileDirectory(fileName);
+    const filePath = getComposeFilePath(fileName);
+    if (fs.existsSync(filePath)) {
+      getLogger('docker').info(`start new project ${fileName}`);
+      await this.rm(projectContainers(fileName));
+      const result = await compose.upAll({
+        cwd: workingDir,
+        config: 'docker-compose.yml',
+        log: true,
+        commandOptions: [],
+      });
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').warn(`file: ${filePath} not exist`);
