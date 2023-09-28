@@ -32,7 +32,6 @@ use ethers::{
 use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::time::Instant;
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, price_recover, price_sign, OpenState, QueryState},
@@ -48,7 +47,7 @@ use crate::contracts::{
 };
 use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
-use crate::project::{get_project, list_projects, Project};
+use crate::project::{get_project, list_projects, project_query, Project};
 
 struct StateCache {
     price: U256,
@@ -360,31 +359,7 @@ pub async fn query_state(
     }
 
     // query the data.
-    let now = Instant::now();
-    let data = match graphql_request(&project.query_endpoint, query).await {
-        Ok(result) => {
-            let _string = serde_json::to_string(&result).unwrap(); // safe unwrap
-
-            // let _sign = sign_message(string.as_bytes()); // TODO add to header
-            // TODO add state to header and request to coordinator know the response.
-
-            Ok(result)
-        }
-        Err(e) => {
-            debug!("query error: {:?}", e);
-            Err(Error::InvalidRequest(1046))
-        }
-    };
-
-    let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(
-        project_id.to_owned(),
-        time,
-        MetricsQuery::PAYG,
-        network_type,
-        data.is_ok(),
-    );
-    let data = data?;
+    let data = project_query(project_id, query, MetricsQuery::PAYG, network_type).await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;
