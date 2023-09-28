@@ -16,11 +16,11 @@ docker-compose -f docker-compose.yml up -d
 cd ../../
 pwd
 
-if [ "$1" = "bypass" ]; then
+if [ "$1" = "bypass" ] || [ "$2" = "bypass" ]; then
   echo "bypass admin build"
-  rush build -o @subql/indexer-coordinator
+  yarn build:coordinator
 else
-  rush build
+  yarn build
 fi
 
 FE_DIR="apps/indexer-admin/build"

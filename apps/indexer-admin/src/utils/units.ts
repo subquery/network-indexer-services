@@ -11,3 +11,13 @@ export function formatValue(value: BigNumberish) {
 export function formatValueToFixed(val: number, fixed = 2) {
   return +val.toFixed(fixed);
 }
+
+export function truncFormatEtherStr(value: string, decimalPlaces = 4): string {
+  const [wholeNumberStr, decimalPlacesStr] = value.split('.');
+  if (!decimalPlacesStr) return wholeNumberStr;
+
+  const subStrLength =
+    decimalPlacesStr.length > decimalPlaces ? decimalPlaces : decimalPlacesStr.length;
+  const sortedDecimalPlaceStr = decimalPlacesStr.substring(0, subStrLength);
+  return wholeNumberStr.concat('.', sortedDecimalPlaceStr);
+}

@@ -93,9 +93,15 @@ pub async fn proxy_request(
     let res = match method.to_lowercase().as_str() {
         "get" => {
             let mut req = REQUEST_CLIENT.get(url);
-            req = req.header(AUTHORIZATION, token);
+            let mut no_auth = true;
             for (k, v) in headers {
+                if k.to_lowercase() == "authorization" {
+                    no_auth = false;
+                }
                 req = req.header(k, v);
+            }
+            if no_auth {
+                req = req.header(AUTHORIZATION, token);
             }
             req.send().await
         }
@@ -103,10 +109,17 @@ pub async fn proxy_request(
             let mut req = REQUEST_CLIENT
                 .post(url)
                 .header("content-type", "application/json");
-            req = req.header(AUTHORIZATION, token);
+            let mut no_auth = true;
             for (k, v) in headers {
+                if k.to_lowercase() == "authorization" {
+                    no_auth = false;
+                }
                 req = req.header(k, v);
             }
+            if no_auth {
+                req = req.header(AUTHORIZATION, token);
+            }
+
             req.body(query).send().await
         }
     };

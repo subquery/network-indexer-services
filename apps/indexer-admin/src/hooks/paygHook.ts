@@ -3,14 +3,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApolloQueryResult, useMutation } from '@apollo/client';
-import { formatEther, parseEther } from '@ethersproject/units';
+import { formatEther, formatUnits, parseEther, parseUnits } from '@ethersproject/units';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
-import { FormikHelpers, FormikValues } from 'formik';
 
 import { useAccount } from 'containers/account';
-import { ProjectFormKey } from 'types/schemas';
+import { useContractSDK } from 'containers/contractSdk';
 import { PAYG_PRICE } from 'utils/queries';
 import { network } from 'utils/web3';
 
@@ -27,27 +26,41 @@ const daySeconds = 3600 * 24;
 export function usePAYGConfig(deploymentId: string) {
   const [paygPriceRequest, { loading }] = useMutation(PAYG_PRICE);
   const projectQuery = useProjectDetails(deploymentId);
+  const sdk = useContractSDK();
 
   const paygConfig = useMemo(() => {
     const { data: { project: { payg } } = { project: { payg: {} } } } = projectQuery;
     if (!payg || !payg.price) {
-      return { paygPrice: '', paygExpiration: 0 };
+      return { paygPrice: '', paygExpiration: 0, token: sdk?.sqToken.address };
     }
+
     return {
-      paygPrice: formatEther(BigNumber.from(payg.price).mul(1000)),
+      paygPrice:
+        payg.token === sdk?.sqToken.address
+          ? formatEther(BigNumber.from(payg.price).mul(1000))
+          : formatUnits(
+              BigNumber.from(payg.price).mul(1000),
+              +import.meta.env.VITE_STABLE_TOKEN_DECIMAL
+            ),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
+      token: payg.token,
     };
-  }, [projectQuery]);
+  }, [projectQuery, sdk]);
 
   const changePAYGCofnig = useCallback(
-    async (values: FormikValues, formHelper: FormikHelpers<FormikValues>) => {
+    async (values: { price: string; token: string; validity: string }) => {
       try {
-        const { paygPrice, paygPeriod } = values;
-        const price = parseEther(paygPrice);
+        const { price, validity, token } = values;
+        const paygPrice =
+          token === sdk?.sqToken.address
+            ? parseEther(price)
+            : parseUnits(price, +import.meta.env.VITE_STABLE_TOKEN_DECIMAL);
+
         await paygPriceRequest({
           variables: {
-            paygPrice: price.div(1000).toString(),
-            paygExpiration: Number(paygPeriod * daySeconds),
+            paygPrice: paygPrice.div(1000).toString(),
+            paygToken: token,
+            paygExpiration: Number(+validity * daySeconds),
             // TODO: remove these 2 param on coordinator service side
             paygThreshold: 10,
             paygOverflow: 10,
@@ -59,12 +72,13 @@ export function usePAYGConfig(deploymentId: string) {
 
         return true;
       } catch (e) {
-        formHelper.setErrors({ [ProjectFormKey.paygPrice]: `Invalid PAYG: ${e}` });
+        // formHelper.setErrors({ [ProjectFormKey.paygPrice]: `Invalid PAYG: ${e}` });
+        return { status: false, msg: `Invalid PAYG: ${e}` };
       }
 
       return false;
     },
-    [deploymentId, paygPriceRequest, projectQuery]
+    [deploymentId, paygPriceRequest, projectQuery, sdk]
   );
 
   return { paygConfig, changePAYGCofnig, loading };

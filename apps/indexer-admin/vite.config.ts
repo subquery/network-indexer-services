@@ -20,6 +20,7 @@ export default defineConfig({
       utils: resolve(__dirname, 'src/utils/'),
       resources: resolve(__dirname, 'src/resources/'),
       contract: resolve(__dirname, 'src/contract/'),
+      styles: resolve(__dirname, 'src/styles/'),
     },
   },
   plugins: [EnvironmentPlugin('all'), react()],

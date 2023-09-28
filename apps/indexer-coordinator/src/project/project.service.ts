@@ -265,7 +265,8 @@ export class ProjectService {
 
     // HOTFIX: purge poi
     const projectSchemaName = schemaName(projectID);
-    if (advancedConfig.purgeDB) {
+    const isDBExist = await this.db.checkSchemaExist(projectSchemaName);
+    if (advancedConfig.purgeDB && isDBExist) {
       await this.db.clearMMRoot(projectSchemaName, 0);
     }
 
@@ -334,13 +335,11 @@ export class ProjectService {
       throw new Error(`project not exist: ${id}`);
     }
 
-    const defaultToken = this.contract.getSdk().sqToken.address;
-
     payg.price = paygConfig.price;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
-    payg.token = paygConfig.token || defaultToken;
+    payg.token = paygConfig.token || this.contract.getSdk().sqToken.address;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);

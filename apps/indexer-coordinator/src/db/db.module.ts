@@ -59,7 +59,9 @@ export class DB implements OnApplicationBootstrap {
     await this.dataSource.query(
       `UPDATE ${name}._poi SET "mmrRoot" = NULL WHERE id >= ${blockHeight}`
     );
-    await this.dataSource.query(`UPDATE ${name}._metadata SET "latestPoiWithMmr" = NULL`);
+    await this.dataSource.query(
+      `UPDATE ${name}._metadata SET "value" = NULL WHERE "key" = 'latestPoiWithMmr'`
+    );
     getLogger('docker').info('clear mmrRoot completed');
   }
 }

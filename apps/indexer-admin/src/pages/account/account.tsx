@@ -25,6 +25,7 @@ import { useIsMetaMask } from 'hooks/web3Hook';
 import { AccountAction } from 'pages/project-details/types';
 import { MetadataFormKey } from 'types/schemas';
 import { balanceSufficient } from 'utils/account';
+import { parseError } from 'utils/error';
 import { createIndexerMetadata } from 'utils/ipfs';
 import { REMOVE_ACCOUNTS } from 'utils/queries';
 
@@ -81,7 +82,13 @@ const Account = () => {
     setVisible(true);
   };
 
-  const onModalClose = () => {
+  const onModalClose = (error?: any) => {
+    if (error) {
+      parseError(error, {
+        alert: true,
+      });
+      return;
+    }
     setVisible(false);
     setTimeout(() => setCurrentStep(0), 1000);
   };
@@ -152,7 +159,7 @@ const Account = () => {
           setVisible={setVisible}
           visible={visible}
           title={AccountActionName[actionType]}
-          onClose={onModalClose}
+          onClose={() => onModalClose()}
           steps={steps[actionType]}
           currentStep={currentStep}
           type={actionType}

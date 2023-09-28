@@ -15,6 +15,7 @@ import { Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
 import { Button, Col, Collapse, Form, Input, Row, Select, Slider, Switch, Tooltip } from 'antd';
 import Link from 'antd/es/typography/Link';
+import { cloneDeep } from 'lodash';
 import styled from 'styled-components';
 
 import { LoadingSpinner } from 'components/loading';
@@ -191,10 +192,14 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
 
   return renderAsync(projectQuery, {
     loading: () => <LoadingSpinner />,
-    error: () => <>Unable to get default values</>,
+    error: (e) => {
+      console.error(e);
+      return <>Unable to get default values</>;
+    },
     data: ({ project }) => {
-      const { baseConfig, advancedConfig } = project;
-      baseConfig.networkEndpoints =
+      const { baseConfig, advancedConfig } = cloneDeep(project);
+
+      const networkEndpoints =
         baseConfig?.networkEndpoints.length === 0 ? [''] : baseConfig?.networkEndpoints;
       return (
         <StartINdexingForm>
@@ -203,7 +208,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
             name="form"
             layout="vertical"
             onFinish={handleSubmit(setVisible)}
-            initialValues={{ ...baseConfig, ...advancedConfig }}
+            initialValues={{ ...baseConfig, ...advancedConfig, networkEndpoints }}
           >
             <Typography variant="medium" style={{ marginBottom: 24 }}>
               <InfoCircleOutlined
@@ -221,7 +226,10 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
               {(fields, { add, remove }) => (
                 <>
                   {fields.map((field, index) => (
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}
+                      key={field.name}
+                    >
                       <Form.Item
                         {...field}
                         label={
@@ -342,9 +350,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
               <ButtonContainer align="right" mt={30}>
                 <Button type="primary" onClick={() => form.submit()} shape="round" size="large">
                   {/* If re-staring project, there must have network endpoints and must more than 1 length */}
-                  {project?.baseConfig?.networkEndpoints?.every((i: string) => i.length > 1)
-                    ? 'Update'
-                    : 'Start'}
+                  {networkEndpoints?.every((i: string) => i.length > 1) ? 'Update' : 'Start'}
                 </Button>
               </ButtonContainer>
             </Form.Item>
