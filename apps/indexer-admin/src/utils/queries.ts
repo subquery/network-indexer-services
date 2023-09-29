@@ -56,6 +56,7 @@ const MetadataFields = `
     queryNodeVersion
     indexerStatus
     queryStatus
+    startHeight
   }
 `;
 
