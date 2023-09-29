@@ -42,6 +42,8 @@ export class MetadataType {
   @Field()
   lastProcessedTimestamp: number;
   @Field(() => Int)
+  startHeight: number;
+  @Field(() => Int)
   targetHeight: number;
   @Field()
   chain: string;
