@@ -35,6 +35,7 @@ import { useGetIndexerMetadataCid } from './transactionHook';
 const metadataInitValue = {
   lastProcessedHeight: 0,
   lastProcessedTimestamp: 0,
+  startHeight: 0,
   targetHeight: 0,
   chain: '',
   specName: '',
