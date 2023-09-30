@@ -181,19 +181,19 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                       });
                     }}
                     options={[
-                      {
-                        value: STABLE_COIN_ADDRESS,
-                        label: (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <img
-                              style={{ width: 24, height: 24, marginRight: 8 }}
-                              src="/images/usdc.png"
-                              alt=""
-                            />
-                            <Typography>USDC</Typography>
-                          </div>
-                        ),
-                      },
+                      // {
+                      //   value: STABLE_COIN_ADDRESS,
+                      //   label: (
+                      //     <div style={{ display: 'flex', alignItems: 'center' }}>
+                      //       <img
+                      //         style={{ width: 24, height: 24, marginRight: 8 }}
+                      //         src="/images/usdc.png"
+                      //         alt=""
+                      //       />
+                      //       <Typography>USDC</Typography>
+                      //     </div>
+                      //   ),
+                      // },
                       {
                         value: sdk.sqToken.address,
                         label: (
@@ -214,13 +214,13 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
             )}
           </SubqlInput>
 
-          <Typography
-            type="secondary"
-            variant="medium"
-            style={{ color: 'var(--sq-gray600)', marginTop: 2 }}
-          >
-            {pricePreview}
-          </Typography>
+          {/* <Typography */}
+          {/*  type="secondary" */}
+          {/*  variant="medium" */}
+          {/*  style={{ color: 'var(--sq-gray600)', marginTop: 2 }} */}
+          {/* > */}
+          {/*  {pricePreview} */}
+          {/* </Typography> */}
 
           <div style={{ marginTop: 24 }}>
             <Typography style={{ marginBottom: 8 }}>Validity Period</Typography>
