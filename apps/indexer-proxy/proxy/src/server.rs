@@ -197,7 +197,7 @@ async fn query_handler(
                 ("X-Indexer-Response-Format", "inline"),
             ],
         ),
-        Ok("wrapped") | _ => (
+        Ok("wrapped") => (
             serde_json::to_string(&json!({
                 "result": general_purpose::STANDARD.encode(&data),
                 "signature": signature
@@ -205,6 +205,7 @@ async fn query_handler(
             .unwrap_or("".to_owned()),
             vec![("X-Indexer-Response-Format", "wrapped")],
         ),
+        _ => ("".to_owned(), vec![]),
     };
     headers.push(("Content-Type", "application/json"));
 
