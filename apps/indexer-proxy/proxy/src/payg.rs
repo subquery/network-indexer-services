@@ -47,7 +47,7 @@ use crate::contracts::{
 };
 use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
-use crate::project::{get_project, list_projects, project_query, Project};
+use crate::project::{get_project, list_projects, project_query_raw, Project};
 
 struct StateCache {
     price: U256,
@@ -284,7 +284,7 @@ pub async fn query_state(
     query: &GraphQLQuery,
     state: &Value,
     network_type: MetricsNetwork,
-) -> Result<(Value, Value)> {
+) -> Result<(Vec<u8>, String, String)> {
     let project = get_project(project_id).await?;
     let mut state = QueryState::from_json(state)?;
 
@@ -359,7 +359,8 @@ pub async fn query_state(
     }
 
     // query the data.
-    let data = project_query(project_id, query, MetricsQuery::PAYG, network_type).await?;
+    let (data, signature) =
+        project_query_raw(project_id, query, MetricsQuery::PAYG, network_type).await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;
@@ -405,7 +406,9 @@ pub async fn query_state(
 
     state.remote = state_cache.spent;
     debug!("Handle query channel success");
-    Ok((data, state.to_json()))
+    let state_bytes = serde_json::to_vec(&state.to_json()).unwrap_or(vec![]);
+    let state_string = general_purpose::STANDARD.encode(&state_bytes);
+    Ok((data, signature, state_string))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
