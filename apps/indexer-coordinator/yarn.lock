@@ -1659,17 +1659,10 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@^0.13.7":
-  version "0.13.7"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.13.7.tgz#c05bfb33a4b340943cdebc6050e1ed18e2beaded"
-  integrity sha512-Af6Jobsr7hxUIiijwlnS2WmLA6G4NQO1FNJsfItqHwZvmeajZMPllu7DTojYNpYjSbSB5w5I3OfN6YRNCefaMA==
-  dependencies:
-    "@openzeppelin/contracts-upgradeable" "^4.5.2"
-
-"@subql/contract-sdk@^0.15.0":
-  version "0.15.0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.15.0.tgz#a864c0f8adbb549ffc9a889521d6698196c2dc15"
-  integrity sha512-IMgWCocxlseNZoSDMJoWkDTjpBBy/uGYP8c2RATFYwkMI3AFGUKlkjBDCHd57Lq3RqOlPzWzR4gEz2xPJtsbQg==
+"@subql/contract-sdk@^0.16.2":
+  version "0.16.2"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.16.2.tgz#98ec9bb15b7863767fbe38c86d8a1d70d6e41d4f"
+  integrity sha512-OHSlV+bEyIlk+iZAUBqOMIhENdILrkTTM2+iovumvpM7mUXKGtLvey5tf9t4h4ShGDZQEH5t3crP8FGyvuP07A==
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 

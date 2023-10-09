@@ -36,17 +36,7 @@ export class DockerService {
     if (!this.validateFileName(fileName)) {
       return;
     }
-    const filePath = getComposeFilePath(fileName);
-    if (fs.existsSync(filePath)) {
-      getLogger('docker').info(`start new project ${fileName}`);
-      await this.rm(projectContainers(fileName));
-      const result = await this.execute(
-        `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`
-      );
-      getLogger('docker').info(`start new project completed: ${result}`);
-    } else {
-      getLogger('docker').warn(`file: ${filePath} not exist`);
-    }
+    await this.upWithApi(fileName);
   }
 
   async upWithApi(fileName: string) {
@@ -58,8 +48,8 @@ export class DockerService {
       const result = await compose.upAll({
         cwd: workingDir,
         config: 'docker-compose.yml',
+        composeOptions: ['-p', projectId(fileName)],
         log: true,
-        commandOptions: [],
       });
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
