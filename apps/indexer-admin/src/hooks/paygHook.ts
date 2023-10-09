@@ -3,14 +3,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApolloQueryResult, useMutation } from '@apollo/client';
-import { formatEther, parseEther } from '@ethersproject/units';
+import { formatEther, formatUnits, parseEther, parseUnits } from '@ethersproject/units';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 
 import { useAccount } from 'containers/account';
+import { useContractSDK } from 'containers/contractSdk';
 import { PAYG_PRICE } from 'utils/queries';
-import { network, TOKEN_SYMBOL } from 'utils/web3';
+import { network } from 'utils/web3';
 
 import { useProjectDetails } from './projectHook';
 
@@ -25,25 +26,36 @@ const daySeconds = 3600 * 24;
 export function usePAYGConfig(deploymentId: string) {
   const [paygPriceRequest, { loading }] = useMutation(PAYG_PRICE);
   const projectQuery = useProjectDetails(deploymentId);
+  const sdk = useContractSDK();
 
   const paygConfig = useMemo(() => {
     const { data: { project: { payg } } = { project: { payg: {} } } } = projectQuery;
     if (!payg || !payg.price) {
-      return { paygPrice: '', paygExpiration: 0, token: TOKEN_SYMBOL };
+      return { paygPrice: '', paygExpiration: 0, token: sdk?.sqToken.address };
     }
 
     return {
-      paygPrice: formatEther(BigNumber.from(payg.price).mul(1000)),
+      paygPrice:
+        payg.token === sdk?.sqToken.address
+          ? formatEther(BigNumber.from(payg.price).mul(1000))
+          : formatUnits(
+              BigNumber.from(payg.price).mul(1000),
+              +import.meta.env.VITE_STABLE_TOKEN_DECIMAL
+            ),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
       token: payg.token,
     };
-  }, [projectQuery]);
+  }, [projectQuery, sdk]);
 
   const changePAYGCofnig = useCallback(
     async (values: { price: string; token: string; validity: string }) => {
       try {
         const { price, validity, token } = values;
-        const paygPrice = parseEther(price);
+        const paygPrice =
+          token === sdk?.sqToken.address
+            ? parseEther(price)
+            : parseUnits(price, +import.meta.env.VITE_STABLE_TOKEN_DECIMAL);
+
         await paygPriceRequest({
           variables: {
             paygPrice: paygPrice.div(1000).toString(),
@@ -66,7 +78,7 @@ export function usePAYGConfig(deploymentId: string) {
 
       return false;
     },
-    [deploymentId, paygPriceRequest, projectQuery]
+    [deploymentId, paygPriceRequest, projectQuery, sdk]
   );
 
   return { paygConfig, changePAYGCofnig, loading };

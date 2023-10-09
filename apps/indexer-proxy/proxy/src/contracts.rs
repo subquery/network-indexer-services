@@ -24,9 +24,10 @@ use ethers::{
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use subql_contracts::{
-    consumer_host, consumer_host_parse, consumer_registry, plan_manager, service_agreement_registry,
+    consumer_host, consumer_host_parse, consumer_registry, plan_manager,
+    service_agreement_registry, sqtoken_parse,
 };
-use subql_indexer_utils::error::Error;
+use subql_indexer_utils::{error::Error, price_oracle::convert_price};
 use tdn::prelude::PeerId;
 
 use crate::cli::COMMAND;
@@ -219,4 +220,21 @@ pub async fn check_consumer_controller(consumer: Address, signer: Address) -> Re
         .await
         .map_err(|_| Error::ServiceException(1025))?;
     Ok(is_controller)
+}
+
+pub async fn check_convert_price(
+    asset_from: Address,
+    amount_from: U256,
+    amount_to: U256,
+) -> Result<bool, Error> {
+    let client = Arc::new(
+        Provider::<Http>::try_from(COMMAND.network_endpoint())
+            .map_err(|_| Error::ServiceException(1022))?,
+    );
+    let network = COMMAND.network();
+
+    let (_, sqt) = sqtoken_parse(network).map_err(|_| Error::ServiceException(1023))?;
+    let check_amount = convert_price(asset_from, sqt, amount_from, client, network).await?;
+
+    Ok(amount_to >= check_amount)
 }

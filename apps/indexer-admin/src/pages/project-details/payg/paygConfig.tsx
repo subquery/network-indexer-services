@@ -15,7 +15,7 @@ type Props = {
 
 const columns = [
   createTextColumn('price', 'PRICE'),
-  createTextColumn('usdcPrice', 'To USDC Price'),
+  // createTextColumn('usdcPrice', 'To USDC Price'),
   createTextColumn('period', 'MAXIMUM VALIDITY PERIOD'),
 ];
 

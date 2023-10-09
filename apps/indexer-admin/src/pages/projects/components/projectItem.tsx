@@ -34,7 +34,9 @@ const ProjectItem: FC<Props> = (props) => {
   });
   const progress = useMemo(() => {
     if (!metadata) return 0;
+
     const { targetHeight, lastProcessedHeight, startHeight = 0 } = metadata;
+
     return indexingProgress({
       startHeight: startHeight ?? 0,
       targetHeight,

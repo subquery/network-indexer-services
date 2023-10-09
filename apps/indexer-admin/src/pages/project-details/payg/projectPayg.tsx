@@ -12,6 +12,7 @@ import moment from 'moment';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
+import { STABLE_COIN_ADDRESS } from 'containers/web3';
 import { usePAYGConfig } from 'hooks/paygHook';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
@@ -74,7 +75,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
   const getPriceOracle = async () => {
     if (!sdk) return;
     const assetPrice = await sdk.priceOracle.getAssetPrice(
-      import.meta.env.VITE_STABLE_TOKEN_ADDRESS,
+      STABLE_COIN_ADDRESS,
       sdk.sqToken.address
     );
 
@@ -122,12 +123,12 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
       {paygEnabled ? (
         <PAYGConfig
           sqtPrice={
-            paygConfig.token === TOKEN_SYMBOL
+            paygConfig.token === sdk?.sqToken.address
               ? paygConfig.paygPrice
               : BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()
           }
           usdcPrice={
-            paygConfig.token === TOKEN_SYMBOL
+            paygConfig.token === sdk?.sqToken.address
               ? BigNumber(paygConfig.paygPrice).multipliedBy(rates.sqtToUsdc).toFixed()
               : paygConfig.paygPrice
           }
@@ -172,7 +173,6 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                 type="number"
                 addonAfter={
                   <Select
-                    disabled
                     value={paygConf.token}
                     onChange={(e) => {
                       setPaygConf({
@@ -181,19 +181,19 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                       });
                     }}
                     options={[
-                      {
-                        value: import.meta.env.VITE_STABLE_TOKEN_ADDRESS,
-                        label: (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <img
-                              style={{ width: 24, height: 24, marginRight: 8 }}
-                              src="/images/usdc.png"
-                              alt=""
-                            />
-                            <Typography>USDC</Typography>
-                          </div>
-                        ),
-                      },
+                      // {
+                      //   value: STABLE_COIN_ADDRESS,
+                      //   label: (
+                      //     <div style={{ display: 'flex', alignItems: 'center' }}>
+                      //       <img
+                      //         style={{ width: 24, height: 24, marginRight: 8 }}
+                      //         src="/images/usdc.png"
+                      //         alt=""
+                      //       />
+                      //       <Typography>USDC</Typography>
+                      //     </div>
+                      //   ),
+                      // },
                       {
                         value: sdk.sqToken.address,
                         label: (
@@ -214,13 +214,13 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
             )}
           </SubqlInput>
 
-          <Typography
-            type="secondary"
-            variant="medium"
-            style={{ color: 'var(--sq-gray600)', marginTop: 2 }}
-          >
-            {pricePreview}
-          </Typography>
+          {/* <Typography */}
+          {/*  type="secondary" */}
+          {/*  variant="medium" */}
+          {/*  style={{ color: 'var(--sq-gray600)', marginTop: 2 }} */}
+          {/* > */}
+          {/*  {pricePreview} */}
+          {/* </Typography> */}
 
           <div style={{ marginTop: 24 }}>
             <Typography style={{ marginBottom: 8 }}>Validity Period</Typography>

@@ -56,6 +56,7 @@ const MetadataFields = `
     queryNodeVersion
     indexerStatus
     queryStatus
+    startHeight
   }
 `;
 
@@ -237,8 +238,8 @@ export const GET_QUERY_METADATA = gql`
   query QueryMetadata($id: String!) {
     queryMetadata(id: $id) {
       lastProcessedHeight
+      startHeight
       targetHeight
-      lastProcessedHeight
       lastProcessedTimestamp
       specName
       chain

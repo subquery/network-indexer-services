@@ -70,6 +70,7 @@ export class QueryService {
         _metadata {
           lastProcessedHeight
           lastProcessedTimestamp
+          startHeight
           targetHeight
           chain
           specName
@@ -77,7 +78,8 @@ export class QueryService {
           indexerHealthy
           indexerNodeVersion
           queryNodeVersion
-        }}`,
+        }
+      }`,
     });
 
     try {
@@ -87,6 +89,7 @@ export class QueryService {
 
       return {
         ...metadata,
+        startHeight: metadata.startHeight ?? 0,
         targetHeight: metadata.targetHeight ?? 0,
         lastProcessedTimestamp: metadata.lastProcessedTimestamp ?? 0,
         lastProcessedHeight: metadata.lastProcessedHeight ?? 0,
@@ -94,10 +97,12 @@ export class QueryService {
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
-    } catch {
+    } catch (e) {
+      debugLogger('getQueryMetaData', e);
       return {
         lastProcessedHeight: 0,
         lastProcessedTimestamp: 0,
+        startHeight: 0,
         targetHeight: 0,
         chain: '',
         specName: '',

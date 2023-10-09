@@ -26,16 +26,15 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
-    signers::Signer,
+    signers::{LocalWallet, Signer},
     types::{Address, U256},
 };
 use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::time::Instant;
 use subql_indexer_utils::{
     error::Error,
-    payg::{convert_sign_to_string, OpenState, QueryState},
+    payg::{convert_sign_to_string, price_recover, price_sign, OpenState, QueryState},
     request::{graphql_request, GraphQLQuery},
     tools::deployment_cid,
     types::Result,
@@ -43,10 +42,12 @@ use subql_indexer_utils::{
 
 use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
-use crate::contracts::{check_consumer_controller, check_state_channel_consumer};
-use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
+use crate::contracts::{
+    check_consumer_controller, check_convert_price, check_state_channel_consumer,
+};
+use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
-use crate::project::{get_project, list_projects};
+use crate::project::{get_project, list_projects, project_query, Project};
 
 struct StateCache {
     price: U256,
@@ -170,41 +171,59 @@ impl ConsumerType {
     }
 }
 
-pub async fn merket_price(project_id: Option<String>) -> Value {
+async fn build_project_price(
+    project: Project,
+    expired: i64,
+    controller: &LocalWallet,
+) -> Result<Value> {
+    // sign the price
+    let price = project.payg_price;
+    let token = project.payg_token;
+
+    // price + price_token + price_expired
+    let sign = price_sign(price, token, expired, controller).await?;
+
+    Ok(json!((
+        project.id,
+        price.to_string(),
+        project.payg_expiration.to_string(),
+        format!("{:?}", token),
+        expired,
+        convert_sign_to_string(&sign)
+    )))
+}
+
+pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
     let account = ACCOUNT.read().await;
-    let projects: Vec<(String, String, String)> = if let Some(pid) = project_id {
+    let indexer = account.indexer.clone();
+    let controller = account.controller.clone();
+    drop(account);
+    let mut values = vec![];
+    if let Some(pid) = project_id {
         if let Ok(project) = get_project(&pid).await {
             if project.open_payg() {
-                vec![(
-                    pid,
-                    project.payg_price.to_string(),
-                    project.payg_expiration.to_string(),
-                )]
-            } else {
-                vec![]
+                let expired = Utc::now().timestamp() + 86400;
+                let v = build_project_price(project, expired, &controller).await?;
+                values.push(v);
             }
-        } else {
-            vec![]
         }
     } else {
-        list_projects()
-            .await
-            .iter()
-            .filter_map(|(pid, price, expiration)| {
-                if *price == U256::from(0) {
-                    None
-                } else {
-                    Some((pid.clone(), price.to_string(), expiration.to_string()))
-                }
-            })
-            .collect()
-    };
-    json!({
+        let expired = Utc::now().timestamp() + 86400;
+        let projects = list_projects().await;
+        for project in projects {
+            if project.open_payg() {
+                let v = build_project_price(project, expired, &controller).await?;
+                values.push(v);
+            }
+        }
+    }
+
+    Ok(json!({
         "endpoint": COMMAND.endpoint(),
-        "indexer": format!("{:?}", account.indexer),
-        "controller": format!("{:?}", account.controller.address()),
-        "deployments": projects,
-    })
+        "indexer": format!("{:?}", indexer),
+        "controller": format!("{:?}", controller.address()),
+        "deployments": values,
+    }))
 }
 
 pub async fn open_state(body: &Value) -> Result<Value> {
@@ -215,9 +234,29 @@ pub async fn open_state(body: &Value) -> Result<Value> {
     let project = get_project(&project_id).await?;
 
     // check project price.
-    if project.payg_price > state.price {
+    let mut used_price = project.payg_price;
+    if used_price < state.price_price {
+        let now = Utc::now().timestamp();
+        if now < state.price_expired {
+            let signer = price_recover(
+                state.price_price,
+                state.price_token,
+                state.price_expired,
+                state.price_sign,
+            )?;
+            let account = ACCOUNT.read().await;
+            let controller_account = account.controller.address();
+            drop(account);
+            if signer != controller_account {
+                return Err(Error::InvalidProjectPrice(1048));
+            }
+            used_price = state.price_price;
+        }
+    }
+    if !check_convert_price(project.payg_token, used_price, state.price).await? {
         return Err(Error::InvalidProjectPrice(1033));
     }
+
     // check project expiration
     if U256::from(project.payg_expiration) < state.expiration {
         return Err(Error::InvalidProjectExpiration(1035));
@@ -320,31 +359,7 @@ pub async fn query_state(
     }
 
     // query the data.
-    let now = Instant::now();
-    let data = match graphql_request(&project.query_endpoint, query).await {
-        Ok(result) => {
-            let _string = serde_json::to_string(&result).unwrap(); // safe unwrap
-
-            // let _sign = sign_message(string.as_bytes()); // TODO add to header
-            // TODO add state to header and request to coordinator know the response.
-
-            Ok(result)
-        }
-        Err(e) => {
-            debug!("query error: {:?}", e);
-            Err(Error::InvalidRequest(1046))
-        }
-    };
-
-    let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(
-        project_id.to_owned(),
-        time,
-        MetricsQuery::PAYG,
-        network_type,
-        data.is_ok(),
-    );
-    let data = data?;
+    let data = project_query(project_id, query, MetricsQuery::PAYG, network_type).await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;

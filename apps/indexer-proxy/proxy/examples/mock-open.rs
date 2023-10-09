@@ -7,6 +7,8 @@ use std::sync::Arc;
 use subql_contracts::{plan_manager, service_agreement_registry, sqtoken, Network};
 use subql_indexer_utils::{
     error::Error,
+    payg::{convert_string_to_sign, price_recover},
+    request::proxy_request,
     tools::{cid_deployment, deployment_cid},
 };
 
@@ -153,6 +155,34 @@ async fn main() -> Result<(), Error> {
                         "Agreement: {}, plan: {}, consumer: 0x{}, deployment: {}",
                         aid, tokens[6], tokens[0], deployment
                     );
+                }
+            }
+            "show-payg" => {
+                if args().len() != 3 {
+                    println!("cargo run --example mock-open show-payg indexer_url");
+                    return Ok(());
+                }
+                let indexer_url = args().nth(2).unwrap();
+
+                let res =
+                    proxy_request("get", &indexer_url, "payg-price", "", String::new(), vec![])
+                        .await
+                        .unwrap();
+
+                let controller: Address = res["controller"].as_str().unwrap().parse().unwrap();
+                for deployment in res["deployments"].as_array().unwrap() {
+                    let infos = deployment.as_array().unwrap();
+                    let d = infos[0].as_str().unwrap();
+                    let price = U256::from_dec_str(infos[1].as_str().unwrap()).unwrap();
+                    let token: Address = infos[3].as_str().unwrap().parse().unwrap();
+                    let expired: i64 = infos[4].as_i64().unwrap();
+                    let sign: Signature = convert_string_to_sign(infos[5].as_str().unwrap());
+
+                    let signer = price_recover(price, token, expired, sign).unwrap();
+                    if signer != controller {
+                        println!("Invalid signer: {}", signer);
+                    }
+                    println!("Deployment: {} price: {} {:?} {}", d, price, token, expired);
                 }
             }
             "create-plan" => {

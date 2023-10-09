@@ -16,8 +16,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use chrono::Utc;
+use digest::Digest;
 use ethers::{
-    abi::{encode, Tokenizable},
+    abi::{encode, Address, Tokenizable},
     signers::Signer,
     types::U256,
     utils::keccak256,
@@ -29,6 +31,7 @@ use std::collections::HashMap;
 use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
+    payg::{convert_sign_to_string, default_sign},
     request::{graphql_request, proxy_request, GraphQLQuery},
     types::Result,
 };
@@ -51,6 +54,7 @@ pub struct Project {
     pub query_endpoint: String,
     pub node_endpoint: String,
     pub payg_price: U256,
+    pub payg_token: Address,
     pub payg_expiration: u64,
     pub payg_overflow: U256,
 }
@@ -93,9 +97,10 @@ async fn update_projects(deployments: Vec<Project>) {
                 // waiting a moment for update all projects
                 tokio::time::sleep(std::time::Duration::from_secs(PROJECT_JOIN_TIME)).await;
                 let gid = hash_to_group_id(did.as_bytes());
-                let price = merket_price(Some(did)).await;
-                let data = serde_json::to_string(&price).unwrap();
-                send("project-broadcast-payg", vec![json!(data)], gid).await
+                if let Ok(price) = merket_price(Some(did)).await {
+                    let data = serde_json::to_string(&price).unwrap();
+                    send("project-broadcast-payg", vec![json!(data)], gid).await
+                }
             });
         } else {
             let did = n.id.clone();
@@ -111,8 +116,8 @@ async fn update_projects(deployments: Vec<Project>) {
 
 pub async fn get_project(key: &str) -> Result<Project> {
     let map = PROJECTS.lock().await;
-    if let Some(url) = map.get(key) {
-        Ok(url.clone())
+    if let Some(p) = map.get(key) {
+        Ok(p.clone())
     } else {
         Err(Error::InvalidProjectId(1032))
     }
@@ -131,11 +136,11 @@ pub async fn get_projects_status() -> Vec<(String, f64)> {
 }
 
 /// list the project id and price
-pub async fn list_projects() -> Vec<(String, U256, u64)> {
+pub async fn list_projects() -> Vec<Project> {
     let mut projects = vec![];
     let map = PROJECTS.lock().await;
-    for (k, v) in map.iter() {
-        projects.push((k.clone(), v.payg_price, v.payg_expiration));
+    for (_k, p) in map.iter() {
+        projects.push(p.clone());
     }
     projects
 }
@@ -149,6 +154,8 @@ pub struct ProjectItem {
     pub node_endpoint: String,
     #[serde(rename = "price")]
     pub payg_price: String,
+    #[serde(rename = "token")]
+    pub payg_token: String,
     #[serde(rename = "expiration")]
     pub payg_expiration: u64,
     #[serde(rename = "overflow")]
@@ -160,6 +167,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut new_projects = vec![];
     for item in projects {
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
+        let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
         let payg_overflow = item.payg_overflow.into();
         project_ids.push(item.id.clone());
         let project = Project {
@@ -167,6 +175,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             query_endpoint: item.query_endpoint,
             node_endpoint: item.node_endpoint,
             payg_price,
+            payg_token,
             payg_expiration: item.payg_expiration,
             payg_overflow,
         };
@@ -292,8 +301,37 @@ pub async fn project_query(
     let project = get_project(id).await?;
 
     let now = Instant::now();
-    let res = graphql_request(&project.query_endpoint, query).await;
+    let mut res = graphql_request(&project.query_endpoint, query).await;
     let time = now.elapsed().as_millis() as u64;
+
+    if let Ok(data) = &mut res {
+        if let Some(query) = data.as_object_mut() {
+            let mut hasher = sha2::Sha256::new();
+            serde_json::to_writer(&mut hasher, query).map_err(|_| Error::ServiceException(1029))?;
+            let bytes = hasher.finalize().to_vec();
+
+            // sign the response
+            let lock = ACCOUNT.read().await;
+            let controller = lock.controller.clone();
+            let indexer = lock.indexer.clone();
+            drop(lock);
+
+            let timestamp = Utc::now().timestamp();
+            let payload = encode(&[
+                indexer.into_token(),
+                bytes.into_token(),
+                timestamp.into_token(),
+            ]);
+            let hash = keccak256(payload);
+            let sign = controller
+                .sign_message(hash)
+                .await
+                .unwrap_or(default_sign());
+
+            let _signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
+            // query.insert("_signature".to_owned(), signature.into()); TMP comment it.
+        }
+    }
 
     add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
 

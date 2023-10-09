@@ -123,6 +123,7 @@ pub fn subscribe() {
                         project,
                         &json!({
                             "price": "",
+                            "token": "",
                             "expiration": 0,
                             "overflow": 0,
                         }),
