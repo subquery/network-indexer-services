@@ -4,7 +4,6 @@
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
-import { v2 as compose } from 'docker-compose';
 import Dockerode from 'dockerode';
 import {
   getComposeFileDirectory,
@@ -36,21 +35,13 @@ export class DockerService {
     if (!this.validateFileName(fileName)) {
       return;
     }
-    await this.upWithApi(fileName);
-  }
-
-  async upWithApi(fileName: string) {
-    const workingDir = getComposeFileDirectory(fileName);
     const filePath = getComposeFilePath(fileName);
     if (fs.existsSync(filePath)) {
       getLogger('docker').info(`start new project ${fileName}`);
       await this.rm(projectContainers(fileName));
-      const result = await compose.upAll({
-        cwd: workingDir,
-        config: 'docker-compose.yml',
-        composeOptions: ['-p', projectId(fileName)],
-        log: true,
-      });
+      const result = await this.execute(
+        `docker-compose -f ${filePath} -p ${projectId(fileName)} up -d`
+      );
       getLogger('docker').info(`start new project completed: ${result}`);
     } else {
       getLogger('docker').warn(`file: ${filePath} not exist`);

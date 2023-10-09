@@ -29,7 +29,6 @@ export class PaygQueryService {
   async getStateChannels(): Promise<StateChannel[]> {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
-        // @ts-ignore TODO: fix type
         query: GetStateChannels,
         variables: { status: 'OPEN' },
       });
@@ -46,7 +45,6 @@ export class PaygQueryService {
   async getStateChannel(id: string): Promise<StateChannel | undefined> {
     try {
       const result = await this.client.query<GetFlexPlanQuery>({
-        // @ts-ignore TODO: fix type
         query: GetFlexPlan,
         variables: { id },
       });
