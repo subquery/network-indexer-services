@@ -255,7 +255,16 @@ async fn payg_query(
                 ("X-Indexer-Response-Format", "inline"),
             ],
         ),
-        Ok("wrapped") | _ => (
+        Ok("wrapped") => (
+            serde_json::to_string(&json!({
+                "result": general_purpose::STANDARD.encode(&data),
+                "signature": signature,
+                "state": state_data
+            }))
+            .unwrap_or("".to_owned()),
+            vec![("X-Indexer-Response-Format", "wrapped")],
+        ),
+        _ => (
             serde_json::to_string(&json!({
                 "result": general_purpose::STANDARD.encode(&data),
                 "signature": signature,
