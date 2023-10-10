@@ -37,7 +37,7 @@ const ProjectDetailsHeader: FC<Props> = ({ id, projectStatus, project, onlineSta
             {project.details.name}
           </Text>
           <Text fw="400" size={15}>
-            {project.details.owner}
+            {project.id}
           </Text>
           <VersionContainer>
             <TagItem versionType="INDEXED NETWORK" value={project.metadata?.chain} />

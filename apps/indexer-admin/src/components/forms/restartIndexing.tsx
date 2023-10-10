@@ -269,7 +269,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
             </Form.List>
 
             <HorizonReverse>
-              <Form.Item label="Is Project Dictionary" valuePropName="checked">
+              <Form.Item label="Use Dictionary" valuePropName="checked">
                 <Switch onChange={onSwitchChange} defaultChecked checked={showInput} />
               </Form.Item>
             </HorizonReverse>
@@ -303,16 +303,6 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
                 </Item>
               </Col>
             </Row>
-            <HorizonReverse>
-              <Form.Item
-                name="purgeDB"
-                label="Purge Database"
-                valuePropName="checked"
-                tooltip={defaultTooltipProps('Clean the MMR root values on start of indexing.')}
-              >
-                <Switch />
-              </Form.Item>
-            </HorizonReverse>
             <RowReverse>
               <Collapse defaultActiveKey="1">
                 <Collapse.Panel
