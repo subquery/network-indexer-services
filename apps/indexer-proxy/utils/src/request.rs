@@ -78,6 +78,27 @@ pub async fn graphql_request(uri: &str, query: &GraphQLQuery) -> Result<Value, E
     Ok(json_data)
 }
 
+// Request to graphql service and response raw bytes.
+pub async fn graphql_request_raw(uri: &str, query: &GraphQLQuery) -> Result<Vec<u8>, Error> {
+    let response_result = REQUEST_CLIENT
+        .post(uri)
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .header(CONNECTION, KEEP_ALIVE)
+        .body(serde_json::to_string(query).unwrap_or("".to_owned()))
+        .send()
+        .await;
+
+    let res = match response_result {
+        Ok(res) => res,
+        Err(_e) => return Err(Error::GraphQLInternal(1010, "Service exception".to_owned())),
+    };
+
+    res.bytes()
+        .await
+        .map(|bytes| bytes.to_vec())
+        .map_err(|e| Error::GraphQLQuery(1011, e.to_string()))
+}
+
 // Request to indexer/consumer proxy
 pub async fn proxy_request(
     method: &str,

@@ -19,11 +19,15 @@
 #![deny(warnings)]
 use axum::{
     extract::{ConnectInfo, Path},
-    http::{Method, Response, StatusCode},
+    http::{
+        header::{HeaderMap, HeaderValue},
+        Method, Response, StatusCode,
+    },
     routing::{get, post},
     Json, Router,
 };
 use axum_auth::AuthBearer;
+use base64::{engine::general_purpose, Engine as _};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -41,7 +45,9 @@ use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{merket_price, open_state, query_state, AuthPayg};
-use crate::project::{get_project, project_metadata, project_poi, project_query, project_status};
+use crate::project::{
+    get_project, project_metadata, project_poi, project_query_raw, project_status,
+};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -162,22 +168,48 @@ async fn generate_token(
 }
 
 async fn query_handler(
+    mut headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
     Path(deployment): Path<String>,
     Json(query): Json<GraphQLQuery>,
-) -> Result<Json<Value>, Error> {
+) -> Result<Response<String>, Error> {
     if COMMAND.auth() && deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
     };
 
-    let res = project_query(
+    let res_fmt = headers
+        .remove("X-Indexer-Response-Format")
+        .unwrap_or(HeaderValue::from_static("inline"));
+
+    let (data, signature) = project_query_raw(
         &deployment,
         &query,
         MetricsQuery::CloseAgreement,
         MetricsNetwork::HTTP,
     )
     .await?;
-    Ok(Json(res))
+
+    let (body, mut headers) = match res_fmt.to_str() {
+        Ok("inline") => (
+            String::from_utf8(data).unwrap_or("".to_owned()),
+            vec![
+                ("X-Indexer-Sig", signature.as_str()),
+                ("X-Indexer-Response-Format", "inline"),
+            ],
+        ),
+        Ok("wrapped") => (
+            serde_json::to_string(&json!({
+                "result": general_purpose::STANDARD.encode(&data),
+                "signature": signature
+            }))
+            .unwrap_or("".to_owned()),
+            vec![("X-Indexer-Response-Format", "wrapped")],
+        ),
+        _ => ("".to_owned(), vec![]),
+    };
+    headers.push(("Content-Type", "application/json"));
+
+    Ok(build_response(body, headers))
 }
 
 async fn query_limit_handler(
@@ -202,21 +234,49 @@ async fn payg_generate(Json(payload): Json<Value>) -> Result<Json<Value>, Error>
 }
 
 async fn payg_query(
+    mut headers: HeaderMap,
     AuthPayg(state): AuthPayg,
     Path(deployment): Path<String>,
     Json(query): Json<GraphQLQuery>,
-) -> Result<Json<Value>, Error> {
-    let (mut query_data, state_data) =
+) -> Result<Response<String>, Error> {
+    let res_fmt = headers
+        .remove("X-Indexer-Response-Format")
+        .unwrap_or(HeaderValue::from_static("inline"));
+
+    let (data, signature, state_data) =
         query_state(&deployment, &query, &state, MetricsNetwork::HTTP).await?;
 
-    let result = if let Some(query) = query_data.as_object_mut() {
-        query.insert("state".to_owned(), state_data);
-        json!(query)
-    } else {
-        json!({ "error": query_data, "state": state_data })
+    let (body, mut headers) = match res_fmt.to_str() {
+        Ok("inline") => (
+            String::from_utf8(data).unwrap_or("".to_owned()),
+            vec![
+                ("X-Indexer-Sig", signature.as_str()),
+                ("X-Channel-State", state_data.as_str()),
+                ("X-Indexer-Response-Format", "inline"),
+            ],
+        ),
+        Ok("wrapped") => (
+            serde_json::to_string(&json!({
+                "result": general_purpose::STANDARD.encode(&data),
+                "signature": signature,
+                "state": state_data
+            }))
+            .unwrap_or("".to_owned()),
+            vec![("X-Indexer-Response-Format", "wrapped")],
+        ),
+        _ => (
+            serde_json::to_string(&json!({
+                "result": general_purpose::STANDARD.encode(&data),
+                "signature": signature,
+                "state": state_data
+            }))
+            .unwrap_or("".to_owned()),
+            vec![("X-Indexer-Response-Format", "wrapped")],
+        ),
     };
+    headers.push(("Content-Type", "application/json"));
 
-    Ok(Json(result))
+    Ok(build_response(body, headers))
 }
 
 async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
@@ -247,19 +307,14 @@ async fn healthy_handler() -> Result<Json<Value>, Error> {
 async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
     if token == COMMAND.metrics_token {
         let body = get_owner_metrics().await;
-        let res = Response::builder()
-            .header(
+
+        build_response(
+            body,
+            vec![(
                 "Content-Type",
                 "application/openmetrics-text; version=1.0.0; charset=utf-8",
-            )
-            .status(StatusCode::OK);
-        match res.body(body) {
-            Ok(res) => res,
-            Err(_) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body("".to_owned())
-                .unwrap(),
-        }
+            )],
+        )
     } else {
         Response::builder()
             .status(StatusCode::FORBIDDEN)
@@ -272,4 +327,20 @@ async fn status_handler(Path(deployment): Path<String>) -> Result<Json<Value>, E
     project_status(&deployment, MetricsNetwork::HTTP)
         .await
         .map(Json)
+}
+
+fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> {
+    let mut res = Response::builder();
+    for (key, value) in headers {
+        res = res.header(key, value);
+    }
+    res = res.status(StatusCode::OK);
+
+    match res.body(body) {
+        Ok(res) => res,
+        Err(_) => Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("".to_owned())
+            .unwrap(),
+    }
 }

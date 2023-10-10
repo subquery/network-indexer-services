@@ -32,7 +32,7 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, proxy_request, GraphQLQuery},
+    request::{graphql_request, graphql_request_raw, proxy_request, GraphQLQuery},
     types::Result,
 };
 use tdn::types::group::hash_to_group_id;
@@ -301,13 +301,31 @@ pub async fn project_query(
     let project = get_project(id).await?;
 
     let now = Instant::now();
-    let mut res = graphql_request(&project.query_endpoint, query).await;
+    let res = graphql_request(&project.query_endpoint, query).await;
+    let time = now.elapsed().as_millis() as u64;
+    add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
+
+    res
+}
+
+pub async fn project_query_raw(
+    id: &str,
+    query: &GraphQLQuery,
+    payment: MetricsQuery,
+    network: MetricsNetwork,
+) -> Result<(Vec<u8>, String)> {
+    let project = get_project(id).await?;
+
+    let now = Instant::now();
+    let res = graphql_request_raw(&project.query_endpoint, query).await;
     let time = now.elapsed().as_millis() as u64;
 
-    if let Ok(data) = &mut res {
-        if let Some(query) = data.as_object_mut() {
+    add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
+
+    match res {
+        Ok(data) => {
             let mut hasher = sha2::Sha256::new();
-            serde_json::to_writer(&mut hasher, query).map_err(|_| Error::ServiceException(1029))?;
+            hasher.update(&data);
             let bytes = hasher.finalize().to_vec();
 
             // sign the response
@@ -327,13 +345,10 @@ pub async fn project_query(
                 .sign_message(hash)
                 .await
                 .unwrap_or(default_sign());
+            let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
 
-            let _signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
-            // query.insert("_signature".to_owned(), signature.into()); TMP comment it.
+            Ok((data, signature))
         }
+        Err(err) => Err(err),
     }
-
-    add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
-
-    res
 }
