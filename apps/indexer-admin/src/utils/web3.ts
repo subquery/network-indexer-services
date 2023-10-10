@@ -1,11 +1,11 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { networks } from '@subql/contract-sdk';
+import { SQNetworks } from '@subql/network-config';
 
 export const network = (import.meta.env.VITE_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
 
-export const SUPPORTED_NETWORK = (network ?? 'testnet') as keyof typeof networks;
+export const SUPPORTED_NETWORK = (network ?? 'testnet') as SQNetworks;
 
 export const PRODUCTION_NETWORK = 'kepler';
 

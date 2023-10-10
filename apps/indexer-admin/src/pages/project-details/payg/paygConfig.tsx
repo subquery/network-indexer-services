@@ -4,22 +4,19 @@
 import { Button, Table, TableTitle } from '@subql/components';
 
 import { createTextColumn } from 'utils/table';
-import { TOKEN_SYMBOL } from 'utils/web3';
 
 type Props = {
-  sqtPrice: string;
-  usdcPrice: string;
+  priceData: React.ReactNode;
   period: number;
   onEdit: () => void;
 };
 
 const columns = [
   createTextColumn('price', 'PRICE'),
-  // createTextColumn('usdcPrice', 'To USDC Price'),
   createTextColumn('period', 'MAXIMUM VALIDITY PERIOD'),
 ];
 
-export function PAYGConfig({ sqtPrice, usdcPrice, period, onEdit }: Props) {
+export function PAYGConfig({ priceData, period, onEdit }: Props) {
   const actionColumn = {
     dataIndex: 'action',
     title: <TableTitle title="ACTION" />,
@@ -35,8 +32,7 @@ export function PAYGConfig({ sqtPrice, usdcPrice, period, onEdit }: Props) {
         columns: [...columns, actionColumn],
         dataSource: [
           {
-            price: `${sqtPrice} ${TOKEN_SYMBOL} / 1000 requests`,
-            usdcPrice: `${usdcPrice} USDC / 1000 requests`,
+            price: priceData,
             period: `${period} days`,
           },
         ],
