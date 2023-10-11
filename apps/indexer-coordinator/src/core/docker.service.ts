@@ -53,16 +53,12 @@ export class DockerService {
       return;
     }
     try {
-      return await this.startWithApi(containers);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).start()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
     }
-  }
-
-  async startWithApi(containers: string[]): Promise<string> {
-    return (await Promise.all(containers.map((name) => this.getContainer(name).start()))).join(
-      '\n'
-    );
   }
 
   async restart(containers: string[]): Promise<string> {
@@ -70,16 +66,12 @@ export class DockerService {
       return;
     }
     try {
-      return await this.restartWithApi(containers);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).restart()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
     }
-  }
-
-  async restartWithApi(containers: string[]): Promise<string> {
-    return (await Promise.all(containers.map((name) => this.getContainer(name).restart()))).join(
-      '\n'
-    );
   }
 
   async stop(containers: string[]): Promise<string> {
@@ -87,14 +79,12 @@ export class DockerService {
       return;
     }
     try {
-      return await this.stopWithApi(containers);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).stop()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').warn(e, `failed to stop the containers`);
     }
-  }
-
-  async stopWithApi(containers: string[]): Promise<string> {
-    return (await Promise.all(containers.map((name) => this.getContainer(name).stop()))).join('\n');
   }
 
   async rm(containers: string[]) {
@@ -103,17 +93,13 @@ export class DockerService {
     }
     try {
       getLogger('docker').info(`remove the old containers`);
-      const result = await this.rmWithApi(containers);
+      const result = (
+        await Promise.all(containers.map((name) => this.getContainer(name).remove()))
+      ).join('\n');
       getLogger('docker').info(result);
     } catch (_) {
       getLogger('docker').info(`no containers need to be removed`);
     }
-  }
-
-  async rmWithApi(containers: string[]) {
-    return (await Promise.all(containers.map((name) => this.getContainer(name).remove()))).join(
-      '\n'
-    );
   }
 
   async ps(containers: string[]): Promise<any[]> {
@@ -121,22 +107,16 @@ export class DockerService {
       return;
     }
     try {
-      return await this.psWithApi(containers);
+      return await Promise.all(
+        containers.map(async (name) => {
+          const container = await this.getContainer(name).inspect();
+          delete container?.State?.Health?.Log;
+          return { ...(container?.State ?? {}), Name: container?.Name?.replace('/', '') ?? '' };
+        })
+      );
     } catch (_) {
       return [];
     }
-  }
-
-  async psWithApi(containers: string[]): Promise<any[]> {
-    const result = await Promise.all(
-      containers.map(async (name) => {
-        const container = await this.getContainer(name).inspect();
-        delete container?.State?.Health?.Log;
-
-        return { ...(container?.State ?? {}), Name: container?.Name?.replace('/', '') ?? '' };
-      })
-    );
-    return result;
   }
 
   async imageVersion(container: string) {
@@ -144,15 +124,11 @@ export class DockerService {
       return '';
     }
     try {
-      return await this.imageVersionWithApi(container);
+      const inspect = await this.getContainer(container).inspect();
+      return inspect.Config.Image.split(':')[1] ?? '';
     } catch {
       return '';
     }
-  }
-
-  async imageVersionWithApi(container: string) {
-    const inspect = await this.getContainer(container).inspect();
-    return inspect.Config.Image.split(':')[1] ?? '';
   }
 
   async logs(container: string): Promise<string> {
@@ -160,20 +136,16 @@ export class DockerService {
       return '';
     }
     try {
-      return await this.logsWithApi(container);
+      const buffer = await this.getContainer(container).logs({
+        tail: 30,
+        stdout: true,
+        stderr: true,
+      });
+      return `\n${buffer.toString('utf8')}`.replace(/\n.{8}/gm, '\n').trim();
     } catch (e) {
       getLogger('docker').error(e, `failed to get the logs of ${container}`);
       return '';
     }
-  }
-
-  async logsWithApi(container: string): Promise<string> {
-    const buffer = await this.getContainer(container).logs({
-      tail: 30,
-      stdout: true,
-      stderr: true,
-    });
-    return `\n${buffer.toString('utf8')}`.replace(/\n.{8}/gm, '\n').trim();
   }
 
   private execute(cmd: string): Promise<string> {
