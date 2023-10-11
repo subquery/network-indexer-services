@@ -27,10 +27,11 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
   const { isRegisterIndexer, updateIsRegisterIndexer, account } = useAccount();
 
   const getIsIndexer = useCallback(async () => {
-    if (!account || !sdk || isRegisterIndexer !== undefined) return;
+    if (!account || !sdk) return;
 
     try {
       const status = await sdk.indexerRegistry.isIndexer(account);
+
       updateIsRegisterIndexer(status);
     } catch (e) {
       notificationMsg({
@@ -43,11 +44,11 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
       });
       console.error('Failed to get isIndexer', e);
     }
-  }, [account, isRegisterIndexer, sdk, updateIsRegisterIndexer]);
+  }, [account, sdk, updateIsRegisterIndexer]);
 
   useEffect(() => {
     getIsIndexer();
-  }, [getIsIndexer]);
+  }, [getIsIndexer, account]);
 
   return isRegisterIndexer;
 };

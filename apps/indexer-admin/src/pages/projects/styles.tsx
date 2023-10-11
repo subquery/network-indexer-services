@@ -40,6 +40,7 @@ export const ItemContainer = styled.div<{
   padding-left: ${({ pl }) => pl ?? 0}px;
   min-width: ${({ mw }) => mw ?? 100}px;
   margin-right: 15px;
+  margin-left: 15px;
   align-items: center;
 `;
 

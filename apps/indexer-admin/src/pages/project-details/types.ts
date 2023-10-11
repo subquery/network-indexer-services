@@ -26,6 +26,7 @@ export enum ProjectStatus {
   Terminated = 'TERMINATED',
   Unhealthy = 'UNHEALTHY',
   Starting = 'STARTING',
+  Unknown = 'UNKNOWN',
 }
 
 export enum PaygStatus {

@@ -59,7 +59,7 @@ const ProjectItem: FC<Props> = (props) => {
           </Text>
         </ProfileContainer>
       </ItemContainer>
-      <ItemContainer flex={6}>
+      <ItemContainer flex={8}>
         <Progress percent={formatValueToFixed(progress * 100)} />
       </ItemContainer>
       <ItemContainer flex={6}>
