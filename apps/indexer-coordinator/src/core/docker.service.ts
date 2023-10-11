@@ -4,11 +4,28 @@
 import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
-import { getComposeFilePath, getImageVersion, projectContainers, projectId } from '../utils/docker';
+import Dockerode from 'dockerode';
+import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
 @Injectable()
 export class DockerService {
+  private docker: Dockerode;
+  private containerMap = new Map<string, Dockerode.Container>();
+
+  constructor() {
+    this.docker = new Dockerode({ socketPath: '/var/run/docker.sock' });
+  }
+
+  getContainer(name: string): Dockerode.Container {
+    let container = this.containerMap.get(name);
+    if (!container) {
+      container = this.docker.getContainer(name);
+      this.containerMap.set(name, container);
+    }
+    return container;
+  }
+
   async up(fileName: string) {
     if (!this.validateFileName(fileName)) {
       return;
@@ -31,7 +48,9 @@ export class DockerService {
       return;
     }
     try {
-      return await this.execute(`docker start ${containers.join(' ')}`);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).start()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
     }
@@ -42,7 +61,9 @@ export class DockerService {
       return;
     }
     try {
-      return await this.execute(`docker restart ${containers.join(' ')}`);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).restart()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').error(e, `failed to restart the containers`);
     }
@@ -53,7 +74,9 @@ export class DockerService {
       return;
     }
     try {
-      return await this.execute(`docker stop ${containers.join(' ')}`);
+      return (await Promise.all(containers.map((name) => this.getContainer(name).stop()))).join(
+        '\n'
+      );
     } catch (e) {
       getLogger('docker').warn(e, `failed to stop the containers`);
     }
@@ -65,24 +88,29 @@ export class DockerService {
     }
     try {
       getLogger('docker').info(`remove the old containers`);
-      const result = await this.execute(`docker container rm ${containers.join(' ')}`);
+      const result = (
+        await Promise.all(containers.map((name) => this.getContainer(name).remove()))
+      ).join('\n');
       getLogger('docker').info(result);
     } catch (_) {
       getLogger('docker').info(`no containers need to be removed`);
     }
   }
 
-  async ps(containers: string[]): Promise<string> {
+  async ps(containers: string[]): Promise<any[]> {
     if (!this.validateContainerNames(containers)) {
       return;
     }
     try {
-      const result = await this.execute(
-        `docker container ps -a | grep -E '${containers.join('|')}'`
+      return await Promise.all(
+        containers.map(async (name) => {
+          const container = await this.getContainer(name).inspect();
+          delete container?.State?.Health?.Log;
+          return { ...(container?.State ?? {}), Name: container?.Name?.replace('/', '') ?? '' };
+        })
       );
-      return result;
     } catch (_) {
-      return '';
+      return [];
     }
   }
 
@@ -91,8 +119,8 @@ export class DockerService {
       return '';
     }
     try {
-      const info = await this.ps([container]);
-      return getImageVersion(info);
+      const inspect = await this.getContainer(container).inspect();
+      return inspect.Config.Image.split(':')[1] ?? '';
     } catch {
       return '';
     }
@@ -102,18 +130,16 @@ export class DockerService {
     if (!this.validateContainerName(container)) {
       return '';
     }
-    return await this.execute(`docker logs -n 30 ${container}`);
-  }
-
-  async deleteFile(path: string) {
-    if (!this.validateFilePath(path)) {
-      return;
-    }
     try {
-      await this.execute(`rm -rf ${path}`);
-      getLogger('docker').info(`delete: ${path}`);
-    } catch {
-      getLogger('docker').info(`failed to delete: ${path}`);
+      const buffer = await this.getContainer(container).logs({
+        tail: 30,
+        stdout: true,
+        stderr: true,
+      });
+      return `\n${buffer.toString('utf8')}`.replace(/\n.{8}/gm, '\n').trim();
+    } catch (e) {
+      getLogger('docker').error(e, `failed to get the logs of ${container}`);
+      return '';
     }
   }
 

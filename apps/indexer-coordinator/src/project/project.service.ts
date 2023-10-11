@@ -74,6 +74,9 @@ export class ProjectService {
 
   async getProjectDetails(id: string): Promise<ProjectDetails> {
     const project = await this.projectRepo.findOneBy({ id });
+    if (!project) {
+      throw new Error(`project not exist: ${id}`);
+    }
     const payg = await this.paygRepo.findOneBy({ id });
     const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
 
