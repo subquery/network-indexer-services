@@ -3,18 +3,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
-import { formatUnits } from '@ethersproject/units';
 import { Modal, Tooltip, Typography } from '@subql/components';
-import { useInterval } from 'ahooks';
+import { STABLE_COIN_SYMBOLS, TOKEN_SYMBOLS } from '@subql/network-config';
+import { useStableCoin } from '@subql/react-hooks';
 import { Input, Select } from 'antd';
 import BigNumber from 'bignumber.js';
-import moment from 'moment';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
 import { STABLE_COIN_ADDRESS } from 'containers/web3';
 import { usePAYGConfig } from 'hooks/paygHook';
-import { TOKEN_SYMBOL } from 'utils/web3';
+import { SUPPORTED_NETWORK, TOKEN_SYMBOL } from 'utils/web3';
 
 import { ProjectServiceMetadata } from '../types';
 import { PAYGConfig } from './paygConfig';
@@ -39,68 +38,14 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
   const paygEnabled = useMemo(() => {
     return innerConfig.paygExpiration && innerConfig.paygPrice;
   }, [innerConfig]);
-  const [rates, setRates] = useState({
-    usdcToSqt: 0,
-    sqtToUsdc: 0,
-  });
+
+  const { rates, fetchedTime } = useStableCoin(sdk, SUPPORTED_NETWORK);
 
   const [paygConf, setPaygConf] = useState({
     token: '',
     price: '',
     validity: '',
   });
-
-  const [now, setNow] = useState(moment());
-
-  const pricePreview = useMemo(() => {
-    const sqtTokenAddress = sdk?.sqToken.address;
-    const priceFromPreview = paygConf.token;
-    const priceToPreview = paygConf.token === sqtTokenAddress ? 'USDC' : TOKEN_SYMBOL;
-
-    if (!paygConf.price) {
-      return `1 ${priceFromPreview === sqtTokenAddress ? TOKEN_SYMBOL : 'USDC'} = ${
-        priceFromPreview === sqtTokenAddress ? rates.sqtToUsdc : rates.usdcToSqt
-      } ${priceToPreview} | ${now.format('hh:mm:ss A')}`;
-    }
-
-    const resultCalc = BigNumber(paygConf.price).multipliedBy(
-      priceFromPreview === sqtTokenAddress ? rates.sqtToUsdc : rates.usdcToSqt
-    );
-
-    return `${paygConf.price} ${
-      priceFromPreview === sqtTokenAddress ? TOKEN_SYMBOL : 'USDC'
-    } = ${resultCalc.toFixed()} ${priceToPreview} | ${now.format('hh:mm:ss A')}`;
-  }, [paygConf, rates, now, sdk]);
-
-  const getPriceOracle = async () => {
-    if (!sdk) return;
-    const assetPrice = await sdk.priceOracle.getAssetPrice(
-      STABLE_COIN_ADDRESS,
-      sdk.sqToken.address
-    );
-
-    const oneUsdcToOneSqt = +formatUnits(
-      assetPrice.toString(),
-      +import.meta.env.VITE_STABLE_TOKEN_DECIMAL
-    );
-    setRates({
-      usdcToSqt: BigNumber(oneUsdcToOneSqt).decimalPlaces(2).toNumber(),
-      sqtToUsdc: BigNumber(1 / oneUsdcToOneSqt)
-        .decimalPlaces(2)
-        .toNumber(),
-    });
-  };
-
-  useInterval(
-    async () => {
-      await getPriceOracle();
-      setNow(moment());
-    },
-    30000,
-    {
-      immediate: true,
-    }
-  );
 
   useEffect(() => {
     setPaygConf({
@@ -122,15 +67,21 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
       )}
       {paygEnabled ? (
         <PAYGConfig
-          sqtPrice={
-            paygConfig.token === sdk?.sqToken.address
-              ? paygConfig.paygPrice
-              : BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()
-          }
-          usdcPrice={
-            paygConfig.token === sdk?.sqToken.address
-              ? BigNumber(paygConfig.paygPrice).multipliedBy(rates.sqtToUsdc).toFixed()
-              : paygConfig.paygPrice
+          priceData={
+            paygConfig.token === sdk?.sqToken.address ? (
+              <Typography variant="medium">
+                {paygConfig.paygPrice} {TOKEN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
+              </Typography>
+            ) : (
+              <Typography variant="medium">
+                {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
+                <br />
+                <Typography variant="medium" type="secondary">
+                  = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
+                  {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
+                </Typography>
+              </Typography>
+            )
           }
           period={innerConfig.paygExpiration}
           onEdit={() => setShowModal(true)}
@@ -181,19 +132,19 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                       });
                     }}
                     options={[
-                      // {
-                      //   value: STABLE_COIN_ADDRESS,
-                      //   label: (
-                      //     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      //       <img
-                      //         style={{ width: 24, height: 24, marginRight: 8 }}
-                      //         src="/images/usdc.png"
-                      //         alt=""
-                      //       />
-                      //       <Typography>USDC</Typography>
-                      //     </div>
-                      //   ),
-                      // },
+                      {
+                        value: STABLE_COIN_ADDRESS,
+                        label: (
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <img
+                              style={{ width: 24, height: 24, marginRight: 8 }}
+                              src="/images/usdc.png"
+                              alt=""
+                            />
+                            <Typography>USDC</Typography>
+                          </div>
+                        ),
+                      },
                       {
                         value: sdk.sqToken.address,
                         label: (
@@ -213,14 +164,6 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
               />
             )}
           </SubqlInput>
-
-          {/* <Typography */}
-          {/*  type="secondary" */}
-          {/*  variant="medium" */}
-          {/*  style={{ color: 'var(--sq-gray600)', marginTop: 2 }} */}
-          {/* > */}
-          {/*  {pricePreview} */}
-          {/* </Typography> */}
 
           <div style={{ marginTop: 24 }}>
             <Typography style={{ marginBottom: 8 }}>Validity Period</Typography>
