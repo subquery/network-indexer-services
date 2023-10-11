@@ -5,12 +5,7 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import Dockerode from 'dockerode';
-import {
-  getComposeFileDirectory,
-  getComposeFilePath,
-  projectContainers,
-  projectId,
-} from '../utils/docker';
+import { getComposeFilePath, projectContainers, projectId } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
 @Injectable()
