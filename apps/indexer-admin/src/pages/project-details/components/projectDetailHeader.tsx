@@ -3,6 +3,7 @@
 
 import { FC } from 'react';
 import { Tag, TagProps } from '@subql/components';
+import { Tooltip } from 'antd';
 import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
@@ -37,7 +38,7 @@ const ProjectDetailsHeader: FC<Props> = ({ id, projectStatus, project, onlineSta
             {project.details.name}
           </Text>
           <Text fw="400" size={15}>
-            {project.details.owner}
+            {project.id}
           </Text>
           <VersionContainer>
             <TagItem versionType="INDEXED NETWORK" value={project.metadata?.chain} />
@@ -45,7 +46,15 @@ const ProjectDetailsHeader: FC<Props> = ({ id, projectStatus, project, onlineSta
             <TagItem versionType="VERSION" value={`V${project.details.version ?? '1.0.0'}`} />
             <Separator height={30} mr={36} ml={36} />
             <TagItem versionType="PROJECT STATUS" fw="normal">
-              <Tag state={getProjectStatusTagState(projectStatus)}>{projectStatus}</Tag>
+              <Tooltip
+                title={
+                  projectStatus === ProjectStatus.Unknown
+                    ? 'Coordinator service is not reachable, please make sure is can be reach.'
+                    : ''
+                }
+              >
+                <Tag state={getProjectStatusTagState(projectStatus)}>{projectStatus}</Tag>
+              </Tooltip>
             </TagItem>
             <Separator height={30} mr={36} ml={36} />
             <TagItem versionType="UPTIME" fw="normal">

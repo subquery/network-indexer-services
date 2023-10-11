@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use base64::{engine::general_purpose, Engine as _};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::Result;
@@ -744,18 +745,17 @@ async fn handle_group(
                 Event::PaygQuery(uid, query, state) => {
                     let query: GraphQLQuery = serde_json::from_str(&query)?;
                     let state: RpcParam = serde_json::from_str(&state)?;
-                    let (mut query_data, state_data) =
+                    let result =
                         match query_state(&project, &query, &state, MetricsNetwork::P2P).await {
-                            Ok((res_query, res_state)) => (res_query, res_state),
-                            Err(err) => (err.to_json(), state),
+                            Ok((res_query, res_signature, res_state)) => {
+                                json!({
+                                    "result": general_purpose::STANDARD.encode(&res_query),
+                                    "signature": res_signature,
+                                    "state": res_state,
+                                })
+                            }
+                            Err(err) => json!({ "error": format!("{:?}", err) }),
                         };
-
-                    let result = if let Some(query) = query_data.as_object_mut() {
-                        query.insert("state".to_owned(), state_data);
-                        json!(query)
-                    } else {
-                        json!({ "error": query_data, "state": state_data })
-                    };
 
                     let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
                     let msg = SendType::Event(0, peer_id, e.to_bytes());
