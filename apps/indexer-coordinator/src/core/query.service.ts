@@ -98,7 +98,6 @@ export class QueryService {
         queryStatus: ServiceStatus.Healthy,
       };
     } catch (e) {
-      debugLogger('getQueryMetaData', e);
       return {
         lastProcessedHeight: 0,
         lastProcessedTimestamp: 0,
