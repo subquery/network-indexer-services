@@ -31,7 +31,7 @@ use rand_chacha::{
 use serde_json::{json, Value};
 
 use crate::error::Error;
-use crate::tools::{cid_deployment, deployment_cid};
+use crate::tools::{cid_deployment, deployment_cid, hex_u256, u256_hex};
 
 pub struct OpenState {
     pub channel_id: U256,
@@ -139,11 +139,8 @@ impl OpenState {
     }
 
     pub fn from_json(params: &Value) -> Result<Self, Error> {
-        let channel_id: U256 = params["channelId"]
-            .as_str()
-            .ok_or(Error::Serialize(1106))?
-            .parse()
-            .map_err(|_e| Error::Serialize(1106))?;
+        let channel_id: U256 =
+            hex_u256(params["channelId"].as_str().ok_or(Error::Serialize(1106))?);
         let indexer: Address = params["indexer"]
             .as_str()
             .ok_or(Error::Serialize(1107))?
@@ -239,7 +236,7 @@ impl OpenState {
 
     pub fn to_json(&self) -> Value {
         json!({
-            "channelId": format!("{:#X}", self.channel_id),
+            "channelId": u256_hex(&self.channel_id),
             "indexer": format!("{:?}", self.indexer),
             "consumer": format!("{:?}", self.consumer),
             "total": self.total.to_string(),
@@ -323,11 +320,8 @@ impl QueryState {
     }
 
     pub fn from_json(params: &Value) -> Result<Self, Error> {
-        let channel_id: U256 = params["channelId"]
-            .as_str()
-            .ok_or(Error::Serialize(1106))?
-            .parse()
-            .map_err(|_e| Error::Serialize(1106))?;
+        let channel_id: U256 =
+            hex_u256(params["channelId"].as_str().ok_or(Error::Serialize(1106))?);
         let indexer: Address = params["indexer"]
             .as_str()
             .ok_or(Error::Serialize(1107))?
@@ -367,7 +361,7 @@ impl QueryState {
 
     pub fn to_json(&self) -> Value {
         json!({
-            "channelId": format!("{:#X}", self.channel_id),
+            "channelId": u256_hex(&self.channel_id),
             "indexer": format!("{:?}", self.indexer),
             "consumer": format!("{:?}", self.consumer),
             "spent": self.spent.to_string(),

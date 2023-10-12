@@ -17,7 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::traits::Hash;
-use ethers::types::H256;
+use ethers::types::{H256, U256};
 
 impl Hash for String {
     fn hash(&self) -> String {
@@ -45,4 +45,15 @@ pub fn cid_deployment(cid: &str) -> H256 {
     } else {
         H256::zero()
     }
+}
+
+pub fn u256_hex(a: &U256) -> String {
+    let mut bytes = [0u8; 32];
+    a.to_big_endian(&mut bytes);
+    hex::encode(bytes)
+}
+
+pub fn hex_u256(a: &str) -> U256 {
+    let bytes = hex::decode(a).unwrap_or(vec![0u8; 32]);
+    U256::from_big_endian(&bytes)
 }

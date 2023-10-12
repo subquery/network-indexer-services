@@ -389,7 +389,7 @@ pub async fn query_state(
                consumerSign:"0x{}")
            {{ id, spent }}
         }}"#,
-        state.channel_id,
+        state.channel_id, // use default u256 hex style with other library
         remote_next,
         state.is_final,
         convert_sign_to_string(&state.indexer_sign),
