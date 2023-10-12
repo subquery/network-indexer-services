@@ -79,7 +79,7 @@ export type QueryResult = {
 /// Projects
 export const START_PROJECT = gql`
   mutation StartProject(
-    $purgeDB: Boolean!
+    # $purgeDB: Boolean! = false
     $poiEnabled: Boolean!
     $queryVersion: String!
     $nodeVersion: String!
@@ -103,7 +103,7 @@ export const START_PROJECT = gql`
       }
       advancedConfig: {
         poiEnabled: $poiEnabled
-        purgeDB: $purgeDB
+        # purgeDB: $purgeDB
         timeout: $timeout
         batchSize: $batchSize
         worker: $workers
