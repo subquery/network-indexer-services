@@ -73,7 +73,7 @@ export interface IProjectBaseConfig {
 
 export interface IProjectAdvancedConfig {
   poiEnabled: boolean;
-  purgeDB: boolean;
+  purgeDB?: boolean;
   timeout: number;
   worker: number;
   batchSize: number;
@@ -81,6 +81,7 @@ export interface IProjectAdvancedConfig {
   cpu: number;
   memory: number;
 }
+
 @InputType('ProjectBaseConfigInput')
 @ObjectType('ProjectBaseConfig')
 export class ProjectBaseConfig implements IProjectBaseConfig {
@@ -101,8 +102,8 @@ export class ProjectBaseConfig implements IProjectBaseConfig {
 export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   @Field()
   poiEnabled: boolean;
-  @Field()
-  purgeDB: boolean;
+  @Field({ nullable: true, defaultValue: false })
+  purgeDB?: boolean;
   @Field(() => Int)
   timeout: number;
   @Field(() => Int)
