@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "1.4.4-2",
+  "version": "1.4.4",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
