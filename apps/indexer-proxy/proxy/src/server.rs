@@ -32,7 +32,6 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
-    constants::HEADERS,
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
     request::GraphQLQuery,
@@ -89,7 +88,7 @@ pub async fn start_server(host: &str, port: u16) {
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
-                .allow_headers(HEADERS.to_vec())
+                .allow_headers(Any)
                 .allow_methods([Method::GET, Method::POST])
                 .expose_headers(Any),
         );
