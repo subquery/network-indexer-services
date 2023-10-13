@@ -37,7 +37,7 @@ use subql_indexer_utils::{
     error::Error,
     request::GraphQLQuery,
 };
-use tower_http::cors::{Any, CorsLayer, ExposeHeaders};
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::account::get_indexer;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
