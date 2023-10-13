@@ -37,7 +37,7 @@ use subql_indexer_utils::{
     error::Error,
     request::GraphQLQuery,
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{Any, CorsLayer, ExposeHeaders};
 
 use crate::account::get_indexer;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
@@ -90,7 +90,8 @@ pub async fn start_server(host: &str, port: u16) {
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_headers(HEADERS.to_vec())
-                .allow_methods([Method::GET, Method::POST]),
+                .allow_methods([Method::GET, Method::POST])
+                .expose_headers(Any),
         );
 
     let ip_address: Ipv4Addr = host.parse().unwrap_or(Ipv4Addr::LOCALHOST);
