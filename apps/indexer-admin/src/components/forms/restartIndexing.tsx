@@ -185,7 +185,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
     if (projectQuery.data) {
       const { project } = projectQuery.data;
       if (project?.baseConfig?.networkDictionary) {
-        setShowInput(false);
+        setShowInput(true);
       }
     }
   }, [projectQuery]);
@@ -270,11 +270,11 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
 
             <HorizonReverse>
               <Form.Item label="Use Dictionary" valuePropName="checked">
-                <Switch onChange={onSwitchChange} defaultChecked checked={showInput} />
+                <Switch onChange={onSwitchChange} checked={showInput} />
               </Form.Item>
             </HorizonReverse>
 
-            {!showInput && (
+            {showInput && (
               <Item
                 label="Dictionary Endpoint"
                 name={ProjectFormKey.networkDictionary}
