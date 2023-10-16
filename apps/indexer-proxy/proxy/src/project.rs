@@ -258,9 +258,20 @@ pub async fn project_status(id: &str, network: MetricsNetwork) -> Result<Value> 
 }
 
 pub async fn project_poi(id: &str, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
+    let last_block = if let Some(block) = block {
+        block
+    } else {
+        let data = project_metadata(id, network).await?;
+        if let Some(target) = data.pointer("/data/_metadata/lastProcessedHeight") {
+            target.as_u64().unwrap_or(0)
+        } else {
+            0
+        }
+    };
+
     project_query(
         id,
-        &GraphQLQuery::query(&poi_with_block(block)),
+        &GraphQLQuery::query(&poi_with_block(last_block)),
         MetricsQuery::Free,
         network,
     )
