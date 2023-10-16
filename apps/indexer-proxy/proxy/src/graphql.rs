@@ -43,3 +43,24 @@ pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration 
 
 pub const CHANNEL_QUERY: &str =
     "query { getAliveChannels { id consumer agent total spent remote price lastFinal expiredAt } }";
+
+pub fn poi_with_block(block: Option<u64>) -> String {
+    let block = if let Some(block) = block {
+        format!("id:{}", block)
+    } else {
+        "".to_owned()
+    };
+
+    format!(
+        r#"query {{
+    _poi ({}) {{
+      id
+      chainBlockHash
+      hash
+      parentHash
+      operationHashRoot
+    }}
+}}"#,
+        block
+    )
+}
