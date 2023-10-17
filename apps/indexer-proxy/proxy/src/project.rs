@@ -32,14 +32,14 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, graphql_request_raw, proxy_request, GraphQLQuery},
+    request::{graphql_request, graphql_request_raw, GraphQLQuery},
     types::Result,
 };
 use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
-use crate::graphql::METADATA_QUERY;
+use crate::graphql::{poi_with_block, METADATA_QUERY};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
 use crate::payg::merket_price;
@@ -258,38 +258,24 @@ pub async fn project_status(id: &str, network: MetricsNetwork) -> Result<Value> 
 }
 
 pub async fn project_poi(id: &str, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
-    let project = get_project(id).await?;
-
-    let name = if let Some(block) = block {
-        format!("mmrs/{}", block)
+    let last_block = if let Some(block) = block {
+        block
     } else {
-        format!("mmrs/{}", "latest")
+        let data = project_metadata(id, network).await?;
+        if let Some(target) = data.pointer("/data/_metadata/lastProcessedHeight") {
+            target.as_u64().unwrap_or(0)
+        } else {
+            0
+        }
     };
-    let now = Instant::now();
 
-    let res = proxy_request(
-        "get",
-        &project.node_endpoint,
-        &name,
-        "",
-        "".to_owned(),
-        vec![],
-    )
-    .await;
-    let time = now.elapsed().as_millis() as u64;
-
-    add_metrics_query(
-        id.to_owned(),
-        time,
+    project_query(
+        id,
+        &GraphQLQuery::query(&poi_with_block(last_block)),
         MetricsQuery::Free,
         network,
-        res.is_ok(),
-    );
-
-    res.map_err(|err| {
-        error!("Project {} poi: {}", id, err.to_string());
-        Error::ServiceException(1011)
-    })
+    )
+    .await
 }
 
 pub async fn project_query(
