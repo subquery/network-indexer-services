@@ -188,41 +188,94 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     Ok(())
 }
 
-pub async fn project_metadata(id: &str, network: MetricsNetwork) -> Result<Value> {
-    project_query(
+pub async fn project_metadata(
+    id: &str,
+    block: Option<u64>,
+    network: MetricsNetwork,
+) -> Result<Value> {
+    let metadata = project_query(
         id,
         &GraphQLQuery::query(METADATA_QUERY),
         MetricsQuery::Free,
         network,
     )
-    .await
-}
+    .await?;
 
-pub async fn project_status(id: &str, network: MetricsNetwork) -> Result<Value> {
-    let lock = ACCOUNT.read().await;
-    let controller = lock.controller.clone();
-    let indexer = lock.indexer.clone();
-    drop(lock);
-
-    let poi = project_poi(id, None, network).await?;
-    let mmr = poi
-        .get("mmrRoot")
-        .cloned()
-        .unwrap_or(json!(""))
-        .as_str()
-        .unwrap_or("")
-        .to_owned();
-    let height: i64 = poi
-        .get("height")
-        .cloned()
-        .unwrap_or(json!(0))
-        .as_i64()
-        .unwrap_or(0);
-    let metadata = project_metadata(id, network).await?;
-    let target: i64 = if let Some(target) = metadata.pointer("/data/_metadata/targetHeight") {
-        target.as_i64().unwrap_or(0)
+    let last_height = if let Some(block) = block {
+        block
     } else {
-        0
+        if let Some(target) = metadata.pointer("/data/_metadata/lastProcessedHeight") {
+            target.as_u64().unwrap_or(0)
+        } else {
+            0
+        }
+    };
+    let last_time = match metadata.pointer("/data/_metadata/lastProcessedTimestamp") {
+        Some(data) => data.as_u64().unwrap_or(0),
+        None => 0,
+    };
+
+    let poi = project_query(
+        id,
+        &GraphQLQuery::query(&poi_with_block(last_height)),
+        MetricsQuery::Free,
+        network,
+    )
+    .await?;
+
+    let target_height = match metadata.pointer("/data/_metadata/targetHeight") {
+        Some(data) => data.as_u64().unwrap_or(0),
+        None => 0,
+    };
+    let start_height = match metadata.pointer("/data/_metadata/startHeight") {
+        Some(data) => data.as_u64().unwrap_or(0),
+        None => 0,
+    };
+    let genesis = match metadata.pointer("/data/_metadata/genesisHash") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let chain = match metadata.pointer("/data/_metadata/chain") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let spec_name = match metadata.pointer("/data/_metadata/specName") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let subquery_healthy = match metadata.pointer("/data/_metadata/indexerHealthy") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let subquery_node = match metadata.pointer("/data/_metadata/indexerNodeVersion") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let subquery_query = match metadata.pointer("/data/_metadata/queryNodeVersion") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+
+    let poi_id = match poi.pointer("/data/_poi/id") {
+        Some(data) => data.as_u64().unwrap_or(0),
+        None => 0,
+    };
+
+    let poi_hash = match poi.pointer("/data/_poi/hash") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let poi_parent_hash = match poi.pointer("/data/_poi/parentHash") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let poi_chain_block_hash = match poi.pointer("/data/_poi/chainBlockHash") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
+    };
+    let poi_operation_root = match poi.pointer("/data/_poi/operationHashRoot") {
+        Some(data) => data.as_str().unwrap_or(""),
+        None => "",
     };
 
     let timestamp: u64 = SystemTime::now()
@@ -230,52 +283,49 @@ pub async fn project_status(id: &str, network: MetricsNetwork) -> Result<Value> 
         .unwrap()
         .as_secs();
 
+    let lock = ACCOUNT.read().await;
+    let controller = lock.controller.clone();
+    let indexer = lock.indexer.clone();
+    drop(lock);
+
     let payload = encode(&[
-        timestamp.into_token(),
+        indexer.clone().into_token(),
         id.to_owned().into_token(),
-        mmr.clone().into_token(),
-        height.into_token(),
-        target.into_token(),
-        indexer.into_token(),
-        controller.address().into_token(),
+        last_height.into_token(),
+        target_height.into_token(),
+        poi_id.to_owned().into_token(),
+        poi_hash.to_owned().into_token(),
+        timestamp.into_token(),
     ]);
     let hash = keccak256(payload);
+
     let sign = controller
         .sign_message(hash)
         .await
         .map_err(|_| Error::InvalidSignature(1041))?;
 
     Ok(json!({
-        "timestamp": timestamp,
-        "deploymentId": id,
-        "poi": mmr,
-        "blockHeight": height,
-        "targetHeight": target,
         "indexer": format!("{:?}", indexer),
         "controller": format!("{:?}", controller.address()),
+        "deploymentId": id,
+        "startHeight": start_height,
+        "lastHeight": last_height,
+        "targetHeight": target_height,
+        "lastTime": last_time,
+        "genesis": genesis,
+        "chain": chain,
+        "specName": spec_name,
+        "poiId": poi_id,
+        "poiHash": poi_hash,
+        "poiParentHash": poi_parent_hash,
+        "poiChainBlockHash": poi_chain_block_hash,
+        "poiOperationHashRoot": poi_operation_root,
+        "subqueryHealthy": subquery_healthy,
+        "subqueryNode": subquery_node,
+        "subqueryQuery": subquery_query,
+        "timestamp": timestamp,
         "signature": sign.to_string(),
     }))
-}
-
-pub async fn project_poi(id: &str, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
-    let last_block = if let Some(block) = block {
-        block
-    } else {
-        let data = project_metadata(id, network).await?;
-        if let Some(target) = data.pointer("/data/_metadata/lastProcessedHeight") {
-            target.as_u64().unwrap_or(0)
-        } else {
-            0
-        }
-    };
-
-    project_query(
-        id,
-        &GraphQLQuery::query(&poi_with_block(last_block)),
-        MetricsQuery::Free,
-        network,
-    )
-    .await
 }
 
 pub async fn project_query(

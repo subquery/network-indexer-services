@@ -29,40 +29,24 @@ pub struct JoinData(pub Vec<String>);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
+    /// Report project healthy,
+    /// params: Json(indexer, controller, version, uptime, os)
+    IndexerHealthy(String),
     /// Project join
     ProjectJoin(u64),
     /// Project join response
     ProjectJoinRes,
     /// Project leave
     ProjectLeave,
-    /// Report project healthy,
-    /// params: metadata
-    ProjectHealthy(String),
-    /// Report project query log to whitelist use root group id, every 30min, time is ms.
-    /// params: indexer, [
-    ///   project(String),
-    ///   query_total_time(u64),
-    ///   [
-    ///     (close_agreement_count_http(u64), close_agreement_count_ws(u64), close_agreement_count_p2p(u64)),
-    ///     (payg_count_http(u64), payg_count_ws(u64), payg_count_p2p(u64))
-    ///   ],
-    /// ]
-    ProjectMetrics(String, Vec<(String, u64, Vec<(u64, u64, u64)>)>),
-    /// Report indexer services status,
-    /// params: indexer, version, uptime, os, project, payg price/1000 query
-    ProjectStatus(String, u64, u64, String, Vec<(String, f64)>),
-    /// Request the project info,
-    /// params: project
-    ProjectInfo(Option<String>),
-    /// Response project price and info,
-    /// params: project info
-    ProjectInfoRes(String),
     /// Request the project poi,
     /// params: project, poi block hash
-    ProjectPoi(String, Option<u64>),
+    ProjectMetadata(String, Option<u64>),
     /// Response project poi
     /// params: project poi
-    ProjectPoiRes(String),
+    ProjectMetadataRes(String),
+    /// Report indexer services status,
+    /// params: project, payg price/1000 query
+    PaygPrice(String),
     /// Open the state channel channel,
     /// params: uid, open state
     PaygOpen(u64, String),
@@ -87,14 +71,19 @@ pub enum Event {
     /// Response the close agreement query,
     /// params: uid, data
     CloseAgreementQueryRes(u64, String),
-    /// Query the indexer status event
-    /// params: deployment cid
-    IndexerProjectStatus(String),
-    /// Response indexer status event
-    IndexerProjectStatusRes(String),
+    /// Report project query log to whitelist use root group id, every 30min, time is ms.
+    /// params: indexer, [
+    ///   project(String),
+    ///   query_total_time(u64),
+    ///   [
+    ///     (close_agreement_count_http(u64), close_agreement_count_ws(u64), close_agreement_count_p2p(u64)),
+    ///     (payg_count_http(u64), payg_count_ws(u64), payg_count_p2p(u64))
+    ///   ],
+    /// ]
+    MetricsQueryCount(String, Vec<(String, u64, Vec<(u64, u64, u64)>)>),
     /// Report payg conflict info
     /// params: indexer, DeploymentId, channel, total conflict, start time, end time.
-    PaygConflictMetrics(String, String, String, i32, i64, i64),
+    MetricsPaygConflict(String, String, String, i32, i64, i64),
 }
 
 impl Event {

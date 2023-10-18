@@ -219,7 +219,6 @@ pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
     }
 
     Ok(json!({
-        "endpoint": COMMAND.endpoint(),
         "indexer": format!("{:?}", indexer),
         "controller": format!("{:?}", controller.address()),
         "deployments": values,

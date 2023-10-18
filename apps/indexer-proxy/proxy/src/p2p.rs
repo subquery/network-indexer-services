@@ -42,14 +42,14 @@ use tdn::{
 use tokio::sync::{mpsc::Sender, RwLock};
 
 use crate::{
-    account::get_indexer,
+    account::{get_indexer, indexer_healthy},
     auth::{check_and_get_agreement_limit, check_and_save_agreement},
     cli::COMMAND,
     contracts::get_consumer_host_peer,
-    metrics::{get_services_version, get_status, get_timer_metrics, MetricsNetwork, MetricsQuery},
-    payg::{merket_price, open_state, query_state},
+    metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
+    payg::{open_state, query_state},
     primitives::*,
-    project::{get_projects_status, project_metadata, project_poi, project_query, project_status},
+    project::{project_metadata, project_query},
 };
 
 pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock::new(vec![]));
@@ -130,23 +130,6 @@ async fn report_metrics() {
     }
 }
 
-async fn report_status() {
-    loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_STATUS_TIME)).await;
-        let senders = P2P_SENDER.read().await;
-        if senders.is_empty() {
-            drop(senders);
-            continue;
-        } else {
-            debug!("Report projects status");
-            senders[0]
-                .send(rpc_request(0, "project-report-status", vec![], 0))
-                .await;
-        }
-        drop(senders);
-    }
-}
-
 async fn broadcast_healthy() {
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
@@ -164,29 +147,10 @@ async fn broadcast_healthy() {
     }
 }
 
-async fn broadcast_status() {
-    loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_BROADCAST_STATUS_TIME)).await;
-        let senders = P2P_SENDER.read().await;
-        if senders.is_empty() {
-            drop(senders);
-            continue;
-        } else {
-            debug!("Report projects healthy");
-            senders[0]
-                .send(rpc_request(0, "project-broadcast-status", vec![], 0))
-                .await;
-        }
-        drop(senders);
-    }
-}
-
 pub fn listen() {
     tokio::spawn(report_metrics());
-    tokio::spawn(report_status());
     tokio::spawn(check_stable());
     tokio::spawn(broadcast_healthy());
-    tokio::spawn(broadcast_status());
 }
 
 pub async fn start_network(key: PeerKey) {
@@ -449,7 +413,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let metrics = get_timer_metrics().await;
             if !metrics.is_empty() {
                 let indexer = get_indexer().await;
-                let event = Event::ProjectMetrics(indexer.clone(), metrics).to_bytes();
+                let event = Event::MetricsQueryCount(indexer.clone(), metrics).to_bytes();
                 let ledger = state.0.read().await;
                 let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
                 drop(ledger);
@@ -458,30 +422,6 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
                         .groups
                         .push((ROOT_GROUP_ID, SendType::Event(0, peer, event.clone())));
                 }
-            }
-
-            Ok(results)
-        },
-    );
-
-    rpc_handler.add_method(
-        "project-report-status",
-        |_, _, state: Arc<State>| async move {
-            let mut results = HandleResult::new();
-
-            let indexer = get_indexer().await;
-            let versions = get_services_version().await;
-            let status = get_status().await;
-            let projects = get_projects_status().await;
-            let event =
-                Event::ProjectStatus(indexer, versions, status.0, status.1, projects).to_bytes();
-            let ledger = state.0.read().await;
-            let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
-            drop(ledger);
-            for peer in telemetries {
-                results
-                    .groups
-                    .push((ROOT_GROUP_ID, SendType::Event(0, peer, event.clone())));
             }
 
             Ok(results)
@@ -501,7 +441,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
 
             let indexer = get_indexer().await;
             let event =
-                Event::PaygConflictMetrics(indexer, deployment, channel, conflict, start, end)
+                Event::MetricsPaygConflict(indexer, deployment, channel, conflict, start, end)
                     .to_bytes();
             let ledger = state.0.read().await;
             let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
@@ -525,7 +465,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let payg = params[0].as_str().ok_or(RpcError::ParseError)?;
 
             let mut results = HandleResult::new();
-            let e = Event::ProjectInfoRes(payg.to_owned()).to_bytes();
+            let e = Event::PaygPrice(payg.to_owned()).to_bytes();
             let ledger = state.0.read().await;
             if let Some((_, peers)) = ledger.groups.get(&gid) {
                 for p in peers {
@@ -548,42 +488,15 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let groups = ledger.groups.clone();
             drop(ledger);
 
-            for (gid, (project, peers)) in groups {
-                if let Ok(res) = project_metadata(&project, MetricsNetwork::P2P).await {
-                    let data = serde_json::to_string(&res).unwrap_or("".to_owned());
+            let healthy = indexer_healthy().await;
+            let data = serde_json::to_string(&healthy).unwrap_or("".to_owned());
+            let event = Event::IndexerHealthy(data).to_bytes();
 
-                    let event = Event::ProjectHealthy(data).to_bytes();
-                    for peer in peers {
-                        results
-                            .groups
-                            .push((gid, SendType::Event(0, peer, event.clone())));
-                    }
-                }
-            }
-
-            Ok(results)
-        },
-    );
-
-    rpc_handler.add_method(
-        "project-broadcast-status",
-        |_gid: GroupId, _params: Vec<RpcParam>, state: Arc<State>| async move {
-            let mut results = HandleResult::new();
-
-            let ledger = state.0.read().await;
-            let groups = ledger.groups.clone();
-            drop(ledger);
-
-            for (gid, (project, peers)) in groups {
-                if let Ok(res) = project_status(&project, MetricsNetwork::P2P).await {
-                    let data = serde_json::to_string(&res).unwrap_or("".to_owned());
-
-                    let event = Event::IndexerProjectStatusRes(data).to_bytes();
-                    for peer in peers {
-                        results
-                            .groups
-                            .push((gid, SendType::Event(0, peer, event.clone())));
-                    }
+            for (gid, (_project, peers)) in groups {
+                for peer in peers {
+                    results
+                        .groups
+                        .push((gid, SendType::Event(0, peer, event.clone())));
                 }
             }
 
@@ -716,22 +629,13 @@ async fn handle_group(
                     }
                     drop(ledger);
                 }
-                Event::ProjectInfo(project) => {
-                    if let Ok(payg) = merket_price(project).await {
-                        let e = Event::ProjectInfoRes(serde_json::to_string(&payg)?);
+                Event::ProjectMetadata(project, block) => {
+                    if let Ok(data) = project_metadata(&project, block, MetricsNetwork::P2P).await {
+                        let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
 
                         let msg = SendType::Event(0, peer_id, e.to_bytes());
                         results.groups.push((gid, msg));
                     }
-                }
-                Event::ProjectPoi(project, block) => {
-                    let res = match project_poi(&project, block, MetricsNetwork::P2P).await {
-                        Ok(poi) => poi,
-                        Err(err) => err.to_json(),
-                    };
-                    let e = Event::ProjectPoiRes(serde_json::to_string(&res)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
                 }
                 Event::PaygOpen(uid, state) => {
                     let res = match open_state(&serde_json::from_str(&state)?).await {
@@ -789,13 +693,6 @@ async fn handle_group(
                     let e = Event::CloseAgreementQueryRes(uid, serde_json::to_string(&res)?);
                     let msg = SendType::Event(0, peer_id, e.to_bytes());
                     results.groups.push((gid, msg));
-                }
-                Event::IndexerProjectStatus(project) => {
-                    if let Ok(r) = project_status(&project, MetricsNetwork::P2P).await {
-                        let e = Event::IndexerProjectStatusRes(serde_json::to_string(&r)?);
-                        let msg = SendType::Event(0, peer_id, e.to_bytes());
-                        results.groups.push((gid, msg));
-                    }
                 }
                 _ => {
                     debug!("Not handle event: {:?}", event);

@@ -21,12 +21,13 @@ use ethers::{
     types::Address,
 };
 use once_cell::sync::Lazy;
-use serde_json::Value;
-use subql_indexer_utils::{error::Error, types::Result};
+use serde_json::{json, Value};
+use subql_indexer_utils::{constants::decode_proxy_version, error::Error, types::Result};
 use tdn::prelude::PeerKey;
 use tokio::sync::RwLock;
 
 use crate::cli::COMMAND;
+use crate::metrics::{get_services_version, get_status};
 use crate::p2p::{start_network, stop_network};
 
 pub struct Account {
@@ -112,4 +113,29 @@ pub async fn handle_account(value: &Value) -> Result<()> {
 
 pub async fn get_indexer() -> String {
     format!("{:?}", ACCOUNT.read().await.indexer)
+}
+
+pub async fn indexer_healthy() -> Value {
+    let lock = ACCOUNT.read().await;
+    let controller = lock.controller.clone();
+    let indexer = lock.indexer.clone();
+    drop(lock);
+
+    let (uptime, _os) = get_status().await;
+    let version = get_services_version().await;
+    let v_bytes = version.to_le_bytes();
+    let mut p_v = [0u8; 4];
+    let mut c_v = [0u8; 4];
+    p_v.copy_from_slice(&v_bytes[0..4]);
+    c_v.copy_from_slice(&v_bytes[4..8]);
+    let proxy_version = decode_proxy_version(u32::from_le_bytes(p_v));
+    let coordinator_version = decode_proxy_version(u32::from_le_bytes(c_v));
+
+    json!({
+        "indexer": format!("{:?}", indexer),
+        "controller": format!("{:?}", controller.address()),
+        "uptime": uptime,
+        "proxyVersion": proxy_version,
+        "coordinatorVersion": coordinator_version,
+    })
 }
