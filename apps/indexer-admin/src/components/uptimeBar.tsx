@@ -38,7 +38,7 @@ const UptimeBar: FC<IProps> = (props) => {
     if (!uptimeData.length) return 0;
     const online = uptimeData.filter((i) => i.nodeSuccess);
 
-    return floor(online.length / uptimeData.length, 2);
+    return floor(online.length / uptimeData.length, 2) * 100;
   }, [uptimeData]);
 
   // TODO: maybe need backend group by.
