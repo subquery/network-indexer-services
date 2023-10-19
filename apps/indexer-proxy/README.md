@@ -42,7 +42,7 @@ OPTIONS:
         --pushgateway-endpoint <pushgateway-endpoint>  The pushgateway endpoint to report indexer's query status
         --redis-endpoint <redis-endpoint>              Redis client address [default: redis://127.0.0.1/]
         --secret-key <secret-key>                      Secret key for decrypt key
-        --service-url <service-url>                    Coordinator service endpoint [default: http://127.0.0.1:8000]
+        --coordinator-endpoint <coordinator-endpoint>  Coordinator service endpoint [default: http://127.0.0.1:8000]
         --token-duration <token-duration>              Auth token duration hours [default: 12]
 ```
 

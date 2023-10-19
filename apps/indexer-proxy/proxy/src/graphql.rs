@@ -28,8 +28,6 @@ pub const METADATA_QUERY: &str = r#"query {
     indexerHealthy
     indexerNodeVersion
     queryNodeVersion
-    indexerHealthy
-    chain
   }
 }"#;
 
