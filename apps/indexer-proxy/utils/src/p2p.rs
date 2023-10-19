@@ -45,8 +45,11 @@ pub enum Event {
     /// params: project poi
     ProjectMetadataRes(String),
     /// Report indexer services status,
-    /// params: project, payg price/1000 query
-    PaygPrice(String),
+    /// params: project or all
+    PaygPrice(Option<String>),
+    /// Report indexer services status,
+    /// params: payg price/1000 query
+    PaygPriceRes(String),
     /// Open the state channel channel,
     /// params: uid, open state
     PaygOpen(u64, String),

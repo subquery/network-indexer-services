@@ -123,18 +123,6 @@ pub async fn get_project(key: &str) -> Result<Project> {
     }
 }
 
-/// list the projects status, project name & price/1000 query
-pub async fn get_projects_status() -> Vec<(String, f64)> {
-    let mut projects = vec![];
-    let decimal = U256::from_dec_str("1000000000000000000").unwrap(); // 18-decimal
-    let map = PROJECTS.lock().await;
-    for (k, v) in map.iter() {
-        let price = (v.payg_price * U256::from(10000000) / decimal).as_u64() as f64 / 10000f64;
-        projects.push((k.clone(), price));
-    }
-    projects
-}
-
 /// list the project id and price
 pub async fn list_projects() -> Vec<Project> {
     let mut projects = vec![];

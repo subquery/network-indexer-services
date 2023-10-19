@@ -47,7 +47,7 @@ use crate::{
     cli::COMMAND,
     contracts::get_consumer_host_peer,
     metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
-    payg::{open_state, query_state},
+    payg::{merket_price, open_state, query_state},
     primitives::*,
     project::{project_metadata, project_query},
 };
@@ -465,7 +465,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let payg = params[0].as_str().ok_or(RpcError::ParseError)?;
 
             let mut results = HandleResult::new();
-            let e = Event::PaygPrice(payg.to_owned()).to_bytes();
+            let e = Event::PaygPriceRes(payg.to_owned()).to_bytes();
             let ledger = state.0.read().await;
             if let Some((_, peers)) = ledger.groups.get(&gid) {
                 for p in peers {
@@ -632,6 +632,14 @@ async fn handle_group(
                 Event::ProjectMetadata(project, block) => {
                     if let Ok(data) = project_metadata(&project, block, MetricsNetwork::P2P).await {
                         let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
+
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
+                }
+                Event::PaygPrice(project) => {
+                    if let Ok(data) = merket_price(project).await {
+                        let e = Event::PaygPriceRes(serde_json::to_string(&data)?);
 
                         let msg = SendType::Event(0, peer_id, e.to_bytes());
                         results.groups.push((gid, msg));
