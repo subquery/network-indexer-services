@@ -5,7 +5,7 @@ import { ApolloClient } from '@apollo/client/core';
 import { Injectable } from '@nestjs/common';
 import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import {
-  GetStateChannels,
+  StateChannelFields,
   GetStateChannelsQuery,
   StateChannel,
   GetFlexPlan,
@@ -26,12 +26,24 @@ export class PaygQueryService {
     this.client = queryClient.networkClient;
   }
 
-  async getStateChannels(): Promise<StateChannel[]> {
+  async getStateChannels(indexer: string): Promise<StateChannel[]> {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
         // @ts-ignore TODO: fix type
-        query: GetStateChannels,
-        variables: { status: 'OPEN' },
+        query: `
+        query GetStateChannelsByIndexer($status: ChannelStatus!) {
+          stateChannels(
+            filter: { indexer: { equalTo: $indexer }, status: { equalTo: $status } }
+          ) {
+            totalCount
+            nodes {
+              ...StateChannelFields
+            }
+          }
+        }        
+        ${StateChannelFields}
+      `,
+        variables: { indexer, status: 'OPEN' },
       });
 
       const channels = result.data.stateChannels.nodes;
