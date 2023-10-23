@@ -102,7 +102,7 @@ const Account = () => {
 
   const controllerButtons = [
     {
-      title: 'Manange Controllers',
+      title: 'Manage Controllers',
       onClick: () => history.push('/controller-management'),
     } as AccountButtonItem,
   ];
