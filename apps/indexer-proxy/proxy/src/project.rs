@@ -227,10 +227,6 @@ pub async fn project_metadata(
         Some(data) => data.as_str().unwrap_or(""),
         None => "",
     };
-    let spec_name = match metadata.pointer("/data/_metadata/specName") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
     let subquery_healthy = match metadata.pointer("/data/_metadata/indexerHealthy") {
         Some(data) => data.as_str().unwrap_or(""),
         None => "",
@@ -301,8 +297,7 @@ pub async fn project_metadata(
         "targetHeight": target_height,
         "lastTime": last_time,
         "genesis": genesis,
-        "chain": chain,
-        "specName": spec_name,
+        "chainId": chain,
         "poiId": poi_id,
         "poiHash": poi_hash,
         "poiParentHash": poi_parent_hash,
