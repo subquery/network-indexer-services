@@ -169,8 +169,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
   }
 
   async syncOpen(id: string, consumer: string, agent: string, price: string) {
-    const channel = await this.paygService.channel(id);
-    if (channel) return;
+    let channel = await this.paygService.channel(id);
+    if (!channel) {
+      const channelState = await this.paygService.channelFromContract(id);
+      channel = await this.paygService.saveChannel(id, channelState, price, agent);
+    }
 
     channel.consumer = consumer;
     channel.agent = agent;

@@ -52,7 +52,7 @@ export class DockerService {
         '\n'
       );
     } catch (e) {
-      getLogger('docker').error(e, `failed to restart the containers`);
+      getLogger('docker').error(e, `failed to start the containers`);
     }
   }
 
