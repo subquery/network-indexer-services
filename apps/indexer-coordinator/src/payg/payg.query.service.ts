@@ -12,6 +12,7 @@ import {
   GetFlexPlanQuery,
 } from '@subql/network-query';
 
+import { gql } from 'apollo-server-core';
 import { Config } from '../configure/configure.module';
 import { getLogger } from '../utils/logger';
 
@@ -30,19 +31,19 @@ export class PaygQueryService {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
         // @ts-ignore TODO: fix type
-        query: `
-        query GetStateChannelsByIndexer($status: ChannelStatus!) {
-          stateChannels(
-            filter: { indexer: { equalTo: $indexer }, status: { equalTo: $status } }
-          ) {
-            totalCount
-            nodes {
-              ...StateChannelFields
+        query: gql`
+          query GetStateChannelsByIndexer($indexer: String!, $status: ChannelStatus!) {
+            stateChannels(
+              filter: { indexer: { equalTo: $indexer }, status: { equalTo: $status } }
+            ) {
+              totalCount
+              nodes {
+                ...StateChannelFields
+              }
             }
           }
-        }        
-        ${StateChannelFields}
-      `,
+          ${StateChannelFields}
+        `,
         variables: { indexer, status: 'OPEN' },
       });
 
