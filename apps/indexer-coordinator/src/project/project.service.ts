@@ -149,12 +149,12 @@ export class ProjectService {
   async addProject(id: string): Promise<Project> {
     const project = await this.getProject(id);
     if (project) return project;
-    const indexer = await this.account.getIndexer();
-    const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
+    // const indexer = await this.account.getIndexer();
+    // const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
     const details = await this.getProjectInfo(id);
     const projectEntity = this.projectRepo.create({
       id: id.trim(),
-      status,
+      status: DesiredStatus.STOPPED,
       details,
     });
 

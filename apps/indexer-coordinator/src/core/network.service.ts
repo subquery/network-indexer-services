@@ -80,25 +80,25 @@ export class NetworkService implements OnApplicationBootstrap {
     return this.sdk;
   }
 
-  async getIndexingProjects() {
-    const indexer = await this.accountService.getIndexer();
-    const projects = await this.projectRepo.find();
-    const indexingProjects = await Promise.all(
-      projects.map(async (project) => {
-        const { status } = await this.contractService.deploymentStatusByIndexer(
-          project.id,
-          indexer
-        );
-        project.status = status;
-        return await this.projectRepo.save(project);
-      })
-    );
+  // async getIndexingProjects() {
+  //   const indexer = await this.accountService.getIndexer();
+  //   const projects = await this.projectRepo.find();
+  //   const indexingProjects = await Promise.all(
+  //     projects.map(async (project) => {
+  //       const { status } = await this.contractService.deploymentStatusByIndexer(
+  //         project.id,
+  //         indexer
+  //       );
+  //       project.status = status;
+  //       return await this.projectRepo.save(project);
+  //     })
+  //   );
 
-    return indexingProjects.filter(
-      ({ queryEndpoint, status }) =>
-        !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
-    );
-  }
+  //   return indexingProjects.filter(
+  //     ({ queryEndpoint, status }) =>
+  //       !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
+  //   );
+  // }
 
   private async updateExpiredAgreements() {
     logger.debug(`updateExpiredAgreements start`);

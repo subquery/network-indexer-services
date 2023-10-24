@@ -7,7 +7,7 @@ import fetch, { Response } from 'node-fetch';
 
 import { Project, MetadataType } from '../project/project.model';
 import { nodeContainer, queryContainer } from '../utils/docker';
-import { debugLogger } from '../utils/logger';
+// import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from '../utils/project';
 
 import { AccountService } from './account.service';

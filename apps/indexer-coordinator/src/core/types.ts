@@ -8,16 +8,15 @@ export enum DesiredStatus {
   RUNNING,
 }
 
-export enum IndexingStatus {
-  NOTINDEXING,
-  INDEXING,
-  READY,
-}
+// export enum ProjectStatus {
+//   NOTINDEXING,
+//   READY,
+// }
 
-export type DeploymentStatus = {
-  status: IndexingStatus;
-  blockHeight: BigNumber;
-};
+// export type DeploymentStatus = {
+//   status: ProjectStatus;
+//   blockHeight: BigNumber;
+// };
 
 export enum ServiceStatus {
   Starting = 'STARTING',
