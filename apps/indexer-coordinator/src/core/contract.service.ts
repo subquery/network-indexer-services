@@ -68,7 +68,7 @@ export class ContractService {
     }
   }
 
-  async isEmpytAccount(account: string) {
+  async isEmptyAccount(account: string) {
     try {
       const balance = await this.provider.getBalance(account);
       return balance.eq(0);
@@ -146,7 +146,7 @@ export class ContractService {
     try {
       const { status, blockHeight } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
         cidToBytes32(id.trim()),
-        indexer,
+        indexer
       );
       return { status, blockHeight };
     } catch (e) {

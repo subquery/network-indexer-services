@@ -13,7 +13,7 @@ export class ServiceResolver {
   constructor(private accountService: AccountService, private contract: ContractService) {}
 
   @Query(() => Boolean)
-  async withrawController(@Args('id') id: string) {
+  async withdrawController(@Args('id') id: string) {
     const indexer = await this.accountService.getIndexer();
     const controller = await this.accountService.getController(id);
     if (!controller) {

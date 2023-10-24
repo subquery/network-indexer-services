@@ -99,7 +99,7 @@ const controllersPage = () => {
 
     const res = await withdrawController({ variables: { id: account?.id } });
     removeNotification(notificationId);
-    if (res.data.withrawController) {
+    if (res.data.withdrawController) {
       dispatchNotification(withdrawControllerSucceed(address));
     } else {
       dispatchNotification(withdrawControllerFailed(address));
