@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel, bytes32ToCid } from '@subql/network-clients';
 import { BigNumber } from 'ethers';
+import lodash from 'lodash';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 
@@ -16,6 +17,7 @@ import { PaygEvent } from '../utils/subscription';
 import { AccountService } from './../core/account.service';
 
 import { Channel, ChannelStatus } from './payg.model';
+import { PaygQueryService } from './payg.query.service';
 
 export type ChannelState = StateChannel.ChannelStateStructOutput;
 
@@ -26,6 +28,7 @@ export class PaygService {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
+    private paygQueryService: PaygQueryService,
     private pubSub: SubscriptionService,
     private network: NetworkService,
     private account: AccountService
@@ -40,6 +43,11 @@ export class PaygService {
     return this.network.getSdk().stateChannel.channelPrice(id);
   }
 
+  async channelPriceFromNetwork(id: string): Promise<BigNumber> {
+    const channel = await this.paygQueryService.getStateChannel(id);
+    return channel?.price ? BigNumber.from(channel.price) : undefined;
+  }
+
   async updateChannelFromContract(
     id: string,
     channelState: StateChannel.ChannelStateStructOutput,
@@ -51,7 +59,12 @@ export class PaygService {
       return;
     }
     if (channelState.indexer !== hostIndexer) {
+      logger.debug(`State channel indexer is not host indexer, remove from db: ${id}`);
       await this.channelRepo.delete({ id });
+      return;
+    }
+    if (lodash.isEmpty(price) || lodash.isNaN(price) || price === '0') {
+      logger.debug(`State channel price cannot be zero: ${id}`);
       return;
     }
 
@@ -85,7 +98,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent ? agent : channelEntity.agent;
-    channelEntity.price = price !== '0' ? price : channelEntity.price;
+    channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.spent = spent.toString();
@@ -110,20 +123,35 @@ export class PaygService {
     return channel;
   }
 
-  async syncChannel(channelId: string): Promise<Channel | undefined> {
+  async syncChannel(channelId: string, altPrice?: BigNumber): Promise<Channel | undefined> {
     if (!this.network.getSdk()) {
       return;
     }
 
     const id = channelId.toLowerCase();
+
     const channelState = await this.channelFromContract(id);
     if (!channelState) {
-      logger.debug(`State channel not exist on chain: ${id}`);
+      logger.debug(`State channel not exist on chain, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
       return;
     }
-    const channelPrice = await this.channelPriceFromContract(id);
+
+    let channelPrice: BigNumber;
+    try {
+      channelPrice = await this.channelPriceFromContract(id);
+    } catch (e) {
+      logger.debug(`State channel sync price failed: ${id}`);
+    }
     if (!channelPrice || channelPrice.isZero()) {
-      logger.debug(`State channel update price failed: ${id} [${channelPrice.toString()}]`);
+      if (altPrice && !altPrice.isZero()) {
+        channelPrice = altPrice;
+      } else {
+        channelPrice = await this.channelPriceFromNetwork(id);
+      }
+    }
+    if (!channelPrice || channelPrice.isZero()) {
+      logger.debug(`State channel update price failed: [${channelPrice}] ${id}`);
       return;
     }
 

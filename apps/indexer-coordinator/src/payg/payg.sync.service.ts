@@ -62,14 +62,17 @@ export class PaygSyncService implements OnApplicationBootstrap {
         );
         const localAliveChannelIds = localAliveChannels.map((channel) => channel.id);
 
-        const closedChannelIds = localAliveChannelIds.filter((id) => !stateChannelIds.includes(id));
-        for (const id of closedChannelIds) {
-          await this.paygService.syncChannel(id);
-        }
-
         const mappedLocalAliveChannels: Record<string, Channel> = {};
         for (const channel of localAliveChannels) {
           mappedLocalAliveChannels[channel.id] = channel;
+        }
+
+        const closedChannelIds = localAliveChannelIds.filter((id) => !stateChannelIds.includes(id));
+        for (const id of closedChannelIds) {
+          await this.paygService.syncChannel(
+            id,
+            BigNumber.from(mappedLocalAliveChannels[id].price)
+          );
         }
 
         for (const stateChannel of stateChannels) {
@@ -78,7 +81,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
             logger.debug(`State channel is up to date: ${id}`);
             continue;
           }
-          await this.paygService.syncChannel(id);
+          await this.paygService.syncChannel(id, BigNumber.from(stateChannel.price));
         }
 
         logger.debug(`Synced state channels from Subquery Project`);
