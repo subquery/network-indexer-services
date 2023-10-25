@@ -6,7 +6,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
-import { chunk } from 'lodash';
 
 import { AccountService } from 'src/core/account.service';
 import { PaygEvent } from 'src/utils/subscription';
@@ -30,6 +29,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     private account: AccountService
   ) {}
 
+  private syncingStateChannels = false;
+
   onApplicationBootstrap() {
     void (() => {
       this.subscribeStateChannelEvents();
@@ -38,79 +39,77 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async syncStateChannelsPeriodically() {
+    if (this.syncingStateChannels) {
+      logger.debug(`Bypass syncing state channels...`);
+      return;
+    }
+    this.syncingStateChannels = true;
     try {
-      logger.debug(`Load from Subquery Project...`);
+      logger.debug(`Syncing state channels from Subquery Project...`);
       const hostIndexer = await this.account.getIndexer();
       if (!hostIndexer) {
         logger.debug(`Indexer not found, will sync state channel later...`);
+        this.syncingStateChannels = false;
         return;
       }
-      const channels = await this.paygQueryService.getStateChannels(hostIndexer);
+      const stateChannels = await this.paygQueryService.getStateChannels(hostIndexer);
+      const localAliveChannels = await this.paygService.getAliveChannels();
 
-      for (const batch of chunk(channels, 10)) {
-        await Promise.all(batch.map((channel) => this.syncChannel(channel)));
+      const stateChannelIds = stateChannels.map((stateChannel) =>
+        BigNumber.from(stateChannel.id).toString().toLowerCase()
+      );
+      const localAliveChannelIds = localAliveChannels.map((channel) => channel.id);
+
+      const closedChannelIds = localAliveChannelIds.filter((id) => !stateChannelIds.includes(id));
+      for (const id of closedChannelIds) {
+        await this.paygService.syncChannel(id);
       }
+
+      const mappedLocalAliveChannels: Record<string, Channel> = {};
+      for (const channel of localAliveChannels) {
+        mappedLocalAliveChannels[channel.id] = channel;
+      }
+
+      for (const stateChannel of stateChannels) {
+        const id = BigNumber.from(stateChannel.id).toString().toLowerCase();
+        if (this.compareChannel(mappedLocalAliveChannels[id], stateChannel)) {
+          logger.debug(`State channel is up to date: ${id}`);
+          continue;
+        }
+        await this.paygService.syncChannel(id);
+      }
+
+      logger.debug(`Synced state channels from Subquery Project`);
     } catch (e) {
       logger.error(`Failed to sync state channels from Subquery Project: ${e}`);
     }
+    this.syncingStateChannels = false;
   }
 
-  async syncChannel(channel: StateChannel): Promise<void> {
-    if (!channel) return;
+  compareChannel(channel: Channel, channelState: StateChannel): boolean {
+    const {
+      status,
+      agent,
+      total,
+      spent,
+      price,
+      expiredAt,
+      terminatedAt,
+      terminateByIndexer,
+      isFinal,
+    } = channelState;
 
-    try {
-      const id = BigNumber.from(channel.id).toString().toLowerCase();
-      const _channel = await this.channelRepo.findOneBy({ id });
-
-      if (_channel && _channel.price === '0') {
-        _channel.agent = channel.agent;
-        _channel.consumer = channel.consumer;
-        _channel.price = channel.price.toString();
-        _channel.lastFinal = channel.isFinal;
-        await this.channelRepo.save(_channel);
-        return;
-      }
-
-      const {
-        deployment,
-        indexer,
-        consumer,
-        agent,
-        total,
-        spent,
-        price,
-        expiredAt,
-        terminatedAt,
-        terminateByIndexer,
-        isFinal,
-      } = channel;
-
-      const channelObj = {
-        id,
-        deploymentId: deployment.id,
-        indexer,
-        consumer,
-        agent,
-        spent: spent.toString(),
-        total: total.toString(),
-        price: price.toString(),
-        lastIndexerSign: '',
-        lastConsumerSign: '',
-        onchain: '0',
-        remote: '0',
-        status: ChannelStatus.OPEN,
-        expiredAt: new Date(expiredAt).valueOf() / 1000,
-        terminatedAt: new Date(terminatedAt).valueOf() / 1000,
-        terminateByIndexer,
-        lastFinal: isFinal,
-      };
-
-      const channelEntity = this.channelRepo.create(channelObj);
-      await this.channelRepo.save(channelEntity);
-      logger.debug(`Synced state channel ${channel.id}`);
-    } catch (e) {
-      logger.error(`Failed to sync state channel ${channel.id} with error: ${e}`);
-    }
+    return (
+      channel.status === status &&
+      channel.agent === agent &&
+      channel.total === total.toString() &&
+      channel.spent === spent.toString() &&
+      channel.price === price.toString() &&
+      channel.expiredAt === new Date(expiredAt).valueOf() / 1000 &&
+      channel.terminatedAt === new Date(terminatedAt).valueOf() / 1000 &&
+      channel.terminateByIndexer === terminateByIndexer &&
+      channel.lastFinal === isFinal
+    );
   }
 
   subscribeStateChannelEvents(): void {
@@ -169,11 +168,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
   }
 
   async syncOpen(id: string, consumer: string, agent: string, price: string) {
-    let channel = await this.paygService.channel(id);
-    if (!channel) {
-      const channelState = await this.paygService.channelFromContract(id);
-      channel = await this.paygService.saveChannel(id, channelState, price, agent);
-    }
+    const channel = await this.paygService.channel(id);
+    if (!channel) return;
 
     channel.consumer = consumer;
     channel.agent = agent;

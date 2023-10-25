@@ -32,10 +32,8 @@ export class PaygQueryService {
       const result = await this.client.query<GetStateChannelsQuery>({
         // @ts-ignore TODO: fix type
         query: gql`
-          query GetStateChannelsByIndexer($indexer: String!, $status: ChannelStatus!) {
-            stateChannels(
-              filter: { indexer: { equalTo: $indexer }, status: { equalTo: $status } }
-            ) {
+          query GetStateChannelsByIndexer($indexer: String!, $status: [ChannelStatus!]) {
+            stateChannels(filter: { indexer: { equalTo: $indexer }, status: { in: $status } }) {
               totalCount
               nodes {
                 ...StateChannelFields
@@ -44,7 +42,7 @@ export class PaygQueryService {
           }
           ${StateChannelFields}
         `,
-        variables: { indexer, status: 'OPEN' },
+        variables: { indexer, status: ['OPEN', 'TERMINATING'] },
       });
 
       const channels = result.data.stateChannels.nodes;

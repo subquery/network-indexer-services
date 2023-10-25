@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel, bytes32ToCid } from '@subql/network-clients';
+import { BigNumber } from 'ethers';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 
@@ -35,7 +36,11 @@ export class PaygService {
     return channel?.indexer !== ZERO_ADDRESS ? channel : undefined;
   }
 
-  async saveChannel(
+  async channelPriceFromContract(id: string): Promise<BigNumber> {
+    return this.network.getSdk().stateChannel.channelPrice(id);
+  }
+
+  async updateChannelFromContract(
     id: string,
     channelState: StateChannel.ChannelStateStructOutput,
     price: string,
@@ -56,41 +61,63 @@ export class PaygService {
       terminateByIndexer,
     } = channelState;
 
-    const channelEntity = this.channelRepo.create({
-      id,
-      status,
-      indexer,
-      consumer,
-      agent,
-      price,
-      deploymentId: bytes32ToCid(deploymentId),
-      total: total.toString(),
-      spent: spent.toString(),
-      lastIndexerSign: '',
-      lastConsumerSign: '',
-      onchain: '0',
-      remote: '0',
-      expiredAt: expiredAt.toNumber(),
-      terminatedAt: terminatedAt.toNumber(),
-      terminateByIndexer,
-      lastFinal: false,
-    });
+    let channelEntity = await this.channelRepo.findOneBy({ id });
+
+    if (!channelEntity) {
+      channelEntity = this.channelRepo.create({
+        id,
+        price: '0',
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        onchain: '0',
+        remote: '0',
+        lastFinal: false,
+      });
+    }
+
+    channelEntity.status = status;
+    channelEntity.indexer = indexer;
+    channelEntity.consumer = consumer;
+    channelEntity.agent = agent ? agent : channelEntity.agent;
+    channelEntity.price = price !== '0' ? price : channelEntity.price;
+    channelEntity.deploymentId = bytes32ToCid(deploymentId);
+    channelEntity.total = total.toString();
+    channelEntity.spent = spent.toString();
+    channelEntity.expiredAt = expiredAt.toNumber();
+    channelEntity.terminatedAt = terminatedAt.toNumber();
+    channelEntity.terminateByIndexer = terminateByIndexer;
 
     const channel = await this.channelRepo.save(channelEntity);
-    logger.debug(`Saved state channel ${id}`);
+    logger.debug(`Updated state channel from contract: ${id}`);
 
     return channel;
   }
 
   async channel(channelId: string): Promise<Channel | undefined> {
     const id = channelId.toLowerCase();
-    const channel = await this.channelRepo.findOneBy({ id });
+    let channel = await this.channelRepo.findOneBy({ id });
 
-    // if (!channel) {
-    //   const channelState = await this.channelFromContract(id);
-    //   channel = await this.saveChannel(id, channelState, '0', '');
-    // }
+    if (!channel) {
+      channel = await this.syncChannel(id);
+    }
 
+    return channel;
+  }
+
+  async syncChannel(channelId: string): Promise<Channel | undefined> {
+    if (!this.network.getSdk()) {
+      return;
+    }
+
+    const id = channelId.toLowerCase();
+    const channelState = await this.channelFromContract(id);
+    const channelPrice = await this.channelPriceFromContract(id);
+    const channel = await this.updateChannelFromContract(
+      id,
+      channelState,
+      channelPrice.toString(),
+      ''
+    );
     return channel;
   }
 
