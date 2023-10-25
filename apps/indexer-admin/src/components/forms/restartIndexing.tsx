@@ -122,7 +122,7 @@ type Props = {
 
 export const IndexingForm: FC<Props> = ({ setVisible }) => {
   const [form] = Form.useForm();
-  const [showInput, setShowInput] = useState(true);
+  const [showInput, setShowInput] = useState(false);
   const { dispatchNotification } = useNotification();
   const { id } = useParams() as { id: string };
 
@@ -269,7 +269,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
             </Form.List>
 
             <HorizonReverse>
-              <Form.Item label="Use Dictionary" valuePropName="checked">
+              <Form.Item label="Override Dictionary" valuePropName="checked">
                 <Switch onChange={onSwitchChange} checked={showInput} />
               </Form.Item>
             </HorizonReverse>
