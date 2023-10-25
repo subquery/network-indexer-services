@@ -13,7 +13,6 @@ import {
   configController,
   getIndexMetadata,
   readyIndexing,
-  startIndexing,
   stopIndexing,
   unRegister,
   updateMetadata,
@@ -66,7 +65,6 @@ export const useIndexingAction = (id: string) => {
 
   const indexingTransactions = useMemo(
     () => ({
-      [ProjectAction.AnnounceIndexing]: () => startIndexing(sdk, signer, id),
       [ProjectAction.AnnounceReady]: () => readyIndexing(sdk, signer, id),
       [ProjectAction.AnnounceNotIndexing]: () => stopIndexing(sdk, signer, id),
     }),

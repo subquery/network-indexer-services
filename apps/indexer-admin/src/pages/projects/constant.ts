@@ -5,14 +5,12 @@ import { FormSubmit, ProjectsAction, ServiceStatus } from 'pages/project-details
 import { ProjectFormKey, ProjectFormSchema, initialProjectValues } from 'types/schemas';
 
 export const statusColor = {
-  [ServiceStatus.NOTINDEXING]: 'rgba(214, 48, 48, 0.3)',
-  [ServiceStatus.INDEXING]: 'rgba(67, 136, 221, 0.24)',
+  [ServiceStatus.TERMINATED]: 'rgba(214, 48, 48, 0.3)',
   [ServiceStatus.READY]: 'rgba(70, 219, 103, 0.4)',
 };
 
 export const statusText = {
-  [ServiceStatus.NOTINDEXING]: 'NOT INDEXING',
-  [ServiceStatus.INDEXING]: 'INDEXING',
+  [ServiceStatus.TERMINATED]: 'NOT INDEXING',
   [ServiceStatus.READY]: 'READY',
 };
 

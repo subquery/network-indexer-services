@@ -16,12 +16,12 @@ import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
-    getQueryMetadata,
-    useIsOnline,
-    useNodeVersions,
-    useProjectDetails,
-    useQueryVersions,
-    useServiceStatus,
+  getQueryMetadata,
+  useIsOnline,
+  useNodeVersions,
+  useProjectDetails,
+  useQueryVersions,
+  useServiceStatus,
 } from 'hooks/projectHook';
 import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
@@ -37,28 +37,27 @@ import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
-    alertMessages,
-    createAnnounceIndexingSteps,
-    createNetworkButtonItems,
-    createNotIndexingSteps,
-    createReadyIndexingSteps,
-    createRemoveProjectSteps,
-    createRestartProjectSteps,
-    createServiceButtonItems,
-    createStartIndexingSteps,
-    createStopIndexingSteps,
-    createStopProjectSteps,
-    notifications,
-    ProjectActionName,
+  alertMessages,
+  createNetworkButtonItems,
+  createNotIndexingSteps,
+  createReadyIndexingSteps,
+  createRemoveProjectSteps,
+  createRestartProjectSteps,
+  createServiceButtonItems,
+  createStartIndexingSteps,
+  createStopIndexingSteps,
+  createStopProjectSteps,
+  notifications,
+  ProjectActionName,
 } from './config';
 import { Container, ContentContainer } from './styles';
 import {
-    dockerContainerEnum,
-    ProjectAction,
-    ProjectDetails,
-    ProjectStatus,
-    ServiceStatus,
-    TQueryMetadata,
+  dockerContainerEnum,
+  ProjectAction,
+  ProjectDetails,
+  ProjectStatus,
+  ServiceStatus,
+  TQueryMetadata,
 } from './types';
 
 const ProjectDetailsPage = () => {
@@ -132,10 +131,8 @@ const ProjectDetailsPage = () => {
 
     const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
     switch (status) {
-      case ServiceStatus.NOTINDEXING:
+      case ServiceStatus.TERMINATED:
         return healthy ? ProjectStatus.Started : ProjectStatus.NotIndexing;
-      case ServiceStatus.INDEXING:
-        return healthy ? ProjectStatus.Indexing : ProjectStatus.Unhealthy;
       case ServiceStatus.READY:
         return healthy ? ProjectStatus.Ready : ProjectStatus.Unhealthy;
       default:
@@ -145,7 +142,7 @@ const ProjectDetailsPage = () => {
 
   const alertInfo = useMemo(() => {
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status !== ServiceStatus.NOTINDEXING) {
+      if (status !== ServiceStatus.TERMINATED) {
         return { ...alertMessages[projectStatus] };
       }
     }
@@ -165,7 +162,7 @@ const ProjectDetailsPage = () => {
   const networkActionItems = useMemo(() => {
     if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status === ServiceStatus.NOTINDEXING) {
+      if (status === ServiceStatus.TERMINATED) {
         return [];
       }
     }
@@ -258,9 +255,6 @@ const ProjectDetailsPage = () => {
 
     const stopProjectSteps = createStopProjectSteps(stopProject);
     const removeProjectSteps = createRemoveProjectSteps(removeProject);
-    const announceIndexingSteps = createAnnounceIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceIndexing, onPopoverClose)
-    );
     const announceReadySteps = createReadyIndexingSteps(() =>
       indexingAction(ProjectAction.AnnounceReady, onPopoverClose)
     );
@@ -274,7 +268,6 @@ const ProjectDetailsPage = () => {
       ...stopIndexingSteps,
       ...stopProjectSteps,
       ...removeProjectSteps,
-      ...announceIndexingSteps,
       ...announceReadySteps,
       ...announceNotIndexingSteps,
     };

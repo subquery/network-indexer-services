@@ -3,12 +3,6 @@
 
 import { ServiceStatus } from 'pages/project-details/types';
 
-export enum ServiceStatus {
-  healthy = 'HEALTHY',
-  unhealthy = 'UNHEALTHY',
-  terminated = 'TERMINATED',
-}
-
 export function statusCode(status: string): 'success' | 'error' {
   if (status === 'HEALTHY' || status === 'STARTING') return 'success';
   return 'error';
@@ -16,10 +10,8 @@ export function statusCode(status: string): 'success' | 'error' {
 
 export function indexingStatusCode(status: ServiceStatus) {
   switch (status) {
-    case ServiceStatus.NOTINDEXING:
+    case ServiceStatus.TERMINATED:
       return 'error';
-    case ServiceStatus.INDEXING:
-      return 'info';
     case ServiceStatus.READY:
       return 'success';
     default:

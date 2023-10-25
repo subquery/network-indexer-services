@@ -50,9 +50,6 @@ export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) =>
   [ProjectStatus.NotIndexing]: [],
   [ProjectStatus.Starting]: [],
   [ProjectStatus.Started]: [
-    createButtonItem('Announce Indexing', () => onButtonClick(ProjectAction.AnnounceIndexing)),
-  ],
-  [ProjectStatus.Indexing]: [
     createButtonItem('Announce Ready', () => onButtonClick(ProjectAction.AnnounceReady)),
   ],
   [ProjectStatus.Ready]: [
@@ -120,7 +117,6 @@ export const PAYGActionName = {
 export const ProjectActionName = {
   [ProjectAction.StartIndexing]: 'Start Indexing',
   [ProjectAction.RestartProject]: 'Update Indexing',
-  [ProjectAction.AnnounceIndexing]: 'Announce Indexing Project',
   [ProjectAction.AnnounceReady]: 'Publish Indexing to Ready',
   [ProjectAction.StopProject]: 'Stop Project',
   [ProjectAction.RemoveProject]: 'Remove Project',
@@ -229,18 +225,6 @@ export const createRemoveProjectSteps = (onRemoveProject: ClickAction) => ({
       desc: project.remove.desc,
       buttonTitle: 'Confirm',
       onClick: onRemoveProject,
-    },
-  ],
-});
-
-export const createAnnounceIndexingSteps = (onSendTransaction: ClickAction) => ({
-  [ProjectAction.AnnounceIndexing]: [
-    {
-      index: 0,
-      title: announce.indexing.title,
-      desc: announce.indexing.desc,
-      buttonTitle: 'Send Transaction',
-      onClick: onSendTransaction,
     },
   ],
 });

@@ -158,12 +158,13 @@ function dockerRegistryFromChain(chainType: ChainType): string {
 }
 
 const defaultRange: Record<ChainType, string> = {
-  substrate: '>=2.5.5',
-  cosmos: '>=2.5.0',
-  flare: '>=2.5.0',
-  algorand: '>=2.5.0',
-  near: '>=2.5.0',
-  ethereum: '>=2.5.3',
+  substrate: '>=3.1.0',
+  cosmos: '>=3.1.0',
+  flare: '>=3.1.0',
+  algorand: '>=3.0.1',
+  near: '>=3.0.0',
+  ethereum: '>=3.1.0',
+  stellar: '>=3.0.1',
 };
 
 export const useNodeVersions = (cid: string): string[] => {

@@ -40,10 +40,7 @@ export enum PaygStatus {
   Close = 'CLOSE',
 }
 
-export type TransactionType =
-  | ProjectAction.AnnounceIndexing
-  | ProjectAction.AnnounceReady
-  | ProjectAction.AnnounceNotIndexing;
+export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceNotIndexing;
 
 export enum AccountAction {
   unregister = 'unregister',
@@ -56,7 +53,6 @@ export enum ProjectsAction {
 
 export enum ProjectAction {
   StartIndexing = 'StartIndexing',
-  AnnounceIndexing = 'AnnounceIndexing',
   RestartProject = 'RestartProject',
   AnnounceReady = 'AnnounceReady',
   StopProject = 'StopProject',

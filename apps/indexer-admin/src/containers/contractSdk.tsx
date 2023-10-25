@@ -1,23 +1,24 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import React from 'react';
 import { ContractDeployment, ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
 import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
 import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import { intToHex } from 'ethereumjs-util';
+import React from 'react';
 
 import { useIsMetaMask, useWeb3 } from 'hooks/web3Hook';
 import Logger from 'utils/logger';
-import { ChainID, isSupportNetwork, SubqueryNetwork } from 'utils/web3';
+import { ChainID, SubqueryNetwork, isSupportNetwork } from 'utils/web3';
 
 import { createContainer } from './unstated';
 
+// testnet and kepler has different contract deployment
 const deployments: Record<SubqueryNetwork, ContractDeployment> = {
   testnet: testnetDeployment,
+  // @ts-ignore
   kepler: keplerDeployment,
-  // TODO: FIXME
   // @ts-ignore
   mainnet: mainnetDeployment,
 };
