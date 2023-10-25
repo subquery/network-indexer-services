@@ -8,7 +8,7 @@ export function statusCode(status: string): 'success' | 'error' {
   return 'error';
 }
 
-export function indexingStatusCode(status: ServiceStatus) {
+export function serviceStatusCode(status: ServiceStatus) {
   switch (status) {
     case ServiceStatus.TERMINATED:
       return 'error';

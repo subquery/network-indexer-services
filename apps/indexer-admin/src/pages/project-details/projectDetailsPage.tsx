@@ -16,12 +16,12 @@ import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
-  getQueryMetadata,
-  useIsOnline,
-  useNodeVersions,
-  useProjectDetails,
-  useQueryVersions,
-  useServiceStatus,
+    getQueryMetadata,
+    useIsOnline,
+    useNodeVersions,
+    useProjectDetails,
+    useQueryVersions,
+    useServiceStatus,
 } from 'hooks/projectHook';
 import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
@@ -37,27 +37,27 @@ import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
-  alertMessages,
-  createNetworkButtonItems,
-  createNotIndexingSteps,
-  createReadyIndexingSteps,
-  createRemoveProjectSteps,
-  createRestartProjectSteps,
-  createServiceButtonItems,
-  createStartIndexingSteps,
-  createStopIndexingSteps,
-  createStopProjectSteps,
-  notifications,
-  ProjectActionName,
+    alertMessages,
+    createNetworkButtonItems,
+    createNotIndexingSteps,
+    createReadyIndexingSteps,
+    createRemoveProjectSteps,
+    createRestartProjectSteps,
+    createServiceButtonItems,
+    createStartIndexingSteps,
+    createStopIndexingSteps,
+    createStopProjectSteps,
+    notifications,
+    ProjectActionName,
 } from './config';
 import { Container, ContentContainer } from './styles';
 import {
-  dockerContainerEnum,
-  ProjectAction,
-  ProjectDetails,
-  ProjectStatus,
-  ServiceStatus,
-  TQueryMetadata,
+    dockerContainerEnum,
+    ProjectAction,
+    ProjectDetails,
+    ProjectStatus,
+    ServiceStatus,
+    TQueryMetadata,
 } from './types';
 
 const ProjectDetailsPage = () => {
@@ -259,7 +259,7 @@ const ProjectDetailsPage = () => {
       indexingAction(ProjectAction.AnnounceReady, onPopoverClose)
     );
     const announceNotIndexingSteps = createNotIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceNotIndexing, onPopoverClose)
+      indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose)
     );
 
     return {

@@ -66,7 +66,7 @@ export const useIndexingAction = (id: string) => {
   const indexingTransactions = useMemo(
     () => ({
       [ProjectAction.AnnounceReady]: () => readyIndexing(sdk, signer, id),
-      [ProjectAction.AnnounceNotIndexing]: () => stopIndexing(sdk, signer, id),
+      [ProjectAction.AnnounceTerminating]: () => stopIndexing(sdk, signer, id),
     }),
     [sdk, signer, id]
   );

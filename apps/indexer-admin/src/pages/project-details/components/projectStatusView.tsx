@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import { Button, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { statusText } from 'pages/projects/constant';
-import { indexingStatusCode } from 'utils/project';
+import { serviceStatusCode } from 'utils/project';
 import { formatValueToFixed } from 'utils/units';
 
 import { ButtonItem } from '../config';
@@ -52,7 +52,7 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
             Indexing Status
           </Text>
           {!isUndefined(status) ? (
-            <Tag state={indexingStatusCode(status)}>{statusText[status]}</Tag>
+            <Tag state={serviceStatusCode(status)}>{statusText[status]}</Tag>
           ) : (
             <Spinner />
           )}

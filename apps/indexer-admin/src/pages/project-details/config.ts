@@ -3,25 +3,25 @@
 
 import { Notification } from 'containers/notificationContext';
 import {
-  initalPAYGValues,
-  OpenPAYGFormKey,
-  PaygEdit,
-  ProjectFormKey,
-  ProjectPaygSchema,
-  StartIndexingSchema,
+    initalPAYGValues,
+    OpenPAYGFormKey,
+    PaygEdit,
+    ProjectFormKey,
+    ProjectPaygSchema,
+    StartIndexingSchema,
 } from 'types/schemas';
 import { dismiss, ProjectNotification } from 'utils/notification';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
 import prompts from './prompts';
 import {
-  ClickAction,
-  FormSubmit,
-  PAYGAction,
-  PaygStatus,
-  ProjectAction,
-  ProjectServiceMetadata,
-  ProjectStatus,
+    ClickAction,
+    FormSubmit,
+    PAYGAction,
+    PaygStatus,
+    ProjectAction,
+    ProjectServiceMetadata,
+    ProjectStatus,
 } from './types';
 
 const { project, announce, payg } = prompts;
@@ -54,17 +54,17 @@ export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) =>
   ],
   [ProjectStatus.Ready]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
   [ProjectStatus.Terminated]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
   [ProjectStatus.Unhealthy]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
 });
@@ -120,7 +120,7 @@ export const ProjectActionName = {
   [ProjectAction.AnnounceReady]: 'Publish Indexing to Ready',
   [ProjectAction.StopProject]: 'Stop Project',
   [ProjectAction.RemoveProject]: 'Remove Project',
-  [ProjectAction.AnnounceNotIndexing]: 'Announce Not Indexing Project',
+  [ProjectAction.AnnounceTerminating]: 'Announce Not Indexing Project',
   [ProjectAction.StopIndexing]: 'Stop Indexing',
 };
 
@@ -245,8 +245,8 @@ export const createReadyIndexingSteps = (
 
 export const createNotIndexingSteps = (
   onSendTransaction: ClickAction
-): Steps<ProjectAction.AnnounceNotIndexing> => ({
-  [ProjectAction.AnnounceNotIndexing]: [
+): Steps<ProjectAction.AnnounceTerminating> => ({
+  [ProjectAction.AnnounceTerminating]: [
     {
       index: 0,
       title: announce.notIndexing.title,
