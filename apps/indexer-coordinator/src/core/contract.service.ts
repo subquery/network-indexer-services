@@ -5,8 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
-import { BigNumber, Overrides } from 'ethers';
-import { Wallet, providers } from 'ethers';
+import { BigNumber, Overrides, Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 
 import { Config } from '../configure/configure.module';
@@ -15,7 +14,7 @@ import { decrypt } from '../utils/encrypt';
 import { debugLogger, getLogger } from '../utils/logger';
 import { Controller } from './account.model';
 import { AccountService } from './account.service';
-import { DeploymentStatus, IndexingStatus } from './types';
+import { IndexerDeploymentStatus } from './types';
 
 const logger = getLogger('contract');
 
@@ -24,13 +23,11 @@ export class ContractService {
   private wallet: Wallet;
   private sdk: ContractSDK;
   private provider: providers.StaticJsonRpcProvider;
-  private emptyDeploymentStatus;
   private chainID: ChainID;
   private existentialBalance: BigNumber;
 
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
-    this.emptyDeploymentStatus = { status: IndexingStatus.NOTINDEXING, blockHeight: 0 };
     this.existentialBalance = parseEther('0.05');
     this.provider = initProvider(config.wsEndpoint, this.chainID);
     this.sdk = initContractSDK(this.provider, this.chainID);
@@ -141,17 +138,17 @@ export class ContractService {
     return this.sdk;
   }
 
-  async deploymentStatusByIndexer(id: string, indexer: string): Promise<DeploymentStatus> {
-    if (!this.sdk || !indexer) return this.emptyDeploymentStatus;
+  async deploymentStatusByIndexer(id: string, indexer: string): Promise<IndexerDeploymentStatus> {
+    if (!this.sdk || !indexer) return IndexerDeploymentStatus.TERMINATED;
     try {
-      const { status, blockHeight } = await this.sdk.queryRegistry.deploymentStatusByIndexer(
+      const status = await this.sdk.projectRegistry.deploymentStatusByIndexer(
         cidToBytes32(id.trim()),
         indexer,
       );
-      return { status, blockHeight };
+      return status as IndexerDeploymentStatus;
     } catch (e) {
       getLogger('contract').error(e, `failed to get indexing status for project: ${id}`);
-      return this.emptyDeploymentStatus;
+      return IndexerDeploymentStatus.TERMINATED;
     }
   }
 }
