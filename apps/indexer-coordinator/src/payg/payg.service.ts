@@ -45,9 +45,15 @@ export class PaygService {
     channelState: StateChannel.ChannelStateStructOutput,
     price: string,
     agent: string
-  ): Promise<Channel> {
+  ): Promise<Channel | undefined> {
     const hostIndexer = await this.account.getIndexer();
-    if (channelState?.indexer !== hostIndexer) return;
+    if (!channelState) {
+      return;
+    }
+    if (channelState.indexer !== hostIndexer) {
+      await this.channelRepo.delete({ id });
+      return;
+    }
 
     const {
       status,
@@ -111,7 +117,16 @@ export class PaygService {
 
     const id = channelId.toLowerCase();
     const channelState = await this.channelFromContract(id);
+    if (!channelState) {
+      logger.debug(`State channel not exist on chain: ${id}`);
+      return;
+    }
     const channelPrice = await this.channelPriceFromContract(id);
+    if (!channelPrice || channelPrice.isZero()) {
+      logger.debug(`State channel update price failed: ${id} [${channelPrice.toString()}]`);
+      return;
+    }
+
     const channel = await this.updateChannelFromContract(
       id,
       channelState,
