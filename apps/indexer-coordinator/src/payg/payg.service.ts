@@ -43,8 +43,8 @@ export class PaygService {
     return this.network.getSdk().stateChannel.channelPrice(id);
   }
 
-  async channelPriceFromNetwork(id: string): Promise<BigNumber> {
-    const channel = await this.paygQueryService.getStateChannel(id);
+  async channelPriceFromNetwork(id: BigNumber): Promise<BigNumber> {
+    const channel = await this.paygQueryService.getStateChannel(id.toHexString());
     return channel?.price ? BigNumber.from(channel.price) : undefined;
   }
 
@@ -147,7 +147,7 @@ export class PaygService {
       if (altPrice && !altPrice.isZero()) {
         channelPrice = altPrice;
       } else {
-        channelPrice = await this.channelPriceFromNetwork(id);
+        channelPrice = await this.channelPriceFromNetwork(BigNumber.from(id));
       }
     }
     if (!channelPrice || channelPrice.isZero()) {

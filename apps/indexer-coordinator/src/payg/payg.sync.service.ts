@@ -98,6 +98,15 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     const { status, agent, total, spent, price } = channelState;
 
+    logger.debug(
+      `\ncomparing channel: 
+${channel.status}:${status}
+${channel.agent}:${agent}
+${channel.total}:${total.toString()}
+${channel.spent}:${spent.toString()}
+${channel.price}:${price.toString()}`
+    );
+
     return (
       channel.status === status &&
       channel.agent === agent &&
