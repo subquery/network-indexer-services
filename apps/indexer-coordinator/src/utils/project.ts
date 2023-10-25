@@ -35,7 +35,7 @@ export type PartialIpfsDeploymentManifest = {
   runner?: Runner;
 };
 
-export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
+export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum' | 'stellar';
 
 export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
@@ -65,11 +65,11 @@ function dockerRegistryFromChain(chainType: ChainType): string {
     case 'algorand':
     case 'flare':
     case 'near':
+    case 'stellar':
     case 'ethereum':
-      // TODO: migrate to ``subquerynetwork` host
-      return `onfinality/subql-node-${chainType}`;
+      return `subquerynetwork/subql-node-${chainType}`;
     default:
-      return 'onfinality/subql-node';
+      return 'subquerynetwork/subql-node';
   }
 }
 
