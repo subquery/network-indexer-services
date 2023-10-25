@@ -23,7 +23,7 @@ import { mutexPromise } from '../utils/promise';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { QueryService } from './query.service';
-import { DesiredStatus } from './types';
+import { DesiredStatus, TxFun } from './types';
 
 const MAX_RETRY = 3;
 
