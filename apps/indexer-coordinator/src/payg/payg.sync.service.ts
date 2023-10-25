@@ -87,28 +87,14 @@ export class PaygSyncService implements OnApplicationBootstrap {
   }
 
   compareChannel(channel: Channel, channelState: StateChannel): boolean {
-    const {
-      status,
-      agent,
-      total,
-      spent,
-      price,
-      expiredAt,
-      terminatedAt,
-      terminateByIndexer,
-      isFinal,
-    } = channelState;
+    const { status, agent, total, spent, price } = channelState;
 
     return (
       channel.status === status &&
       channel.agent === agent &&
       channel.total === total.toString() &&
       channel.spent === spent.toString() &&
-      channel.price === price.toString() &&
-      channel.expiredAt === new Date(expiredAt).valueOf() / 1000 &&
-      channel.terminatedAt === new Date(terminatedAt).valueOf() / 1000 &&
-      channel.terminateByIndexer === terminateByIndexer &&
-      channel.lastFinal === isFinal
+      channel.price === price.toString()
     );
   }
 
