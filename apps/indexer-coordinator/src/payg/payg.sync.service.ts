@@ -100,7 +100,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     logger.debug(
       `\ncomparing channel: 
-${channel.status}:${status}
+${channel.status}:${ChannelStatus[status]}
 ${channel.agent}:${agent}
 ${channel.total}:${total.toString()}
 ${channel.spent}:${spent.toString()}
@@ -108,7 +108,7 @@ ${channel.price}:${price.toString()}`
     );
 
     return (
-      channel.status === status &&
+      channel.status === ChannelStatus[status] &&
       channel.agent === agent &&
       channel.total === total.toString() &&
       channel.spent === spent.toString() &&
