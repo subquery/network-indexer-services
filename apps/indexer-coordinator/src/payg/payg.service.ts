@@ -34,12 +34,12 @@ export class PaygService {
     private account: AccountService
   ) {}
 
-  async channelFromContract(id: string): Promise<ChannelState> {
+  async channelFromContract(id: BigNumber): Promise<ChannelState> {
     const channel = await this.network.getSdk().stateChannel.channel(id);
     return channel?.indexer !== ZERO_ADDRESS ? channel : undefined;
   }
 
-  async channelPriceFromContract(id: string): Promise<BigNumber> {
+  async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
     return this.network.getSdk().stateChannel.channelPrice(id);
   }
 
@@ -130,7 +130,7 @@ export class PaygService {
 
     const id = channelId.toLowerCase();
 
-    const channelState = await this.channelFromContract(id);
+    const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
       logger.debug(`State channel not exist on chain, remove from db: ${id}`);
       await this.channelRepo.delete({ id });
@@ -139,7 +139,7 @@ export class PaygService {
 
     let channelPrice: BigNumber;
     try {
-      channelPrice = await this.channelPriceFromContract(id);
+      channelPrice = await this.channelPriceFromContract(BigNumber.from(id));
     } catch (e) {
       logger.debug(`State channel sync price failed: ${id}`);
     }
