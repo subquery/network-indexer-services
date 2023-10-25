@@ -58,18 +58,12 @@ pub static COMMAND: Lazy<CommandLineArgs> = Lazy::new(CommandLineArgs::from_args
     about = "Command line for starting indexer proxy server"
 )]
 pub struct CommandLineArgs {
-    /// Endpoint of this service
-    #[structopt(long = "endpoint", default_value = "http://0.0.0.0:8080")]
-    pub endpoint: String,
-    /// IP address for the server
-    #[structopt(long = "host", default_value = "0.0.0.0")]
-    pub host: String,
     /// Port the service will listen on
     #[structopt(short = "p", long = "port", default_value = "8080")]
     pub port: u16,
     /// Coordinator service endpoint
-    #[structopt(long = "service-url", default_value = "http://127.0.0.1:8000")]
-    pub service_url: String,
+    #[structopt(long = "coordinator-endpoint", default_value = "http://127.0.0.1:8000")]
+    pub coordinator_endpoint: String,
     /// Secret key for decrypt key
     #[structopt(long = "secret-key", default_value = "ThisIsYourSecret")]
     pub secret_key: String,
@@ -112,20 +106,12 @@ pub struct CommandLineArgs {
 }
 
 impl CommandLineArgs {
-    pub fn endpoint(&self) -> &str {
-        &self.endpoint
-    }
-
-    pub fn host(&self) -> &str {
-        &self.host
-    }
-
     pub fn port(&self) -> u16 {
         self.port
     }
 
     pub fn graphql_url(&self) -> String {
-        self.service_url.clone() + "/graphql"
+        self.coordinator_endpoint.clone() + "/graphql"
     }
 
     pub fn decrypt(&self, ct: &str) -> Result<String, Error> {

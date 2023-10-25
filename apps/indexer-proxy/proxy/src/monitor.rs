@@ -60,13 +60,13 @@ pub fn listen() {
                 "p_mem": p_mem,
                 "t_disk": t_disk,
                 "p_disk": p_disk,
-                "addr": &COMMAND.service_url,
+                "addr": &COMMAND.coordinator_endpoint,
                 "agreement": agreement,
                 "channel": channel,
             });
 
             let _ = REQUEST_CLIENT
-                .post(format!("{}/monitor", COMMAND.service_url))
+                .post(format!("{}/monitor", COMMAND.coordinator_endpoint))
                 .header("content-type", "application/json")
                 .json(&data)
                 .send()

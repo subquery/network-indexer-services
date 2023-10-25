@@ -111,10 +111,14 @@ const Account = () => {
     () =>
       createUpdateMetadataSteps(async (values, formHelper) => {
         formHelper.setStatus({ loading: true });
-        const name = values[MetadataFormKey.name];
-        const proxyEndpoint = values[MetadataFormKey.proxyEndpoint];
-        const metadata = await createIndexerMetadata(name, proxyEndpoint);
-        await accountAction(AccountAction.updateMetaData, metadata, onModalClose, fetchMetadata);
+        try {
+          const name = values[MetadataFormKey.name];
+          const proxyEndpoint = values[MetadataFormKey.proxyEndpoint];
+          const metadata = await createIndexerMetadata(name, proxyEndpoint);
+          await accountAction(AccountAction.updateMetaData, metadata, onModalClose, fetchMetadata);
+        } finally {
+          formHelper.setStatus({ loading: false });
+        }
       }, metadata),
     [accountAction, fetchMetadata, metadata]
   );
