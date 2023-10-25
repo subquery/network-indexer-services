@@ -3,11 +3,11 @@
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 import { chunk } from 'lodash';
 
-import { InjectRepository } from '@nestjs/typeorm';
 import { AccountService } from 'src/core/account.service';
 import { PaygEvent } from 'src/utils/subscription';
 import { Repository } from 'typeorm';
@@ -27,8 +27,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     private contractService: ContractService,
     private paygQueryService: PaygQueryService,
     private paygService: PaygService,
-    private account: AccountService,
-  ) { }
+    private account: AccountService
+  ) {}
 
   onApplicationBootstrap() {
     void (() => {
@@ -39,8 +39,13 @@ export class PaygSyncService implements OnApplicationBootstrap {
   @Cron(CronExpression.EVERY_MINUTE)
   async syncStateChannelsPeriodically() {
     try {
-      logger.debug(`load from Subquery Project...`);
-      const channels = await this.paygQueryService.getStateChannels();
+      logger.debug(`Load from Subquery Project...`);
+      const hostIndexer = await this.account.getIndexer();
+      if (!hostIndexer) {
+        logger.debug(`Indexer not found, will sync state channel later...`);
+        return;
+      }
+      const channels = await this.paygQueryService.getStateChannels(hostIndexer);
 
       for (const batch of chunk(channels, 10)) {
         await Promise.all(batch.map((channel) => this.syncChannel(channel)));
@@ -64,7 +69,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         _channel.lastFinal = channel.isFinal;
         await this.channelRepo.save(_channel);
         return;
-      };
+      }
 
       const {
         deployment,
@@ -102,7 +107,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
       const channelEntity = this.channelRepo.create(channelObj);
       await this.channelRepo.save(channelEntity);
-      logger.debug(`Synced state channel ${id}`);
+      logger.debug(`Synced state channel ${channel.id}`);
     } catch (e) {
       logger.error(`Failed to sync state channel ${channel.id} with error: ${e}`);
     }
@@ -114,6 +119,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     stateChannel.on(
       'ChannelOpen',
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       async (channelId, indexer, _consumer, total, price, expiredAt, deploymentId, callback) => {
         const hostIndexer = await this.account.getIndexer();
         if (indexer !== hostIndexer) return;
@@ -152,11 +158,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     });
 
     stateChannel.on('ChannelFinalize', (channelId, total, remain) => {
-      void this.syncFinalize(
-        channelId.toString(),
-        total,
-        remain
-      );
+      void this.syncFinalize(channelId.toString(), total, remain);
     });
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -167,8 +169,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
   }
 
   async syncOpen(id: string, consumer: string, agent: string, price: string) {
-    const channel = await this.paygService.channel(id);
-    if (channel) return;
+    let channel = await this.paygService.channel(id);
+    if (!channel) {
+      const channelState = await this.paygService.channelFromContract(id);
+      channel = await this.paygService.saveChannel(id, channelState, price, agent);
+    }
 
     channel.consumer = consumer;
     channel.agent = agent;

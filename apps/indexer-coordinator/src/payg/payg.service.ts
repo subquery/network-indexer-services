@@ -3,6 +3,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { StateChannel, bytes32ToCid } from '@subql/network-clients';
+import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 
 import { NetworkService } from '../core/network.service';
@@ -12,8 +14,6 @@ import { getLogger } from '../utils/logger';
 import { PaygEvent } from '../utils/subscription';
 import { AccountService } from './../core/account.service';
 
-import { StateChannel, bytes32ToCid } from '@subql/network-clients';
-import { ZERO_ADDRESS } from 'src/utils/project';
 import { Channel, ChannelStatus } from './payg.model';
 
 export type ChannelState = StateChannel.ChannelStateStructOutput;
@@ -27,8 +27,8 @@ export class PaygService {
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     private pubSub: SubscriptionService,
     private network: NetworkService,
-    private account: AccountService,
-  ) { }
+    private account: AccountService
+  ) {}
 
   async channelFromContract(id: string): Promise<ChannelState> {
     const channel = await this.network.getSdk().stateChannel.channel(id);
@@ -39,7 +39,7 @@ export class PaygService {
     id: string,
     channelState: StateChannel.ChannelStateStructOutput,
     price: string,
-    agent: string,
+    agent: string
   ): Promise<Channel> {
     const hostIndexer = await this.account.getIndexer();
     if (channelState?.indexer !== hostIndexer) return;
@@ -84,12 +84,12 @@ export class PaygService {
 
   async channel(channelId: string): Promise<Channel | undefined> {
     const id = channelId.toLowerCase();
-    let channel = await this.channelRepo.findOneBy({ id });
+    const channel = await this.channelRepo.findOneBy({ id });
 
-    if (!channel) {
-      const channelState = await this.channelFromContract(id);
-      channel = await this.saveChannel(id, channelState, '0', '');
-    }
+    // if (!channel) {
+    //   const channelState = await this.channelFromContract(id);
+    //   channel = await this.saveChannel(id, channelState, '0', '');
+    // }
 
     return channel;
   }
@@ -166,6 +166,9 @@ export class PaygService {
 
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channel(id);
+    if (!channel) {
+      throw new Error(`channel not exist: ${id}`);
+    }
     if (channel.onchain === channel.remote) {
       return channel;
     }
@@ -190,6 +193,9 @@ export class PaygService {
 
   async terminate(id: string): Promise<Channel> {
     const channel = await this.channel(id);
+    if (!channel) {
+      throw new Error(`channel not exist: ${id}`);
+    }
     if (channel.onchain === channel.remote) {
       return channel;
     }
@@ -217,6 +223,9 @@ export class PaygService {
 
   async respond(id: string): Promise<Channel> {
     const channel = await this.channel(id);
+    if (!channel) {
+      throw new Error(`channel not exist: ${id}`);
+    }
     if (channel.onchain === channel.remote) {
       return channel;
     }
