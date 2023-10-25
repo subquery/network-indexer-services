@@ -1,10 +1,10 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
 import { Spinner, Tag } from '@subql/components';
 import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
+import { FC } from 'react';
 import styled from 'styled-components';
 
 import { Button, Text } from 'components/primary';
@@ -15,7 +15,7 @@ import { formatValueToFixed } from 'utils/units';
 
 import { ButtonItem } from '../config';
 import { ActionContainer, CardContainer } from '../styles';
-import { IndexingStatus, TQueryMetadata } from '../types';
+import { ServiceStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -39,7 +39,7 @@ const LabelContainer = styled.div`
 type Props = {
   percent: number;
   actionItems: ButtonItem[];
-  status?: IndexingStatus;
+  status?: ServiceStatus;
   metadata?: TQueryMetadata;
 };
 

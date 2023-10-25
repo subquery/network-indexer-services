@@ -1,19 +1,19 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FormSubmit, IndexingStatus, ProjectsAction } from 'pages/project-details/types';
-import { initialProjectValues, ProjectFormKey, ProjectFormSchema } from 'types/schemas';
+import { FormSubmit, ProjectsAction, ServiceStatus } from 'pages/project-details/types';
+import { ProjectFormKey, ProjectFormSchema, initialProjectValues } from 'types/schemas';
 
 export const statusColor = {
-  [IndexingStatus.NOTINDEXING]: 'rgba(214, 48, 48, 0.3)',
-  [IndexingStatus.INDEXING]: 'rgba(67, 136, 221, 0.24)',
-  [IndexingStatus.READY]: 'rgba(70, 219, 103, 0.4)',
+  [ServiceStatus.NOTINDEXING]: 'rgba(214, 48, 48, 0.3)',
+  [ServiceStatus.INDEXING]: 'rgba(67, 136, 221, 0.24)',
+  [ServiceStatus.READY]: 'rgba(70, 219, 103, 0.4)',
 };
 
 export const statusText = {
-  [IndexingStatus.NOTINDEXING]: 'NOT INDEXING',
-  [IndexingStatus.INDEXING]: 'INDEXING',
-  [IndexingStatus.READY]: 'READY',
+  [ServiceStatus.NOTINDEXING]: 'NOT INDEXING',
+  [ServiceStatus.INDEXING]: 'INDEXING',
+  [ServiceStatus.READY]: 'READY',
 };
 
 export enum OnlineStatus {

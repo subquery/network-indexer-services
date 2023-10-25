@@ -1,14 +1,14 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
 import { indexingProgress } from '@subql/network-clients';
 import { renderAsync } from '@subql/react-hooks';
 import { useInterval } from 'ahooks';
 import { FormikHelpers, FormikValues } from 'formik';
 import { isUndefined } from 'lodash';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import AlertView from 'components/alertView';
 import { LoadingSpinner } from 'components/loading';
@@ -16,12 +16,12 @@ import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
-  getQueryMetadata,
-  useIndexingStatus,
-  useIsOnline,
-  useNodeVersions,
-  useProjectDetails,
-  useQueryVersions,
+    getQueryMetadata,
+    useIsOnline,
+    useNodeVersions,
+    useProjectDetails,
+    useQueryVersions,
+    useServiceStatus,
 } from 'hooks/projectHook';
 import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
@@ -37,28 +37,28 @@ import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
-  alertMessages,
-  createAnnounceIndexingSteps,
-  createNetworkButtonItems,
-  createNotIndexingSteps,
-  createReadyIndexingSteps,
-  createRemoveProjectSteps,
-  createRestartProjectSteps,
-  createServiceButtonItems,
-  createStartIndexingSteps,
-  createStopIndexingSteps,
-  createStopProjectSteps,
-  notifications,
-  ProjectActionName,
+    alertMessages,
+    createAnnounceIndexingSteps,
+    createNetworkButtonItems,
+    createNotIndexingSteps,
+    createReadyIndexingSteps,
+    createRemoveProjectSteps,
+    createRestartProjectSteps,
+    createServiceButtonItems,
+    createStartIndexingSteps,
+    createStopIndexingSteps,
+    createStopProjectSteps,
+    notifications,
+    ProjectActionName,
 } from './config';
 import { Container, ContentContainer } from './styles';
 import {
-  dockerContainerEnum,
-  IndexingStatus,
-  ProjectAction,
-  ProjectDetails,
-  ProjectStatus,
-  TQueryMetadata,
+    dockerContainerEnum,
+    ProjectAction,
+    ProjectDetails,
+    ProjectStatus,
+    ServiceStatus,
+    TQueryMetadata,
 } from './types';
 
 const ProjectDetailsPage = () => {
@@ -67,7 +67,7 @@ const ProjectDetailsPage = () => {
   const {
     state: { data: projectDetails } = { data: undefined },
   }: { state: { data: ProjectDetails | undefined } } = useLocation();
-  const status = useIndexingStatus(id);
+  const status = useServiceStatus(id);
   const projectQuery = useProjectDetails(id);
   const history = useHistory();
   // a weird but awesome way to solve the hooks cannot be used in judge.
@@ -132,11 +132,11 @@ const ProjectDetailsPage = () => {
 
     const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
     switch (status) {
-      case IndexingStatus.NOTINDEXING:
+      case ServiceStatus.NOTINDEXING:
         return healthy ? ProjectStatus.Started : ProjectStatus.NotIndexing;
-      case IndexingStatus.INDEXING:
+      case ServiceStatus.INDEXING:
         return healthy ? ProjectStatus.Indexing : ProjectStatus.Unhealthy;
-      case IndexingStatus.READY:
+      case ServiceStatus.READY:
         return healthy ? ProjectStatus.Ready : ProjectStatus.Unhealthy;
       default:
         return ProjectStatus.NotIndexing;
@@ -145,7 +145,7 @@ const ProjectDetailsPage = () => {
 
   const alertInfo = useMemo(() => {
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status !== IndexingStatus.NOTINDEXING) {
+      if (status !== ServiceStatus.NOTINDEXING) {
         return { ...alertMessages[projectStatus] };
       }
     }
@@ -165,7 +165,7 @@ const ProjectDetailsPage = () => {
   const networkActionItems = useMemo(() => {
     if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status === IndexingStatus.NOTINDEXING) {
+      if (status === ServiceStatus.NOTINDEXING) {
         return [];
       }
     }

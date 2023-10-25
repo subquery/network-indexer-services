@@ -6,15 +6,21 @@ import { FormikHelpers, FormikValues } from 'formik';
 
 import { ControllerAction } from 'pages/controllers/types';
 
-export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
+export type ChainType =
+  | 'near'
+  | 'flare'
+  | 'cosmos'
+  | 'algorand'
+  | 'substrate'
+  | 'ethereum'
+  | 'stellar';
 
 export enum DockerRegistry {
   query = 'onfinality/subql-query',
 }
 
-export enum IndexingStatus {
-  NOTINDEXING,
-  INDEXING,
+export enum ServiceStatus {
+  TERMINATED,
   READY,
 }
 
@@ -107,7 +113,7 @@ export type ProjectConfig = {
 
 export type ProjectServiceMetadata = {
   id: string;
-  status: IndexingStatus;
+  status: ServiceStatus;
 } & ProjectConfig;
 
 export enum dockerContainerEnum {

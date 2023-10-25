@@ -92,18 +92,6 @@ export async function configController(sdk: SDK, signer: Signer, controller: str
   return tx;
 }
 
-export async function startIndexing(sdk: SDK, signer: Signer, deploymentId: string | undefined) {
-  if (!sdk || !signer) {
-    throw new Error(ErrorMessages.sdkOrSignerError);
-  }
-  if (!deploymentId) {
-    throw new Error(ErrorMessages.deploymentIdError);
-  }
-
-  const tx = await sdk.queryRegistry.connect(signer).startIndexing(cidToBytes32(deploymentId));
-  return tx;
-}
-
 export async function readyIndexing(sdk: SDK, signer: Signer, deploymentId: string | undefined) {
   if (!sdk || !signer) {
     throw new Error(ErrorMessages.sdkOrSignerError);
@@ -112,9 +100,7 @@ export async function readyIndexing(sdk: SDK, signer: Signer, deploymentId: stri
     throw new Error(ErrorMessages.deploymentIdError);
   }
 
-  const tx = await sdk.queryRegistry
-    .connect(signer)
-    .updateIndexingStatusToReady(cidToBytes32(deploymentId));
+  const tx = await sdk.projectRegistry.connect(signer).startService(cidToBytes32(deploymentId));
   return tx;
 }
 
@@ -126,6 +112,6 @@ export async function stopIndexing(sdk: SDK, signer: Signer, deploymentId: strin
     throw new Error(ErrorMessages.deploymentIdError);
   }
 
-  const tx = await sdk.queryRegistry.connect(signer).stopIndexing(cidToBytes32(deploymentId));
+  const tx = await sdk.projectRegistry.connect(signer).stopService(cidToBytes32(deploymentId));
   return tx;
 }

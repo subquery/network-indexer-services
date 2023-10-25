@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { IndexingStatus } from 'pages/project-details/types';
+import { ServiceStatus } from 'pages/project-details/types';
 
 export enum ServiceStatus {
   healthy = 'HEALTHY',
@@ -14,13 +14,13 @@ export function statusCode(status: string): 'success' | 'error' {
   return 'error';
 }
 
-export function indexingStatusCode(status: IndexingStatus) {
+export function indexingStatusCode(status: ServiceStatus) {
   switch (status) {
-    case IndexingStatus.NOTINDEXING:
+    case ServiceStatus.NOTINDEXING:
       return 'error';
-    case IndexingStatus.INDEXING:
+    case ServiceStatus.INDEXING:
       return 'info';
-    case IndexingStatus.READY:
+    case ServiceStatus.READY:
       return 'success';
     default:
       return 'error';
