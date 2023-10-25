@@ -49,7 +49,7 @@ use crate::{
     metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
     payg::{merket_price, open_state, query_state},
     primitives::*,
-    project::{project_metadata, project_query},
+    project::get_project,
 };
 
 pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock::new(vec![]));
@@ -630,11 +630,13 @@ async fn handle_group(
                     drop(ledger);
                 }
                 Event::ProjectMetadata(project, block) => {
-                    if let Ok(data) = project_metadata(&project, block, MetricsNetwork::P2P).await {
-                        let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
+                    if let Ok(project) = get_project(&project).await {
+                        if let Ok(data) = project.metadata(block, MetricsNetwork::P2P).await {
+                            let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
 
-                        let msg = SendType::Event(0, peer_id, e.to_bytes());
-                        results.groups.push((gid, msg));
+                            let msg = SendType::Event(0, peer_id, e.to_bytes());
+                            results.groups.push((gid, msg));
+                        }
                     }
                 }
                 Event::PaygPrice(project) => {
@@ -748,11 +750,8 @@ async fn handle_close_agreement_query(
 ) -> std::result::Result<RpcParam, Error> {
     check_and_save_agreement(signer, &agreement).await?;
 
-    project_query(
-        project,
-        query,
-        MetricsQuery::CloseAgreement,
-        MetricsNetwork::P2P,
-    )
-    .await
+    get_project(project)
+        .await?
+        .subquery(query, MetricsQuery::CloseAgreement, MetricsNetwork::P2P)
+        .await
 }

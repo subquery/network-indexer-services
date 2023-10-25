@@ -32,14 +32,15 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, graphql_request_raw, GraphQLQuery},
+    request::{graphql_request, graphql_request_raw, proxy_request, GraphQLQuery},
+    tools::merge_json,
     types::Result,
 };
 use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
-use crate::graphql::{poi_with_block, METADATA_QUERY};
+use crate::metadata::{rpc_evm_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
 use crate::payg::merket_price;
@@ -49,8 +50,15 @@ pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Clone)]
+pub enum ProjectType {
+    Subquery,
+    RpcEvm,
+}
+
+#[derive(Clone)]
 pub struct Project {
     pub id: String,
+    pub ptype: ProjectType,
     pub query_endpoint: String,
     pub node_endpoint: String,
     pub payg_price: U256,
@@ -62,6 +70,134 @@ pub struct Project {
 impl Project {
     pub fn open_payg(&self) -> bool {
         self.payg_price > U256::zero() && self.payg_expiration > 0
+    }
+
+    pub async fn metadata(&self, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
+        let mut metadata = match self.ptype {
+            ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
+            ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
+        };
+
+        let timestamp: u64 = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        let lock = ACCOUNT.read().await;
+        let controller = lock.controller.clone();
+        let indexer = lock.indexer.clone();
+        drop(lock);
+
+        let payload = encode(&[
+            indexer.clone().into_token(),
+            self.id.clone().into_token(),
+            metadata["lastHeight"].as_i64().unwrap_or(0).into_token(),
+            metadata["targetHeight"].as_i64().unwrap_or(0).into_token(),
+            metadata["poiId"].as_i64().unwrap_or(0).into_token(),
+            metadata["poiHash"]
+                .as_str()
+                .unwrap_or("")
+                .to_owned()
+                .into_token(),
+            timestamp.into_token(),
+        ]);
+        let hash = keccak256(payload);
+
+        let sign = controller
+            .sign_message(hash)
+            .await
+            .map_err(|_| Error::InvalidSignature(1041))?;
+
+        let common = json!({
+            "indexer": format!("{:?}", indexer),
+            "controller": format!("{:?}", controller.address()),
+            "deploymentId": self.id,
+            "timestamp": timestamp,
+            "signature": sign.to_string(),
+        });
+
+        merge_json(&mut metadata, &common);
+        Ok(metadata)
+    }
+
+    pub async fn subquery(
+        &self,
+        query: &GraphQLQuery,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+    ) -> Result<Value> {
+        let now = Instant::now();
+        let res = graphql_request(&self.query_endpoint, query).await;
+
+        let time = now.elapsed().as_millis() as u64;
+        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+
+        res
+    }
+
+    pub async fn rpcquery(
+        &self,
+        query: String,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+    ) -> Result<Value> {
+        let now = Instant::now();
+        let res = proxy_request("POST", &self.query_endpoint, "/", "", query, vec![])
+            .await
+            .map_err(|err| {
+                Error::GraphQLQuery(
+                    1012,
+                    serde_json::to_string(&err).unwrap_or("RPC query error".to_owned()),
+                )
+            });
+
+        let time = now.elapsed().as_millis() as u64;
+        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+
+        res
+    }
+
+    pub async fn subquery_raw(
+        &self,
+        query: &GraphQLQuery,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+    ) -> Result<(Vec<u8>, String)> {
+        let now = Instant::now();
+        let res = graphql_request_raw(&self.query_endpoint, query).await;
+        let time = now.elapsed().as_millis() as u64;
+
+        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+
+        match res {
+            Ok(data) => {
+                let mut hasher = sha2::Sha256::new();
+                hasher.update(&data);
+                let bytes = hasher.finalize().to_vec();
+
+                // sign the response
+                let lock = ACCOUNT.read().await;
+                let controller = lock.controller.clone();
+                let indexer = lock.indexer.clone();
+                drop(lock);
+
+                let timestamp = Utc::now().timestamp();
+                let payload = encode(&[
+                    indexer.into_token(),
+                    bytes.into_token(),
+                    timestamp.into_token(),
+                ]);
+                let hash = keccak256(payload);
+                let sign = controller
+                    .sign_message(hash)
+                    .await
+                    .unwrap_or(default_sign());
+                let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
+
+                Ok((data, signature))
+            }
+            Err(err) => Err(err),
+        }
     }
 }
 
@@ -160,6 +296,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         project_ids.push(item.id.clone());
         let project = Project {
             id: item.id,
+            ptype: ProjectType::Subquery, // TODO
             query_endpoint: item.query_endpoint,
             node_endpoint: item.node_endpoint,
             payg_price,
@@ -174,200 +311,4 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     update_metrics_projects(project_ids).await;
 
     Ok(())
-}
-
-pub async fn project_metadata(
-    id: &str,
-    block: Option<u64>,
-    network: MetricsNetwork,
-) -> Result<Value> {
-    let metadata = project_query(
-        id,
-        &GraphQLQuery::query(METADATA_QUERY),
-        MetricsQuery::Free,
-        network,
-    )
-    .await?;
-
-    let last_height = if let Some(block) = block {
-        block
-    } else {
-        if let Some(target) = metadata.pointer("/data/_metadata/lastProcessedHeight") {
-            target.as_u64().unwrap_or(0)
-        } else {
-            0
-        }
-    };
-    let last_time = match metadata.pointer("/data/_metadata/lastProcessedTimestamp") {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-
-    let poi = project_query(
-        id,
-        &GraphQLQuery::query(&poi_with_block(last_height)),
-        MetricsQuery::Free,
-        network,
-    )
-    .await?;
-
-    let target_height = match metadata.pointer("/data/_metadata/targetHeight") {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-    let start_height = match metadata.pointer("/data/_metadata/startHeight") {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-    let genesis = match metadata.pointer("/data/_metadata/genesisHash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let chain = match metadata.pointer("/data/_metadata/chain") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let subquery_healthy = match metadata.pointer("/data/_metadata/indexerHealthy") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let subquery_node = match metadata.pointer("/data/_metadata/indexerNodeVersion") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let subquery_query = match metadata.pointer("/data/_metadata/queryNodeVersion") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-
-    let poi_id = match poi.pointer("/data/_poi/id") {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-
-    let poi_hash = match poi.pointer("/data/_poi/hash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_parent_hash = match poi.pointer("/data/_poi/parentHash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_chain_block_hash = match poi.pointer("/data/_poi/chainBlockHash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_operation_root = match poi.pointer("/data/_poi/operationHashRoot") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-
-    let timestamp: u64 = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    let lock = ACCOUNT.read().await;
-    let controller = lock.controller.clone();
-    let indexer = lock.indexer.clone();
-    drop(lock);
-
-    let payload = encode(&[
-        indexer.clone().into_token(),
-        id.to_owned().into_token(),
-        last_height.into_token(),
-        target_height.into_token(),
-        poi_id.to_owned().into_token(),
-        poi_hash.to_owned().into_token(),
-        timestamp.into_token(),
-    ]);
-    let hash = keccak256(payload);
-
-    let sign = controller
-        .sign_message(hash)
-        .await
-        .map_err(|_| Error::InvalidSignature(1041))?;
-
-    Ok(json!({
-        "indexer": format!("{:?}", indexer),
-        "controller": format!("{:?}", controller.address()),
-        "deploymentId": id,
-        "startHeight": start_height,
-        "lastHeight": last_height,
-        "targetHeight": target_height,
-        "lastTime": last_time,
-        "genesis": genesis,
-        "chainId": chain,
-        "poiId": poi_id,
-        "poiHash": poi_hash,
-        "poiParentHash": poi_parent_hash,
-        "poiChainBlockHash": poi_chain_block_hash,
-        "poiOperationHashRoot": poi_operation_root,
-        "subqueryHealthy": subquery_healthy,
-        "subqueryNode": subquery_node,
-        "subqueryQuery": subquery_query,
-        "timestamp": timestamp,
-        "signature": sign.to_string(),
-    }))
-}
-
-pub async fn project_query(
-    id: &str,
-    query: &GraphQLQuery,
-    payment: MetricsQuery,
-    network: MetricsNetwork,
-) -> Result<Value> {
-    let project = get_project(id).await?;
-
-    let now = Instant::now();
-    let res = graphql_request(&project.query_endpoint, query).await;
-    let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
-
-    res
-}
-
-pub async fn project_query_raw(
-    id: &str,
-    query: &GraphQLQuery,
-    payment: MetricsQuery,
-    network: MetricsNetwork,
-) -> Result<(Vec<u8>, String)> {
-    let project = get_project(id).await?;
-
-    let now = Instant::now();
-    let res = graphql_request_raw(&project.query_endpoint, query).await;
-    let time = now.elapsed().as_millis() as u64;
-
-    add_metrics_query(id.to_owned(), time, payment, network, res.is_ok());
-
-    match res {
-        Ok(data) => {
-            let mut hasher = sha2::Sha256::new();
-            hasher.update(&data);
-            let bytes = hasher.finalize().to_vec();
-
-            // sign the response
-            let lock = ACCOUNT.read().await;
-            let controller = lock.controller.clone();
-            let indexer = lock.indexer.clone();
-            drop(lock);
-
-            let timestamp = Utc::now().timestamp();
-            let payload = encode(&[
-                indexer.into_token(),
-                bytes.into_token(),
-                timestamp.into_token(),
-            ]);
-            let hash = keccak256(payload);
-            let sign = controller
-                .sign_message(hash)
-                .await
-                .unwrap_or(default_sign());
-            let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
-
-            Ok((data, signature))
-        }
-        Err(err) => Err(err),
-    }
 }

@@ -44,7 +44,7 @@ use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{merket_price, open_state, query_state, AuthPayg};
-use crate::project::{get_project, project_metadata, project_query_raw};
+use crate::project::get_project;
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -173,13 +173,10 @@ async fn query_handler(
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature) = project_query_raw(
-        &deployment,
-        &query,
-        MetricsQuery::CloseAgreement,
-        MetricsNetwork::HTTP,
-    )
-    .await?;
+    let (data, signature) = get_project(&deployment)
+        .await?
+        .subquery_raw(&query, MetricsQuery::CloseAgreement, MetricsNetwork::HTTP)
+        .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -280,7 +277,9 @@ async fn metadata_handler(
     Path(deployment): Path<String>,
     block: Query<PoiBlock>,
 ) -> Result<Json<Value>, Error> {
-    project_metadata(&deployment, block.0.block, MetricsNetwork::HTTP)
+    get_project(&deployment)
+        .await?
+        .metadata(block.0.block, MetricsNetwork::HTTP)
         .await
         .map(Json)
 }
