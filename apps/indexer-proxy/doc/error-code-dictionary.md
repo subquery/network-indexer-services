@@ -84,5 +84,6 @@
 - `1137` - Serialize: payg price token.
 - `1138` - Serialize: payg price expired.
 - `1139` - Serialize: payg price signature.
+- `1140` - Serialize: subquery's query is invalid.
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block

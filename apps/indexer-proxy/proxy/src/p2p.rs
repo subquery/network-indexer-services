@@ -46,7 +46,7 @@ use crate::{
     auth::{check_and_get_agreement_limit, check_and_save_agreement},
     cli::COMMAND,
     contracts::get_consumer_host_peer,
-    metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
+    metrics::{get_timer_metrics, MetricsNetwork},
     payg::{merket_price, open_state, query_state},
     primitives::*,
     project::get_project,
@@ -687,20 +687,19 @@ async fn handle_group(
                     results.groups.push((gid, msg));
                 }
                 Event::CloseAgreementQuery(uid, agreement, query) => {
-                    let raw_query = serde_json::from_str(&query)?;
                     let res = match handle_close_agreement_query(
                         &peer_id.to_hex(),
                         &agreement,
                         &project,
-                        &raw_query,
+                        query,
                     )
                     .await
                     {
                         Ok(data) => data,
-                        Err(err) => err.to_json(),
+                        Err(err) => serde_json::to_string(&err.to_json()).unwrap_or("".to_owned()),
                     };
 
-                    let e = Event::CloseAgreementQueryRes(uid, serde_json::to_string(&res)?);
+                    let e = Event::CloseAgreementQueryRes(uid, res);
                     let msg = SendType::Event(0, peer_id, e.to_bytes());
                     results.groups.push((gid, msg));
                 }
@@ -746,12 +745,13 @@ async fn handle_close_agreement_query(
     signer: &str,
     agreement: &str,
     project: &str,
-    query: &GraphQLQuery,
-) -> std::result::Result<RpcParam, Error> {
+    query: String,
+) -> std::result::Result<String, Error> {
     check_and_save_agreement(signer, &agreement).await?;
 
-    get_project(project)
+    let (data, _signature) = get_project(project)
         .await?
-        .subquery(query, MetricsQuery::CloseAgreement, MetricsNetwork::P2P)
-        .await
+        .query(query, MetricsNetwork::P2P)
+        .await?;
+    Ok(hex::encode(data))
 }

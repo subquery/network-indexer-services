@@ -42,7 +42,7 @@ use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
+use crate::metrics::{get_owner_metrics, MetricsNetwork};
 use crate::payg::{merket_price, open_state, query_state, AuthPayg};
 use crate::project::get_project;
 
@@ -163,7 +163,7 @@ async fn query_handler(
     mut headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
     Path(deployment): Path<String>,
-    Json(query): Json<GraphQLQuery>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     if COMMAND.auth() && deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
@@ -175,7 +175,7 @@ async fn query_handler(
 
     let (data, signature) = get_project(&deployment)
         .await?
-        .subquery_raw(&query, MetricsQuery::CloseAgreement, MetricsNetwork::HTTP)
+        .query(body, MetricsNetwork::HTTP)
         .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {

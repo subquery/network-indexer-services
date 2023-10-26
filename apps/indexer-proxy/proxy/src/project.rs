@@ -32,7 +32,9 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, graphql_request_raw, proxy_request, GraphQLQuery},
+    request::{
+        graphql_request, graphql_request_raw, post_request_raw, proxy_request, GraphQLQuery,
+    },
     tools::merge_json,
     types::Result,
 };
@@ -120,6 +122,20 @@ impl Project {
         Ok(metadata)
     }
 
+    pub async fn query(&self, body: String, network: MetricsNetwork) -> Result<(Vec<u8>, String)> {
+        match self.ptype {
+            ProjectType::Subquery => {
+                let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
+                self.subquery_raw(&query, MetricsQuery::CloseAgreement, network)
+                    .await
+            }
+            ProjectType::RpcEvm => {
+                self.rpcquery_raw(body, MetricsQuery::CloseAgreement, network)
+                    .await
+            }
+        }
+    }
+
     pub async fn subquery(
         &self,
         query: &GraphQLQuery,
@@ -171,33 +187,57 @@ impl Project {
 
         match res {
             Ok(data) => {
-                let mut hasher = sha2::Sha256::new();
-                hasher.update(&data);
-                let bytes = hasher.finalize().to_vec();
-
-                // sign the response
-                let lock = ACCOUNT.read().await;
-                let controller = lock.controller.clone();
-                let indexer = lock.indexer.clone();
-                drop(lock);
-
-                let timestamp = Utc::now().timestamp();
-                let payload = encode(&[
-                    indexer.into_token(),
-                    bytes.into_token(),
-                    timestamp.into_token(),
-                ]);
-                let hash = keccak256(payload);
-                let sign = controller
-                    .sign_message(hash)
-                    .await
-                    .unwrap_or(default_sign());
-                let signature = format!("{} {}", timestamp, convert_sign_to_string(&sign));
-
+                let signature = Self::sign_response(&data).await;
                 Ok((data, signature))
             }
             Err(err) => Err(err),
         }
+    }
+
+    pub async fn rpcquery_raw(
+        &self,
+        query: String,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+    ) -> Result<(Vec<u8>, String)> {
+        let now = Instant::now();
+        let res = post_request_raw(&self.query_endpoint, query).await;
+        let time = now.elapsed().as_millis() as u64;
+
+        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+
+        match res {
+            Ok(data) => {
+                let signature = Self::sign_response(&data).await;
+                Ok((data, signature))
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn sign_response(data: &[u8]) -> String {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(&data);
+        let bytes = hasher.finalize().to_vec();
+
+        // sign the response
+        let lock = ACCOUNT.read().await;
+        let controller = lock.controller.clone();
+        let indexer = lock.indexer.clone();
+        drop(lock);
+
+        let timestamp = Utc::now().timestamp();
+        let payload = encode(&[
+            indexer.into_token(),
+            bytes.into_token(),
+            timestamp.into_token(),
+        ]);
+        let hash = keccak256(payload);
+        let sign = controller
+            .sign_message(hash)
+            .await
+            .unwrap_or(default_sign());
+        format!("{} {}", timestamp, convert_sign_to_string(&sign))
     }
 }
 

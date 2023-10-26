@@ -80,11 +80,16 @@ pub async fn graphql_request(uri: &str, query: &GraphQLQuery) -> Result<Value, E
 
 // Request to graphql service and response raw bytes.
 pub async fn graphql_request_raw(uri: &str, query: &GraphQLQuery) -> Result<Vec<u8>, Error> {
+    post_request_raw(uri, serde_json::to_string(query).unwrap_or("".to_owned())).await
+}
+
+// request post raw
+pub async fn post_request_raw(uri: &str, query: String) -> Result<Vec<u8>, Error> {
     let response_result = REQUEST_CLIENT
         .post(uri)
         .header(CONTENT_TYPE, APPLICATION_JSON)
         .header(CONNECTION, KEEP_ALIVE)
-        .body(serde_json::to_string(query).unwrap_or("".to_owned()))
+        .body(query.to_owned())
         .send()
         .await;
 
