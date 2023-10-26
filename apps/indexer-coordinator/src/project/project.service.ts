@@ -28,7 +28,7 @@ import {
   schemaName,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import { nodeConfigs, projectConfigChanged, IPFS_URL } from '../utils/project';
+import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -150,11 +150,11 @@ export class ProjectService {
     const project = await this.getProject(id);
     if (project) return project;
     const indexer = await this.account.getIndexer();
-    const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
+    const status = await this.contract.deploymentStatusByIndexer(id, indexer);
     const details = await this.getProjectInfo(id);
     const projectEntity = this.projectRepo.create({
       id: id.trim(),
-      status,
+      status: Number(status),
       details,
     });
 

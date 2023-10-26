@@ -1659,7 +1659,12 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.16.2", "@subql/contract-sdk@^0.16.2":
+"@subql/contract-sdk@0.100.2":
+  version "0.100.2"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.100.2.tgz#d66b01a6cb43bf02547ed87ed4697136e425d3e7"
+  integrity sha512-LPn8qJUMzeOgWJFDZpbqs4P14ibwSGIh7aqWB5yfkpNOr7TvUv9Wv7wYcGkTjQY/NxuBxpAq6OcdOAjbX2QzpA==
+
+"@subql/contract-sdk@^0.16.2":
   version "0.16.2"
   resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.16.2.tgz#98ec9bb15b7863767fbe38c86d8a1d70d6e41d4f"
   integrity sha512-OHSlV+bEyIlk+iZAUBqOMIhENdILrkTTM2+iovumvpM7mUXKGtLvey5tf9t4h4ShGDZQEH5t3crP8FGyvuP07A==

@@ -85,11 +85,11 @@ export class NetworkService implements OnApplicationBootstrap {
     const projects = await this.projectRepo.find();
     const indexingProjects = await Promise.all(
       projects.map(async (project) => {
-        const { status } = await this.contractService.deploymentStatusByIndexer(
+        const status = await this.contractService.deploymentStatusByIndexer(
           project.id,
           indexer
         );
-        project.status = status;
+        project.status = Number(status);
         return await this.projectRepo.save(project);
       })
     );
@@ -103,12 +103,9 @@ export class NetworkService implements OnApplicationBootstrap {
   private async updateExpiredAgreements() {
     logger.debug(`updateExpiredAgreements start`);
     const indexer = await this.accountService.getIndexer();
-    const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
+    const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(indexer);
     for (let i = 0; i < agreementCount.toNumber(); i++) {
-      const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(
-        indexer,
-        i
-      );
+      const agreementId = await this.sdk.serviceAgreementExtra.getServiceAgreementId(indexer, i);
       const agreementExpired =
         await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
 
@@ -160,6 +157,8 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
+
+
   @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
     logger.debug(`removeExpiredAgreements start`);
@@ -173,17 +172,16 @@ export class NetworkService implements OnApplicationBootstrap {
 
     try {
       const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
+      const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(indexer);
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementRegistry
-          .closedServiceAgreementIds(indexer, i)
+        const agreementId = await this.sdk.serviceAgreementExtra.getServiceAgreementId(indexer, i)
           .then((id) => id.toNumber());
 
         if (this.expiredAgreements.has(agreementId.toString())) {
           await this.sendTransaction(
             'remove expired service agreement',
             (overrides) =>
-              this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
+              this.sdk.serviceAgreementExtra.clearEndedAgreement(indexer, i, overrides),
             `service agreement: ${agreementId}`
           );
 

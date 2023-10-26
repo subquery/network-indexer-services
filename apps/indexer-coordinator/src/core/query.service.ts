@@ -5,15 +5,14 @@ import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
-import { Project, MetadataType } from '../project/project.model';
+import { MetadataType, Project } from '../project/project.model';
 import { nodeContainer, queryContainer } from '../utils/docker';
-import { debugLogger } from '../utils/logger';
 import { ZERO_BYTES32 } from '../utils/project';
 
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
-import { ServiceStatus, Poi, PoiItem } from './types';
+import { Poi, PoiItem, ServiceStatus } from './types';
 
 @Injectable()
 export class QueryService {
