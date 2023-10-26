@@ -3,7 +3,10 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StateChannel, bytes32ToCid } from '@subql/network-clients';
+import { StateChannel as StateChannelOnChain, bytes32ToCid } from '@subql/network-clients';
+import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
+import { BigNumber } from 'ethers';
+import lodash from 'lodash';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 
@@ -15,8 +18,9 @@ import { PaygEvent } from '../utils/subscription';
 import { AccountService } from './../core/account.service';
 
 import { Channel, ChannelStatus } from './payg.model';
+import { PaygQueryService } from './payg.query.service';
 
-export type ChannelState = StateChannel.ChannelStateStructOutput;
+export type ChannelState = StateChannelOnChain.ChannelStateStructOutput;
 
 const logger = getLogger('payg');
 
@@ -25,24 +29,45 @@ export class PaygService {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
+    private paygQueryService: PaygQueryService,
     private pubSub: SubscriptionService,
     private network: NetworkService,
     private account: AccountService
   ) {}
 
-  async channelFromContract(id: string): Promise<ChannelState> {
+  async channelFromContract(id: BigNumber): Promise<ChannelState> {
     const channel = await this.network.getSdk().stateChannel.channel(id);
     return channel?.indexer !== ZERO_ADDRESS ? channel : undefined;
   }
 
-  async saveChannel(
+  async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
+    return this.network.getSdk().stateChannel.channelPrice(id);
+  }
+
+  async channelPriceFromNetwork(id: BigNumber): Promise<BigNumber> {
+    const channel = await this.paygQueryService.getStateChannel(id.toHexString());
+    return channel?.price ? BigNumber.from(channel.price) : undefined;
+  }
+
+  async updateChannelFromContract(
     id: string,
-    channelState: StateChannel.ChannelStateStructOutput,
+    channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
     agent: string
-  ): Promise<Channel> {
+  ): Promise<Channel | undefined> {
     const hostIndexer = await this.account.getIndexer();
-    if (channelState?.indexer !== hostIndexer) return;
+    if (!channelState) {
+      return;
+    }
+    if (channelState.indexer !== hostIndexer) {
+      logger.debug(`State channel indexer is not host indexer, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
+      return;
+    }
+    if (lodash.isEmpty(price) || lodash.isNaN(price) || price === '0') {
+      logger.debug(`State channel price cannot be zero: ${id}`);
+      return;
+    }
 
     const {
       status,
@@ -56,41 +81,165 @@ export class PaygService {
       terminateByIndexer,
     } = channelState;
 
-    const channelEntity = this.channelRepo.create({
-      id,
+    let channelEntity = await this.channelRepo.findOneBy({ id });
+
+    if (!channelEntity) {
+      channelEntity = this.channelRepo.create({
+        id,
+        price: '0',
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        onchain: '0',
+        remote: '0',
+        lastFinal: false,
+      });
+    }
+
+    channelEntity.status = status;
+    channelEntity.indexer = indexer;
+    channelEntity.consumer = consumer;
+    channelEntity.agent = agent ? agent : channelEntity.agent;
+    channelEntity.price = price;
+    channelEntity.deploymentId = bytes32ToCid(deploymentId);
+    channelEntity.total = total.toString();
+    channelEntity.spent = spent.toString();
+    channelEntity.expiredAt = expiredAt.toNumber();
+    channelEntity.terminatedAt = terminatedAt.toNumber();
+    channelEntity.terminateByIndexer = terminateByIndexer;
+
+    const channel = await this.channelRepo.save(channelEntity);
+    logger.debug(`Updated state channel from contract: ${id}`);
+
+    return channel;
+  }
+
+  async updateChannelFromNetwork(
+    id: string,
+    altChannelData?: StateChannelOnNetwork,
+    isFinal?: boolean
+  ): Promise<Channel | undefined> {
+    if (!altChannelData) {
+      altChannelData = await this.paygQueryService.getStateChannel(
+        BigNumber.from(id).toHexString()
+      );
+    }
+    if (!altChannelData) {
+      logger.debug(`State channel not exist on network, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
+      return;
+    }
+
+    const hostIndexer = await this.account.getIndexer();
+    if (altChannelData.indexer !== hostIndexer) {
+      logger.debug(`State channel indexer is not host indexer, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
+      return;
+    }
+
+    id = BigNumber.from(id).toString();
+    let channelEntity = await this.channelRepo.findOneBy({ id });
+
+    if (!channelEntity) {
+      channelEntity = this.channelRepo.create({
+        id,
+        price: '0',
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        onchain: '0',
+        remote: '0',
+        lastFinal: false,
+      });
+    }
+
+    const {
       status,
       indexer,
       consumer,
       agent,
       price,
-      deploymentId: bytes32ToCid(deploymentId),
-      total: total.toString(),
-      spent: spent.toString(),
-      lastIndexerSign: '',
-      lastConsumerSign: '',
-      onchain: '0',
-      remote: '0',
-      expiredAt: expiredAt.toNumber(),
-      terminatedAt: terminatedAt.toNumber(),
+      total,
+      spent,
+      expiredAt,
+      terminatedAt,
+      deployment,
       terminateByIndexer,
-      lastFinal: false,
-    });
+      isFinal: _isFinal,
+    } = altChannelData;
+
+    if (isFinal) {
+      channelEntity.status = ChannelStatus.FINALIZED;
+    } else {
+      channelEntity.status = ChannelStatus[status];
+    }
+    channelEntity.indexer = indexer;
+    channelEntity.consumer = consumer;
+    channelEntity.agent = agent;
+    channelEntity.price = price.toString();
+    channelEntity.deploymentId = deployment.id;
+    channelEntity.total = total.toString();
+    channelEntity.spent = spent.toString();
+    channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
+    channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
+    channelEntity.terminateByIndexer = terminateByIndexer;
+    channelEntity.lastFinal = _isFinal;
 
     const channel = await this.channelRepo.save(channelEntity);
-    logger.debug(`Saved state channel ${id}`);
+    logger.debug(`Updated state channel from network: ${id}`);
 
     return channel;
   }
 
   async channel(channelId: string): Promise<Channel | undefined> {
     const id = channelId.toLowerCase();
-    const channel = await this.channelRepo.findOneBy({ id });
+    let channel = await this.channelRepo.findOneBy({ id });
 
-    // if (!channel) {
-    //   const channelState = await this.channelFromContract(id);
-    //   channel = await this.saveChannel(id, channelState, '0', '');
-    // }
+    if (!channel) {
+      channel = await this.syncChannel(id);
+    }
 
+    return channel;
+  }
+
+  async syncChannel(
+    channelId: string,
+    altPrice?: BigNumber,
+    altChannelData?: StateChannelOnNetwork
+  ): Promise<Channel | undefined> {
+    if (!this.network.getSdk()) {
+      return;
+    }
+
+    const id = channelId.toLowerCase();
+
+    const channelState = await this.channelFromContract(BigNumber.from(id));
+    if (!channelState) {
+      return this.updateChannelFromNetwork(id, altChannelData, true);
+    }
+
+    let channelPrice: BigNumber;
+    try {
+      channelPrice = await this.channelPriceFromContract(BigNumber.from(id));
+    } catch (e) {
+      logger.debug(`State channel sync price failed: ${id}`);
+    }
+    if (!channelPrice || channelPrice.isZero()) {
+      if (altPrice && !altPrice.isZero()) {
+        channelPrice = altPrice;
+      } else {
+        channelPrice = await this.channelPriceFromNetwork(BigNumber.from(id));
+      }
+    }
+    if (!channelPrice || channelPrice.isZero()) {
+      logger.debug(`State channel update price failed: [${channelPrice}] ${id}`);
+      return;
+    }
+
+    const channel = await this.updateChannelFromContract(
+      id,
+      channelState,
+      channelPrice.toString(),
+      ''
+    );
     return channel;
   }
 
