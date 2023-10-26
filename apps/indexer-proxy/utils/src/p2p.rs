@@ -57,8 +57,8 @@ pub enum Event {
     /// params: uid, open state
     PaygOpenRes(u64, String),
     /// Query data the by channel,
-    /// params: uid, query, state
-    PaygQuery(u64, String, String),
+    /// params: uid, query, ep_name, state
+    PaygQuery(u64, String, Option<String>, String),
     /// Response the channel query,
     /// params: uid, data with state
     PaygQueryRes(u64, String),
@@ -69,8 +69,8 @@ pub enum Event {
     /// params: uid, agreement info
     CloseAgreementLimitRes(u64, String),
     /// Query data by close agreement,
-    /// params: uid, agreement, query
-    CloseAgreementQuery(u64, String, String),
+    /// params: uid, agreement, query, ep_name
+    CloseAgreementQuery(u64, String, String, Option<String>),
     /// Response the close agreement query,
     /// params: uid, data
     CloseAgreementQueryRes(u64, String),

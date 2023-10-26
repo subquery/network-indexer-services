@@ -25,7 +25,6 @@ use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
-    request::GraphQLQuery,
 };
 use tdn::{
     prelude::{
@@ -46,7 +45,7 @@ use crate::{
     auth::{check_and_get_agreement_limit, check_and_save_agreement},
     cli::COMMAND,
     contracts::get_consumer_host_peer,
-    metrics::{get_timer_metrics, MetricsNetwork},
+    metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
     payg::{merket_price, open_state, query_state},
     primitives::*,
     project::get_project,
@@ -656,11 +655,12 @@ async fn handle_group(
                     let msg = SendType::Event(0, peer_id, e.to_bytes());
                     results.groups.push((gid, msg));
                 }
-                Event::PaygQuery(uid, query, state) => {
-                    let query: GraphQLQuery = serde_json::from_str(&query)?;
+                Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
                     let result =
-                        match query_state(&project, &query, &state, MetricsNetwork::P2P).await {
+                        match query_state(&project, query, ep_name, &state, MetricsNetwork::P2P)
+                            .await
+                        {
                             Ok((res_query, res_signature, res_state)) => {
                                 json!({
                                     "result": general_purpose::STANDARD.encode(&res_query),
@@ -686,12 +686,13 @@ async fn handle_group(
                     let msg = SendType::Event(0, peer_id, e.to_bytes());
                     results.groups.push((gid, msg));
                 }
-                Event::CloseAgreementQuery(uid, agreement, query) => {
+                Event::CloseAgreementQuery(uid, agreement, query, ep_name) => {
                     let res = match handle_close_agreement_query(
                         &peer_id.to_hex(),
                         &agreement,
                         &project,
                         query,
+                        ep_name,
                     )
                     .await
                     {
@@ -746,12 +747,18 @@ async fn handle_close_agreement_query(
     agreement: &str,
     project: &str,
     query: String,
+    ep_name: Option<String>,
 ) -> std::result::Result<String, Error> {
     check_and_save_agreement(signer, &agreement).await?;
 
     let (data, _signature) = get_project(project)
         .await?
-        .query(query, MetricsNetwork::P2P)
+        .query(
+            query,
+            ep_name,
+            MetricsQuery::CloseAgreement,
+            MetricsNetwork::P2P,
+        )
         .await?;
     Ok(hex::encode(data))
 }

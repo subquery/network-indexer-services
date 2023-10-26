@@ -122,17 +122,19 @@ impl Project {
         Ok(metadata)
     }
 
-    pub async fn query(&self, body: String, network: MetricsNetwork) -> Result<(Vec<u8>, String)> {
+    pub async fn query(
+        &self,
+        body: String,
+        ep_name: Option<String>,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+    ) -> Result<(Vec<u8>, String)> {
         match self.ptype {
             ProjectType::Subquery => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, MetricsQuery::CloseAgreement, network)
-                    .await
+                self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm => {
-                self.rpcquery_raw(body, MetricsQuery::CloseAgreement, network)
-                    .await
-            }
+            ProjectType::RpcEvm => self.rpcquery_raw(body, ep_name, payment, network).await,
         }
     }
 
@@ -197,6 +199,7 @@ impl Project {
     pub async fn rpcquery_raw(
         &self,
         query: String,
+        _ep_name: Option<String>, // TODO ep_name to rpc if need
         payment: MetricsQuery,
         network: MetricsNetwork,
     ) -> Result<(Vec<u8>, String)> {

@@ -34,7 +34,6 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
-    request::GraphQLQuery,
 };
 use tower_http::cors::{Any, CorsLayer};
 
@@ -42,7 +41,7 @@ use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork};
+use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{merket_price, open_state, query_state, AuthPayg};
 use crate::project::get_project;
 
@@ -159,10 +158,16 @@ async fn generate_token(
     }
 }
 
+#[derive(Deserialize)]
+struct EpName {
+    ep_name: Option<String>,
+}
+
 async fn query_handler(
     mut headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
     Path(deployment): Path<String>,
+    ep_name: Query<EpName>,
     body: String,
 ) -> Result<Response<String>, Error> {
     if COMMAND.auth() && deployment != deployment_id {
@@ -175,7 +180,12 @@ async fn query_handler(
 
     let (data, signature) = get_project(&deployment)
         .await?
-        .query(body, MetricsNetwork::HTTP)
+        .query(
+            body,
+            ep_name.0.ep_name,
+            MetricsQuery::CloseAgreement,
+            MetricsNetwork::HTTP,
+        )
         .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
@@ -226,14 +236,21 @@ async fn payg_query(
     mut headers: HeaderMap,
     AuthPayg(state): AuthPayg,
     Path(deployment): Path<String>,
-    Json(query): Json<GraphQLQuery>,
+    ep_name: Query<EpName>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature, state_data) =
-        query_state(&deployment, &query, &state, MetricsNetwork::HTTP).await?;
+    let (data, signature, state_data) = query_state(
+        &deployment,
+        body,
+        ep_name.0.ep_name,
+        &state,
+        MetricsNetwork::HTTP,
+    )
+    .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (

@@ -280,7 +280,8 @@ pub async fn open_state(body: &Value) -> Result<Value> {
 
 pub async fn query_state(
     project_id: &str,
-    query: &GraphQLQuery,
+    query: String,
+    ep_name: Option<String>,
     state: &Value,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
@@ -359,7 +360,7 @@ pub async fn query_state(
 
     // query the data.
     let (data, signature) = project
-        .subquery_raw(query, MetricsQuery::PAYG, network_type)
+        .query(query, ep_name, MetricsQuery::PAYG, network_type)
         .await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
