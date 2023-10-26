@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-admin",
-  "version": "1.1.5-6",
+  "version": "1.9.0",
   "scripts": {
     "start": "vite --mode development --port 8008",
     "build": "tsc && vite build",
@@ -19,7 +19,7 @@
     "@mui/material": "^5.5.1",
     "@patternfly/react-log-viewer": "^4.43.19",
     "@subql/components": "1.0.3-8",
-    "@subql/contract-sdk": "^0.16.2",
+    "@subql/contract-sdk": "^0.100.2",
     "@subql/network-clients": "~0.3.17",
     "@subql/network-config": "0.3.17-0",
     "@subql/network-query": "^0.3.13",

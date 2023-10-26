@@ -1,21 +1,21 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
 import { Spinner, Tag } from '@subql/components';
 import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
+import { FC } from 'react';
 import styled from 'styled-components';
 
 import { Button, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { statusText } from 'pages/projects/constant';
-import { indexingStatusCode } from 'utils/project';
+import { serviceStatusCode } from 'utils/project';
 import { formatValueToFixed } from 'utils/units';
 
 import { ButtonItem } from '../config';
 import { ActionContainer, CardContainer } from '../styles';
-import { IndexingStatus, TQueryMetadata } from '../types';
+import { ServiceStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -39,7 +39,7 @@ const LabelContainer = styled.div`
 type Props = {
   percent: number;
   actionItems: ButtonItem[];
-  status?: IndexingStatus;
+  status?: ServiceStatus;
   metadata?: TQueryMetadata;
 };
 
@@ -52,7 +52,7 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
             Indexing Status
           </Text>
           {!isUndefined(status) ? (
-            <Tag state={indexingStatusCode(status)}>{statusText[status]}</Tag>
+            <Tag state={serviceStatusCode(status)}>{statusText[status]}</Tag>
           ) : (
             <Spinner />
           )}

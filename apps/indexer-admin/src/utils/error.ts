@@ -19,7 +19,7 @@ export const mapContractError = (error: any) => {
 
   const getExtraExplain = (revertCode: 'IR004' | 'RS002') => {
     const msg = {
-      IR004: 'Please change all projects to not indexing',
+      IR004: 'Please terminate all the projects',
       RS002: 'Please check controller account balance enough to do transaction',
     };
 

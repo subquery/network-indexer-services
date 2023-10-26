@@ -1,13 +1,13 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useState } from 'react';
 import { NetworkStatus, useLazyQuery, useQuery } from '@apollo/client';
 import { _Metadata } from '@subql/network-query';
 import { useInterval } from 'ahooks';
 import axios from 'axios';
 import yaml from 'js-yaml';
 import { isEmpty } from 'lodash';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
@@ -16,8 +16,8 @@ import {
   ChainType,
   dockerContainerEnum,
   DockerRegistry,
-  IndexingStatus,
   PartialIpfsDeploymentManifest,
+  ServiceStatus,
   TQueryMetadata,
 } from 'pages/project-details/types';
 import { coordinatorServiceUrl, createApolloClient } from 'utils/apolloClient';
@@ -64,17 +64,17 @@ export const useProjectDetails = (deploymentId: string) => {
   return projectQuery;
 };
 
-export const useIndexingStatus = (deploymentId: string): IndexingStatus | undefined => {
-  const [status, setStatus] = useState<IndexingStatus>(IndexingStatus.NOTINDEXING);
+export const useServiceStatus = (deploymentId: string): ServiceStatus | undefined => {
+  const [status, setStatus] = useState<ServiceStatus>(ServiceStatus.TERMINATED);
   const { account } = useAccount();
   const notificationContext = useNotification();
   const sdk = useContractSDK();
 
   useEffect(() => {
     if (sdk && account && deploymentId) {
-      sdk.queryRegistry
+      sdk.projectRegistry
         .deploymentStatusByIndexer(cidToBytes32(deploymentId), account)
-        .then(({ status }) => {
+        .then((status) => {
           setStatus(status);
         })
         .catch((error) => console.error(error));
@@ -98,13 +98,13 @@ export const getQueryMetadata = async (id: string): Promise<TQueryMetadata> => {
 };
 
 export const useDeploymentStatus = (deploymentId: string) => {
-  const [status, setStatus] = useState<IndexingStatus | undefined>();
+  const [status, setStatus] = useState<ServiceStatus | undefined>();
   const { account } = useAccount();
   const sdk = useContractSDK();
 
   const getDeploymentStatus = useCallback(async () => {
     if (!sdk || !account || !deploymentId) return;
-    const { status } = await sdk.queryRegistry.deploymentStatusByIndexer(
+    const status = await sdk.projectRegistry.deploymentStatusByIndexer(
       cidToBytes32(deploymentId),
       account
     );
@@ -158,12 +158,13 @@ function dockerRegistryFromChain(chainType: ChainType): string {
 }
 
 const defaultRange: Record<ChainType, string> = {
-  substrate: '>=2.5.5',
-  cosmos: '>=2.5.0',
-  flare: '>=2.5.0',
-  algorand: '>=2.5.0',
-  near: '>=2.5.0',
-  ethereum: '>=2.5.3',
+  substrate: '>=3.1.0',
+  cosmos: '>=3.1.0',
+  flare: '>=3.1.0',
+  algorand: '>=3.0.1',
+  near: '>=3.0.0',
+  ethereum: '>=3.1.0',
+  stellar: '>=3.0.1',
 };
 
 export const useNodeVersions = (cid: string): string[] => {
