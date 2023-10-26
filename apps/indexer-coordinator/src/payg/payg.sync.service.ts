@@ -4,8 +4,8 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StateChannel as ChannelState } from '@subql/network-clients';
-import { StateChannel } from '@subql/network-query';
+import { StateChannel as StateChannelOnChain } from '@subql/network-clients';
+import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 
 import { AccountService } from 'src/core/account.service';
@@ -58,7 +58,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         const localAliveChannels = await this.paygService.getAliveChannels();
 
         const stateChannelIds = stateChannels.map((stateChannel) =>
-          BigNumber.from(stateChannel.id).toString().toLowerCase()
+          BigNumber.from(stateChannel.id).toString()
         );
         const localAliveChannelIds = localAliveChannels.map((channel) => channel.id);
 
@@ -69,6 +69,10 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
         const closedChannelIds = localAliveChannelIds.filter((id) => !stateChannelIds.includes(id));
         for (const id of closedChannelIds) {
+          if (BigNumber.from(id).toString() !== id) {
+            await this.channelRepo.delete(id);
+            continue;
+          }
           await this.paygService.syncChannel(
             id,
             BigNumber.from(mappedLocalAliveChannels[id].price)
@@ -76,12 +80,12 @@ export class PaygSyncService implements OnApplicationBootstrap {
         }
 
         for (const stateChannel of stateChannels) {
-          const id = BigNumber.from(stateChannel.id).toString().toLowerCase();
+          const id = BigNumber.from(stateChannel.id).toString();
           if (this.compareChannel(mappedLocalAliveChannels[id], stateChannel)) {
             logger.debug(`State channel is up to date: ${id}`);
             continue;
           }
-          await this.paygService.syncChannel(id, BigNumber.from(stateChannel.price));
+          await this.paygService.syncChannel(id, BigNumber.from(stateChannel.price), stateChannel);
         }
 
         logger.debug(`Synced state channels from Subquery Project`);
@@ -93,7 +97,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     this.syncingStateChannels = false;
   }
 
-  compareChannel(channel: Channel, channelState: StateChannel): boolean {
+  compareChannel(channel: Channel, channelState: StateChannelOnNetwork): boolean {
     if (!channel || !channelState) return false;
 
     const { status, agent, total, spent, price } = channelState;
@@ -144,7 +148,7 @@ ${channel.price}:${price.toString()}`
           logger.debug(`Channel created by user: ${consumer}`);
         }
 
-        const channelState: ChannelState.ChannelStateStructOutput = {
+        const channelState: StateChannelOnChain.ChannelStateStructOutput = {
           status: ChannelStatus.OPEN,
           indexer: indexer,
           consumer: consumer,
@@ -154,7 +158,7 @@ ${channel.price}:${price.toString()}`
           terminatedAt: expiredAt,
           deploymentId: deploymentId,
           terminateByIndexer: false,
-        } as ChannelState.ChannelStateStructOutput;
+        } as StateChannelOnChain.ChannelStateStructOutput;
 
         void this.syncOpen(channelId.toString(), channelState, price.toString(), agent);
       }
@@ -194,7 +198,7 @@ ${channel.price}:${price.toString()}`
 
   async syncOpen(
     id: string,
-    channelState: ChannelState.ChannelStateStructOutput,
+    channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
     agent: string
   ) {

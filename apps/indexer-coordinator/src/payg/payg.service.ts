@@ -3,7 +3,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StateChannel, bytes32ToCid } from '@subql/network-clients';
+import { StateChannel as StateChannelOnChain, bytes32ToCid } from '@subql/network-clients';
+import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 import lodash from 'lodash';
 import { ZERO_ADDRESS } from 'src/utils/project';
@@ -19,7 +20,7 @@ import { AccountService } from './../core/account.service';
 import { Channel, ChannelStatus } from './payg.model';
 import { PaygQueryService } from './payg.query.service';
 
-export type ChannelState = StateChannel.ChannelStateStructOutput;
+export type ChannelState = StateChannelOnChain.ChannelStateStructOutput;
 
 const logger = getLogger('payg');
 
@@ -50,7 +51,7 @@ export class PaygService {
 
   async updateChannelFromContract(
     id: string,
-    channelState: StateChannel.ChannelStateStructOutput,
+    channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
     agent: string
   ): Promise<Channel | undefined> {
@@ -112,6 +113,64 @@ export class PaygService {
     return channel;
   }
 
+  async updateChannelFromNetwork(
+    stateChannel: StateChannelOnNetwork,
+    isFinal?: boolean
+  ): Promise<Channel | undefined> {
+    const id = BigNumber.from(stateChannel.id).toString();
+    let channelEntity = await this.channelRepo.findOneBy({ id });
+
+    if (!channelEntity) {
+      channelEntity = this.channelRepo.create({
+        id,
+        price: '0',
+        lastIndexerSign: '',
+        lastConsumerSign: '',
+        onchain: '0',
+        remote: '0',
+        lastFinal: false,
+      });
+    }
+
+    const {
+      status,
+      indexer,
+      consumer,
+      agent,
+      price,
+      total,
+      spent,
+      expiredAt,
+      terminatedAt,
+      deployment,
+      terminateByIndexer,
+      isFinal: _isFinal,
+    } = stateChannel;
+
+    if (isFinal && terminatedAt < new Date()) {
+      channelEntity.status = ChannelStatus.FINALIZED;
+      channelEntity.lastFinal = true;
+    } else {
+      channelEntity.status = ChannelStatus[status];
+      channelEntity.lastFinal = _isFinal;
+    }
+    channelEntity.indexer = indexer;
+    channelEntity.consumer = consumer;
+    channelEntity.agent = agent;
+    channelEntity.price = price.toString();
+    channelEntity.deploymentId = deployment.id;
+    channelEntity.total = total.toString();
+    channelEntity.spent = spent.toString();
+    channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
+    channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
+    channelEntity.terminateByIndexer = terminateByIndexer;
+
+    const channel = await this.channelRepo.save(channelEntity);
+    logger.debug(`Updated state channel from network: ${id}`);
+
+    return channel;
+  }
+
   async channel(channelId: string): Promise<Channel | undefined> {
     const id = channelId.toLowerCase();
     let channel = await this.channelRepo.findOneBy({ id });
@@ -123,7 +182,11 @@ export class PaygService {
     return channel;
   }
 
-  async syncChannel(channelId: string, altPrice?: BigNumber): Promise<Channel | undefined> {
+  async syncChannel(
+    channelId: string,
+    altPrice?: BigNumber,
+    altChannelData?: StateChannelOnNetwork
+  ): Promise<Channel | undefined> {
     if (!this.network.getSdk()) {
       return;
     }
@@ -132,9 +195,13 @@ export class PaygService {
 
     const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
-      logger.debug(`State channel not exist on chain, remove from db: ${id}`);
-      await this.channelRepo.delete({ id });
-      return;
+      if (altChannelData) {
+        return this.updateChannelFromNetwork(altChannelData, true);
+      } else {
+        logger.debug(`State channel not exist on chain, remove from db: ${id}`);
+        await this.channelRepo.delete({ id });
+        return;
+      }
     }
 
     let channelPrice: BigNumber;
