@@ -73,6 +73,9 @@ export class PaygSyncService implements OnApplicationBootstrap {
             await this.channelRepo.delete(id);
             continue;
           }
+          if (mappedLocalAliveChannels[id].status === ChannelStatus.FINALIZED) {
+            continue;
+          }
           await this.paygService.syncChannel(
             id,
             BigNumber.from(mappedLocalAliveChannels[id].price)
@@ -101,15 +104,6 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel || !channelState) return false;
 
     const { status, agent, total, spent, price } = channelState;
-
-    logger.debug(
-      `\ncomparing channel: 
-${channel.status}:${ChannelStatus[status]}
-${channel.agent}:${agent}
-${channel.total}:${total.toString()}
-${channel.spent}:${spent.toString()}
-${channel.price}:${price.toString()}`
-    );
 
     return (
       channel.status === ChannelStatus[status] &&

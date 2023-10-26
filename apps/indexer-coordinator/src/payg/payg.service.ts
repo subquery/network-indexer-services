@@ -114,10 +114,29 @@ export class PaygService {
   }
 
   async updateChannelFromNetwork(
-    stateChannel: StateChannelOnNetwork,
+    id: string,
+    altChannelData?: StateChannelOnNetwork,
     isFinal?: boolean
   ): Promise<Channel | undefined> {
-    const id = BigNumber.from(stateChannel.id).toString();
+    if (!altChannelData) {
+      altChannelData = await this.paygQueryService.getStateChannel(
+        BigNumber.from(id).toHexString()
+      );
+    }
+    if (!altChannelData) {
+      logger.debug(`State channel not exist on network, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
+      return;
+    }
+
+    const hostIndexer = await this.account.getIndexer();
+    if (altChannelData.indexer !== hostIndexer) {
+      logger.debug(`State channel indexer is not host indexer, remove from db: ${id}`);
+      await this.channelRepo.delete({ id });
+      return;
+    }
+
+    id = BigNumber.from(id).toString();
     let channelEntity = await this.channelRepo.findOneBy({ id });
 
     if (!channelEntity) {
@@ -145,14 +164,12 @@ export class PaygService {
       deployment,
       terminateByIndexer,
       isFinal: _isFinal,
-    } = stateChannel;
+    } = altChannelData;
 
-    if (isFinal && terminatedAt < new Date()) {
+    if (isFinal) {
       channelEntity.status = ChannelStatus.FINALIZED;
-      channelEntity.lastFinal = true;
     } else {
       channelEntity.status = ChannelStatus[status];
-      channelEntity.lastFinal = _isFinal;
     }
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
@@ -164,6 +181,7 @@ export class PaygService {
     channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
     channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
     channelEntity.terminateByIndexer = terminateByIndexer;
+    channelEntity.lastFinal = _isFinal;
 
     const channel = await this.channelRepo.save(channelEntity);
     logger.debug(`Updated state channel from network: ${id}`);
@@ -195,13 +213,7 @@ export class PaygService {
 
     const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
-      if (altChannelData) {
-        return this.updateChannelFromNetwork(altChannelData, true);
-      } else {
-        logger.debug(`State channel not exist on chain, remove from db: ${id}`);
-        await this.channelRepo.delete({ id });
-        return;
-      }
+      return this.updateChannelFromNetwork(id, altChannelData, true);
     }
 
     let channelPrice: BigNumber;
