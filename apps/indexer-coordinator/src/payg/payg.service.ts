@@ -55,6 +55,8 @@ export class PaygService {
     price: string,
     agent: string
   ): Promise<Channel | undefined> {
+    id = BigNumber.from(id).toHexString().toLowerCase();
+
     const hostIndexer = await this.account.getIndexer();
     if (!channelState) {
       return;
@@ -92,6 +94,7 @@ export class PaygService {
         onchain: '0',
         remote: '0',
         lastFinal: false,
+        spent: spent.toString(),
       });
     }
 
@@ -99,10 +102,11 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent ? agent : channelEntity.agent;
-    channelEntity.price = price;
+    // FIXME: remove comment
+    // channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
-    channelEntity.spent = spent.toString();
+    channelEntity.onchain = spent.toString();
     channelEntity.expiredAt = expiredAt.toNumber();
     channelEntity.terminatedAt = terminatedAt.toNumber();
     channelEntity.terminateByIndexer = terminateByIndexer;
@@ -118,10 +122,10 @@ export class PaygService {
     altChannelData?: StateChannelOnNetwork,
     isFinal?: boolean
   ): Promise<Channel | undefined> {
+    id = BigNumber.from(id).toHexString().toLowerCase();
+
     if (!altChannelData) {
-      altChannelData = await this.paygQueryService.getStateChannel(
-        BigNumber.from(id).toHexString()
-      );
+      altChannelData = await this.paygQueryService.getStateChannel(id);
     }
     if (!altChannelData) {
       logger.debug(`State channel not exist on network, remove from db: ${id}`);
@@ -136,7 +140,6 @@ export class PaygService {
       return;
     }
 
-    id = BigNumber.from(id).toString();
     let channelEntity = await this.channelRepo.findOneBy({ id });
 
     if (!channelEntity) {
@@ -145,7 +148,7 @@ export class PaygService {
         price: '0',
         lastIndexerSign: '',
         lastConsumerSign: '',
-        onchain: '0',
+        spent: '0',
         remote: '0',
         lastFinal: false,
       });
@@ -168,20 +171,22 @@ export class PaygService {
 
     if (isFinal) {
       channelEntity.status = ChannelStatus.FINALIZED;
+      channelEntity.lastFinal = true;
     } else {
       channelEntity.status = ChannelStatus[status];
+      channelEntity.lastFinal = _isFinal;
     }
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    channelEntity.price = price.toString();
+    // FIXME: remove comment
+    // channelEntity.price = price.toString();
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
-    channelEntity.spent = spent.toString();
+    channelEntity.onchain = spent.toString();
     channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
     channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
     channelEntity.terminateByIndexer = terminateByIndexer;
-    channelEntity.lastFinal = _isFinal;
 
     const channel = await this.channelRepo.save(channelEntity);
     logger.debug(`Updated state channel from network: ${id}`);
@@ -190,7 +195,7 @@ export class PaygService {
   }
 
   async channel(channelId: string): Promise<Channel | undefined> {
-    const id = channelId.toLowerCase();
+    const id = BigNumber.from(channelId).toHexString().toLowerCase();
     let channel = await this.channelRepo.findOneBy({ id });
 
     if (!channel) {
@@ -209,7 +214,7 @@ export class PaygService {
       return;
     }
 
-    const id = channelId.toLowerCase();
+    const id = BigNumber.from(channelId).toHexString().toLowerCase();
 
     const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
@@ -238,7 +243,7 @@ export class PaygService {
       id,
       channelState,
       channelPrice.toString(),
-      ''
+      altChannelData?.agent
     );
     return channel;
   }
@@ -252,6 +257,14 @@ export class PaygService {
 
     return this.channelRepo.find({
       where: [{ lastFinal: false }, { expiredAt: MoreThan(now) }],
+    });
+  }
+
+  async getChannelsForSync(): Promise<Channel[]> {
+    const now = Math.floor(Date.now() / 1000);
+
+    return this.channelRepo.find({
+      where: [{ expiredAt: MoreThan(now) }],
     });
   }
 
@@ -293,14 +306,18 @@ export class PaygService {
       // threshold value for checkpoint and spawn to other promise.
       if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
         // send to blockchain.
-        const tx = await this.network.getSdk().stateChannel.checkpoint({
-          channelId: id,
-          isFinal: isFinal,
-          spent: channel.remote,
-          indexerSign: indexerSign,
-          consumerSign: consumerSign,
-        });
-        await tx.wait(1);
+        await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
+          this.network.getSdk().stateChannel.checkpoint(
+            {
+              channelId: id,
+              isFinal: isFinal,
+              spent: channel.remote,
+              indexerSign: indexerSign,
+              consumerSign: consumerSign,
+            },
+            overrides
+          )
+        );
         channel.onchain = channel.remote;
         channel.spent = channel.remote;
       }
@@ -309,7 +326,8 @@ export class PaygService {
 
       return this.savePub(channel, PaygEvent.State);
     } catch (e) {
-      logger.error(`Failed to update state channel ${id} with error: ${e}`);
+      // FIXME: remove comment
+      // logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
   }
 
@@ -323,14 +341,18 @@ export class PaygService {
     }
 
     // checkpoint
-    const tx = await this.network.getSdk().stateChannel.checkpoint({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.remote,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
+      this.network.getSdk().stateChannel.checkpoint(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.remote,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
@@ -350,20 +372,23 @@ export class PaygService {
     }
 
     // terminate
-    const tx = await this.network.getSdk().stateChannel.terminate({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.remote,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel terminate', async (overrides) =>
+      this.network.getSdk().stateChannel.terminate(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.remote,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.status = ChannelStatus.TERMINATING;
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
     channel.lastFinal = true;
-    await tx.wait(1);
 
     logger.debug(`Terminated state channel ${id}`);
 
@@ -380,14 +405,18 @@ export class PaygService {
     }
 
     // respond to chain
-    const tx = await this.network.getSdk().stateChannel.respond({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.spent,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel respond', async (overrides) =>
+      this.network.getSdk().stateChannel.respond(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.spent,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;

@@ -13,6 +13,7 @@ import {
 } from '@subql/network-query';
 
 import { gql } from 'apollo-server-core';
+import { timeoutPromiseCatched } from 'src/utils/promise';
 import { Config } from '../configure/configure.module';
 import { getLogger } from '../utils/logger';
 
@@ -27,6 +28,7 @@ export class PaygQueryService {
     this.client = queryClient.networkClient;
   }
 
+  @timeoutPromiseCatched(20000, [])
   async getStateChannels(indexer: string): Promise<StateChannel[]> {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
@@ -54,6 +56,7 @@ export class PaygQueryService {
     }
   }
 
+  @timeoutPromiseCatched(20000, undefined)
   async getStateChannel(id: string): Promise<StateChannel | undefined> {
     try {
       const result = await this.client.query<GetFlexPlanQuery>({
