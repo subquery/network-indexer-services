@@ -303,14 +303,18 @@ export class PaygService {
       // threshold value for checkpoint and spawn to other promise.
       if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
         // send to blockchain.
-        const tx = await this.network.getSdk().stateChannel.checkpoint({
-          channelId: id,
-          isFinal: isFinal,
-          spent: channel.remote,
-          indexerSign: indexerSign,
-          consumerSign: consumerSign,
-        });
-        await tx.wait(1);
+        await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
+          this.network.getSdk().stateChannel.checkpoint(
+            {
+              channelId: id,
+              isFinal: isFinal,
+              spent: channel.remote,
+              indexerSign: indexerSign,
+              consumerSign: consumerSign,
+            },
+            overrides
+          )
+        );
         channel.onchain = channel.remote;
         channel.spent = channel.remote;
       }
@@ -333,14 +337,18 @@ export class PaygService {
     }
 
     // checkpoint
-    const tx = await this.network.getSdk().stateChannel.checkpoint({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.remote,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
+      this.network.getSdk().stateChannel.checkpoint(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.remote,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
@@ -360,20 +368,23 @@ export class PaygService {
     }
 
     // terminate
-    const tx = await this.network.getSdk().stateChannel.terminate({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.remote,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel terminate', async (overrides) =>
+      this.network.getSdk().stateChannel.terminate(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.remote,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.status = ChannelStatus.TERMINATING;
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
     channel.lastFinal = true;
-    await tx.wait(1);
 
     logger.debug(`Terminated state channel ${id}`);
 
@@ -390,14 +401,18 @@ export class PaygService {
     }
 
     // respond to chain
-    const tx = await this.network.getSdk().stateChannel.respond({
-      channelId: channel.id,
-      isFinal: channel.lastFinal,
-      spent: channel.spent,
-      indexerSign: channel.lastIndexerSign,
-      consumerSign: channel.lastConsumerSign,
-    });
-    await tx.wait(1);
+    await this.network.sendTransaction('state channel respond', async (overrides) =>
+      this.network.getSdk().stateChannel.respond(
+        {
+          channelId: channel.id,
+          isFinal: channel.lastFinal,
+          spent: channel.spent,
+          indexerSign: channel.lastIndexerSign,
+          consumerSign: channel.lastConsumerSign,
+        },
+        overrides
+      )
+    );
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;
