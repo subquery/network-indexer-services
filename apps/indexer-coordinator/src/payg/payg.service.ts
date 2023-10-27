@@ -55,9 +55,6 @@ export class PaygService {
     price: string,
     agent: string
   ): Promise<Channel | undefined> {
-    // FIXME: remove this
-    agent = '';
-
     id = BigNumber.from(id).toHexString().toLowerCase();
 
     const hostIndexer = await this.account.getIndexer();
@@ -105,6 +102,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent ? agent : channelEntity.agent;
+    // FIXME: remove comment
     // channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
@@ -181,6 +179,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
+    // FIXME: remove comment
     // channelEntity.price = price.toString();
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
@@ -327,7 +326,8 @@ export class PaygService {
 
       return this.savePub(channel, PaygEvent.State);
     } catch (e) {
-      logger.error(`Failed to update state channel ${id} with error: ${e}`);
+      // FIXME: remove comment
+      // logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
   }
 
