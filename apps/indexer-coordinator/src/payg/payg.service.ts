@@ -105,7 +105,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent ? agent : channelEntity.agent;
-    channelEntity.price = price;
+    // channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -181,7 +181,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    channelEntity.price = price.toString();
+    // channelEntity.price = price.toString();
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
