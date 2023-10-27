@@ -55,6 +55,8 @@ export class PaygService {
     price: string,
     agent: string
   ): Promise<Channel | undefined> {
+    id = BigNumber.from(id).toHexString().toLowerCase();
+
     const hostIndexer = await this.account.getIndexer();
     if (!channelState) {
       return;
@@ -118,10 +120,10 @@ export class PaygService {
     altChannelData?: StateChannelOnNetwork,
     isFinal?: boolean
   ): Promise<Channel | undefined> {
+    id = BigNumber.from(id).toHexString().toLowerCase();
+
     if (!altChannelData) {
-      altChannelData = await this.paygQueryService.getStateChannel(
-        BigNumber.from(id).toHexString()
-      );
+      altChannelData = await this.paygQueryService.getStateChannel(id);
     }
     if (!altChannelData) {
       logger.debug(`State channel not exist on network, remove from db: ${id}`);
@@ -136,7 +138,6 @@ export class PaygService {
       return;
     }
 
-    id = BigNumber.from(id).toString();
     let channelEntity = await this.channelRepo.findOneBy({ id });
 
     if (!channelEntity) {
@@ -168,8 +169,10 @@ export class PaygService {
 
     if (isFinal) {
       channelEntity.status = ChannelStatus.FINALIZED;
+      channelEntity.lastFinal = true;
     } else {
       channelEntity.status = ChannelStatus[status];
+      channelEntity.lastFinal = _isFinal;
     }
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
@@ -181,7 +184,6 @@ export class PaygService {
     channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
     channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
     channelEntity.terminateByIndexer = terminateByIndexer;
-    channelEntity.lastFinal = _isFinal;
 
     const channel = await this.channelRepo.save(channelEntity);
     logger.debug(`Updated state channel from network: ${id}`);
@@ -190,7 +192,7 @@ export class PaygService {
   }
 
   async channel(channelId: string): Promise<Channel | undefined> {
-    const id = channelId.toLowerCase();
+    const id = BigNumber.from(channelId).toHexString().toLowerCase();
     let channel = await this.channelRepo.findOneBy({ id });
 
     if (!channel) {
@@ -209,7 +211,7 @@ export class PaygService {
       return;
     }
 
-    const id = channelId.toLowerCase();
+    const id = BigNumber.from(channelId).toHexString().toLowerCase();
 
     const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
@@ -238,7 +240,7 @@ export class PaygService {
       id,
       channelState,
       channelPrice.toString(),
-      ''
+      altChannelData?.agent
     );
     return channel;
   }
@@ -252,6 +254,14 @@ export class PaygService {
 
     return this.channelRepo.find({
       where: [{ lastFinal: false }, { expiredAt: MoreThan(now) }],
+    });
+  }
+
+  async getChannelsForSync(): Promise<Channel[]> {
+    const now = Math.floor(Date.now() / 1000);
+
+    return this.channelRepo.find({
+      where: [{ expiredAt: MoreThan(now) }],
     });
   }
 

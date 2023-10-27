@@ -55,11 +55,9 @@ export class PaygSyncService implements OnApplicationBootstrap {
           break syncing;
         }
         const stateChannels = await this.paygQueryService.getStateChannels(hostIndexer);
-        const localAliveChannels = await this.paygService.getAliveChannels();
+        const localAliveChannels = await this.paygService.getChannelsForSync();
 
-        const stateChannelIds = stateChannels.map((stateChannel) =>
-          BigNumber.from(stateChannel.id).toString()
-        );
+        const stateChannelIds = stateChannels.map((stateChannel) => stateChannel.id);
         const localAliveChannelIds = localAliveChannels.map((channel) => channel.id);
 
         const mappedLocalAliveChannels: Record<string, Channel> = {};
@@ -69,7 +67,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
         const closedChannelIds = localAliveChannelIds.filter((id) => !stateChannelIds.includes(id));
         for (const id of closedChannelIds) {
-          if (BigNumber.from(id).toString() !== id) {
+          if (BigNumber.from(id).toHexString().toLowerCase() !== id) {
             await this.channelRepo.delete(id);
             continue;
           }
@@ -83,7 +81,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         }
 
         for (const stateChannel of stateChannels) {
-          const id = BigNumber.from(stateChannel.id).toString();
+          const id = stateChannel.id;
           if (this.compareChannel(mappedLocalAliveChannels[id], stateChannel)) {
             logger.debug(`State channel is up to date: ${id}`);
             continue;
@@ -154,25 +152,30 @@ export class PaygSyncService implements OnApplicationBootstrap {
           terminateByIndexer: false,
         } as StateChannelOnChain.ChannelStateStructOutput;
 
-        void this.syncOpen(channelId.toString(), channelState, price.toString(), agent);
+        void this.syncOpen(
+          channelId.toHexString().toLowerCase(),
+          channelState,
+          price.toString(),
+          agent
+        );
       }
     );
 
     stateChannel.on('ChannelExtend', (channelId, expiredAt) => {
-      void this.syncExtend(channelId.toString(), expiredAt.toNumber());
+      void this.syncExtend(channelId.toHexString().toLowerCase(), expiredAt.toNumber());
     });
 
     stateChannel.on('ChannelFund', (channelId, total) => {
-      void this.syncFund(channelId.toString(), total.toString());
+      void this.syncFund(channelId.toHexString().toLowerCase(), total.toString());
     });
 
     stateChannel.on('ChannelCheckpoint', (channelId, spent) => {
-      void this.syncCheckpoint(channelId.toString(), spent.toString());
+      void this.syncCheckpoint(channelId.toHexString().toLowerCase(), spent.toString());
     });
 
     stateChannel.on('ChannelTerminate', (channelId, spent, terminatedAt, terminateByIndexer) => {
       void this.syncTerminate(
-        channelId.toString(),
+        channelId.toHexString().toLowerCase(),
         spent.toString(),
         terminatedAt.toNumber(),
         terminateByIndexer
@@ -180,7 +183,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     });
 
     stateChannel.on('ChannelFinalize', (channelId, total, remain) => {
-      void this.syncFinalize(channelId.toString(), total, remain);
+      void this.syncFinalize(channelId.toHexString().toLowerCase(), total, remain);
     });
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
