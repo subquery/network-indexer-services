@@ -102,8 +102,9 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent ? agent : channelEntity.agent;
-    // FIXME: remove comment
+    // FIXME
     // channelEntity.price = price;
+    channelEntity.price = '0';
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -179,8 +180,9 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    // FIXME: remove comment
+    // FIXME
     // channelEntity.price = price.toString();
+    channelEntity.price = '0';
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
