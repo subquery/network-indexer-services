@@ -94,6 +94,7 @@ export class PaygService {
         onchain: '0',
         remote: '0',
         lastFinal: false,
+        spent: spent.toString(),
       });
     }
 
@@ -104,7 +105,7 @@ export class PaygService {
     channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
-    channelEntity.spent = spent.toString();
+    channelEntity.onchain = spent.toString();
     channelEntity.expiredAt = expiredAt.toNumber();
     channelEntity.terminatedAt = terminatedAt.toNumber();
     channelEntity.terminateByIndexer = terminateByIndexer;
