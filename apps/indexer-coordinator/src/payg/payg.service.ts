@@ -55,6 +55,9 @@ export class PaygService {
     price: string,
     agent: string
   ): Promise<Channel | undefined> {
+    // FIXME: remove this
+    agent = '';
+
     id = BigNumber.from(id).toHexString().toLowerCase();
 
     const hostIndexer = await this.account.getIndexer();
