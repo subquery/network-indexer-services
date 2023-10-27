@@ -107,7 +107,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
       channel.status === ChannelStatus[status] &&
       channel.agent === agent &&
       channel.total === total.toString() &&
-      channel.spent === spent.toString() &&
+      channel.onchain === spent.toString() &&
       channel.price === price.toString()
     );
   }
