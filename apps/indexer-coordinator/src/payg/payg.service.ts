@@ -44,6 +44,15 @@ export class PaygService {
     return this.network.getSdk().stateChannel.channelPrice(id);
   }
 
+  async channelConsumerFromContract(id: BigNumber): Promise<string> {
+    try {
+      return this.network.getSdk().consumerHost.channelConsumer(id);
+    } catch (e) {
+      console.debug(`Failed to get consumer of channel ${id}: ${e}`);
+      return undefined;
+    }
+  }
+
   async channelPriceFromNetwork(id: BigNumber): Promise<BigNumber> {
     const channel = await this.paygQueryService.getStateChannel(id.toHexString());
     return channel?.price ? BigNumber.from(channel.price) : undefined;
@@ -53,7 +62,7 @@ export class PaygService {
     id: string,
     channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
-    agent: string
+    consumer: string
   ): Promise<Channel | undefined> {
     id = BigNumber.from(id).toHexString().toLowerCase();
 
@@ -74,7 +83,6 @@ export class PaygService {
     const {
       status,
       indexer,
-      consumer,
       total,
       spent,
       expiredAt,
@@ -82,6 +90,15 @@ export class PaygService {
       deploymentId,
       terminateByIndexer,
     } = channelState;
+
+    let agent: string;
+
+    if (consumer) {
+      agent = channelState.consumer;
+    } else {
+      consumer = channelState.consumer;
+      agent = '';
+    }
 
     let channelEntity = await this.channelRepo.findOneBy({ id });
 
@@ -101,10 +118,8 @@ export class PaygService {
     channelEntity.status = status;
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
-    channelEntity.agent = agent ? agent : channelEntity.agent;
-    // FIXME
-    // channelEntity.price = price;
-    channelEntity.price = '0';
+    channelEntity.agent = agent;
+    channelEntity.price = price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -180,9 +195,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    // FIXME
-    // channelEntity.price = price.toString();
-    channelEntity.price = '0';
+    channelEntity.price = price.toString();
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -241,11 +254,13 @@ export class PaygService {
       return;
     }
 
+    const consumer = await this.channelConsumerFromContract(BigNumber.from(id));
+
     const channel = await this.updateChannelFromContract(
       id,
       channelState,
       channelPrice.toString(),
-      altChannelData?.agent
+      consumer
     );
     return channel;
   }
@@ -328,8 +343,7 @@ export class PaygService {
 
       return this.savePub(channel, PaygEvent.State);
     } catch (e) {
-      // FIXME: remove comment
-      // logger.error(`Failed to update state channel ${id} with error: ${e}`);
+      logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
   }
 

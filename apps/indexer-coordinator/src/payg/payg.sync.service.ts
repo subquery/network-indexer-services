@@ -135,7 +135,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         let [agent, consumer] = ['', _consumer];
         try {
           consumer = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
-          agent = consumer;
+          agent = _consumer;
         } catch {
           logger.debug(`Channel created by user: ${consumer}`);
         }
@@ -143,7 +143,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         const channelState: StateChannelOnChain.ChannelStateStructOutput = {
           status: ChannelStatus.OPEN,
           indexer: indexer,
-          consumer: consumer,
+          consumer: _consumer,
           total: total,
           spent: BigNumber.from(0),
           expiredAt: expiredAt,
@@ -156,7 +156,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
           channelId.toHexString().toLowerCase(),
           channelState,
           price.toString(),
-          agent
+          consumer
         );
       }
     );
@@ -197,13 +197,13 @@ export class PaygSyncService implements OnApplicationBootstrap {
     id: string,
     channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
-    agent: string
+    consumer: string
   ) {
     const channel = await this.paygService.updateChannelFromContract(
       id,
       channelState,
       price,
-      agent
+      consumer
     );
     if (!channel) return;
 
