@@ -156,7 +156,13 @@ pub async fn proxy_request(
             },
             Err(err) => Err(json!(err.to_string())),
         },
-        Err(err) => Err(json!(err.to_string())),
+        Err(err) => match res.text().await {
+            Ok(data) => match serde_json::from_str(&data) {
+                Ok(data) => Ok(data),
+                Err(_err) => Ok(json!(data)),
+            },
+            Err(_) => Err(json!(err.to_string())),
+        },
     }
 }
 
