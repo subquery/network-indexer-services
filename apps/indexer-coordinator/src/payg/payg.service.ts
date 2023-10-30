@@ -280,9 +280,11 @@ export class PaygService {
   async getChannelsForSync(): Promise<Channel[]> {
     const now = Math.floor(Date.now() / 1000);
 
-    return this.channelRepo.find({
-      where: [{ expiredAt: MoreThan(now) }],
-    });
+    return this.channelRepo
+      .createQueryBuilder('channel')
+      .where('channel.expiredAt > :now', { now })
+      .orWhere('channel.lastFinal = false')
+      .getMany();
   }
 
   async update(
