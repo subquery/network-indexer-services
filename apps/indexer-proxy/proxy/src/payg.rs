@@ -480,7 +480,14 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
 
             // spent = max(cache_spent - (cache_coordi - spent), spent)
             let fixed = state_cache.spent - state_cache.coordi + spent;
+            if fixed != spent {
+                warn!(
+                    "Fixed spent: {}, proxy spent: {}, coordinator old: {}, coordinator new: {}",
+                    fixed, state_cache.spent, state_cache.coordi, spent
+                );
+            }
             state_cache.spent = std::cmp::max(fixed, spent);
+            state_cache.coordi = spent;
 
             state_cache
         } else {
