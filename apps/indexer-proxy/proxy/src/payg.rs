@@ -354,6 +354,10 @@ pub async fn query_state(
     }
 
     if local_prev > remote_prev + price * conflict {
+        warn!(
+            "CONFLICT: local_prev: {}, remote_prev: {}, price: {}, conflict: {}",
+            local_prev, remote_prev, price, conflict
+        );
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
     }
