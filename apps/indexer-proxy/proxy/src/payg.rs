@@ -488,16 +488,15 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 );
             }
             state_cache.remote = std::cmp::max(state_cache.remote, remote);
-
-            // spent = max(cache_spent - (cache_coordi - spent), spent)
-            let fixed = state_cache.spent - state_cache.coordi + spent;
-            if fixed != spent {
-                warn!(
-                    "Fixed spent: {}, proxy spent: {}, coordinator old: {}, coordinator new: {}",
-                    fixed, state_cache.spent, state_cache.coordi, spent
-                );
-            }
-            state_cache.spent = std::cmp::max(fixed, spent);
+            // spent = max(cache_spent - (spent - cache_coordi), spent)
+            // let fixed = state_cache.spent + state_cache.coordi - spent;
+            // if fixed != spent {
+            //     warn!(
+            //         "Fixed spent: {}, proxy spent: {}, coordinator old: {}, coordinator new: {}",
+            //         fixed, state_cache.spent, state_cache.coordi, spent
+            //     );
+            // }
+            state_cache.spent = std::cmp::max(state_cache.spent, spent);
             warn!(
                 "=== DEBUG: spent: {}, remote: {} ==== Coordinator!",
                 state_cache.spent, state_cache.remote
