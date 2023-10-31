@@ -305,7 +305,7 @@ export class PaygService {
         throw new Error(`project payg not exist: ${channel.deploymentId}`);
       }
 
-      // const threshold = BigInt(projectPayg.threshold);
+      const threshold = BigInt(projectPayg.threshold);
       const currentRemote = BigInt(spent);
       const prevSpent = BigInt(channel.spent);
       const prevRemote = BigInt(channel.remote);
@@ -322,24 +322,24 @@ export class PaygService {
         channel.lastConsumerSign = consumerSign;
       }
 
-      // // threshold value for checkpoint and spawn to other promise.
-      // if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
-      //   // send to blockchain.
-      //   await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
-      //     this.network.getSdk().stateChannel.checkpoint(
-      //       {
-      //         channelId: id,
-      //         isFinal: isFinal,
-      //         spent: channel.remote,
-      //         indexerSign: indexerSign,
-      //         consumerSign: consumerSign,
-      //       },
-      //       overrides
-      //     )
-      //   );
-      //   channel.onchain = channel.remote;
-      //   channel.spent = channel.remote;
-      // }
+      // threshold value for checkpoint and spawn to other promise.
+      if ((currentRemote - BigInt(channel.onchain)) / price > threshold) {
+        // send to blockchain.
+        await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
+          this.network.getSdk().stateChannel.checkpoint(
+            {
+              channelId: id,
+              isFinal: isFinal,
+              spent: channel.remote,
+              indexerSign: indexerSign,
+              consumerSign: consumerSign,
+            },
+            overrides
+          )
+        );
+        channel.onchain = channel.remote;
+        channel.spent = channel.remote;
+      }
 
       logger.debug(`Updated state channel ${id}`);
 
