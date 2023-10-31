@@ -314,6 +314,8 @@ export class PaygService {
       // add a price every time
       channel.spent = (prevSpent + price).toString();
 
+      logger.warn(`channel.spent: ${channel.spent}, spent: ${spent}, price: ${price}`);
+
       // if remote is less than own, just add spent
       if (prevRemote < currentRemote) {
         channel.remote = spent;
