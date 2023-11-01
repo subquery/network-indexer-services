@@ -49,13 +49,13 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, project_query_raw, Project};
 
-struct StateCache {
-    price: U256,
-    total: U256,
-    spent: U256,
-    remote: U256,
+pub struct StateCache {
+    pub price: U256,
+    pub total: U256,
+    pub spent: U256,
+    pub remote: U256,
     coordi: U256,
-    conflict: i64,
+    pub conflict: i64,
     signer: ConsumerType,
 }
 
@@ -294,21 +294,7 @@ pub async fn query_state(
     let (_, signer) = state.recover()?;
 
     // check channel state
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let mut keybytes = [0u8; 32];
-    state.channel_id.to_little_endian(&mut keybytes);
-    let keyname = format!("{}-channel", hex::encode(keybytes));
-    let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
-    drop(conn_lock);
-    if cache_bytes.is_err() {
-        return Err(Error::ServiceException(1021));
-    }
-    let cache_raw_bytes = cache_bytes.unwrap();
-    if cache_raw_bytes.is_empty() {
-        return Err(Error::Expired(1054));
-    }
-    let mut state_cache = StateCache::from_bytes(&cache_raw_bytes)?;
+    let (mut state_cache, keyname) = fetch_channel_cache(state.channel_id).await?;
 
     // check signer
     if !state_cache.signer.contains(&signer) {
@@ -369,6 +355,7 @@ pub async fn query_state(
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;
 
+    let conn = redis();
     let mut conn_lock = conn.lock().await;
     if state.is_final {
         // close
@@ -550,4 +537,23 @@ where
             .map(AuthPayg)
             .map_err(|_| Error::InvalidAuthHeader(1031))
     }
+}
+
+pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String)> {
+    let mut keybytes = [0u8; 32];
+    channel_id.to_little_endian(&mut keybytes);
+    let keyname = format!("{}-channel", hex::encode(keybytes));
+
+    let conn = redis();
+    let mut conn_lock = conn.lock().await;
+    let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
+    drop(conn_lock);
+    if cache_bytes.is_err() {
+        return Err(Error::ServiceException(1021));
+    }
+    let cache_raw_bytes = cache_bytes.unwrap();
+    if cache_raw_bytes.is_empty() {
+        return Err(Error::Expired(1054));
+    }
+    Ok((StateCache::from_bytes(&cache_raw_bytes)?, keyname))
 }
