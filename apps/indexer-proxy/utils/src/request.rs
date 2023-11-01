@@ -146,16 +146,22 @@ pub async fn proxy_request(
     };
 
     match res {
-        Ok(res) => match res.error_for_status() {
-            Ok(res) => match res.text().await {
+        Ok(res) => {
+            let res_status = res.status();
+            let value = match res.text().await {
                 Ok(data) => match serde_json::from_str(&data) {
-                    Ok(data) => Ok(data),
-                    Err(_err) => Ok(json!(data)),
+                    Ok(data) => data,
+                    Err(_err) => json!(data),
                 },
-                Err(err) => Err(json!(err.to_string())),
-            },
-            Err(err) => Err(json!(err.to_string())),
-        },
+                Err(_err) => json!(format!("Status: {}", res_status)),
+            };
+
+            if res_status.is_success() {
+                Ok(value)
+            } else {
+                Err(value)
+            }
+        }
         Err(err) => Err(json!(err.to_string())),
     }
 }
