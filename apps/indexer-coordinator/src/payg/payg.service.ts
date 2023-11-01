@@ -345,7 +345,7 @@ export class PaygService {
 
       logger.debug(`Updated state channel ${id}`);
 
-      return this.savePub(channel, PaygEvent.State);
+      return this.saveAndPublish(channel, PaygEvent.State);
     } catch (e) {
       logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
@@ -379,7 +379,7 @@ export class PaygService {
 
     logger.debug(`Checkpointed state channel ${id}`);
 
-    return this.savePub(channel, PaygEvent.State);
+    return this.saveAndPublish(channel, PaygEvent.State);
   }
 
   async terminate(id: string): Promise<Channel> {
@@ -412,7 +412,7 @@ export class PaygService {
 
     logger.debug(`Terminated state channel ${id}`);
 
-    return this.savePub(channel, PaygEvent.State);
+    return this.saveAndPublish(channel, PaygEvent.State);
   }
 
   async respond(id: string): Promise<Channel> {
@@ -444,10 +444,10 @@ export class PaygService {
 
     logger.debug(`Responded state channel ${id}`);
 
-    return this.savePub(channel, PaygEvent.State);
+    return this.saveAndPublish(channel, PaygEvent.State);
   }
 
-  async savePub(channel: Channel, event: PaygEvent): Promise<Channel> {
+  async saveAndPublish(channel: Channel, event: PaygEvent): Promise<Channel> {
     const new_channel = await this.channelRepo.save(channel);
     await this.pubSub.publish(event, { channelChanged: new_channel });
     return new_channel;

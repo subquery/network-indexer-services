@@ -208,7 +208,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     );
     if (!channel) return;
 
-    await this.paygService.savePub(channel, PaygEvent.Opened);
+    await this.paygService.saveAndPublish(channel, PaygEvent.Opened);
   }
 
   async syncExtend(id: string, expiredAt: number) {
@@ -217,7 +217,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     channel.expiredAt = expiredAt;
     channel.terminatedAt = expiredAt;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncFund(id: string, total: string) {
@@ -225,7 +225,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.total = total;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncCheckpoint(id: string, onchain: string) {
@@ -233,7 +233,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.onchain = onchain;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncTerminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean) {
@@ -246,7 +246,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.terminateByIndexer = byIndexer;
     channel.lastFinal = true;
 
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncFinalize(id: string, total: BigNumber, remain: BigNumber) {
@@ -257,7 +257,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.status = ChannelStatus.FINALIZED;
     channel.lastFinal = true;
 
-    await this.paygService.savePub(channel, PaygEvent.Stopped);
+    await this.paygService.saveAndPublish(channel, PaygEvent.Stopped);
   }
 
   async syncLabor(deploymentId: string, indexer: string, total: string, createdAt: number) {
