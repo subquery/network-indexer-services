@@ -118,6 +118,81 @@ export class ProjectAdvancedConfig implements IProjectAdvancedConfig {
   memory: number;
 }
 
+export interface IProjectNetworkEndpoints {
+  nodeEndpoint?: string;
+  queryEndpoint?: string;
+}
+
+export interface IProjectRpcEndpoints {
+  // [key: string]: string;
+  httpEndpoint?: string;
+  wsEndpoint?: string;
+}
+
+export interface IProjectConfig {}
+class ProjectConfig implements IProjectConfig {
+  [key: string]: any;
+}
+export interface IProjectNetworkConfig extends IProjectConfig {
+  networkEndpoints: string[];
+  networkDictionary: string;
+  nodeVersion: string;
+  queryVersion: string;
+  usePrimaryNetworkEndpoint?: boolean;
+  poiEnabled: boolean;
+
+  // purgeDB?: boolean;
+  timeout: number;
+  worker: number;
+  batchSize: number;
+  cache: number;
+  cpu: number;
+  memory: number;
+}
+
+export interface IProjectRpcConfig extends IProjectConfig {
+  rpcFamily: string;
+}
+
+@InputType('ProjectNetworkConfigInput')
+@ObjectType('ProjectNetworkConfig')
+export class ProjectNetworkConfig implements IProjectNetworkConfig {
+  @Field((type) => [String])
+  networkEndpoints: string[];
+  @Field()
+  networkDictionary: string;
+  @Field()
+  nodeVersion: string;
+  @Field()
+  queryVersion: string;
+  @Field({ nullable: true, defaultValue: true })
+  usePrimaryNetworkEndpoint?: boolean;
+  @Field()
+  poiEnabled: boolean;
+
+  @Field({ nullable: true, defaultValue: false })
+  purgeDB?: boolean;
+  @Field(() => Int)
+  timeout: number;
+  @Field(() => Int)
+  worker: number;
+  @Field(() => Int)
+  batchSize: number;
+  @Field(() => Int)
+  cache: number;
+  @Field(() => Int)
+  cpu: number;
+  @Field(() => Int)
+  memory: number;
+}
+
+@InputType('ProjectRpcConfigInput')
+@ObjectType('ProjectRpcConfig')
+export class ProjectRpcConfig implements IProjectRpcConfig {
+  @Field()
+  rpcFamily: string;
+}
+
 const defaultBaseConfig: IProjectBaseConfig = {
   networkEndpoints: [],
   networkDictionary: '',
@@ -137,6 +212,34 @@ const defaultAdvancedConfig: IProjectAdvancedConfig = {
   memory: 2046,
 };
 
+const defaultNetworkConfig: IProjectNetworkConfig = {
+  networkEndpoints: [],
+  networkDictionary: '',
+  nodeVersion: '',
+  queryVersion: '',
+  usePrimaryNetworkEndpoint: true,
+
+  // purgeDB: false,
+  poiEnabled: true,
+  timeout: 1800,
+  worker: 2,
+  batchSize: 50,
+  cache: 300,
+  cpu: 2,
+  memory: 2046,
+};
+
+const defaultRpcConfig: IProjectRpcConfig = {
+  rpcFamily: '',
+};
+
+export enum ProjectType {
+  SUBQUERY = 'subquery',
+  RPC = 'rpc',
+  SUBGRAPH = 'subgraph',
+  SUBQUERY_DICTIONARY = 'subquery_dictionary',
+}
+
 @Entity()
 @ObjectType()
 export class ProjectEntity {
@@ -154,11 +257,19 @@ export class ProjectEntity {
 
   @Column({ default: '' })
   @Field()
+  projectType: ProjectType;
+
+  @Column({ default: '' })
+  @Field()
   nodeEndpoint: string; // endpoint of indexer service
 
   @Column({ default: '' })
   @Field()
   queryEndpoint: string; // endpoint of query service
+
+  @Column('jsonb', { default: {} })
+  @Field()
+  serviceEndpoints: IProjectNetworkEndpoints | IProjectRpcEndpoints;
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
@@ -172,16 +283,29 @@ export class ProjectEntity {
   @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
 
+  @Column('jsonb', { default: {} })
+  @Field(() => ProjectConfig)
+  projectConfig: IProjectNetworkConfig | IProjectRpcConfig;
+
   // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
   @BeforeInsert()
   setupDefaultValuesOnInsert: () => void = () => {
     this.chainType = this.chainType ?? '';
     this.nodeEndpoint = this.nodeEndpoint ?? '';
     this.queryEndpoint = this.queryEndpoint ?? '';
+    this.serviceEndpoints = this.serviceEndpoints ?? {};
     // @ts-ignore
     this.details = this.details ?? {};
     this.baseConfig = this.baseConfig ?? defaultBaseConfig;
     this.advancedConfig = this.advancedConfig ?? defaultAdvancedConfig;
+    if (this.projectType === ProjectType.SUBQUERY) {
+      this.projectConfig = this.projectConfig ?? defaultNetworkConfig;
+    } else if (this.projectType === 'rpc') {
+      this.projectConfig = this.projectConfig ?? defaultRpcConfig;
+    } else {
+      // @ts-ignore
+      this.projectConfig = this.projectConfig ?? {};
+    }
   };
 }
 
