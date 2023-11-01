@@ -369,11 +369,6 @@ pub async fn query_state(
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;
 
-    warn!(
-        "=== DEBUG: spent: {}, remote: {} ==== Proxy!",
-        state_cache.spent, state_cache.remote
-    );
-
     let mut conn_lock = conn.lock().await;
     if state.is_final {
         // close
@@ -497,10 +492,6 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             //     );
             // }
             state_cache.spent = std::cmp::max(state_cache.spent, spent);
-            warn!(
-                "=== DEBUG: spent: {}, remote: {} ==== Coordinator!",
-                state_cache.spent, state_cache.remote
-            );
             state_cache.coordi = spent;
 
             state_cache
