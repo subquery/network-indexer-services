@@ -101,10 +101,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
   compareChannel(channel: Channel, channelState: StateChannelOnNetwork): boolean {
     if (!channel || !channelState) return false;
 
-    const { status, agent, total, spent, price } = channelState;
+    const { status, consumer, agent, total, spent, price } = channelState;
 
     return (
       channel.status === ChannelStatus[status] &&
+      channel.consumer === consumer &&
       channel.agent === agent &&
       channel.total === total.toString() &&
       channel.onchain === spent.toString() &&
@@ -135,7 +136,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         let [agent, consumer] = ['', _consumer];
         try {
           consumer = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
-          agent = consumer;
+          agent = _consumer;
         } catch {
           logger.debug(`Channel created by user: ${consumer}`);
         }
@@ -143,7 +144,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
         const channelState: StateChannelOnChain.ChannelStateStructOutput = {
           status: ChannelStatus.OPEN,
           indexer: indexer,
-          consumer: consumer,
+          consumer: _consumer,
           total: total,
           spent: BigNumber.from(0),
           expiredAt: expiredAt,
@@ -156,7 +157,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
           channelId.toHexString().toLowerCase(),
           channelState,
           price.toString(),
-          agent
+          consumer
         );
       }
     );
@@ -197,17 +198,17 @@ export class PaygSyncService implements OnApplicationBootstrap {
     id: string,
     channelState: StateChannelOnChain.ChannelStateStructOutput,
     price: string,
-    agent: string
+    consumer: string
   ) {
     const channel = await this.paygService.updateChannelFromContract(
       id,
       channelState,
       price,
-      agent
+      consumer
     );
     if (!channel) return;
 
-    await this.paygService.savePub(channel, PaygEvent.Opened);
+    await this.paygService.saveAndPublish(channel, PaygEvent.Opened);
   }
 
   async syncExtend(id: string, expiredAt: number) {
@@ -216,7 +217,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
 
     channel.expiredAt = expiredAt;
     channel.terminatedAt = expiredAt;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncFund(id: string, total: string) {
@@ -224,7 +225,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.total = total;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncCheckpoint(id: string, onchain: string) {
@@ -232,7 +233,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.onchain = onchain;
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncTerminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean) {
@@ -245,7 +246,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.terminateByIndexer = byIndexer;
     channel.lastFinal = true;
 
-    await this.paygService.savePub(channel, PaygEvent.State);
+    await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }
 
   async syncFinalize(id: string, total: BigNumber, remain: BigNumber) {
@@ -256,7 +257,7 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.status = ChannelStatus.FINALIZED;
     channel.lastFinal = true;
 
-    await this.paygService.savePub(channel, PaygEvent.Stopped);
+    await this.paygService.saveAndPublish(channel, PaygEvent.Stopped);
   }
 
   async syncLabor(deploymentId: string, indexer: string, total: string, createdAt: number) {
