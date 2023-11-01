@@ -26,7 +26,7 @@ If you directly download the docker-compose.yml file, you can use the following 
 ```bash
 # Make sure you are currently in the same directory as the docker-compose.yml file.
 mkdir ./ipfs
-curl -o ./ipfs/ipfs.sh https://raw.githubusercontent.com/subquery/indexer-services/kepler/ipfs/ipfs.sh
+curl -o ./ipfs/ipfs.sh https://raw.githubusercontent.com/subquery/network-indexer-services/main/deploy/ipfs/ipfs.sh
 ```
 
 ## Things to update when using Grafana Dashboard
