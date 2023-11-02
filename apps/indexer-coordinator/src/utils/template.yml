@@ -73,6 +73,7 @@ services:
       - --playground
       - --indexer=http://node_{{projectID}}:{{servicePort}}
       - --port={{servicePort}}
+      - --query-limit=2000
 
 networks:
   default:

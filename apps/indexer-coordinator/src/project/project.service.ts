@@ -97,7 +97,13 @@ export class ProjectService {
   }
 
   async getAlivePaygs(): Promise<Payg[]> {
-    return this.paygRepo.find({ where: { price: Not('') } });
+    // return this.paygRepo.find({ where: { price: Not('') } });
+    // FIXME remove this
+    const paygs = await this.paygRepo.find({ where: { price: Not('') } });
+    for (const payg of paygs) {
+      payg.overflow = 10000;
+    }
+    return paygs;
   }
 
   /// restore projects not `TERMINATED`

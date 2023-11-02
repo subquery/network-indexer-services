@@ -354,6 +354,10 @@ pub async fn query_state(
     }
 
     if local_prev > remote_prev + price * conflict {
+        warn!(
+            "CONFLICT: local_prev: {}, remote_prev: {}, price: {}, conflict: {}",
+            local_prev, remote_prev, price, conflict
+        );
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
     }
@@ -472,11 +476,23 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
         let state_cache = if let Some(mut state_cache) = state_cache_op {
             state_cache.total = total;
+            if state_cache.remote != remote {
+                warn!(
+                    "Proxy remote: {}, coordinator remote: {}",
+                    state_cache.remote, remote
+                );
+            }
             state_cache.remote = std::cmp::max(state_cache.remote, remote);
-
-            // spent = max(cache_spent - (cache_coordi - spent), spent)
-            let fixed = state_cache.spent - state_cache.coordi + spent;
-            state_cache.spent = std::cmp::max(fixed, spent);
+            // spent = max(cache_spent - (spent - cache_coordi), spent)
+            // let fixed = state_cache.spent + state_cache.coordi - spent;
+            // if fixed != spent {
+            //     warn!(
+            //         "Fixed spent: {}, proxy spent: {}, coordinator old: {}, coordinator new: {}",
+            //         fixed, state_cache.spent, state_cache.coordi, spent
+            //     );
+            // }
+            state_cache.spent = std::cmp::max(state_cache.spent, spent);
+            state_cache.coordi = spent;
 
             state_cache
         } else {
