@@ -41,7 +41,8 @@ export class PaygService {
   }
 
   async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
-    return this.network.getSdk().stateChannel.channelPrice(id);
+    // FIXME return this.network.getSdk().stateChannel.channelPrice(id);
+    return BigNumber.from('0');
   }
 
   async channelConsumerFromContract(id: BigNumber): Promise<string> {

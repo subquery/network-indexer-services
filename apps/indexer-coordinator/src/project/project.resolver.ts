@@ -12,21 +12,23 @@ import {
   LogType,
   MetadataType,
   Project,
-  ProjectAdvancedConfig,
-  ProjectBaseConfig,
   Payg,
   PaygConfig,
   ProjectDetails,
+  IProjectSubqueryConfig,
+  IProjectRpcConfig,
 } from './project.model';
+import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 
 @Resolver(() => Project)
 export class ProjectResolver {
   constructor(
     private projectService: ProjectService,
+    private projectRpcService: ProjectRpcService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
-    private pubSub: SubscriptionService,
+    private pubSub: SubscriptionService
   ) {}
 
   @Query(() => [String])
@@ -71,23 +73,37 @@ export class ProjectResolver {
   }
 
   @Mutation(() => [Project])
-  removeProject(@Args('id') id: string) {
-    return this.projectService.removeProject(id);
+  removeSuqueryProject(@Args('id') id: string) {
+    return this.projectService.removeSuqueryProject(id);
+  }
+
+  @Mutation(() => [Project])
+  removeRpcProject(@Args('id') id: string) {
+    return this.projectRpcService.removeRpcProject(id);
   }
 
   // project management
   @Mutation(() => Project)
-  startProject(
+  startSubqueryProject(
     @Args('id') id: string,
-    @Args('baseConfig') baseConfig: ProjectBaseConfig,
-    @Args('advancedConfig') advancedConfig: ProjectAdvancedConfig,
+    @Args('projectConfig') projectConfig: IProjectSubqueryConfig
   ) {
-    return this.projectService.startProject(id, baseConfig, advancedConfig);
+    return this.projectService.startSubqueryProject(id, projectConfig);
   }
 
   @Mutation(() => Project)
-  stopProject(@Args('id') id: string) {
-    return this.projectService.stopProject(id);
+  startRpcProject(@Args('id') id: string, @Args('projectConfig') projectConfig: IProjectRpcConfig) {
+    return this.projectRpcService.startRpcProject(id, projectConfig);
+  }
+
+  @Mutation(() => Project)
+  stopSubqueryProject(@Args('id') id: string) {
+    return this.projectService.stopSubqueryProject(id);
+  }
+
+  @Mutation(() => Project)
+  stopRpcProject(@Args('id') id: string) {
+    return this.projectRpcService.stopRpcProject(id);
   }
 
   @Mutation(() => Project)

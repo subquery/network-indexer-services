@@ -8,6 +8,18 @@ export enum MmrStoreType {
   file = 'file',
 }
 
+export enum ProjectType {
+  Subquery = 'Subquery',
+  ChainRpc = 'ChainRpc',
+  // TODO Subgraph = 'Subgraph',
+  SubqueryDictionary = 'SubqueryDictionary',
+}
+
+export enum SubqueryEndpointType {
+  Node = 'nodeEndpoint',
+  Query = 'queryEndpoint',
+}
+
 export type TemplateType = {
   deploymentID: string;
   projectID: string;

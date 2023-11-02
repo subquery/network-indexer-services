@@ -4,7 +4,10 @@
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
-import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
+import {
+  IProjectConfig,
+  Project,
+} from '../project/project.model';
 import { argv } from '../yargs';
 
 // manifest types
@@ -40,15 +43,10 @@ export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' |
 export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
 
-export function projectConfigChanged(
-  project: Project,
-  baseConfig: ProjectBaseConfig,
-  advancedConfig: ProjectAdvancedConfig
-): boolean {
+export function projectConfigChanged(project: Project, projectConfig: IProjectConfig): boolean {
   return (
-    advancedConfig.purgeDB ||
-    !isEqual(project.baseConfig, baseConfig) ||
-    !isEqual(project.advancedConfig, advancedConfig)
+    projectConfig.purgeDB ||
+    !isEqual(project.projectConfig, projectConfig)
   );
 }
 

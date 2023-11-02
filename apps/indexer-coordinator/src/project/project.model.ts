@@ -3,6 +3,7 @@
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
+import { ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -27,6 +28,30 @@ export class ProjectInfo {
   updatedTimestamp: string;
   @Field({ nullable: true })
   metadata: string;
+}
+
+@ObjectType('ProjectManifest')
+export class ProjectManifest {
+  @Field()
+  kind: string;
+  @Field()
+  specVersion: string;
+  @Field()
+  version: string;
+  @Field()
+  name: string;
+  @Field()
+  chainId: string;
+  @Field()
+  genesisHash: string;
+  @Field()
+  rpcFamily: string[];
+  @Field()
+  clientName: string;
+  @Field()
+  clientVersion: string;
+  @Field()
+  nodeType: string;
 }
 
 @ObjectType('Log')
@@ -129,11 +154,13 @@ export interface IProjectRpcEndpoints {
   wsEndpoint?: string;
 }
 
-export interface IProjectConfig {}
+export interface IProjectConfig {
+  [key: string]: any;
+}
 class ProjectConfig implements IProjectConfig {
   [key: string]: any;
 }
-export interface IProjectNetworkConfig extends IProjectConfig {
+export interface IProjectSubqueryConfig extends IProjectConfig {
   networkEndpoints: string[];
   networkDictionary: string;
   nodeVersion: string;
@@ -141,7 +168,7 @@ export interface IProjectNetworkConfig extends IProjectConfig {
   usePrimaryNetworkEndpoint?: boolean;
   poiEnabled: boolean;
 
-  // purgeDB?: boolean;
+  purgeDB?: boolean;
   timeout: number;
   worker: number;
   batchSize: number;
@@ -151,12 +178,12 @@ export interface IProjectNetworkConfig extends IProjectConfig {
 }
 
 export interface IProjectRpcConfig extends IProjectConfig {
-  rpcFamily: string;
+  rpcFamily: string[];
 }
 
 @InputType('ProjectNetworkConfigInput')
 @ObjectType('ProjectNetworkConfig')
-export class ProjectNetworkConfig implements IProjectNetworkConfig {
+export class ProjectNetworkConfig implements IProjectSubqueryConfig {
   @Field((type) => [String])
   networkEndpoints: string[];
   @Field()
@@ -190,7 +217,7 @@ export class ProjectNetworkConfig implements IProjectNetworkConfig {
 @ObjectType('ProjectRpcConfig')
 export class ProjectRpcConfig implements IProjectRpcConfig {
   @Field()
-  rpcFamily: string;
+  rpcFamily: string[];
 }
 
 const defaultBaseConfig: IProjectBaseConfig = {
@@ -212,7 +239,7 @@ const defaultAdvancedConfig: IProjectAdvancedConfig = {
   memory: 2046,
 };
 
-const defaultNetworkConfig: IProjectNetworkConfig = {
+const defaultNetworkConfig: IProjectSubqueryConfig = {
   networkEndpoints: [],
   networkDictionary: '',
   nodeVersion: '',
@@ -230,15 +257,8 @@ const defaultNetworkConfig: IProjectNetworkConfig = {
 };
 
 const defaultRpcConfig: IProjectRpcConfig = {
-  rpcFamily: '',
+  rpcFamily: [],
 };
-
-export enum ProjectType {
-  SUBQUERY = 'subquery',
-  RPC = 'rpc',
-  SUBGRAPH = 'subgraph',
-  SUBQUERY_DICTIONARY = 'subquery_dictionary',
-}
 
 @Entity()
 @ObjectType()
@@ -269,11 +289,15 @@ export class ProjectEntity {
 
   @Column('jsonb', { default: {} })
   @Field()
-  serviceEndpoints: IProjectNetworkEndpoints | IProjectRpcEndpoints;
+  serviceEndpoints: Record<string, string>;
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
   details: ProjectInfo;
+
+  @Column('jsonb', { default: {} })
+  @Field(() => ProjectManifest)
+  manifest: ProjectManifest;
 
   @Column('jsonb', { default: defaultBaseConfig })
   @Field(() => ProjectBaseConfig)
@@ -285,7 +309,7 @@ export class ProjectEntity {
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectConfig)
-  projectConfig: IProjectNetworkConfig | IProjectRpcConfig;
+  projectConfig: IProjectSubqueryConfig | IProjectRpcConfig;
 
   // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
   @BeforeInsert()
@@ -296,11 +320,13 @@ export class ProjectEntity {
     this.serviceEndpoints = this.serviceEndpoints ?? {};
     // @ts-ignore
     this.details = this.details ?? {};
+    // @ts-ignore
+    this.manifest = this.manifest ?? {};
     this.baseConfig = this.baseConfig ?? defaultBaseConfig;
     this.advancedConfig = this.advancedConfig ?? defaultAdvancedConfig;
-    if (this.projectType === ProjectType.SUBQUERY) {
+    if (this.projectType === ProjectType.Subquery) {
       this.projectConfig = this.projectConfig ?? defaultNetworkConfig;
-    } else if (this.projectType === 'rpc') {
+    } else if (this.projectType === ProjectType.ChainRpc) {
       this.projectConfig = this.projectConfig ?? defaultRpcConfig;
     } else {
       // @ts-ignore

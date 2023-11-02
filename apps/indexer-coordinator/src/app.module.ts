@@ -19,11 +19,11 @@ import { CoreModule } from './core/core.module';
 import { dbOption } from './data-source';
 import { DBModule } from './db/db.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { MonitorModule } from './monitor/monitor.module';
 import { MonitorController } from './monitor.controller';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
   imports: [
