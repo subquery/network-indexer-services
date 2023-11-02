@@ -75,8 +75,8 @@ pub async fn start_server(host: &str, port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
-        // `GET /payg/0x00...955X` goes to get channel state
-        .route("/payg/:channel", get(payg_state))
+        // `GET /payg-state/0x00...955X` goes to get channel state
+        .route("/payg-state/:channel", get(payg_state))
         // `Get /metadata/Qm...955X` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
