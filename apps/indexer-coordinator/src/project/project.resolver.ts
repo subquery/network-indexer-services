@@ -15,8 +15,8 @@ import {
   Payg,
   PaygConfig,
   ProjectDetails,
-  IProjectSubqueryConfig,
-  IProjectRpcConfig,
+  ProjectSubqueryConfig,
+  ProjectRpcConfig,
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
@@ -43,18 +43,21 @@ export class ProjectResolver {
   }
 
   @Query(() => ProjectDetails)
-  project(@Args('id') id: string) {
-    return this.projectService.getProjectDetails(id);
+  async project(@Args('id') id: string): Promise<ProjectDetails> {
+    const projectDetail = await this.projectService.getProjectDetails(id);
+    return this.projectService.projectOrmToGql([projectDetail])[0];
   }
 
   @Query(() => [ProjectDetails])
-  getProjects() {
-    return this.projectService.getProjects();
+  async getProjects(): Promise<ProjectDetails[]> {
+    const projectDetails = await this.projectService.getProjects();
+    return this.projectService.projectOrmToGql(projectDetails);
   }
 
   @Query(() => [Project])
-  getAliveProjects() {
-    return this.projectService.getAliveProjects();
+  async getAliveProjects(): Promise<Project[]> {
+    const projects = await this.projectService.getAliveProjects();
+    return this.projectService.projectOrmToGql(projects);
   }
 
   @Query(() => [Payg])
@@ -68,45 +71,55 @@ export class ProjectResolver {
   }
 
   @Mutation(() => Project)
-  addProject(@Args('id') id: string) {
-    return this.projectService.addProject(id);
+  async addProject(@Args('id') id: string): Promise<Project> {
+    const project = await this.projectService.addProject(id);
+    return this.projectService.projectOrmToGql([project])[0];
   }
 
   @Mutation(() => [Project])
-  removeSuqueryProject(@Args('id') id: string) {
-    return this.projectService.removeSuqueryProject(id);
+  async removeSuqueryProject(@Args('id') id: string): Promise<Project[]> {
+    const projects = await this.projectService.removeSubqueryProject(id);
+    return this.projectService.projectOrmToGql(projects);
   }
 
   @Mutation(() => [Project])
-  removeRpcProject(@Args('id') id: string) {
-    return this.projectRpcService.removeRpcProject(id);
+  async removeRpcProject(@Args('id') id: string): Promise<Project[]> {
+    const projects = await this.projectRpcService.removeRpcProject(id);
+    return this.projectService.projectOrmToGql(projects);
   }
 
   // project management
   @Mutation(() => Project)
-  startSubqueryProject(
+  async startSubqueryProject(
     @Args('id') id: string,
-    @Args('projectConfig') projectConfig: IProjectSubqueryConfig
-  ) {
-    return this.projectService.startSubqueryProject(id, projectConfig);
+    @Args('projectConfig') projectConfig: ProjectSubqueryConfig
+  ): Promise<Project> {
+    const project = await this.projectService.startSubqueryProject(id, projectConfig);
+    return this.projectService.projectOrmToGql([project])[0];
   }
 
   @Mutation(() => Project)
-  startRpcProject(@Args('id') id: string, @Args('projectConfig') projectConfig: IProjectRpcConfig) {
-    return this.projectRpcService.startRpcProject(id, projectConfig);
+  async startRpcProject(
+    @Args('id') id: string,
+    @Args('projectConfig') projectConfig: ProjectRpcConfig
+  ): Promise<Project> {
+    const project = await this.projectRpcService.startRpcProject(id, projectConfig);
+    return this.projectService.projectOrmToGql([project])[0];
   }
 
   @Mutation(() => Project)
-  stopSubqueryProject(@Args('id') id: string) {
-    return this.projectService.stopSubqueryProject(id);
+  async stopSubqueryProject(@Args('id') id: string): Promise<Project> {
+    const project = await this.projectService.stopSubqueryProject(id);
+    return this.projectService.projectOrmToGql([project])[0];
   }
 
   @Mutation(() => Project)
-  stopRpcProject(@Args('id') id: string) {
-    return this.projectRpcService.stopRpcProject(id);
+  async stopRpcProject(@Args('id') id: string): Promise<Project> {
+    const project = await this.projectRpcService.stopRpcProject(id);
+    return this.projectService.projectOrmToGql([project])[0];
   }
 
-  @Mutation(() => Project)
+  @Mutation(() => Payg)
   updateProjectPayg(@Args('id') id: string, @Args('paygConfig') paygConfig: PaygConfig) {
     return this.projectService.updateProjectPayg(id, paygConfig);
   }

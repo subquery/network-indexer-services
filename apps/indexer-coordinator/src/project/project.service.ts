@@ -340,7 +340,7 @@ export class ProjectService {
     return this.updateProjectStatus(id, DesiredStatus.RUNNING);
   }
 
-  async removeSuqueryProject(id: string): Promise<Project[]> {
+  async removeSubqueryProject(id: string): Promise<Project[]> {
     getLogger('project').info(`remove project: ${id}`);
 
     const project = await this.getProject(id);
@@ -378,5 +378,21 @@ export class ProjectService {
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);
     return { log };
+  }
+
+  projectOrmToGql<T extends ProjectEntity>(projects: T[]): T[] {
+    return projects.map((project) => {
+      project.serviceEndpointsStr = JSON.stringify(project.serviceEndpoints);
+      project.projectConfigStr = JSON.stringify(project.projectConfig);
+      return project;
+    });
+  }
+
+  projectGqlToOrm<T extends ProjectEntity>(projects: T[]): T[] {
+    return projects.map((project) => {
+      project.serviceEndpoints = JSON.parse(project.serviceEndpointsStr);
+      project.projectConfig = JSON.parse(project.projectConfigStr);
+      return project;
+    });
   }
 }

@@ -44,7 +44,7 @@ export class ProjectManifest {
   chainId: string;
   @Field()
   genesisHash: string;
-  @Field()
+  @Field((type) => [String])
   rpcFamily: string[];
   @Field()
   clientName: string;
@@ -149,7 +149,6 @@ export interface IProjectNetworkEndpoints {
 }
 
 export interface IProjectRpcEndpoints {
-  // [key: string]: string;
   httpEndpoint?: string;
   wsEndpoint?: string;
 }
@@ -157,9 +156,9 @@ export interface IProjectRpcEndpoints {
 export interface IProjectConfig {
   [key: string]: any;
 }
-class ProjectConfig implements IProjectConfig {
-  [key: string]: any;
-}
+
+export class ProjectConfig implements IProjectConfig {}
+
 export interface IProjectSubqueryConfig extends IProjectConfig {
   networkEndpoints: string[];
   networkDictionary: string;
@@ -177,13 +176,9 @@ export interface IProjectSubqueryConfig extends IProjectConfig {
   memory: number;
 }
 
-export interface IProjectRpcConfig extends IProjectConfig {
-  rpcFamily: string[];
-}
-
-@InputType('ProjectNetworkConfigInput')
-@ObjectType('ProjectNetworkConfig')
-export class ProjectNetworkConfig implements IProjectSubqueryConfig {
+@InputType('ProjectSubqueryConfigInput')
+@ObjectType('ProjectSubqueryConfig')
+export class ProjectSubqueryConfig implements IProjectSubqueryConfig {
   @Field((type) => [String])
   networkEndpoints: string[];
   @Field()
@@ -213,10 +208,14 @@ export class ProjectNetworkConfig implements IProjectSubqueryConfig {
   memory: number;
 }
 
+export interface IProjectRpcConfig extends IProjectConfig {
+  rpcFamily: string[];
+}
+
 @InputType('ProjectRpcConfigInput')
 @ObjectType('ProjectRpcConfig')
 export class ProjectRpcConfig implements IProjectRpcConfig {
-  @Field()
+  @Field(() => [String])
   rpcFamily: string[];
 }
 
@@ -288,8 +287,9 @@ export class ProjectEntity {
   queryEndpoint: string; // endpoint of query service
 
   @Column('jsonb', { default: {} })
-  @Field()
   serviceEndpoints: Record<string, string>;
+  @Field(() => String, { nullable: true })
+  serviceEndpointsStr: string;
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
@@ -308,8 +308,9 @@ export class ProjectEntity {
   advancedConfig: ProjectAdvancedConfig;
 
   @Column('jsonb', { default: {} })
-  @Field(() => ProjectConfig)
-  projectConfig: IProjectSubqueryConfig | IProjectRpcConfig;
+  projectConfig: ProjectConfig;
+  @Field(() => String, { nullable: true })
+  projectConfigStr: string;
 
   // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
   @BeforeInsert()

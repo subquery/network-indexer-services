@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import axios from 'axios';
 import { DesiredStatus } from 'src/core/types';
+import { ProjectType, SubqueryEndpointType } from 'src/project/types';
 import { DockerService } from '../core/docker.service';
 import { ProjectService } from '../project/project.service';
 import { nodeContainer } from '../utils/docker';
@@ -30,10 +31,16 @@ export class MonitorService {
         this.nodeUnhealthTimesMap.delete(project.id);
         continue;
       }
+      if (project.projectType !== ProjectType.Subquery) {
+        continue;
+      }
       try {
-        const result = await axios.get(`${project.nodeEndpoint}/health`, {
-          timeout: 5000,
-        });
+        const result = await axios.get(
+          `${project.serviceEndpoints[SubqueryEndpointType.Node]}/health`,
+          {
+            timeout: 5000,
+          }
+        );
         if (result.status === 200) {
           this.nodeUnhealthTimesMap.set(project.id, 0);
         } else {
