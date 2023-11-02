@@ -99,6 +99,7 @@ services:
   ipfs:
     image: ipfs/kubo:v0.20.0
     container_name: indexer_ipfs
+    restart: always
     environment:
       IPFS_PROFILE: server
     volumes:
