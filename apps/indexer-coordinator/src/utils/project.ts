@@ -4,10 +4,7 @@
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
-import {
-  IProjectConfig,
-  Project,
-} from '../project/project.model';
+import { IProjectConfig, Project } from '../project/project.model';
 import { argv } from '../yargs';
 
 // manifest types
@@ -38,16 +35,20 @@ export type PartialIpfsDeploymentManifest = {
   runner?: Runner;
 };
 
-export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
+export type ChainType =
+  | 'near'
+  | 'flare'
+  | 'cosmos'
+  | 'algorand'
+  | 'substrate'
+  | 'ethereum'
+  | 'stellar';
 
 export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
 
 export function projectConfigChanged(project: Project, projectConfig: IProjectConfig): boolean {
-  return (
-    projectConfig.purgeDB ||
-    !isEqual(project.projectConfig, projectConfig)
-  );
+  return projectConfig.purgeDB || !isEqual(project.projectConfig, projectConfig);
 }
 
 // TODO: migrate these logic to client sdk
@@ -63,11 +64,11 @@ function dockerRegistryFromChain(chainType: ChainType): string {
     case 'algorand':
     case 'flare':
     case 'near':
+    case 'stellar':
     case 'ethereum':
-      // TODO: migrate to ``subquerynetwork` host
-      return `onfinality/subql-node-${chainType}`;
+      return `subquerynetwork/subql-node-${chainType}`;
     default:
-      return 'onfinality/subql-node';
+      return 'subquerynetwork/subql-node';
   }
 }
 

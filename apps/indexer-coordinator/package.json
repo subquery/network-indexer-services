@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "1.4.7",
+  "version": "1.9.0",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -46,7 +46,7 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "8.1.4",
     "@subql/common": "^1.0.0",
-    "@subql/contract-sdk": "^0.100.2",
+    "@subql/contract-sdk": "0.100.2",
     "@subql/network-clients": "^0.3.17",
     "@subql/network-query": "0.3.16-0",
     "@subql/utils": "^1.0.0",

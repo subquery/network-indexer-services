@@ -50,24 +50,21 @@ export const createNetworkButtonItems = (onButtonClick: (type: ProjectAction) =>
   [ProjectStatus.NotIndexing]: [],
   [ProjectStatus.Starting]: [],
   [ProjectStatus.Started]: [
-    createButtonItem('Announce Indexing', () => onButtonClick(ProjectAction.AnnounceIndexing)),
-  ],
-  [ProjectStatus.Indexing]: [
     createButtonItem('Announce Ready', () => onButtonClick(ProjectAction.AnnounceReady)),
   ],
   [ProjectStatus.Ready]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
   [ProjectStatus.Terminated]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
   [ProjectStatus.Unhealthy]: [
     createButtonItem('Announce Not Indexing', () =>
-      onButtonClick(ProjectAction.AnnounceNotIndexing)
+      onButtonClick(ProjectAction.AnnounceTerminating)
     ),
   ],
 });
@@ -120,11 +117,10 @@ export const PAYGActionName = {
 export const ProjectActionName = {
   [ProjectAction.StartIndexing]: 'Start Indexing',
   [ProjectAction.RestartProject]: 'Update Indexing',
-  [ProjectAction.AnnounceIndexing]: 'Announce Indexing Project',
   [ProjectAction.AnnounceReady]: 'Publish Indexing to Ready',
   [ProjectAction.StopProject]: 'Stop Project',
   [ProjectAction.RemoveProject]: 'Remove Project',
-  [ProjectAction.AnnounceNotIndexing]: 'Announce Not Indexing Project',
+  [ProjectAction.AnnounceTerminating]: 'Announce Not Indexing Project',
   [ProjectAction.StopIndexing]: 'Stop Indexing',
 };
 
@@ -233,18 +229,6 @@ export const createRemoveProjectSteps = (onRemoveProject: ClickAction) => ({
   ],
 });
 
-export const createAnnounceIndexingSteps = (onSendTransaction: ClickAction) => ({
-  [ProjectAction.AnnounceIndexing]: [
-    {
-      index: 0,
-      title: announce.indexing.title,
-      desc: announce.indexing.desc,
-      buttonTitle: 'Send Transaction',
-      onClick: onSendTransaction,
-    },
-  ],
-});
-
 export const createReadyIndexingSteps = (
   onSendTransaction: ClickAction
 ): Steps<ProjectAction.AnnounceReady> => ({
@@ -261,8 +245,8 @@ export const createReadyIndexingSteps = (
 
 export const createNotIndexingSteps = (
   onSendTransaction: ClickAction
-): Steps<ProjectAction.AnnounceNotIndexing> => ({
-  [ProjectAction.AnnounceNotIndexing]: [
+): Steps<ProjectAction.AnnounceTerminating> => ({
+  [ProjectAction.AnnounceTerminating]: [
     {
       index: 0,
       title: announce.notIndexing.title,

@@ -14,10 +14,11 @@ import { ChainID, isSupportNetwork, SubqueryNetwork } from 'utils/web3';
 
 import { createContainer } from './unstated';
 
+// testnet and kepler has different contract deployment
 const deployments: Record<SubqueryNetwork, ContractDeployment> = {
   testnet: testnetDeployment,
+  // @ts-ignore
   kepler: keplerDeployment,
-  // TODO: FIXME
   // @ts-ignore
   mainnet: mainnetDeployment,
 };

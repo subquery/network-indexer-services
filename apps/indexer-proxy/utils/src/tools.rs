@@ -18,6 +18,7 @@
 
 use crate::traits::Hash;
 use ethers::types::{H256, U256};
+use serde_json::Value;
 
 impl Hash for String {
     fn hash(&self) -> String {
@@ -56,4 +57,17 @@ pub fn u256_hex(a: &U256) -> String {
 pub fn hex_u256(a: &str) -> U256 {
     let bytes = hex::decode(a).unwrap_or(vec![0u8; 32]);
     U256::from_big_endian(&bytes)
+}
+
+pub fn merge_json(a: &mut Value, b: &Value) {
+    match (a, b) {
+        (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
+            for (k, v) in b {
+                merge_json(a.entry(k.clone()).or_insert(Value::Null), v);
+            }
+        }
+        (a, b) => {
+            *a = b.clone();
+        }
+    }
 }

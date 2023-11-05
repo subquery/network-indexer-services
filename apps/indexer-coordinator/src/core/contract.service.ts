@@ -5,8 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { ContractSDK } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
-import { BigNumber, Overrides } from 'ethers';
-import { Wallet, providers } from 'ethers';
+import { BigNumber, Overrides, Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 
 import { Config } from '../configure/configure.module';

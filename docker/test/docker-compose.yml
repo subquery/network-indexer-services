@@ -55,7 +55,7 @@ services:
       - --metrics-token=MetricsToken
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
-      - --service-url=http://indexer_coordinator:8000
+      - --coordinator-endpoint=http://indexer_coordinator:8000
       - --network-endpoint=https://rpc-mumbai.matic.today
       - --redis-endpoint=redis://indexer_cache
     healthcheck:

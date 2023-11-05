@@ -25,6 +25,7 @@ mod auth;
 mod cli;
 mod contracts;
 mod graphql;
+mod metadata;
 mod metrics;
 mod monitor;
 mod p2p;
@@ -40,7 +41,6 @@ use tracing::Level;
 #[tokio::main]
 async fn main() {
     let port = COMMAND.port();
-    let host = COMMAND.host();
     let debug = COMMAND.debug();
 
     let log_filter = if debug { Level::DEBUG } else { Level::WARN };
@@ -52,5 +52,5 @@ async fn main() {
     monitor::listen();
     p2p::listen();
 
-    server::start_server(host, port).await;
+    server::start_server(port).await;
 }

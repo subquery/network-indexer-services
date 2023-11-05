@@ -47,7 +47,7 @@ use crate::contracts::{
 };
 use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
-use crate::project::{get_project, list_projects, project_query_raw, Project};
+use crate::project::{get_project, list_projects, Project};
 
 struct StateCache {
     price: U256,
@@ -219,7 +219,6 @@ pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
     }
 
     Ok(json!({
-        "endpoint": COMMAND.endpoint(),
         "indexer": format!("{:?}", indexer),
         "controller": format!("{:?}", controller.address()),
         "deployments": values,
@@ -281,7 +280,8 @@ pub async fn open_state(body: &Value) -> Result<Value> {
 
 pub async fn query_state(
     project_id: &str,
-    query: &GraphQLQuery,
+    query: String,
+    ep_name: Option<String>,
     state: &Value,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
@@ -363,8 +363,9 @@ pub async fn query_state(
     }
 
     // query the data.
-    let (data, signature) =
-        project_query_raw(project_id, query, MetricsQuery::PAYG, network_type).await?;
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type)
+        .await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;

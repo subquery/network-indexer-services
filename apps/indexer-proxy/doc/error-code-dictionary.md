@@ -9,6 +9,7 @@
 - `1006` - JWT token expired.
 - `1010` - GraphQL query error.
 - `1011` - GraphQL internal error.
+- `1012` - RPC query error.
 - `1020` - Permission deny: missing AUTHORIZATION header.
 - `1021` - Service exception: Redis not work.
 - `1022` - Service exception: chain node provider cannot reach.
@@ -83,3 +84,6 @@
 - `1137` - Serialize: payg price token.
 - `1138` - Serialize: payg price expired.
 - `1139` - Serialize: payg price signature.
+- `1140` - Serialize: subquery's query is invalid.
+- `1200` - Service exception: EVM RPC invalid
+- `1201` - Service exception: EVM RPC last block

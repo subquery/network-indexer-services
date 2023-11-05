@@ -18,7 +18,7 @@
 
 #![deny(warnings)]
 use axum::{
-    extract::{ConnectInfo, Path},
+    extract::{ConnectInfo, Path, Query},
     http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
@@ -28,25 +28,22 @@ use axum::{
 };
 use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
-    request::GraphQLQuery,
 };
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::account::get_indexer;
+use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{merket_price, open_state, query_state, AuthPayg};
-use crate::project::{
-    get_project, project_metadata, project_poi, project_query_raw, project_status,
-};
+use crate::project::get_project;
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -60,7 +57,7 @@ pub struct QueryToken {
     pub token: String,
 }
 
-pub async fn start_server(host: &str, port: u16) {
+pub async fn start_server(port: u16) {
     let app = Router::new()
         // `POST /token` goes to create token for query
         .route("/token", post(generate_token))
@@ -74,17 +71,12 @@ pub async fn start_server(host: &str, port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
-        // `Get /metadata/Qm...955X` goes to query the metadata
+        // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
-        // `Get /poi/Qm...955X/123` goes to query the poi
-        .route("/poi/:deployment/:block", get(poi_block_handler))
-        // `Get /poi/Qm...955X` goes to query the latest block poi
-        .route("/poi/:deployment", get(poi_latest_handler))
+        // `Get /metrics` goes to get the metrics data
         .route("/metrics", get(metrics_handler))
-        // `Get /status/Qm...955X` goes to query the project status
-        .route("/status/:deployment", get(status_handler))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -93,8 +85,7 @@ pub async fn start_server(host: &str, port: u16) {
                 .expose_headers(Any),
         );
 
-    let ip_address: Ipv4Addr = host.parse().unwrap_or(Ipv4Addr::LOCALHOST);
-    let addr = SocketAddr::new(IpAddr::V4(ip_address), port);
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port);
     info!("HTTP server bind: {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -167,11 +158,17 @@ async fn generate_token(
     }
 }
 
+#[derive(Deserialize)]
+struct EpName {
+    ep_name: Option<String>,
+}
+
 async fn query_handler(
     mut headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
     Path(deployment): Path<String>,
-    Json(query): Json<GraphQLQuery>,
+    ep_name: Query<EpName>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     if COMMAND.auth() && deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
@@ -181,13 +178,15 @@ async fn query_handler(
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature) = project_query_raw(
-        &deployment,
-        &query,
-        MetricsQuery::CloseAgreement,
-        MetricsNetwork::HTTP,
-    )
-    .await?;
+    let (data, signature) = get_project(&deployment)
+        .await?
+        .query(
+            body,
+            ep_name.0.ep_name,
+            MetricsQuery::CloseAgreement,
+            MetricsNetwork::HTTP,
+        )
+        .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -237,14 +236,21 @@ async fn payg_query(
     mut headers: HeaderMap,
     AuthPayg(state): AuthPayg,
     Path(deployment): Path<String>,
-    Json(query): Json<GraphQLQuery>,
+    ep_name: Query<EpName>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature, state_data) =
-        query_state(&deployment, &query, &state, MetricsNetwork::HTTP).await?;
+    let (data, signature, state_data) = query_state(
+        &deployment,
+        body,
+        ep_name.0.ep_name,
+        &state,
+        MetricsNetwork::HTTP,
+    )
+    .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -279,29 +285,25 @@ async fn payg_query(
     Ok(build_response(body, headers))
 }
 
-async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
-    project_metadata(&deployment, MetricsNetwork::HTTP)
-        .await
-        .map(Json)
+#[derive(Deserialize)]
+struct PoiBlock {
+    block: Option<u64>,
 }
 
-async fn poi_block_handler(
-    Path((deployment, block)): Path<(String, u64)>,
+async fn metadata_handler(
+    Path(deployment): Path<String>,
+    block: Query<PoiBlock>,
 ) -> Result<Json<Value>, Error> {
-    project_poi(&deployment, Some(block), MetricsNetwork::HTTP)
-        .await
-        .map(Json)
-}
-
-async fn poi_latest_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
-    project_poi(&deployment, None, MetricsNetwork::HTTP)
+    get_project(&deployment)
+        .await?
+        .metadata(block.0.block, MetricsNetwork::HTTP)
         .await
         .map(Json)
 }
 
 async fn healthy_handler() -> Result<Json<Value>, Error> {
-    let indexer = get_indexer().await;
-    Ok(Json(json!({ "indexer": indexer })))
+    let info = indexer_healthy().await;
+    Ok(Json(info))
 }
 
 async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
@@ -321,12 +323,6 @@ async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
             .body("".to_owned())
             .unwrap()
     }
-}
-
-async fn status_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
-    project_status(&deployment, MetricsNetwork::HTTP)
-        .await
-        .map(Json)
 }
 
 fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> {
