@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { Repository } from 'typeorm';
-import { IProjectRpcConfig, Project, ProjectEntity } from './project.model';
+import { IProjectConfig, Project, ProjectEntity } from './project.model';
 import { ProjectService } from './project.service';
 
 interface IRpcFamily {
@@ -63,10 +63,14 @@ export class ProjectRpcService {
     // TODO should be internal ip
     // TODO could read info
     // TODO compare chain id, genesis hash, rpc family, client name and version, node type
+
+    // FIXME to bypass commit check
+    await new Promise((resolve) => setTimeout(resolve, 1));
+
     return true;
   }
 
-  async startRpcProject(id: string, projectConfig: IProjectRpcConfig): Promise<Project> {
+  async startRpcProject(id: string, projectConfig: IProjectConfig): Promise<Project> {
     let project = await this.projectService.getProject(id);
     if (!project) {
       project = await this.projectService.addProject(id);

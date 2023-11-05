@@ -9,6 +9,8 @@ import { ProjectType } from './types';
 @ObjectType('ProjectInfo')
 export class ProjectInfo {
   @Field()
+  networkProjectId: string;
+  @Field()
   name: string;
   @Field()
   owner: string;
@@ -44,7 +46,7 @@ export class ProjectManifest {
   chainId: string;
   @Field()
   genesisHash: string;
-  @Field((type) => [String])
+  @Field(() => [String])
   rpcFamily: string[];
   @Field()
   clientName: string;
@@ -110,7 +112,7 @@ export interface IProjectAdvancedConfig {
 @InputType('ProjectBaseConfigInput')
 @ObjectType('ProjectBaseConfig')
 export class ProjectBaseConfig implements IProjectBaseConfig {
-  @Field((type) => [String])
+  @Field(() => [String])
   networkEndpoints: string[];
   @Field()
   networkDictionary: string;
@@ -153,20 +155,19 @@ export interface IProjectRpcEndpoints {
   wsEndpoint?: string;
 }
 
+// export interface IProjectConfig {
+//   [key: string]: any;
+// }
+
 export interface IProjectConfig {
-  [key: string]: any;
-}
-
-export class ProjectConfig implements IProjectConfig {}
-
-export interface IProjectSubqueryConfig extends IProjectConfig {
+  // subquery base config
   networkEndpoints: string[];
   networkDictionary: string;
   nodeVersion: string;
   queryVersion: string;
   usePrimaryNetworkEndpoint?: boolean;
   poiEnabled: boolean;
-
+  // subquery advanced config
   purgeDB?: boolean;
   timeout: number;
   worker: number;
@@ -174,12 +175,15 @@ export interface IProjectSubqueryConfig extends IProjectConfig {
   cache: number;
   cpu: number;
   memory: number;
+  // rpc config
+  rpcFamily: string[];
 }
 
-@InputType('ProjectSubqueryConfigInput')
-@ObjectType('ProjectSubqueryConfig')
-export class ProjectSubqueryConfig implements IProjectSubqueryConfig {
-  @Field((type) => [String])
+@InputType('ProjectConfigInput')
+@ObjectType('ProjectConfig')
+export class ProjectConfig implements IProjectConfig {
+  // subquery base config
+  @Field(() => [String])
   networkEndpoints: string[];
   @Field()
   networkDictionary: string;
@@ -191,7 +195,7 @@ export class ProjectSubqueryConfig implements IProjectSubqueryConfig {
   usePrimaryNetworkEndpoint?: boolean;
   @Field()
   poiEnabled: boolean;
-
+  // subquery advanced config
   @Field({ nullable: true, defaultValue: false })
   purgeDB?: boolean;
   @Field(() => Int)
@@ -206,18 +210,21 @@ export class ProjectSubqueryConfig implements IProjectSubqueryConfig {
   cpu: number;
   @Field(() => Int)
   memory: number;
-}
-
-export interface IProjectRpcConfig extends IProjectConfig {
-  rpcFamily: string[];
-}
-
-@InputType('ProjectRpcConfigInput')
-@ObjectType('ProjectRpcConfig')
-export class ProjectRpcConfig implements IProjectRpcConfig {
+  // rpc config
   @Field(() => [String])
   rpcFamily: string[];
 }
+
+// export interface IProjectRpcConfig extends IProjectConfig {
+//   rpcFamily: string[];
+// }
+
+// @InputType('ProjectRpcConfigInput')
+// @ObjectType('ProjectRpcConfig')
+// export class ProjectRpcConfig implements IProjectRpcConfig {
+//   @Field(() => [String])
+//   rpcFamily: string[];
+// }
 
 const defaultBaseConfig: IProjectBaseConfig = {
   networkEndpoints: [],
@@ -238,14 +245,15 @@ const defaultAdvancedConfig: IProjectAdvancedConfig = {
   memory: 2046,
 };
 
-const defaultNetworkConfig: IProjectSubqueryConfig = {
+const defaultProjectConfig: IProjectConfig = {
+  // subquery base config
   networkEndpoints: [],
   networkDictionary: '',
   nodeVersion: '',
   queryVersion: '',
   usePrimaryNetworkEndpoint: true,
-
-  // purgeDB: false,
+  // subquery advanced config
+  purgeDB: false,
   poiEnabled: true,
   timeout: 1800,
   worker: 2,
@@ -253,11 +261,25 @@ const defaultNetworkConfig: IProjectSubqueryConfig = {
   cache: 300,
   cpu: 2,
   memory: 2046,
-};
-
-const defaultRpcConfig: IProjectRpcConfig = {
+  // rpc config
   rpcFamily: [],
 };
+
+// const defaultRpcConfig: IProjectRpcConfig = {
+//   rpcFamily: [],
+// };
+
+@ObjectType()
+export class KeyValuePair {
+  constructor(key: string, value: string) {
+    this.key = key;
+    this.value = value;
+  }
+  @Field()
+  key: string;
+  @Field()
+  value: string;
+}
 
 @Entity()
 @ObjectType()
@@ -274,7 +296,7 @@ export class ProjectEntity {
   @Field()
   chainType: string;
 
-  @Column({ default: '' })
+  @Column({ default: ProjectType.SUBQUERY })
   @Field()
   projectType: ProjectType;
 
@@ -287,9 +309,8 @@ export class ProjectEntity {
   queryEndpoint: string; // endpoint of query service
 
   @Column('jsonb', { default: {} })
-  serviceEndpoints: Record<string, string>;
-  @Field(() => String, { nullable: true })
-  serviceEndpointsStr: string;
+  @Field(() => [KeyValuePair], { nullable: true })
+  serviceEndpoints: KeyValuePair[];
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
@@ -318,21 +339,22 @@ export class ProjectEntity {
     this.chainType = this.chainType ?? '';
     this.nodeEndpoint = this.nodeEndpoint ?? '';
     this.queryEndpoint = this.queryEndpoint ?? '';
-    this.serviceEndpoints = this.serviceEndpoints ?? {};
+    this.serviceEndpoints = this.serviceEndpoints ?? [];
     // @ts-ignore
     this.details = this.details ?? {};
     // @ts-ignore
     this.manifest = this.manifest ?? {};
     this.baseConfig = this.baseConfig ?? defaultBaseConfig;
     this.advancedConfig = this.advancedConfig ?? defaultAdvancedConfig;
-    if (this.projectType === ProjectType.Subquery) {
-      this.projectConfig = this.projectConfig ?? defaultNetworkConfig;
-    } else if (this.projectType === ProjectType.ChainRpc) {
-      this.projectConfig = this.projectConfig ?? defaultRpcConfig;
-    } else {
-      // @ts-ignore
-      this.projectConfig = this.projectConfig ?? {};
-    }
+    // if (this.projectType === ProjectType.SUBQUERY) {
+    //   this.projectConfig = this.projectConfig ?? defaultProjectConfig;
+    // } else if (this.projectType === ProjectType.RPC) {
+    //   this.projectConfig = this.projectConfig ?? defaultRpcConfig;
+    // } else {
+    //   // @ts-ignore
+    //   this.projectConfig = this.projectConfig ?? {};
+    // }
+    this.projectConfig = this.projectConfig ?? defaultProjectConfig;
   };
 }
 

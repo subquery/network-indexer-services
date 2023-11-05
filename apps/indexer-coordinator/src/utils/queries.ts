@@ -9,7 +9,7 @@ export const GET_DEPLOYMENT: DocumentNode = gql`
   query GetDeployment($id: String!) {
     deployment(id: $id) {
       id
-      version
+      # version
       createdTimestamp
       project {
         id

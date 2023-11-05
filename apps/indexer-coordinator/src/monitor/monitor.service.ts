@@ -31,7 +31,7 @@ export class MonitorService {
         this.nodeUnhealthTimesMap.delete(project.id);
         continue;
       }
-      if (project.projectType !== ProjectType.Subquery) {
+      if (project.projectType !== ProjectType.SUBQUERY) {
         continue;
       }
       try {

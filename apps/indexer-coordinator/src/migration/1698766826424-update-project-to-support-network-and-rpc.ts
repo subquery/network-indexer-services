@@ -8,7 +8,7 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "project_entity" ADD "projectType" character varying NOT NULL DEFAULT ''`
+      `ALTER TABLE "project_entity" ADD "projectType" integer NOT NULL DEFAULT '0'`
     );
     await queryRunner.query(
       `ALTER TABLE "project_entity" ADD "serviceEndpoints" jsonb NOT NULL DEFAULT '{}'`

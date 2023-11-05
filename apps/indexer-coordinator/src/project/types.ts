@@ -9,10 +9,8 @@ export enum MmrStoreType {
 }
 
 export enum ProjectType {
-  Subquery = 'Subquery',
-  ChainRpc = 'ChainRpc',
-  // TODO Subgraph = 'Subgraph',
-  SubqueryDictionary = 'SubqueryDictionary',
+  SUBQUERY,
+  RPC,
 }
 
 export enum SubqueryEndpointType {

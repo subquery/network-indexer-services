@@ -34,7 +34,8 @@ import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
 import {
-  IProjectSubqueryConfig,
+  IProjectConfig,
+  KeyValuePair,
   LogType,
   Payg,
   PaygConfig,
@@ -133,7 +134,7 @@ export class ProjectService {
   }
 
   /// add project
-  async getProjectInfo(id: string): Promise<ProjectInfo> {
+  async getProjectDetailsFromNetwork(id: string): Promise<ProjectInfo> {
     const networkClient = this.client.networkClient;
     const result = await networkClient.query({
       // @ts-ignore
@@ -151,6 +152,7 @@ export class ProjectService {
     return {
       createdTimestamp: project.createdTimestamp,
       updatedTimestamp: deployment.createdTimestamp,
+      networkProjectId: project.id,
       owner: project.owner,
       ...metadata,
       ...version,
@@ -180,15 +182,18 @@ export class ProjectService {
     if (project) return project;
     // const indexer = await this.account.getIndexer();
     // const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
-    const details = await this.getProjectInfo(id);
-    const manifest = await this.getProjectManifest(details.codeUrl);
-    const projectType = ProjectType[manifest.kind];
+    const details = await this.getProjectDetailsFromNetwork(id);
+    const infos = await this.contract
+      .getSdk()
+      .projectRegistry.projectInfos(details.networkProjectId);
+    const manifest = await this.getProjectManifest(id);
     const projectEntity = this.projectRepo.create({
       id: id.trim(),
-      projectType,
       status: DesiredStatus.STOPPED,
+      // chainType: '',
+      projectType: infos.projectType as ProjectType,
       details,
-      manifest: manifest,
+      manifest,
       projectConfig: {},
     });
 
@@ -205,7 +210,7 @@ export class ProjectService {
   }
 
   // project management
-  async startSubqueryProject(id: string, projectConfig: IProjectSubqueryConfig): Promise<Project> {
+  async startSubqueryProject(id: string, projectConfig: IProjectConfig): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
@@ -229,7 +234,7 @@ export class ProjectService {
     return await this.createAndStartProject(id, projectConfig);
   }
 
-  private setDefaultConfigValue(projectConfig: IProjectSubqueryConfig) {
+  private setDefaultConfigValue(projectConfig: IProjectConfig) {
     if (projectConfig.usePrimaryNetworkEndpoint === undefined) {
       projectConfig.usePrimaryNetworkEndpoint = true;
     }
@@ -246,10 +251,7 @@ export class ProjectService {
     return MmrStoreType.file;
   }
 
-  async configToTemplate(
-    project: Project,
-    projectConfig: IProjectSubqueryConfig
-  ): Promise<TemplateType> {
+  async configToTemplate(project: Project, projectConfig: IProjectConfig): Promise<TemplateType> {
     const servicePort = this.portService.getAvailablePort();
     const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
@@ -278,7 +280,7 @@ export class ProjectService {
     return item;
   }
 
-  async createAndStartProject(id: string, projectConfig: IProjectSubqueryConfig) {
+  async createAndStartProject(id: string, projectConfig: IProjectConfig) {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
@@ -308,10 +310,18 @@ export class ProjectService {
 
     const nodeConfig = await nodeConfigs(id);
     project.projectConfig = projectConfig;
-    project.serviceEndpoints = {
-      [SubqueryEndpointType.Node]: nodeEndpoint(id, templateItem.servicePort),
-      [SubqueryEndpointType.Query]: queryEndpoint(id, templateItem.servicePort),
-    };
+    // project.serviceEndpoints = {
+    //   [SubqueryEndpointType.Node]: nodeEndpoint(id, templateItem.servicePort),
+    //   [SubqueryEndpointType.Query]: queryEndpoint(id, templateItem.servicePort),
+    // };
+    // project.serviceEndpoints= new Map([
+    //   [SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)],
+    //   [SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)],
+    // ]);
+    project.serviceEndpoints = [
+      new KeyValuePair(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
+      new KeyValuePair(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
+    ];
     // project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     // project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
     project.status = DesiredStatus.RUNNING;
@@ -378,21 +388,5 @@ export class ProjectService {
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);
     return { log };
-  }
-
-  projectOrmToGql<T extends ProjectEntity>(projects: T[]): T[] {
-    return projects.map((project) => {
-      project.serviceEndpointsStr = JSON.stringify(project.serviceEndpoints);
-      project.projectConfigStr = JSON.stringify(project.projectConfig);
-      return project;
-    });
-  }
-
-  projectGqlToOrm<T extends ProjectEntity>(projects: T[]): T[] {
-    return projects.map((project) => {
-      project.serviceEndpoints = JSON.parse(project.serviceEndpointsStr);
-      project.projectConfig = JSON.parse(project.projectConfigStr);
-      return project;
-    });
   }
 }
