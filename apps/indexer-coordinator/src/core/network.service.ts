@@ -72,8 +72,7 @@ export class NetworkService implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     void (async () => {
       await this.doNetworkActions();
-      // FIXME
-      // await this.removeExpiredAgreements();
+      await this.removeExpiredAgreements();
     })();
   }
 
@@ -86,7 +85,7 @@ export class NetworkService implements OnApplicationBootstrap {
   //   const projects = await this.projectRepo.find();
   //   const indexingProjects = await Promise.all(
   //     projects.map(async (project) => {
-  //       const { status } = await this.contractService.deploymentStatusByIndexer(
+  //       const status = await this.contractService.deploymentStatusByIndexer(
   //         project.id,
   //         indexer
   //       );
@@ -101,29 +100,25 @@ export class NetworkService implements OnApplicationBootstrap {
   //   );
   // }
 
-  // FIXME
-  // private async updateExpiredAgreements() {
-  //   logger.debug(`updateExpiredAgreements start`);
-  //   const indexer = await this.accountService.getIndexer();
-  //   const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
-  //   for (let i = 0; i < agreementCount.toNumber(); i++) {
-  //     const agreementId = await this.sdk.serviceAgreementRegistry.closedServiceAgreementIds(
-  //       indexer,
-  //       i
-  //     );
-  //     const agreementExpired =
-  //       await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
+  private async updateExpiredAgreements() {
+    logger.debug(`updateExpiredAgreements start`);
+    const indexer = await this.accountService.getIndexer();
+    const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(indexer);
+    for (let i = 0; i < agreementCount.toNumber(); i++) {
+      const agreementId = await this.sdk.serviceAgreementExtra.getServiceAgreementId(indexer, i);
+      const agreementExpired =
+        await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
 
-  //     if (agreementExpired) {
-  //       this.expiredAgreements.add(agreementId.toString());
-  //     }
-  //   }
-  //   logger.debug(
-  //     `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(
-  //       ','
-  //     )}`
-  //   );
-  // }
+      if (agreementExpired) {
+        this.expiredAgreements.add(agreementId.toString());
+      }
+    }
+    logger.debug(
+      `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(
+        ','
+      )}`
+    );
+  }
 
   async syncContractConfig(): Promise<boolean> {
     try {
@@ -162,43 +157,44 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-  // FIXME
-  // @Cron(CronExpression.EVERY_10_MINUTES)
-  // async removeExpiredAgreements() {
-  //   logger.debug(`removeExpiredAgreements start`);
-  //   if (!(await this.checkControllerReady())) return;
-  //   try {
-  //     await this.updateExpiredAgreements();
-  //   } catch {
-  //     getLogger('network').error('failed to update expired service agreements');
-  //   }
-  //   if (this.expiredAgreements.size === 0) return;
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async removeExpiredAgreements() {
+    logger.debug(`removeExpiredAgreements start`);
+    if (!(await this.checkControllerReady())) return;
+    try {
+      await this.updateExpiredAgreements();
+    } catch {
+      getLogger('network').error('failed to update expired service agreements');
+    }
+    if (this.expiredAgreements.size === 0) return;
 
-  //   try {
-  //     const indexer = await this.accountService.getIndexer();
-  //     const agreementCount = await this.sdk.serviceAgreementRegistry.indexerCsaLength(indexer);
-  //     for (let i = 0; i < agreementCount.toNumber(); i++) {
-  //       const agreementId = await this.sdk.serviceAgreementRegistry
-  //         .closedServiceAgreementIds(indexer, i)
-  //         .then((id) => id.toNumber());
+    try {
+      const indexer = await this.accountService.getIndexer();
+      const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(
+        indexer
+      );
+      for (let i = 0; i < agreementCount.toNumber(); i++) {
+        const agreementId = await this.sdk.serviceAgreementExtra
+          .getServiceAgreementId(indexer, i)
+          .then((id) => id.toNumber());
 
-  //       if (this.expiredAgreements.has(agreementId.toString())) {
-  //         await this.sendTransaction(
-  //           'remove expired service agreement',
-  //           (overrides) =>
-  //             this.sdk.serviceAgreementRegistry.clearEndedAgreement(indexer, i, overrides),
-  //           `service agreement: ${agreementId}`
-  //         );
+        if (this.expiredAgreements.has(agreementId.toString())) {
+          await this.sendTransaction(
+            'remove expired service agreement',
+            (overrides) =>
+              this.sdk.serviceAgreementExtra.clearEndedAgreement(indexer, i, overrides),
+            `service agreement: ${agreementId}`
+          );
 
-  //         this.expiredAgreements.delete(agreementId.toString());
-  //         break;
-  //       }
-  //     }
-  //   } catch {
-  //     getLogger('network').info('failed to remove expired service agreements');
-  //   }
-  //   logger.debug(`removeExpiredAgreements end`);
-  // }
+          this.expiredAgreements.delete(agreementId.toString());
+          break;
+        }
+      }
+    } catch {
+      getLogger('network').info('failed to remove expired service agreements');
+    }
+    logger.debug(`removeExpiredAgreements end`);
+  }
 
   async hasPendingChanges(indexer: string) {
     const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
