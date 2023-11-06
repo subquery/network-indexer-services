@@ -61,8 +61,7 @@ pub enum ProjectType {
 pub struct Project {
     pub id: String,
     pub ptype: ProjectType,
-    pub query_endpoint: String,
-    pub node_endpoint: String,
+    pub endpoints: Vec<(String, String)>,
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
@@ -70,6 +69,10 @@ pub struct Project {
 }
 
 impl Project {
+    pub fn endpoint<'a>(&'a self) -> &'a str {
+        &self.endpoints[0].1
+    }
+
     pub fn open_payg(&self) -> bool {
         self.payg_price > U256::zero() && self.payg_expiration > 0
     }
@@ -145,7 +148,7 @@ impl Project {
         network: MetricsNetwork,
     ) -> Result<Value> {
         let now = Instant::now();
-        let res = graphql_request(&self.query_endpoint, query).await;
+        let res = graphql_request(self.endpoint(), query).await;
 
         let time = now.elapsed().as_millis() as u64;
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -160,7 +163,7 @@ impl Project {
         network: MetricsNetwork,
     ) -> Result<Value> {
         let now = Instant::now();
-        let res = proxy_request("POST", &self.query_endpoint, "/", "", query, vec![])
+        let res = proxy_request("POST", self.endpoint(), "/", "", query, vec![])
             .await
             .map_err(|err| {
                 Error::GraphQLQuery(
@@ -182,7 +185,7 @@ impl Project {
         network: MetricsNetwork,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let res = graphql_request_raw(&self.query_endpoint, query).await;
+        let res = graphql_request_raw(self.endpoint(), query).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -199,12 +202,21 @@ impl Project {
     pub async fn rpcquery_raw(
         &self,
         query: String,
-        _ep_name: Option<String>, // TODO ep_name to rpc if need
+        ep_name: Option<String>,
         payment: MetricsQuery,
         network: MetricsNetwork,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let res = post_request_raw(&self.query_endpoint, query).await;
+        let mut endpoint = self.endpoint();
+        if let Some(ename) = ep_name {
+            for (k, v) in &self.endpoints {
+                if k == &ename {
+                    endpoint = v;
+                }
+            }
+        }
+
+        let res = post_request_raw(endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -313,12 +325,18 @@ pub async fn list_projects() -> Vec<Project> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ProjectEndpointItem {
+    key: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectItem {
     pub id: String,
-    #[serde(rename = "queryEndpoint")]
-    pub query_endpoint: String,
-    #[serde(rename = "nodeEndpoint")]
-    pub node_endpoint: String,
+    #[serde(rename = "projectType")]
+    pub project_type: String,
+    #[serde(rename = "serviceEndpoints")]
+    pub project_endpoints: Vec<ProjectEndpointItem>,
     #[serde(rename = "price")]
     pub payg_price: String,
     #[serde(rename = "token")]
@@ -333,20 +351,41 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut project_ids = vec![];
     let mut new_projects = vec![];
     for item in projects {
+        let id = item.id.clone();
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
         let payg_overflow = item.payg_overflow.into();
-        project_ids.push(item.id.clone());
+        let payg_expiration = item.payg_expiration;
+
+        let ptype = match item.project_type.as_str() {
+            "Subquery" => ProjectType::Subquery,
+            "RpcEvm" => ProjectType::RpcEvm,
+            _ => {
+                error!("Invalid project type");
+                return Ok(());
+            }
+        };
+
+        let mut endpoints: Vec<(String, String)> = vec![];
+        for endpoint in item.project_endpoints {
+            endpoints.push((endpoint.key, endpoint.value));
+        }
+        if endpoints.is_empty() {
+            error!("Project {} with no endpoints", id);
+            return Ok(());
+        }
+
+        project_ids.push(id.clone());
         let project = Project {
-            id: item.id,
-            ptype: ProjectType::Subquery, // TODO
-            query_endpoint: item.query_endpoint,
-            node_endpoint: item.node_endpoint,
+            id,
+            ptype,
+            endpoints,
             payg_price,
             payg_token,
-            payg_expiration: item.payg_expiration,
+            payg_expiration,
             payg_overflow,
         };
+
         new_projects.push(project);
     }
 
