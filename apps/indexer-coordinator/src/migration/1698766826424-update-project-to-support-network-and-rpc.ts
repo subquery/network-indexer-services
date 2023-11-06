@@ -11,7 +11,7 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
       `ALTER TABLE "project_entity" ADD "projectType" integer NOT NULL DEFAULT '0'`
     );
     await queryRunner.query(
-      `ALTER TABLE "project_entity" ADD "serviceEndpoints" jsonb NOT NULL DEFAULT '{}'`
+      `ALTER TABLE "project_entity" ADD "serviceEndpoints" jsonb NOT NULL DEFAULT '[]'`
     );
     await queryRunner.query(
       `ALTER TABLE "project_entity" ADD "manifest" jsonb NOT NULL DEFAULT '{}'`

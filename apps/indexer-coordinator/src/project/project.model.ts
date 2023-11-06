@@ -32,30 +32,6 @@ export class ProjectInfo {
   metadata: string;
 }
 
-@ObjectType('ProjectManifest')
-export class ProjectManifest {
-  @Field()
-  kind: string;
-  @Field()
-  specVersion: string;
-  @Field()
-  version: string;
-  @Field()
-  name: string;
-  @Field()
-  chainId: string;
-  @Field()
-  genesisHash: string;
-  @Field(() => [String])
-  rpcFamily: string[];
-  @Field()
-  clientName: string;
-  @Field()
-  clientVersion: string;
-  @Field()
-  nodeType: string;
-}
-
 @ObjectType('Log')
 export class LogType {
   @Field()
@@ -155,10 +131,6 @@ export interface IProjectRpcEndpoints {
   wsEndpoint?: string;
 }
 
-// export interface IProjectConfig {
-//   [key: string]: any;
-// }
-
 export interface IProjectConfig {
   // subquery base config
   networkEndpoints: string[];
@@ -176,7 +148,7 @@ export interface IProjectConfig {
   cpu: number;
   memory: number;
   // rpc config
-  rpcFamily: string[];
+  serviceEndpoints: KeyValuePair[];
 }
 
 @InputType('ProjectConfigInput')
@@ -212,19 +184,8 @@ export class ProjectConfig implements IProjectConfig {
   memory: number;
   // rpc config
   @Field(() => [String])
-  rpcFamily: string[];
+  serviceEndpoints: KeyValuePair[];
 }
-
-// export interface IProjectRpcConfig extends IProjectConfig {
-//   rpcFamily: string[];
-// }
-
-// @InputType('ProjectRpcConfigInput')
-// @ObjectType('ProjectRpcConfig')
-// export class ProjectRpcConfig implements IProjectRpcConfig {
-//   @Field(() => [String])
-//   rpcFamily: string[];
-// }
 
 const defaultBaseConfig: IProjectBaseConfig = {
   networkEndpoints: [],
@@ -262,12 +223,8 @@ const defaultProjectConfig: IProjectConfig = {
   cpu: 2,
   memory: 2046,
   // rpc config
-  rpcFamily: [],
+  serviceEndpoints: [],
 };
-
-// const defaultRpcConfig: IProjectRpcConfig = {
-//   rpcFamily: [],
-// };
 
 @ObjectType()
 export class KeyValuePair {
@@ -317,8 +274,7 @@ export class ProjectEntity {
   details: ProjectInfo;
 
   @Column('jsonb', { default: {} })
-  @Field(() => ProjectManifest)
-  manifest: ProjectManifest;
+  manifest: any;
 
   @Column('jsonb', { default: defaultBaseConfig })
   @Field(() => ProjectBaseConfig)
@@ -346,14 +302,6 @@ export class ProjectEntity {
     this.manifest = this.manifest ?? {};
     this.baseConfig = this.baseConfig ?? defaultBaseConfig;
     this.advancedConfig = this.advancedConfig ?? defaultAdvancedConfig;
-    // if (this.projectType === ProjectType.SUBQUERY) {
-    //   this.projectConfig = this.projectConfig ?? defaultProjectConfig;
-    // } else if (this.projectType === ProjectType.RPC) {
-    //   this.projectConfig = this.projectConfig ?? defaultRpcConfig;
-    // } else {
-    //   // @ts-ignore
-    //   this.projectConfig = this.projectConfig ?? {};
-    // }
     this.projectConfig = this.projectConfig ?? defaultProjectConfig;
   };
 }

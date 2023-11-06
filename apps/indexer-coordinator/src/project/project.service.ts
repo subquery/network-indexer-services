@@ -4,7 +4,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
-import * as yaml from 'js-yaml';
 import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 
@@ -33,6 +32,7 @@ import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
+import { getProjectManifest } from './project.manifest';
 import {
   IProjectConfig,
   KeyValuePair,
@@ -44,7 +44,6 @@ import {
   ProjectDetails,
   ProjectEntity,
   ProjectInfo,
-  ProjectManifest,
 } from './project.model';
 import { MmrStoreType, ProjectType, SubqueryEndpointType, TemplateType } from './types';
 
@@ -142,38 +141,24 @@ export class ProjectService {
       variables: { id },
     });
 
+    if (!result.data.deployment) {
+      throw new Error(`project not exist on network: ${id}`);
+    }
+
     const deployment = result.data.deployment;
     const project = deployment.project;
-    const metadataStr = await this.ipfsClient.cat(project.metadata);
-    const versionStr = await this.ipfsClient.cat(deployment.version);
-    const metadata = JSON.parse(metadataStr);
-    const version = JSON.parse(versionStr);
+    const projectMetadataStr = await this.ipfsClient.cat(project.metadata);
+    const deploymentMetadataStr = await this.ipfsClient.cat(deployment.metadata);
+    const projectMetadata = JSON.parse(projectMetadataStr);
+    const deploymentMetadata = JSON.parse(deploymentMetadataStr);
 
     return {
       createdTimestamp: project.createdTimestamp,
       updatedTimestamp: deployment.createdTimestamp,
       networkProjectId: project.id,
       owner: project.owner,
-      ...metadata,
-      ...version,
-    };
-  }
-
-  async getProjectManifest(id: string): Promise<ProjectManifest> {
-    const manifestStr = await this.ipfsClient.cat(id);
-    const manifest = yaml.load(manifestStr, { schema: yaml.JSON_SCHEMA, json: true }) as any;
-
-    return {
-      kind: manifest.kind,
-      specVersion: manifest.specVersion,
-      version: manifest.version,
-      name: manifest.name,
-      chainId: manifest.chain?.chainId,
-      genesisHash: manifest.chain?.genesisHash,
-      rpcFamily: manifest.rpcFamily,
-      clientName: manifest.client?.name,
-      clientVersion: manifest.client?.version,
-      nodeType: manifest.nodeType,
+      ...projectMetadata,
+      ...deploymentMetadata,
     };
   }
 
@@ -186,12 +171,14 @@ export class ProjectService {
     const infos = await this.contract
       .getSdk()
       .projectRegistry.projectInfos(details.networkProjectId);
-    const manifest = await this.getProjectManifest(id);
+    const projectType = infos.projectType as ProjectType;
+    const manifest = await getProjectManifest(id);
+    const chainType = '';
     const projectEntity = this.projectRepo.create({
       id: id.trim(),
       status: DesiredStatus.STOPPED,
-      // chainType: '',
-      projectType: infos.projectType as ProjectType,
+      chainType,
+      projectType,
       details,
       manifest,
       projectConfig: {},
@@ -371,8 +358,8 @@ export class ProjectService {
   async updateProjectPayg(id: string, paygConfig: PaygConfig) {
     const payg = await this.paygRepo.findOneBy({ id });
     if (!payg) {
-      getLogger('project').error(`project not exist: ${id}`);
-      throw new Error(`project not exist: ${id}`);
+      getLogger('project').error(`payg not exist: ${id}`);
+      throw new Error(`payg not exist: ${id}`);
     }
 
     payg.price = paygConfig.price;

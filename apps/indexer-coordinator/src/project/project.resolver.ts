@@ -19,6 +19,7 @@ import {
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
+import { ProjectType } from './types';
 
 @Resolver(() => Project)
 export class ProjectResolver {
@@ -72,40 +73,50 @@ export class ProjectResolver {
   }
 
   @Mutation(() => [Project])
-  async removeSuqueryProject(@Args('id') id: string): Promise<Project[]> {
-    return this.projectService.removeSubqueryProject(id);
-  }
-
-  @Mutation(() => [Project])
-  async removeRpcProject(@Args('id') id: string): Promise<Project[]> {
-    return this.projectRpcService.removeRpcProject(id);
+  async removeProject(
+    @Args('id') id: string,
+    @Args('projectType') projectType: ProjectType
+  ): Promise<Project[]> {
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        return this.projectService.removeSubqueryProject(id);
+      case ProjectType.RPC:
+        return this.projectRpcService.removeRpcProject(id);
+      default:
+        return [];
+    }
   }
 
   // project management
   @Mutation(() => Project)
-  async startSubqueryProject(
+  async startProject(
     @Args('id') id: string,
+    @Args('projectType') projectType: ProjectType,
     @Args('projectConfig') projectConfig: ProjectConfig
   ): Promise<Project> {
-    return this.projectService.startSubqueryProject(id, projectConfig);
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        return this.projectService.startSubqueryProject(id, projectConfig);
+      case ProjectType.RPC:
+        return this.projectRpcService.startRpcProject(id, projectConfig);
+      default:
+        return undefined;
+    }
   }
 
   @Mutation(() => Project)
-  async startRpcProject(
+  async stopProject(
     @Args('id') id: string,
-    @Args('projectConfig') projectConfig: ProjectConfig
+    @Args('projectType') projectType: ProjectType
   ): Promise<Project> {
-    return this.projectRpcService.startRpcProject(id, projectConfig);
-  }
-
-  @Mutation(() => Project)
-  async stopSubqueryProject(@Args('id') id: string): Promise<Project> {
-    return this.projectService.stopSubqueryProject(id);
-  }
-
-  @Mutation(() => Project)
-  async stopRpcProject(@Args('id') id: string): Promise<Project> {
-    return this.projectRpcService.stopRpcProject(id);
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        return this.projectService.stopSubqueryProject(id);
+      case ProjectType.RPC:
+        return this.projectRpcService.stopRpcProject(id);
+      default:
+        return undefined;
+    }
   }
 
   @Mutation(() => Payg)

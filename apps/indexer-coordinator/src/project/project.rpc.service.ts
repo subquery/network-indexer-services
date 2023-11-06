@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { Repository } from 'typeorm';
+import { RpcManifest } from './project.manifest';
 import { IProjectConfig, Project, ProjectEntity } from './project.model';
 import { ProjectService } from './project.service';
 
@@ -33,7 +34,7 @@ export class ProjectRpcService {
     private projectService: ProjectService
   ) {}
 
-  getRpcFamily(rpcFamily: string): IRpcFamily | undefined {
+  getRpcFamilyObject(rpcFamily: string): IRpcFamily | undefined {
     let family = this.rpcFamilyMap.get(rpcFamily);
     if (!family) {
       switch (rpcFamily) {
@@ -52,11 +53,15 @@ export class ProjectRpcService {
   }
 
   getEndpointKeys(rpcFamily: string): string[] {
-    const family = this.getRpcFamily(rpcFamily);
+    const family = this.getRpcFamilyObject(rpcFamily);
     if (!family) return [];
 
     // TODO return family.getEndpointKeys();
     return family.getEndpointKeys().filter((key) => key.endsWith('Http'));
+  }
+
+  getAllEndpointKeys(rpcFamilyList: string[]): string[] {
+    return rpcFamilyList.map((family) => this.getEndpointKeys(family)).flat();
   }
 
   async validateRpcEndpoint(id: string, endpoint: string): Promise<boolean> {
@@ -77,6 +82,13 @@ export class ProjectRpcService {
     }
     project.projectConfig = projectConfig;
     project.status = DesiredStatus.RUNNING;
+
+    const manifest = project.manifest as RpcManifest;
+
+    project.serviceEndpoints = projectConfig.serviceEndpoints.filter((endpoint) => {
+      this.getAllEndpointKeys(manifest.rpcFamily || []).includes(endpoint.key);
+    });
+
     return this.projectRepo.save(project);
   }
 
