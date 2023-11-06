@@ -113,7 +113,7 @@ export class ProjectService {
         variables: { indexer },
       });
 
-      const projects = result.data.deploymentIndexers.nodes;
+      const projects = result.data.indexerDeployments.nodes;
       const p = projects.filter(({ status }) => status !== 'TERMINATED');
       await Promise.all(p.map(({ deploymentId }) => this.addProject(deploymentId)));
     } catch (e) {

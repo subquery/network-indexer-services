@@ -1671,30 +1671,30 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/network-clients@^0.3.17":
-  version "0.3.17"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.3.17.tgz#4604a0898df53f74d4c64843b7f2443c24d6795a"
-  integrity sha512-o4fOgnmgLc8wDoUiW/ocUI3N2W2TRW6c1l2AXaP+WAIzy9H1DupfO4CYeSTf8WNPNhpQs/45vlTp5yNB0/qKsg==
+"@subql/network-clients@^0.100.0":
+  version "0.100.0"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.100.0.tgz#de68cef8bf0f6fa7f806e136f69d781ec9b4ce15"
+  integrity sha512-lXvKdqCAjXwjAiuxI31e29P712elimyNA6OxACs9Lw743fni5gXH4ojF8o8jnoj4bRVKXuwvfKavODfMDKVH4g==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
-    "@subql/network-config" "0.3.14"
-    "@subql/network-query" "0.3.16-0"
+    "@subql/network-config" "0.100.0"
+    "@subql/network-query" "0.100.0"
     axios "^0.27.2"
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-config@0.3.14":
-  version "0.3.14"
-  resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.3.14.tgz#b04778145414618c7b91a10bcf00c04f0c7c339f"
-  integrity sha512-kRgsyhBFB/7fylCtgUB7URyfd1m1GtPVzDMIDNCuoaq8N7cp+yxnhfODkZIqjgvnGiw2x7T9EiVJbhUQAK6lsQ==
+"@subql/network-config@0.100.0":
+  version "0.100.0"
+  resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.100.0.tgz#1b400c0fce56f5845b4629d00467aeecf3665924"
+  integrity sha512-tTUgIC3fCZnmsx1+7vlrD2DpDbLOFPbJScfywpH642mtDPfuBeNbsEDW+MbzDB1SWWMEELsNZ3euTV8Wyh3eRA==
 
-"@subql/network-query@0.3.16-0":
-  version "0.3.16-0"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.3.16-0.tgz#19b7eae9f0955f2621183b0d98b6dfc352c8d0b9"
-  integrity sha512-DUHjxAYWAD00grxKJJ59nad81MMECFQFWpCD7ow5npFk3BgPzffZmYLiiZ+NSbz8rQT4EE954OMTpBFLWFGlcA==
+"@subql/network-query@0.100.0", "@subql/network-query@^0.100.0":
+  version "0.100.0"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.100.0.tgz#f22c57156ea65fbf0d5469d2f783da347016ebdb"
+  integrity sha512-6zj/RTWq/qrNEAHOVifrZsgRGs8Ujo52/AKmJ6ywl8xXZnSC7jM1UEjtUmu63kB/hbsDmOnxKaNnhHSh4Ghx5g==
   dependencies:
     graphql "^16.5.0"
 
