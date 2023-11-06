@@ -9,7 +9,7 @@ export const GET_DEPLOYMENT: DocumentNode = gql`
   query GetDeployment($id: String!) {
     deployment(id: $id) {
       id
-      # version
+      metadata
       createdTimestamp
       project {
         id
@@ -24,7 +24,7 @@ export const GET_DEPLOYMENT: DocumentNode = gql`
 // @ts-ignore
 export const GET_INDEXER_PROJECTS: DocumentNode = gql`
   query GetIndexerProjects($indexer: String!) {
-    deploymentIndexers(filter: { indexerId: { equalTo: $indexer } }) {
+    indexerDeployments(filter: { indexerId: { equalTo: $indexer } }) {
       nodes {
         indexerId
         deploymentId
