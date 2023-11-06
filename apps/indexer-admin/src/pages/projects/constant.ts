@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FormSubmit, ProjectsAction, ServiceStatus } from 'pages/project-details/types';
-import { ProjectFormKey, ProjectFormSchema, initialProjectValues } from 'types/schemas';
+import { initialProjectValues, ProjectFormKey, ProjectFormSchema } from 'types/schemas';
 
 export const statusColor = {
   [ServiceStatus.TERMINATED]: 'rgba(214, 48, 48, 0.3)',

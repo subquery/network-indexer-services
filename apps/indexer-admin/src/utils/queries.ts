@@ -204,7 +204,7 @@ export const REMOVE_CONTROLLER = gql`
 
 export const WITHDRAW_CONTROLLER = gql`
   query WithdrawController($id: String!) {
-    withrawController(id: $id)
+    withdrawController(id: $id)
   }
 `;
 

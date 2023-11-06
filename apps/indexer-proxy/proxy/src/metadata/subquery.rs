@@ -15,11 +15,8 @@ pub async fn metadata(
     network: MetricsNetwork,
 ) -> Result<Value> {
     let now = Instant::now();
-    let metadata_res = graphql_request(
-        &project.query_endpoint,
-        &GraphQLQuery::query(METADATA_QUERY),
-    )
-    .await;
+    let metadata_res =
+        graphql_request(project.endpoint(), &GraphQLQuery::query(METADATA_QUERY)).await;
     let time = now.elapsed().as_millis() as u64;
     add_metrics_query(
         project.id.clone(),
@@ -46,7 +43,7 @@ pub async fn metadata(
 
     let now = Instant::now();
     let poi_res = graphql_request(
-        &project.query_endpoint,
+        project.endpoint(),
         &GraphQLQuery::query(&poi_with_block(last_height)),
     )
     .await;

@@ -1,10 +1,10 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { FC } from 'react';
 import { Spinner, Tag } from '@subql/components';
 import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
-import { FC } from 'react';
 import styled from 'styled-components';
 
 import { Button, Text } from 'components/primary';

@@ -35,7 +35,8 @@ pub const ACCOUNT_QUERY: &str = "query { accountMetadata { indexer encryptedKey 
 
 pub const VERSION_QUERY: &str = "query { getServicesVersion { coordinator } }";
 
-pub const PROJECT_QUERY: &str = "query { getAliveProjects { id queryEndpoint nodeEndpoint } }";
+pub const PROJECT_QUERY: &str =
+    "query { getAliveProjects { id projectType serviceEndpoints { key value } } }";
 
 pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration overflow } }";
 

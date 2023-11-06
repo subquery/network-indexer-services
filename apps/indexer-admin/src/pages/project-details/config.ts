@@ -3,25 +3,25 @@
 
 import { Notification } from 'containers/notificationContext';
 import {
-    initalPAYGValues,
-    OpenPAYGFormKey,
-    PaygEdit,
-    ProjectFormKey,
-    ProjectPaygSchema,
-    StartIndexingSchema,
+  initalPAYGValues,
+  OpenPAYGFormKey,
+  PaygEdit,
+  ProjectFormKey,
+  ProjectPaygSchema,
+  StartIndexingSchema,
 } from 'types/schemas';
 import { dismiss, ProjectNotification } from 'utils/notification';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
 import prompts from './prompts';
 import {
-    ClickAction,
-    FormSubmit,
-    PAYGAction,
-    PaygStatus,
-    ProjectAction,
-    ProjectServiceMetadata,
-    ProjectStatus,
+  ClickAction,
+  FormSubmit,
+  PAYGAction,
+  PaygStatus,
+  ProjectAction,
+  ProjectServiceMetadata,
+  ProjectStatus,
 } from './types';
 
 const { project, announce, payg } = prompts;

@@ -4,7 +4,7 @@
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
-import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
+import { IProjectConfig, Project } from '../project/project.model';
 import { argv } from '../yargs';
 
 // manifest types
@@ -35,21 +35,20 @@ export type PartialIpfsDeploymentManifest = {
   runner?: Runner;
 };
 
-export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum' | 'stellar';
+export type ChainType =
+  | 'near'
+  | 'flare'
+  | 'cosmos'
+  | 'algorand'
+  | 'substrate'
+  | 'ethereum'
+  | 'stellar';
 
 export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
 const clientSDK = new IPFSClient(IPFS_URL);
 
-export function projectConfigChanged(
-  project: Project,
-  baseConfig: ProjectBaseConfig,
-  advancedConfig: ProjectAdvancedConfig
-): boolean {
-  return (
-    advancedConfig.purgeDB ||
-    !isEqual(project.baseConfig, baseConfig) ||
-    !isEqual(project.advancedConfig, advancedConfig)
-  );
+export function projectConfigChanged(project: Project, projectConfig: IProjectConfig): boolean {
+  return projectConfig.purgeDB || !isEqual(project.projectConfig, projectConfig);
 }
 
 // TODO: migrate these logic to client sdk

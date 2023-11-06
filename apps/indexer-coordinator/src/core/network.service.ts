@@ -23,7 +23,7 @@ import { mutexPromise } from '../utils/promise';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { QueryService } from './query.service';
-import { DesiredStatus, TxFun } from './types';
+import { TxFun } from './types';
 
 const MAX_RETRY = 3;
 
@@ -80,25 +80,25 @@ export class NetworkService implements OnApplicationBootstrap {
     return this.sdk;
   }
 
-  async getIndexingProjects() {
-    const indexer = await this.accountService.getIndexer();
-    const projects = await this.projectRepo.find();
-    const indexingProjects = await Promise.all(
-      projects.map(async (project) => {
-        const status = await this.contractService.deploymentStatusByIndexer(
-          project.id,
-          indexer
-        );
-        project.status = Number(status);
-        return await this.projectRepo.save(project);
-      })
-    );
+  // async getIndexingProjects() {
+  //   const indexer = await this.accountService.getIndexer();
+  //   const projects = await this.projectRepo.find();
+  //   const indexingProjects = await Promise.all(
+  //     projects.map(async (project) => {
+  //       const status = await this.contractService.deploymentStatusByIndexer(
+  //         project.id,
+  //         indexer
+  //       );
+  //       project.status = status;
+  //       return await this.projectRepo.save(project);
+  //     })
+  //   );
 
-    return indexingProjects.filter(
-      ({ queryEndpoint, status }) =>
-        !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
-    );
-  }
+  //   return indexingProjects.filter(
+  //     ({ queryEndpoint, status }) =>
+  //       !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
+  //   );
+  // }
 
   private async updateExpiredAgreements() {
     logger.debug(`updateExpiredAgreements start`);
@@ -157,8 +157,6 @@ export class NetworkService implements OnApplicationBootstrap {
     }
   }
 
-
-
   @Cron(CronExpression.EVERY_10_MINUTES)
   async removeExpiredAgreements() {
     logger.debug(`removeExpiredAgreements start`);
@@ -172,9 +170,12 @@ export class NetworkService implements OnApplicationBootstrap {
 
     try {
       const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(indexer);
+      const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(
+        indexer
+      );
       for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementExtra.getServiceAgreementId(indexer, i)
+        const agreementId = await this.sdk.serviceAgreementExtra
+          .getServiceAgreementId(indexer, i)
           .then((id) => id.toNumber());
 
         if (this.expiredAgreements.has(agreementId.toString())) {

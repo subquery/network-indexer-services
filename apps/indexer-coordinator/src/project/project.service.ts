@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import * as yaml from 'js-yaml';
 import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 
@@ -33,18 +34,19 @@ import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
 import {
+  IProjectConfig,
+  KeyValuePair,
   LogType,
   Payg,
   PaygConfig,
   PaygEntity,
   Project,
-  ProjectAdvancedConfig,
-  ProjectBaseConfig,
   ProjectDetails,
   ProjectEntity,
   ProjectInfo,
+  ProjectManifest,
 } from './project.model';
-import { MmrStoreType, TemplateType } from './types';
+import { MmrStoreType, ProjectType, SubqueryEndpointType, TemplateType } from './types';
 
 @Injectable()
 export class ProjectService {
@@ -78,7 +80,10 @@ export class ProjectService {
       throw new Error(`project not exist: ${id}`);
     }
     const payg = await this.paygRepo.findOneBy({ id });
-    const metadata = await this.query.getQueryMetaData(id, project.queryEndpoint);
+    const metadata = await this.query.getQueryMetaData(
+      id,
+      project.serviceEndpoints[SubqueryEndpointType.Query]
+    );
 
     return { ...project, metadata, payg };
   }
@@ -89,7 +94,8 @@ export class ProjectService {
   }
 
   async getAliveProjects(): Promise<Project[]> {
-    return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
+    // return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
+    return this.projectRepo.find({ where: { status: DesiredStatus.RUNNING } });
   }
 
   async getAllProjects(): Promise<Project[]> {
@@ -97,7 +103,13 @@ export class ProjectService {
   }
 
   async getAlivePaygs(): Promise<Payg[]> {
-    return this.paygRepo.find({ where: { price: Not('') } });
+    // return this.paygRepo.find({ where: { price: Not('') } });
+    // FIXME remove this
+    const paygs = await this.paygRepo.find({ where: { price: Not('') } });
+    for (const payg of paygs) {
+      payg.overflow = 10000;
+    }
+    return paygs;
   }
 
   /// restore projects not `TERMINATED`
@@ -122,7 +134,7 @@ export class ProjectService {
   }
 
   /// add project
-  async getProjectInfo(id: string): Promise<ProjectInfo> {
+  async getProjectDetailsFromNetwork(id: string): Promise<ProjectInfo> {
     const networkClient = this.client.networkClient;
     const result = await networkClient.query({
       // @ts-ignore
@@ -140,22 +152,49 @@ export class ProjectService {
     return {
       createdTimestamp: project.createdTimestamp,
       updatedTimestamp: deployment.createdTimestamp,
+      networkProjectId: project.id,
       owner: project.owner,
       ...metadata,
       ...version,
     };
   }
 
+  async getProjectManifest(id: string): Promise<ProjectManifest> {
+    const manifestStr = await this.ipfsClient.cat(id);
+    const manifest = yaml.load(manifestStr, { schema: yaml.JSON_SCHEMA, json: true }) as any;
+
+    return {
+      kind: manifest.kind,
+      specVersion: manifest.specVersion,
+      version: manifest.version,
+      name: manifest.name,
+      chainId: manifest.chain?.chainId,
+      genesisHash: manifest.chain?.genesisHash,
+      rpcFamily: manifest.rpcFamily,
+      clientName: manifest.client?.name,
+      clientVersion: manifest.client?.version,
+      nodeType: manifest.nodeType,
+    };
+  }
+
   async addProject(id: string): Promise<Project> {
     const project = await this.getProject(id);
     if (project) return project;
-    const indexer = await this.account.getIndexer();
-    const status = await this.contract.deploymentStatusByIndexer(id, indexer);
-    const details = await this.getProjectInfo(id);
+    // const indexer = await this.account.getIndexer();
+    // const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
+    const details = await this.getProjectDetailsFromNetwork(id);
+    const infos = await this.contract
+      .getSdk()
+      .projectRegistry.projectInfos(details.networkProjectId);
+    const manifest = await this.getProjectManifest(id);
     const projectEntity = this.projectRepo.create({
       id: id.trim(),
-      status: Number(status),
+      status: DesiredStatus.STOPPED,
+      // chainType: '',
+      projectType: infos.projectType as ProjectType,
       details,
+      manifest,
+      projectConfig: {},
     });
 
     const projectPayg = this.paygRepo.create({ id: id.trim() });
@@ -171,21 +210,17 @@ export class ProjectService {
   }
 
   // project management
-  async startProject(
-    id: string,
-    baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig
-  ): Promise<Project> {
+  async startSubqueryProject(id: string, projectConfig: IProjectConfig): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
 
-    this.setDefaultConfigValue(baseConfig);
+    this.setDefaultConfigValue(projectConfig);
 
     const isDBExist = await this.db.checkSchemaExist(schemaName(id));
     const containers = await this.docker.ps(projectContainers(id));
-    const isConfigChanged = projectConfigChanged(project, baseConfig, advancedConfig);
+    const isConfigChanged = projectConfigChanged(project, projectConfig);
 
     if (
       isDBExist &&
@@ -193,15 +228,15 @@ export class ProjectService {
       !isConfigChanged &&
       canContainersRestart(id, containers)
     ) {
-      return await this.restartProject(id);
+      return await this.restartSubqueryProject(id);
     }
 
-    return await this.createAndStartProject(id, baseConfig, advancedConfig);
+    return await this.createAndStartProject(id, projectConfig);
   }
 
-  private setDefaultConfigValue(baseConfig: ProjectBaseConfig) {
-    if (baseConfig.usePrimaryNetworkEndpoint === undefined) {
-      baseConfig.usePrimaryNetworkEndpoint = true;
+  private setDefaultConfigValue(projectConfig: IProjectConfig) {
+    if (projectConfig.usePrimaryNetworkEndpoint === undefined) {
+      projectConfig.usePrimaryNetworkEndpoint = true;
     }
   }
 
@@ -216,11 +251,7 @@ export class ProjectService {
     return MmrStoreType.file;
   }
 
-  async configToTemplate(
-    project: Project,
-    baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig
-  ): Promise<TemplateType> {
+  async configToTemplate(project: Project, projectConfig: IProjectConfig): Promise<TemplateType> {
     const servicePort = this.portService.getAvailablePort();
     const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
@@ -230,7 +261,7 @@ export class ProjectService {
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
 
-    this.setDefaultConfigValue(baseConfig);
+    this.setDefaultConfigValue(projectConfig);
 
     const item: TemplateType = {
       deploymentID: project.id,
@@ -242,19 +273,14 @@ export class ProjectService {
       dockerNetwork,
       ipfsUrl: IPFS_URL,
       mmrPath,
-      ...baseConfig,
-      ...advancedConfig,
-      primaryNetworkEndpoint: baseConfig.networkEndpoints[0] || '',
+      ...projectConfig,
+      primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
     };
 
     return item;
   }
 
-  async createAndStartProject(
-    id: string,
-    baseConfig: ProjectBaseConfig,
-    advancedConfig: ProjectAdvancedConfig
-  ) {
+  async createAndStartProject(id: string, projectConfig: IProjectConfig) {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
@@ -269,11 +295,11 @@ export class ProjectService {
     // HOTFIX: purge poi
     const projectSchemaName = schemaName(projectID);
     const isDBExist = await this.db.checkSchemaExist(projectSchemaName);
-    if (advancedConfig.purgeDB && isDBExist) {
+    if (projectConfig.purgeDB && isDBExist) {
       await this.db.clearMMRoot(projectSchemaName, 0);
     }
 
-    const templateItem = await this.configToTemplate(project, baseConfig, advancedConfig);
+    const templateItem = await this.configToTemplate(project, projectConfig);
     try {
       await this.db.createDBSchema(projectSchemaName);
       await generateDockerComposeFile(templateItem);
@@ -283,10 +309,21 @@ export class ProjectService {
     }
 
     const nodeConfig = await nodeConfigs(id);
-    project.baseConfig = baseConfig;
-    project.advancedConfig = advancedConfig;
-    project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
-    project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
+    project.projectConfig = projectConfig;
+    // project.serviceEndpoints = {
+    //   [SubqueryEndpointType.Node]: nodeEndpoint(id, templateItem.servicePort),
+    //   [SubqueryEndpointType.Query]: queryEndpoint(id, templateItem.servicePort),
+    // };
+    // project.serviceEndpoints= new Map([
+    //   [SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)],
+    //   [SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)],
+    // ]);
+    project.serviceEndpoints = [
+      new KeyValuePair(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
+      new KeyValuePair(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
+    ];
+    // project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
+    // project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);
     project.status = DesiredStatus.RUNNING;
     project.chainType = nodeConfig.chainType;
 
@@ -294,7 +331,7 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
-  async stopProject(id: string) {
+  async stopSubqueryProject(id: string) {
     const project = await this.getProject(id);
     if (!project) {
       getLogger('project').error(`project not exist: ${id}`);
@@ -307,13 +344,13 @@ export class ProjectService {
     return this.updateProjectStatus(id, DesiredStatus.STOPPED);
   }
 
-  async restartProject(id: string) {
+  async restartSubqueryProject(id: string) {
     getLogger('project').info(`restart project: ${id}`);
     await this.docker.start(projectContainers(id));
     return this.updateProjectStatus(id, DesiredStatus.RUNNING);
   }
 
-  async removeProject(id: string): Promise<Project[]> {
+  async removeSubqueryProject(id: string): Promise<Project[]> {
     getLogger('project').info(`remove project: ${id}`);
 
     const project = await this.getProject(id);
@@ -325,7 +362,7 @@ export class ProjectService {
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
-    const port = getServicePort(project.queryEndpoint);
+    const port = getServicePort(project.serviceEndpoints[SubqueryEndpointType.Query]);
     this.portService.removePort(port);
 
     return this.projectRepo.remove([project]);

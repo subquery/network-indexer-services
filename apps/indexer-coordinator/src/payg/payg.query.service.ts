@@ -13,6 +13,7 @@ import {
 } from '@subql/network-query';
 
 import { gql } from 'apollo-server-core';
+import { timeoutPromiseCatched } from 'src/utils/promise';
 import { Config } from '../configure/configure.module';
 import { getLogger } from '../utils/logger';
 
@@ -27,15 +28,14 @@ export class PaygQueryService {
     this.client = queryClient.networkClient;
   }
 
+  @timeoutPromiseCatched(20000, [])
   async getStateChannels(indexer: string): Promise<StateChannel[]> {
     try {
       const result = await this.client.query<GetStateChannelsQuery>({
         // @ts-ignore TODO: fix type
         query: gql`
-          query GetStateChannelsByIndexer($indexer: String!, $status: ChannelStatus!) {
-            stateChannels(
-              filter: { indexer: { equalTo: $indexer }, status: { equalTo: $status } }
-            ) {
+          query GetStateChannelsByIndexer($indexer: String!, $status: [ChannelStatus!]) {
+            stateChannels(filter: { indexer: { equalTo: $indexer }, status: { in: $status } }) {
               totalCount
               nodes {
                 ...StateChannelFields
@@ -44,7 +44,7 @@ export class PaygQueryService {
           }
           ${StateChannelFields}
         `,
-        variables: { indexer, status: 'OPEN' },
+        variables: { indexer, status: ['OPEN', 'TERMINATING'] },
       });
 
       const channels = result.data.stateChannels.nodes;
@@ -56,6 +56,7 @@ export class PaygQueryService {
     }
   }
 
+  @timeoutPromiseCatched(20000, undefined)
   async getStateChannel(id: string): Promise<StateChannel | undefined> {
     try {
       const result = await this.client.query<GetFlexPlanQuery>({

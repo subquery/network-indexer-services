@@ -34,6 +34,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
+    tools::{hex_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
 
@@ -42,7 +43,7 @@ use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
-use crate::payg::{merket_price, open_state, query_state, AuthPayg};
+use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
 use crate::project::get_project;
 
 #[derive(Serialize)]
@@ -71,6 +72,8 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
+        // `GET /payg-state/0x00...955X` goes to get channel state
+        .route("/payg-state/:channel", get(payg_state))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
@@ -288,6 +291,20 @@ async fn payg_query(
 #[derive(Deserialize)]
 struct PoiBlock {
     block: Option<u64>,
+}
+
+async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
+    let channel_id = hex_u256(&channel);
+    let (state, _) = fetch_channel_cache(channel_id).await?;
+
+    Ok(Json(json!({
+        "channel": u256_hex(&channel_id),
+        "price": state.price.to_string(),
+        "total": state.total.to_string(),
+        "spent": state.spent.to_string(),
+        "remote": state.remote.to_string(),
+        "conflict": state.conflict,
+    })))
 }
 
 async fn metadata_handler(

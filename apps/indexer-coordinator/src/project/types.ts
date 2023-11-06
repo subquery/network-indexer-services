@@ -8,6 +8,16 @@ export enum MmrStoreType {
   file = 'file',
 }
 
+export enum ProjectType {
+  SUBQUERY,
+  RPC,
+}
+
+export enum SubqueryEndpointType {
+  Node = 'nodeEndpoint',
+  Query = 'queryEndpoint',
+}
+
 export type TemplateType = {
   deploymentID: string;
   projectID: string;

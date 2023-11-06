@@ -1,14 +1,14 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
 import { indexingProgress } from '@subql/network-clients';
 import { renderAsync } from '@subql/react-hooks';
 import { useInterval } from 'ahooks';
 import { FormikHelpers, FormikValues } from 'formik';
 import { isUndefined } from 'lodash';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 import AlertView from 'components/alertView';
 import { LoadingSpinner } from 'components/loading';
@@ -16,12 +16,12 @@ import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
-    getQueryMetadata,
-    useIsOnline,
-    useNodeVersions,
-    useProjectDetails,
-    useQueryVersions,
-    useServiceStatus,
+  getQueryMetadata,
+  useIsOnline,
+  useNodeVersions,
+  useProjectDetails,
+  useQueryVersions,
+  useServiceStatus,
 } from 'hooks/projectHook';
 import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
@@ -37,27 +37,27 @@ import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
-    alertMessages,
-    createNetworkButtonItems,
-    createNotIndexingSteps,
-    createReadyIndexingSteps,
-    createRemoveProjectSteps,
-    createRestartProjectSteps,
-    createServiceButtonItems,
-    createStartIndexingSteps,
-    createStopIndexingSteps,
-    createStopProjectSteps,
-    notifications,
-    ProjectActionName,
+  alertMessages,
+  createNetworkButtonItems,
+  createNotIndexingSteps,
+  createReadyIndexingSteps,
+  createRemoveProjectSteps,
+  createRestartProjectSteps,
+  createServiceButtonItems,
+  createStartIndexingSteps,
+  createStopIndexingSteps,
+  createStopProjectSteps,
+  notifications,
+  ProjectActionName,
 } from './config';
 import { Container, ContentContainer } from './styles';
 import {
-    dockerContainerEnum,
-    ProjectAction,
-    ProjectDetails,
-    ProjectStatus,
-    ServiceStatus,
-    TQueryMetadata,
+  dockerContainerEnum,
+  ProjectAction,
+  ProjectDetails,
+  ProjectStatus,
+  ServiceStatus,
+  TQueryMetadata,
 } from './types';
 
 const ProjectDetailsPage = () => {
