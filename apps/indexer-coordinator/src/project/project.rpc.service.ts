@@ -84,9 +84,10 @@ export class ProjectRpcService {
     project.status = DesiredStatus.RUNNING;
 
     const manifest = project.manifest as RpcManifest;
+    const endpointKeys = this.getAllEndpointKeys(manifest.rpcFamily || []);
 
     project.serviceEndpoints = projectConfig.serviceEndpoints.filter((endpoint) => {
-      this.getAllEndpointKeys(manifest.rpcFamily || []).includes(endpoint.key);
+      return endpointKeys.includes(endpoint.key);
     });
 
     return this.projectRepo.save(project);

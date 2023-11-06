@@ -183,7 +183,7 @@ export class ProjectConfig implements IProjectConfig {
   @Field(() => Int)
   memory: number;
   // rpc config
-  @Field(() => [String])
+  @Field(() => [KeyValuePair])
   serviceEndpoints: KeyValuePair[];
 }
 
@@ -226,7 +226,8 @@ const defaultProjectConfig: IProjectConfig = {
   serviceEndpoints: [],
 };
 
-@ObjectType()
+@InputType('KeyValuePairInput')
+@ObjectType('KeyValuePair')
 export class KeyValuePair {
   constructor(key: string, value: string) {
     this.key = key;
