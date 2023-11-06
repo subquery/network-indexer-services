@@ -218,7 +218,7 @@ export class ProjectService {
       return await this.restartSubqueryProject(id);
     }
 
-    return await this.createAndStartProject(id, projectConfig);
+    return await this.createAndStartSubqueryProject(id, projectConfig);
   }
 
   private setDefaultConfigValue(projectConfig: IProjectConfig) {
@@ -267,7 +267,7 @@ export class ProjectService {
     return item;
   }
 
-  async createAndStartProject(id: string, projectConfig: IProjectConfig) {
+  async createAndStartSubqueryProject(id: string, projectConfig: IProjectConfig) {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
@@ -297,14 +297,6 @@ export class ProjectService {
 
     const nodeConfig = await nodeConfigs(id);
     project.projectConfig = projectConfig;
-    // project.serviceEndpoints = {
-    //   [SubqueryEndpointType.Node]: nodeEndpoint(id, templateItem.servicePort),
-    //   [SubqueryEndpointType.Query]: queryEndpoint(id, templateItem.servicePort),
-    // };
-    // project.serviceEndpoints= new Map([
-    //   [SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)],
-    //   [SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)],
-    // ]);
     project.serviceEndpoints = [
       new KeyValuePair(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
       new KeyValuePair(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
