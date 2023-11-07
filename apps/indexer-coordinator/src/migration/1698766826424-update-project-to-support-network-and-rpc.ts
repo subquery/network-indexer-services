@@ -46,7 +46,7 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
 
       await queryRunner.query(
         `UPDATE project_entity SET "serviceEndpoints" = $1, "projectConfig" = $2 WHERE id = $3`,
-        [serviceEndpoints, projectConfig, id]
+        [JSON.stringify(serviceEndpoints), projectConfig, id]
       );
     }
   }
