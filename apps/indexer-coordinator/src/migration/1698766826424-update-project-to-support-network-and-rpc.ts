@@ -28,13 +28,11 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
     );
 
     for (const project of projects) {
-      const { id, nodeEndpoint, queryEndpoint, baseConfig, advancedConfig } = project;
+      const { id, projectType, nodeEndpoint, queryEndpoint, baseConfig, advancedConfig } = project;
 
-      let { projectType, serviceEndpoints, projectConfig } = project;
+      let { serviceEndpoints, projectConfig } = project;
 
-      if (projectType !== 'Subquery' && projectType !== '') continue;
-
-      projectType = 'Subquery';
+      if (projectType !== 0) continue;
 
       serviceEndpoints = {
         nodeEndpoint,
@@ -47,8 +45,8 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
       };
 
       await queryRunner.query(
-        `UPDATE project_entity SET "projectType" = $1, "serviceEndpoints" = $2, "projectConfig" = $3 WHERE id = $4`,
-        [projectType, serviceEndpoints, projectConfig, id]
+        `UPDATE project_entity SET "serviceEndpoints" = $1, "projectConfig" = $2 WHERE id = $3`,
+        [serviceEndpoints, projectConfig, id]
       );
     }
   }

@@ -94,7 +94,9 @@ export class ProjectService {
 
   async getAliveProjects(): Promise<Project[]> {
     // return this.projectRepo.find({ where: { queryEndpoint: Not('') } });
-    return this.projectRepo.find({ where: { status: DesiredStatus.RUNNING } });
+    return (await this.projectRepo.find({ where: { status: DesiredStatus.RUNNING } })).filter(
+      (p) => p.serviceEndpoints.length > 0 && p.serviceEndpoints[0].value !== ''
+    );
   }
 
   async getAllProjects(): Promise<Project[]> {

@@ -4,6 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
+import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
 import { Repository } from 'typeorm';
 import { RpcManifest } from './project.manifest';
 import { IProjectConfig, Project, ProjectEntity } from './project.model';
@@ -65,12 +66,26 @@ export class ProjectRpcService {
   }
 
   async validateRpcEndpoint(id: string, endpoint: string): Promise<boolean> {
-    // TODO should be internal ip
+    // should be internal ip
+    const domain = getDomain(endpoint);
+    if (!domain) {
+      return false;
+    }
+    let ip: string;
+    if (isIp(domain)) {
+      ip = domain;
+    } else {
+      ip = await getIpAddress(domain);
+    }
+    if (!ip) {
+      return false;
+    }
+    if (!isPrivateIp(ip)) {
+      return false;
+    }
+
     // TODO could read info
     // TODO compare chain id, genesis hash, rpc family, client name and version, node type
-
-    // FIXME to bypass commit check
-    await new Promise((resolve) => setTimeout(resolve, 1));
 
     return true;
   }
