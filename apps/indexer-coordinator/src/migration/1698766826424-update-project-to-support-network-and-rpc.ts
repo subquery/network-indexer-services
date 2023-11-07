@@ -34,10 +34,10 @@ export class UpdateProjectToSupportNetworkAndRpc1698766826424 implements Migrati
 
       if (projectType !== 0) continue;
 
-      serviceEndpoints = {
-        nodeEndpoint,
-        queryEndpoint,
-      };
+      serviceEndpoints = [
+        { key: 'nodeEndpoint', value: nodeEndpoint },
+        { key: 'queryEndpoint', value: queryEndpoint },
+      ];
 
       projectConfig = {
         ...baseConfig,
