@@ -82,11 +82,10 @@ apps/indexer-coordinator/dist/*
 .data
 .projects
 .eslintcache
+.env
 
 # docker
 docker/**/*.local.*
-
-.env
 
 # indexer-proxy
 /target
