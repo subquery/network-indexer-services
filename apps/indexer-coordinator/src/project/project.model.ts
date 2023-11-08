@@ -47,8 +47,8 @@ export class MetadataType {
   targetHeight: number;
   @Field()
   chain: string;
-  @Field()
-  specName = '';
+  @Field({ nullable: true })
+  specName?: string;
   @Field()
   genesisHash: string;
   @Field()
