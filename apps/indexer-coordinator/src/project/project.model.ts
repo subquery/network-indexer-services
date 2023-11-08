@@ -48,7 +48,7 @@ export class MetadataType {
   @Field()
   chain: string;
   @Field()
-  specName: string;
+  specName = '';
   @Field()
   genesisHash: string;
   @Field()
