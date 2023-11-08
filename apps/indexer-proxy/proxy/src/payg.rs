@@ -419,7 +419,7 @@ pub struct ChannelItem {
 }
 
 pub async fn handle_channel(value: &Value) -> Result<()> {
-    debug!("handle channel change");
+    info!("handle channel change");
     let channel: ChannelItem =
         serde_json::from_str(value.to_string().as_str()).map_err(|_e| Error::Serialize(1120))?;
 
