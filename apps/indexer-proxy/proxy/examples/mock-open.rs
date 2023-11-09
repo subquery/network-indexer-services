@@ -131,30 +131,26 @@ async fn main() -> Result<(), Error> {
                 let contract = service_agreement_registry(client.clone(), network).unwrap();
                 println!("Service agreement contract: {:?}", contract.address());
                 let result: U256 = contract
-                    .method::<_, U256>("indexerCsaLength", (indexer,))
+                    .method::<_, U256>("nextServiceAgreementId", ())
                     .unwrap()
                     .call()
                     .await
                     .unwrap();
                 for i in 0..result.as_u32() {
-                    let aid: U256 = contract
-                        .method::<_, U256>("closedServiceAgreementIds", (indexer, i))
-                        .unwrap()
-                        .call()
-                        .await
-                        .unwrap();
                     let result: Token = contract
-                        .method::<_, Token>("getClosedServiceAgreement", (aid,))
+                        .method::<_, Token>("getClosedServiceAgreement", (i,))
                         .unwrap()
                         .call()
                         .await
                         .unwrap();
                     let tokens = result.into_tuple().unwrap();
                     let deployment = deployment_cid(&H256::from_token(tokens[2].clone()).unwrap());
-                    println!(
-                        "Agreement: {}, plan: {}, consumer: 0x{}, deployment: {}",
-                        aid, tokens[6], tokens[0], deployment
-                    );
+                    if indexer == tokens[1].clone().into_address().unwrap() {
+                        println!(
+                            "Agreement: {}, plan: {}, consumer: 0x{}, deployment: {}",
+                            i, tokens[6], tokens[0], deployment
+                        );
+                    }
                 }
             }
             "show-payg" => {
