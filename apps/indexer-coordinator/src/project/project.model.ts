@@ -49,8 +49,8 @@ export class MetadataType {
   chain: string;
   @Field({ nullable: true })
   specName?: string;
-  @Field()
-  genesisHash: string;
+  @Field({ nullable: true })
+  genesisHash?: string;
   @Field()
   indexerHealthy: boolean;
   @Field()
