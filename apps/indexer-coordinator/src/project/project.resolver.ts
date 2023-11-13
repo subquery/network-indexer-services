@@ -16,6 +16,7 @@ import {
   PaygConfig,
   ProjectDetails,
   ProjectConfig,
+  ValidationResponse,
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
@@ -65,6 +66,28 @@ export class ProjectResolver {
   @Query(() => LogType)
   getLog(@Args('container') container: string) {
     return this.projectService.logs(container);
+  }
+
+  @Query(() => [String])
+  async getRpcFamilyList(@Args('projectId') projectId: string) {
+    return this.projectRpcService.getRpcFamilyList(projectId);
+  }
+
+  @Query(() => [String])
+  getRpcEndpointKeys(
+    // @Args('projectId') projectId: string,
+    @Args('rpcFamily') rpcFamily: string
+  ) {
+    return this.projectRpcService.getEndpointKeys(rpcFamily);
+  }
+
+  @Query(() => ValidationResponse)
+  async validateRpcEndpoint(
+    @Args('projectId') projectId: string,
+    @Args('endpointKey') endpointKey: string,
+    @Args('endpoint') endpoint: string
+  ) {
+    return this.projectRpcService.validateRpcEndpoint(projectId, endpointKey, endpoint);
   }
 
   @Mutation(() => Project)

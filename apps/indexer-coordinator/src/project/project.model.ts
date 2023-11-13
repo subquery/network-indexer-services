@@ -38,6 +38,14 @@ export class LogType {
   log: string;
 }
 
+@ObjectType('ValidationResponse')
+export class ValidationResponse {
+  @Field()
+  valid: boolean;
+  @Field()
+  reason: string;
+}
+
 @ObjectType('Metadata')
 export class MetadataType {
   @Field(() => Int)
@@ -48,12 +56,12 @@ export class MetadataType {
   startHeight: number;
   @Field(() => Int)
   targetHeight: number;
-  @Field()
-  chain: string;
-  @Field()
-  specName: string;
-  @Field()
-  genesisHash: string;
+  @Field({ nullable: true })
+  chain?: string;
+  @Field({ nullable: true })
+  specName?: string;
+  @Field({ nullable: true })
+  genesisHash?: string;
   @Field()
   indexerHealthy: boolean;
   @Field()
