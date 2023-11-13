@@ -45,8 +45,8 @@ export class MetadataType {
   startHeight: number;
   @Field(() => Int)
   targetHeight: number;
-  @Field()
-  chain: string;
+  @Field({ nullable: true })
+  chain?: string;
   @Field({ nullable: true })
   specName?: string;
   @Field({ nullable: true })
