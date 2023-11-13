@@ -133,7 +133,9 @@ async fn main() -> std::io::Result<()> {
 
     let query_token = format!("Bearer {}", token["token"].as_str().unwrap());
     let query_url = format!("{}/query/{}", url, deployment);
-    let query_body = serde_json::to_value(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
+    let _query_body = serde_json::to_string(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
+    let query_body =
+        r#"{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}"#;
 
     if query_times == 0 {
         println!("Loop to query, preiod: 100ms");
@@ -144,7 +146,7 @@ async fn main() -> std::io::Result<()> {
             let r = client
                 .post(&query_url)
                 .header("Authorization", query_token.clone())
-                .json(&query_body)
+                .body(query_body)
                 .send()
                 .await
                 .unwrap();
@@ -161,14 +163,14 @@ async fn main() -> std::io::Result<()> {
         for i in 0..query_times {
             let tmp_token = query_token.clone();
             let tmp_url = query_url.clone();
-            let tmp_body = query_body.clone();
+            let tmp_body = query_body;
             tokio::spawn(async move {
                 let client = reqwest::Client::new();
                 let now = std::time::Instant::now();
                 let r = client
                     .post(tmp_url)
                     .header("Authorization", tmp_token)
-                    .json(&tmp_body)
+                    .body(tmp_body)
                     .send()
                     .await
                     .unwrap();

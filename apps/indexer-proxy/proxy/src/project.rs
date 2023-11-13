@@ -55,6 +55,7 @@ pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
 pub enum ProjectType {
     Subquery,
     RpcEvm,
+    RpcSubstrate,
 }
 
 #[derive(Clone)]
@@ -81,6 +82,7 @@ impl Project {
         let mut metadata = match self.ptype {
             ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
             ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
+            ProjectType::RpcSubstrate => json!("TODO"),
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -138,6 +140,7 @@ impl Project {
                 self.subquery_raw(&query, payment, network).await
             }
             ProjectType::RpcEvm => self.rpcquery_raw(body, ep_name, payment, network).await,
+            ProjectType::RpcSubstrate => Ok((vec![], "TODO".to_owned())),
         }
     }
 
@@ -334,7 +337,7 @@ pub struct ProjectEndpointItem {
 pub struct ProjectItem {
     pub id: String,
     #[serde(rename = "projectType")]
-    pub project_type: String,
+    pub project_type: i64,
     #[serde(rename = "serviceEndpoints")]
     pub project_endpoints: Vec<ProjectEndpointItem>,
     #[serde(rename = "price")]
@@ -357,9 +360,9 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let payg_overflow = item.payg_overflow.into();
         let payg_expiration = item.payg_expiration;
 
-        let ptype = match item.project_type.as_str() {
-            "Subquery" => ProjectType::Subquery,
-            "RpcEvm" => ProjectType::RpcEvm,
+        let mut ptype = match item.project_type {
+            0 => ProjectType::Subquery,
+            1 => ProjectType::RpcEvm,
             _ => {
                 error!("Invalid project type");
                 return Ok(());
@@ -368,6 +371,16 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
 
         let mut endpoints: Vec<(String, String)> = vec![];
         for endpoint in item.project_endpoints {
+            match endpoint.key.as_str() {
+                "evmHttp" => {
+                    ptype = ProjectType::RpcEvm;
+                }
+                "substrateHttp" => {
+                    ptype = ProjectType::RpcSubstrate;
+                }
+                _ => (),
+            }
+
             endpoints.push((endpoint.key, endpoint.value));
         }
         if endpoints.is_empty() {

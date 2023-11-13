@@ -133,7 +133,9 @@ pub fn subscribe() {
                     projects.push(item);
                 }
             }
-            let _ = handle_projects(projects).await;
+            if let Err(err) = handle_projects(projects).await {
+                error!("Sync handle project: {:?}", err);
+            }
         }
     });
 
@@ -147,7 +149,9 @@ pub fn subscribe() {
                 if let Some(items) = value.pointer("/data/getAliveChannels") {
                     if let Some(channels) = items.as_array() {
                         for channel in channels {
-                            let _ = handle_channel(channel).await;
+                            if let Err(err) = handle_channel(channel).await {
+                                error!("Sync handle channel: {:?}", err);
+                            }
                         }
                     }
                 }

@@ -103,7 +103,9 @@ async fn main() -> std::io::Result<()> {
 
     let query_token = format!("Bearer {}", token["token"].as_str().unwrap());
     let query_url = format!("{}/query/{}", url, deployment);
-    let query_body = serde_json::to_value(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
+    let query_body = serde_json::to_string(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
+    let _query_body =
+        r#"{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}"#;
 
     println!("Loop to query, preiod: 100ms");
     let mut i = 1;
@@ -113,7 +115,7 @@ async fn main() -> std::io::Result<()> {
         let r = client
             .post(&query_url)
             .header("Authorization", query_token.clone())
-            .json(&query_body)
+            .body(query_body)
             .send()
             .await
             .unwrap();

@@ -55,7 +55,8 @@ pub fn u256_hex(a: &U256) -> String {
 }
 
 pub fn hex_u256(a: &str) -> U256 {
-    let bytes = hex::decode(a).unwrap_or(vec![0u8; 32]);
+    let b = if a.starts_with("0x") { &a[2..] } else { a };
+    let bytes = hex::decode(b).unwrap_or(vec![0u8; 32]);
     U256::from_big_endian(&bytes)
 }
 
