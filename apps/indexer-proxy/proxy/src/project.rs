@@ -25,6 +25,7 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
+use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -42,11 +43,12 @@ use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
+use crate::cli::redis;
 use crate::metadata::{rpc_evm_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
 use crate::payg::merket_price;
-use crate::primitives::PROJECT_JOIN_TIME;
+use crate::primitives::{PROJECT_JOIN_TIME, SUBSCRIBER_LOOP_TIME};
 
 pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -63,6 +65,7 @@ pub struct Project {
     pub id: String,
     pub ptype: ProjectType,
     pub endpoints: Vec<(String, String)>,
+    pub rate_limit: i64,
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
@@ -134,6 +137,22 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
     ) -> Result<(Vec<u8>, String)> {
+        // project rate limit
+        let conn = redis();
+        let mut conn_lock = conn.lock().await;
+        let second = Utc::now().timestamp();
+        let limit_key = format!("{}-limit", self.id);
+        let used_key = format!("{}-rate-{}", self.id, second);
+
+        // get limit & used, default rate limit 10000/s big enough
+        let limit: i64 = conn_lock.get(&limit_key).await.unwrap_or(10000);
+        let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
+        if used + 1 > limit {
+            return Err(Error::RateLimit(1052));
+        }
+        let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
+        drop(conn_lock);
+
         match self.ptype {
             ProjectType::Subquery => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
@@ -144,7 +163,7 @@ impl Project {
         }
     }
 
-    pub async fn subquery(
+    pub async fn _subquery(
         &self,
         query: &GraphQLQuery,
         payment: MetricsQuery,
@@ -159,7 +178,7 @@ impl Project {
         res
     }
 
-    pub async fn rpcquery(
+    pub async fn _rpcquery(
         &self,
         query: String,
         payment: MetricsQuery,
@@ -282,8 +301,17 @@ async fn update_projects(deployments: Vec<Project>) {
             });
         }
     }
+
+    let conn = redis();
+    let mut conn_lock = conn.lock().await;
+    let limit_ex = SUBSCRIBER_LOOP_TIME as usize * 2;
+
     for n in deployments {
-        if old_deployments.contains(&n.id) {
+        let did = n.id.clone();
+        let limit = n.rate_limit;
+        let limit_key = format!("{}-limit", did);
+
+        if old_deployments.contains(&did) {
             let did = n.id.clone();
             lock.insert(did.clone(), n);
             // project update
@@ -297,14 +325,18 @@ async fn update_projects(deployments: Vec<Project>) {
                 }
             });
         } else {
-            let did = n.id.clone();
             lock.insert(did.clone(), n);
             // project join
             tokio::spawn(async move {
                 send("project-join", vec![json!(did)], 0).await;
             });
         }
+
+        // update project rate limit
+        let _: RedisResult<()> = conn_lock.set_ex(&limit_key, limit, limit_ex).await;
     }
+
+    drop(conn_lock);
     drop(lock);
 }
 
@@ -340,6 +372,8 @@ pub struct ProjectItem {
     pub project_type: i64,
     #[serde(rename = "serviceEndpoints")]
     pub project_endpoints: Vec<ProjectEndpointItem>,
+    #[serde(rename = "rateLimit")]
+    pub project_rate_limit: i64,
     #[serde(rename = "price")]
     pub payg_price: String,
     #[serde(rename = "token")]
@@ -355,6 +389,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut new_projects = vec![];
     for item in projects {
         let id = item.id.clone();
+        let rate_limit = item.project_rate_limit;
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
         let payg_overflow = item.payg_overflow.into();
@@ -393,6 +428,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             id,
             ptype,
             endpoints,
+            rate_limit,
             payg_price,
             payg_token,
             payg_expiration,
