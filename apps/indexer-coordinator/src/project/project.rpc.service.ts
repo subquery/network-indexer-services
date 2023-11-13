@@ -7,54 +7,31 @@ import { DesiredStatus } from 'src/core/types';
 import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
 import { Repository } from 'typeorm';
 import { RpcManifest } from './project.manifest';
-import { IProjectConfig, Project, ProjectEntity } from './project.model';
+import { IProjectConfig, Project, ProjectEntity, ValidationResponse } from './project.model';
 import { ProjectService } from './project.service';
+import { getRpcFamilyObject } from './rpc.factory';
+import { getLogger } from 'src/utils/logger';
 
-interface IRpcFamily {
-  getEndpointKeys(): string[];
-}
-
-class RpcFamilyEvm implements IRpcFamily {
-  getEndpointKeys(): string[] {
-    return ['evmWs', 'evmHttp'];
-  }
-}
-
-class RpcFamilySubstrate implements IRpcFamily {
-  getEndpointKeys(): string[] {
-    return ['substrateWs', 'substrateHttp'];
-  }
-}
+const logger = getLogger('project.rpc.service');
 
 @Injectable()
 export class ProjectRpcService {
-  private rpcFamilyMap = new Map<string, IRpcFamily>();
-
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private projectService: ProjectService
   ) {}
 
-  getRpcFamilyObject(rpcFamily: string): IRpcFamily | undefined {
-    let family = this.rpcFamilyMap.get(rpcFamily);
-    if (!family) {
-      switch (rpcFamily) {
-        case 'evm':
-          family = new RpcFamilyEvm();
-          break;
-        case 'substrate':
-          family = new RpcFamilySubstrate();
-          break;
-        default:
-          return undefined;
-      }
-      this.rpcFamilyMap.set(rpcFamily, family);
+  async getRpcFamilyList(projectId: string): Promise<string[]> {
+    let project = await this.projectService.getProject(projectId);
+    if (!project) {
+      project = await this.projectService.addProject(projectId);
     }
-    return family;
+    const manifest = project.manifest as RpcManifest;
+    return manifest.rpcFamily || [];
   }
 
   getEndpointKeys(rpcFamily: string): string[] {
-    const family = this.getRpcFamilyObject(rpcFamily);
+    const family = getRpcFamilyObject(rpcFamily);
     if (!family) return [];
 
     // TODO return family.getEndpointKeys();
@@ -65,29 +42,61 @@ export class ProjectRpcService {
     return rpcFamilyList.map((family) => this.getEndpointKeys(family)).flat();
   }
 
-  async validateRpcEndpoint(id: string, endpoint: string): Promise<boolean> {
+  async validateRpcEndpoint(
+    projectId: string,
+    endpointKey: string,
+    endpoint: string
+  ): Promise<ValidationResponse> {
     // should be internal ip
-    const domain = getDomain(endpoint);
-    if (!domain) {
-      return false;
-    }
-    let ip: string;
-    if (isIp(domain)) {
-      ip = domain;
-    } else {
-      ip = await getIpAddress(domain);
-    }
-    if (!ip) {
-      return false;
-    }
-    if (!isPrivateIp(ip)) {
-      return false;
+    try {
+      const domain = getDomain(endpoint);
+      if (!domain) {
+        return this.formatResponse(false, 'Invalid domain');
+      }
+      let ip: string;
+      if (isIp(domain)) {
+        ip = domain;
+      } else {
+        ip = await getIpAddress(domain);
+      }
+      if (!ip) {
+        return this.formatResponse(false, 'Invalid ip address');
+      }
+      if (!isPrivateIp(ip)) {
+        return this.formatResponse(false, 'Endpoint is not private ip');
+      }
+    } catch (e) {
+      logger.error(e);
+      return this.formatResponse(false, e.message);
     }
 
-    // TODO could read info
-    // TODO compare chain id, genesis hash, rpc family, client name and version, node type
+    // compare chain id, genesis hash, rpc family, client name and version, node type
+    try {
+      let project = await this.projectService.getProject(projectId);
+      if (!project) {
+        project = await this.projectService.addProject(projectId);
+      }
+      const projectManifest = project.manifest as RpcManifest;
+      const rpcFamily = projectManifest.rpcFamily.find((family) => endpointKey.startsWith(family));
+      // const protocolType = endpointKey.replace(rpcFamily, '').toLowerCase();
+      await getRpcFamilyObject(rpcFamily)
+        .withChainId(projectManifest.chain.chainId)
+        .withGenesisHash(projectManifest.chain.genesisHash)
+        .withNodeType(projectManifest.nodeType)
+        .withClientNameAndVersion(projectManifest.client.name, projectManifest.client.version)
+        .validate(endpoint);
+      return this.formatResponse(true);
+    } catch (e) {
+      logger.error(e);
+      return this.formatResponse(false, e.message);
+    }
+  }
 
-    return true;
+  formatResponse(valid = false, reason = ''): ValidationResponse {
+    return {
+      valid,
+      reason,
+    };
   }
 
   async startRpcProject(id: string, projectConfig: IProjectConfig): Promise<Project> {

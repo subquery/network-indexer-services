@@ -9,7 +9,7 @@ export const ipfsClient = new IPFSClient(IPFS_URLS.project);
 
 export async function getProjectManifest(cid: string): Promise<any> {
   const manifestStr = await ipfsClient.cat(cid);
-  return await yaml.load(manifestStr);
+  return await yaml.load(manifestStr, { schema: yaml.FAILSAFE_SCHEMA });
 }
 
 export type SubqueryManifest = PartialIpfsDeploymentManifest;
