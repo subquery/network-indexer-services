@@ -136,6 +136,7 @@ impl Project {
         ep_name: Option<String>,
         payment: MetricsQuery,
         network: MetricsNetwork,
+        is_limit: bool,
     ) -> Result<(Vec<u8>, String)> {
         // project rate limit
         let conn = redis();
@@ -147,8 +148,8 @@ impl Project {
         // get limit & used, default rate limit 10000/s big enough
         let limit: i64 = conn_lock.get(&limit_key).await.unwrap_or(10000);
         let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
-        if used + 1 > limit {
-            return Err(Error::RateLimit(1052));
+        if is_limit && used + 1 > limit {
+            return Err(Error::RateLimit(1057));
         }
         let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
         drop(conn_lock);
