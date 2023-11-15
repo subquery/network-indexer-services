@@ -3,6 +3,8 @@
 
 import dns from 'dns';
 import { promisify } from 'util';
+import { isIP } from 'net';
+import { isPrivate } from 'ip';
 
 const lookup = promisify(dns.lookup);
 
@@ -12,17 +14,11 @@ export async function getIpAddress(domain: string): Promise<string> {
 }
 
 export function isIp(ip: string): boolean {
-  const parts = ip.split('.').map(Number);
-  return parts.length === 4 && parts.every((part) => part >= 0 && part <= 255);
+  return isIP(ip) !== 0;
 }
 
 export function isPrivateIp(ip: string): boolean {
-  const parts = ip.split('.').map(Number);
-  return (
-    parts[0] === 10 || // 10.0.0.0 - 10.255.255.255
-    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || // 172.16.0.0 - 172.31.255.255
-    (parts[0] === 192 && parts[1] === 168) // 192.168.0.0 - 192.168.255.255
-  );
+  return isPrivate(ip);
 }
 
 export function getDomain(url: string): string {

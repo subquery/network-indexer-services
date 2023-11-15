@@ -59,17 +59,7 @@ export async function getManifest(cid: string) {
 }
 
 function dockerRegistryFromChain(chainType: ChainType): string {
-  switch (chainType) {
-    case 'cosmos':
-    case 'algorand':
-    case 'flare':
-    case 'near':
-    case 'stellar':
-    case 'ethereum':
-      return `subquerynetwork/subql-node-${chainType}`;
-    default:
-      return 'subquerynetwork/subql-node';
-  }
+  return `subquerynetwork/subql-node-${chainType}`;
 }
 
 export async function nodeConfigs(

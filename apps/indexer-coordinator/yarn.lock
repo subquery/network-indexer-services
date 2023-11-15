@@ -1659,10 +1659,10 @@
     reflect-metadata "^0.1.13"
     semver "^7.3.5"
 
-"@subql/contract-sdk@0.100.2":
-  version "0.100.2"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.100.2.tgz#d66b01a6cb43bf02547ed87ed4697136e425d3e7"
-  integrity sha512-LPn8qJUMzeOgWJFDZpbqs4P14ibwSGIh7aqWB5yfkpNOr7TvUv9Wv7wYcGkTjQY/NxuBxpAq6OcdOAjbX2QzpA==
+"@subql/contract-sdk@0.100.3":
+  version "0.100.3"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.100.3.tgz#a6e6708ad3a545823b54b7eaa1d95a8d6d6b183d"
+  integrity sha512-kMXFLFBdF0bByc5ub77iOMi4uE5+iDteaSlCSEn+VZiG1Wc/nrw2ezCrmiZ7Qn3OUxn/4+bpZLos3oBUwP3v2A==
 
 "@subql/contract-sdk@^0.16.2":
   version "0.16.2"
@@ -1671,30 +1671,30 @@
   dependencies:
     "@openzeppelin/contracts-upgradeable" "^4.5.2"
 
-"@subql/network-clients@^0.100.0":
-  version "0.100.0"
-  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.100.0.tgz#de68cef8bf0f6fa7f806e136f69d781ec9b4ce15"
-  integrity sha512-lXvKdqCAjXwjAiuxI31e29P712elimyNA6OxACs9Lw743fni5gXH4ojF8o8jnoj4bRVKXuwvfKavODfMDKVH4g==
+"@subql/network-clients@0.100.1-0":
+  version "0.100.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-clients/-/network-clients-0.100.1-0.tgz#58775ba3af34c6127eeecadfa73fc02620e4d0ec"
+  integrity sha512-GsYsgrQLFF+AQ8BvGs3bnL7tBrfB/beub+5C4njSCh7IYBEDEezRvYqmzbRRiO5ef/PbvsrZTu4M8czIF06ASA==
   dependencies:
     "@apollo/client" "^3.7.0"
     "@ethersproject/bignumber" "^5.7.0"
-    "@subql/network-config" "0.100.0"
-    "@subql/network-query" "0.100.0"
+    "@subql/network-config" "0.100.1-0"
+    "@subql/network-query" "0.100.1-0"
     axios "^0.27.2"
     buffer "^6.0.3"
     cross-fetch "^3.1.5"
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-config@0.100.0":
-  version "0.100.0"
-  resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.100.0.tgz#1b400c0fce56f5845b4629d00467aeecf3665924"
-  integrity sha512-tTUgIC3fCZnmsx1+7vlrD2DpDbLOFPbJScfywpH642mtDPfuBeNbsEDW+MbzDB1SWWMEELsNZ3euTV8Wyh3eRA==
+"@subql/network-config@0.100.1-0":
+  version "0.100.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.100.1-0.tgz#fbd3a7dc6d03eeec9f3dbe7428103984e350c7c4"
+  integrity sha512-TTqyvGkN7H12H+y9PkkRx5u+6fu4WYlbrcHiswf+1YAJGMxv2ry5g/62j2Uou60TuTXIvyj/ZTGzgst3/P2f6Q==
 
-"@subql/network-query@0.100.0", "@subql/network-query@^0.100.0":
-  version "0.100.0"
-  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.100.0.tgz#f22c57156ea65fbf0d5469d2f783da347016ebdb"
-  integrity sha512-6zj/RTWq/qrNEAHOVifrZsgRGs8Ujo52/AKmJ6ywl8xXZnSC7jM1UEjtUmu63kB/hbsDmOnxKaNnhHSh4Ghx5g==
+"@subql/network-query@0.100.1-0":
+  version "0.100.1-0"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-0.100.1-0.tgz#83afbd54f969121484f77bf99c3958434b1a4a16"
+  integrity sha512-3FnSLsxF/sxhjn43O+691g8jSse/s0UrsjU6cYY9cAY5dKnqigf69B3o08N/fWEvBMcN8abeR2Bhmv9Rr93Mmg==
   dependencies:
     graphql "^16.5.0"
 
@@ -1924,6 +1924,13 @@
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@types/http-errors/-/http-errors-2.0.1.tgz#20172f9578b225f6c7da63446f56d4ce108d5a65"
   integrity sha512-/K3ds8TRAfBvi5vfjuz8y6+GiAYBZ0x4tXv1Av6CWBWn0IlADc+ZX9pMq7oU0fNQPnBwIZl3rmeLp6SBApbxSQ==
+
+"@types/ip@^1.1.3":
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/@types/ip/-/ip-1.1.3.tgz#5d8634b3514a51768adda5e17c91a11cdb2e5247"
+  integrity sha512-64waoJgkXFTYnCYDUWgSATJ/dXEBanVkaP5d4Sbk7P6U7cTTMhxVyROTckc6JKdwCrgnAjZMn0k3177aQxtDEA==
+  dependencies:
+    "@types/node" "*"
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0", "@types/istanbul-lib-coverage@^2.0.1":
   version "2.0.4"
@@ -5153,6 +5160,11 @@ ip-regex@^4.0.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/ip-regex/-/ip-regex-4.3.0.tgz#687275ab0f57fa76978ff8f4dddc8a23d5990db5"
   integrity sha512-B9ZWJxHHOHUhUjCPrMpLD4xEq35bUTClHM1S6CBU5ixQnkZmwipwgc96vAd7AAGM9TGHvJR+Uss+/Ak6UphK+Q==
+
+ip@^1.1.8:
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/ip/-/ip-1.1.8.tgz#ae05948f6b075435ed3307acce04629da8cdbf48"
+  integrity sha512-PuExPYUiu6qMBQb4l06ecm6T6ujzhmh+MeJcW9wa89PoAz5pvd4zPgN5WJV104mb6S2T1AwNIAaB70JNrLQWhg==
 
 ipaddr.js@1.9.1:
   version "1.9.1"

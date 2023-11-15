@@ -74,8 +74,8 @@ pub async fn metadata(
         None => "",
     };
     let subquery_healthy = match metadata.pointer("/data/_metadata/indexerHealthy") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
+        Some(data) => data.as_bool().unwrap_or(false),
+        None => false,
     };
     let subquery_node = match metadata.pointer("/data/_metadata/indexerNodeVersion") {
         Some(data) => data.as_str().unwrap_or(""),

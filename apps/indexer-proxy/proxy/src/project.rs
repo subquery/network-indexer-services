@@ -413,6 +413,11 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                 "substrateHttp" => {
                     ptype = ProjectType::RpcSubstrate;
                 }
+                "queryEndpoint" => {
+                    // push query to endpoint index 0
+                    endpoints.insert(0, (endpoint.key, endpoint.value));
+                    continue;
+                }
                 _ => (),
             }
 
