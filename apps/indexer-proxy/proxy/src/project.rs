@@ -373,7 +373,7 @@ pub struct ProjectItem {
     #[serde(rename = "serviceEndpoints")]
     pub project_endpoints: Vec<ProjectEndpointItem>,
     #[serde(rename = "rateLimit")]
-    pub project_rate_limit: i64,
+    pub project_rate_limit: Option<i64>,
     #[serde(rename = "price")]
     pub payg_price: String,
     #[serde(rename = "token")]
@@ -389,7 +389,8 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut new_projects = vec![];
     for item in projects {
         let id = item.id.clone();
-        let rate_limit = item.project_rate_limit;
+        let rate_limit = item.project_rate_limit.unwrap_or(2); // DEBUG default: 10000
+
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
         let payg_overflow = item.payg_overflow.into();
