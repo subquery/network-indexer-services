@@ -70,7 +70,12 @@ pub async fn graphql_request(uri: &str, query: &GraphQLQuery) -> Result<Value, E
 
     let res = match response_result {
         Ok(res) => res,
-        Err(_e) => return Err(Error::GraphQLInternal(1010, "Service exception".to_owned())),
+        Err(_e) => {
+            return Err(Error::GraphQLInternal(
+                1010,
+                "Service exception or timeout".to_owned(),
+            ))
+        }
     };
 
     let json_result = res.json().await;
@@ -95,7 +100,12 @@ pub async fn graphql_request_raw(uri: &str, query: &GraphQLQuery) -> Result<Vec<
 
     let res = match response_result {
         Ok(res) => res,
-        Err(_e) => return Err(Error::GraphQLInternal(1010, "Service exception".to_owned())),
+        Err(_e) => {
+            return Err(Error::GraphQLInternal(
+                1010,
+                "Service exception or timeout".to_owned(),
+            ))
+        }
     };
 
     res.bytes()
