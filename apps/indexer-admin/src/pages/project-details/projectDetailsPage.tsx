@@ -234,12 +234,14 @@ const ProjectDetailsPage = () => {
 
   const removeProject = useCallback(async () => {
     try {
-      await removeProjectRequest({ variables: { id } });
+      await removeProjectRequest({
+        variables: { id, projectType: projectQuery.data.project.projectType },
+      });
       history.replace('/projects');
     } catch (e) {
       console.error('fail to remove project', e);
     }
-  }, [removeProjectRequest, history, id]);
+  }, [removeProjectRequest, history, id, projectQuery.data]);
 
   const steps = useMemo(() => {
     if (!projectDetails) return false;

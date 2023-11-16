@@ -154,8 +154,8 @@ export const ADD_PROJECT = gql`
 `;
 
 export const REMOVE_PROJECT = gql`
-  mutation RemoveProject($id: String!) {
-    removeProject(id: $id) {
+  mutation RemoveProject($id: String!, $projectType: Float!) {
+    removeProject(id: $id, projectType: $projectType) {
       status
     }
   }

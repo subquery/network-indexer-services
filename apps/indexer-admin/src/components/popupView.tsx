@@ -158,7 +158,6 @@ export const PopupView: FC<TModal> = ({
 }) => {
   const stepItem = steps[currentStep ?? 0];
   const popupType = stepItem?.popupType ?? 'modal';
-
   return (
     <>
       {popupType === 'drawer' && (
