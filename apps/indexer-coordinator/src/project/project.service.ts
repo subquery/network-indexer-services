@@ -183,7 +183,6 @@ export class ProjectService {
       projectType,
       details,
       manifest,
-      projectConfig: {},
     });
 
     const projectPayg = this.paygRepo.create({ id: id.trim() });

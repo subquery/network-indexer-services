@@ -285,11 +285,11 @@ export class ProjectEntity {
   @Column('jsonb', { default: {} })
   manifest: any;
 
-  @Column('jsonb', { default: defaultBaseConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectBaseConfig)
   baseConfig: ProjectBaseConfig;
 
-  @Column('jsonb', { default: defaultAdvancedConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
 
