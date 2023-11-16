@@ -24,6 +24,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
+use std::time::Duration;
 
 use crate::{
     constants::{APPLICATION_JSON, AUTHORIZATION, KEEP_ALIVE},
@@ -31,6 +32,8 @@ use crate::{
 };
 
 pub static REQUEST_CLIENT: Lazy<Client> = Lazy::new(reqwest::Client::new);
+
+const REQUEST_TIMEOUT: u64 = 40;
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
@@ -58,6 +61,7 @@ impl GraphQLQuery {
 pub async fn graphql_request(uri: &str, query: &GraphQLQuery) -> Result<Value, Error> {
     let response_result = REQUEST_CLIENT
         .post(uri)
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT))
         .header(CONTENT_TYPE, APPLICATION_JSON)
         .header(CONNECTION, KEEP_ALIVE)
         .body(serde_json::to_string(query).unwrap_or("".to_owned()))
@@ -82,6 +86,7 @@ pub async fn graphql_request(uri: &str, query: &GraphQLQuery) -> Result<Value, E
 pub async fn graphql_request_raw(uri: &str, query: &GraphQLQuery) -> Result<Vec<u8>, Error> {
     let response_result = REQUEST_CLIENT
         .post(uri)
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT))
         .header(CONTENT_TYPE, APPLICATION_JSON)
         .header(CONNECTION, KEEP_ALIVE)
         .body(serde_json::to_string(query).unwrap_or("".to_owned()))
@@ -113,7 +118,9 @@ pub async fn proxy_request(
 
     let res = match method.to_lowercase().as_str() {
         "get" => {
-            let mut req = REQUEST_CLIENT.get(url);
+            let mut req = REQUEST_CLIENT
+                .get(url)
+                .timeout(Duration::from_secs(REQUEST_TIMEOUT));
             let mut no_auth = true;
             for (k, v) in headers {
                 if k.to_lowercase() == "authorization" {
@@ -129,6 +136,7 @@ pub async fn proxy_request(
         _ => {
             let mut req = REQUEST_CLIENT
                 .post(url)
+                .timeout(Duration::from_secs(REQUEST_TIMEOUT))
                 .header("content-type", "application/json");
             let mut no_auth = true;
             for (k, v) in headers {
