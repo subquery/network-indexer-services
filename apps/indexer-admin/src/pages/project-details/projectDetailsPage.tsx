@@ -222,13 +222,15 @@ const ProjectDetailsPage = () => {
 
   const stopProject = useCallback(async () => {
     try {
-      await stopProjectRequest({ variables: { id } });
+      await stopProjectRequest({
+        variables: { id, projectType: projectQuery.data.project.projectType },
+      });
       onPopoverClose();
       projectStateChange(ProjectNotification.Terminated);
     } catch (e) {
       console.error('fail to stop project', e);
     }
-  }, [stopProjectRequest, onPopoverClose, projectStateChange, id]);
+  }, [stopProjectRequest, onPopoverClose, projectStateChange, id, projectQuery.data]);
 
   const removeProject = useCallback(async () => {
     try {

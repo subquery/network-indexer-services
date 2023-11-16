@@ -11,8 +11,7 @@ const ProjectFields = `
   id
   status
   chainType
-  nodeEndpoint
-  queryEndpoint
+  projectType
   details {
     name
     owner
@@ -24,15 +23,14 @@ const ProjectFields = `
     createdTimestamp
     updatedTimestamp
   }
-  baseConfig {
+
+  projectConfig {
     networkEndpoints
     networkDictionary
     nodeVersion
     queryVersion
-  }
-  advancedConfig {
+    usePrimaryNetworkEndpoint
     poiEnabled
-    purgeDB
     purgeDB
     timeout
     worker
@@ -40,6 +38,7 @@ const ProjectFields = `
     cache
     cpu
     memory
+
   }
 `;
 
@@ -92,25 +91,26 @@ export const START_PROJECT = gql`
     $cpu: Int!
     $memory: Int!
     $id: String!
+    $projectType: Float!
+    $serviceEndpoints: [KeyValuePairInput!]!
   ) {
     startProject(
       id: $id
-      baseConfig: {
+      projectConfig: {
         networkEndpoints: $networkEndpoints
         networkDictionary: $networkDictionary
         nodeVersion: $nodeVersion
         queryVersion: $queryVersion
-      }
-      advancedConfig: {
         poiEnabled: $poiEnabled
-        # purgeDB: $purgeDB
         timeout: $timeout
         batchSize: $batchSize
         worker: $workers
         cache: $cache
         cpu: $cpu
         memory: $memory
+        serviceEndpoints: $serviceEndpoints
       }
+      projectType: $projectType
     ) {
       ${ProjectFields}
     }
@@ -118,8 +118,8 @@ export const START_PROJECT = gql`
 `;
 
 export const STOP_PROJECT = gql`
-  mutation StopProject($id: String!) {
-    stopProject(id: $id) {
+  mutation StopProject($id: String!, $projectType: Float!) {
+    stopProject(id: $id, projectType: $projectType) {
       ${ProjectFields}
     }
   }
