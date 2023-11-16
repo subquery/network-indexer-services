@@ -129,6 +129,7 @@ pub fn subscribe() {
                         }),
                     );
                 }
+
                 if let Ok(item) = serde_json::from_str(project.to_string().as_str()) {
                     projects.push(item);
                 }

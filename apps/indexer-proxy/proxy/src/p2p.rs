@@ -758,6 +758,7 @@ async fn handle_close_agreement_query(
             ep_name,
             MetricsQuery::CloseAgreement,
             MetricsNetwork::P2P,
+            false,
         )
         .await?;
     Ok(hex::encode(data))
