@@ -294,9 +294,9 @@ export class ProjectEntity {
   advancedConfig: ProjectAdvancedConfig;
 
   @Column('jsonb', { default: {} })
+  @Field(() => ProjectConfig)
   projectConfig: ProjectConfig;
-  @Field(() => String, { nullable: true })
-  projectConfigStr: string;
+  // projectConfigStr: string;
 
   // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
   @BeforeInsert()
