@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
+import { getLogger } from 'src/utils/logger';
 import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
 import { Repository } from 'typeorm';
 import { RpcManifest } from './project.manifest';
 import { IProjectConfig, Project, ProjectEntity, ValidationResponse } from './project.model';
 import { ProjectService } from './project.service';
 import { getRpcFamilyObject } from './rpc.factory';
-import { getLogger } from 'src/utils/logger';
+import { ProjectType } from './types';
 
 const logger = getLogger('project.rpc.service');
 
@@ -20,6 +22,26 @@ export class ProjectRpcService {
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private projectService: ProjectService
   ) {}
+
+  @Cron('0 */8 * * * *')
+  async autoValidateRpcEndpoints() {
+    const projects = (await this.projectService.getAliveProjects()).filter(
+      (project) => project.projectType === ProjectType.RPC
+    );
+    for (const project of projects) {
+      for (const endpoint of project.serviceEndpoints) {
+        const response = await this.validateRpcEndpoint(project.id, endpoint.key, endpoint.value);
+        if (!response.valid) {
+          logger.warn(
+            `Project ${project.id} endpoint ${endpoint.key} is invalid: ${response.reason}`
+          );
+        }
+        endpoint.valid = response.valid;
+        endpoint.reason = response.reason;
+      }
+    }
+    await this.projectRepo.save(projects);
+  }
 
   async getRpcFamilyList(projectId: string): Promise<string[]> {
     let project = await this.projectService.getProject(projectId);

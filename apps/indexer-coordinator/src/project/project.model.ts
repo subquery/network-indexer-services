@@ -156,7 +156,7 @@ export interface IProjectConfig {
   cpu: number;
   memory: number;
   // rpc config
-  serviceEndpoints: KeyValuePair[];
+  serviceEndpoints: SeviceEndpoint[];
 }
 
 @InputType('ProjectConfigInput')
@@ -191,8 +191,8 @@ export class ProjectConfig implements IProjectConfig {
   @Field(() => Int)
   memory: number;
   // rpc config
-  @Field(() => [KeyValuePair])
-  serviceEndpoints: KeyValuePair[];
+  @Field(() => [SeviceEndpoint])
+  serviceEndpoints: SeviceEndpoint[];
 }
 
 const defaultBaseConfig: IProjectBaseConfig = {
@@ -236,15 +236,21 @@ const defaultProjectConfig: IProjectConfig = {
 
 @InputType('KeyValuePairInput')
 @ObjectType('KeyValuePair')
-export class KeyValuePair {
+export class SeviceEndpoint {
   constructor(key: string, value: string) {
     this.key = key;
     this.value = value;
+    this.valid = true;
+    this.reason = '';
   }
   @Field()
   key: string;
   @Field()
   value: string;
+  @Field({ nullable: true })
+  valid?: boolean;
+  @Field({ nullable: true })
+  reason?: string;
 }
 
 @Entity()
@@ -275,8 +281,8 @@ export class ProjectEntity {
   queryEndpoint: string; // endpoint of query service
 
   @Column('jsonb', { default: {} })
-  @Field(() => [KeyValuePair], { nullable: true })
-  serviceEndpoints: KeyValuePair[];
+  @Field(() => [SeviceEndpoint], { nullable: true })
+  serviceEndpoints: SeviceEndpoint[];
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
