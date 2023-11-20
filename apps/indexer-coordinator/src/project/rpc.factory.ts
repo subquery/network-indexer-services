@@ -4,6 +4,7 @@
 import axios from 'axios';
 import { BigNumber } from 'ethers';
 import _ from 'lodash';
+import * as semver from 'semver';
 import { getLogger } from 'src/utils/logger';
 
 const logger = getLogger('rpc.factory');
@@ -156,8 +157,8 @@ export class RpcFamilyEvm extends RpcFamily {
       if (!_.eq(_.toLower(clientNameFromRpc), _.toLower(clientName))) {
         throw new Error(`ClientName mismatch: ${clientNameFromRpc} != ${clientName}`);
       }
-      if (!_.eq(_.toLower(clientVersionFromRpc), _.toLower(clientVersion))) {
-        throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} != ${clientVersion}`);
+      if (!semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)) {
+        throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
       }
     });
     return this;
