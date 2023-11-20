@@ -404,9 +404,15 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             match endpoint.key.as_str() {
                 "evmHttp" => {
                     ptype = ProjectType::RpcEvm;
+                    // push query to endpoint index 0
+                    endpoints.insert(0, (endpoint.key, endpoint.value));
+                    continue;
                 }
                 "substrateHttp" => {
                     ptype = ProjectType::RpcSubstrate;
+                    // push query to endpoint index 0
+                    endpoints.insert(0, (endpoint.key, endpoint.value));
+                    continue;
                 }
                 "queryEndpoint" => {
                     // push query to endpoint index 0
