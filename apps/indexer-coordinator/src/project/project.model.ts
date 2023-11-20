@@ -48,30 +48,30 @@ export class ValidationResponse {
 
 @ObjectType('Metadata')
 export class MetadataType {
-  @Field(() => Int)
-  lastProcessedHeight: number;
   @Field()
-  lastProcessedTimestamp: number;
-  @Field(() => Int)
+  lastHeight: number;
+  @Field()
+  lastTime: number;
+  @Field()
   startHeight: number;
-  @Field(() => Int)
+  @Field()
   targetHeight: number;
+  @Field()
+  healthy: boolean;
   @Field({ nullable: true })
   chain?: string;
   @Field({ nullable: true })
   specName?: string;
   @Field({ nullable: true })
   genesisHash?: string;
-  @Field()
-  indexerHealthy: boolean;
-  @Field()
-  indexerNodeVersion: string;
-  @Field()
-  queryNodeVersion: string;
-  @Field()
-  indexerStatus: string;
-  @Field()
-  queryStatus: string;
+  @Field({ nullable: true })
+  indexerNodeVersion?: string;
+  @Field({ nullable: true })
+  queryNodeVersion?: string;
+  @Field({ nullable: true })
+  indexerStatus?: string;
+  @Field({ nullable: true })
+  queryStatus?: string;
 }
 
 export interface IProjectBaseConfig {

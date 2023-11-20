@@ -38,9 +38,17 @@ export class ProjectResolver {
   }
 
   @Query(() => MetadataType)
-  async queryMetadata(@Args('id') id: string) {
-    const project = await this.projectService.getProject(id);
-    return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
+  async serviceMetadata(@Args('id') id: string, @Args('projectType') projectType: ProjectType) {
+    let project: Project;
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        project = await this.projectService.getProject(id);
+        return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
+      case ProjectType.RPC:
+        return this.projectRpcService.getRpcMetadata(id);
+      default:
+        return undefined;
+    }
   }
 
   @Query(() => ProjectDetails)
