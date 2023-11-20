@@ -35,7 +35,7 @@ import { PortService } from './port.service';
 import { getProjectManifest } from './project.manifest';
 import {
   IProjectConfig,
-  KeyValuePair,
+  SeviceEndpoint,
   LogType,
   Payg,
   PaygConfig,
@@ -183,7 +183,6 @@ export class ProjectService {
       projectType,
       details,
       manifest,
-      projectConfig: {},
     });
 
     const projectPayg = this.paygRepo.create({ id: id.trim() });
@@ -300,8 +299,8 @@ export class ProjectService {
     const nodeConfig = await nodeConfigs(id);
     project.projectConfig = projectConfig;
     project.serviceEndpoints = [
-      new KeyValuePair(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
-      new KeyValuePair(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
+      new SeviceEndpoint(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
+      new SeviceEndpoint(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
     ];
     // project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     // project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);

@@ -1,5 +1,10 @@
+// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import axios from 'axios';
 import { BigNumber } from 'ethers';
+import _ from 'lodash';
+import * as semver from 'semver';
 import { getLogger } from 'src/utils/logger';
 
 const logger = getLogger('rpc.factory');
@@ -48,10 +53,11 @@ export interface IRpcFamily {
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
   validate(endpoint: string): Promise<void>;
+  getLastHeight(endpoint: string): Promise<number>;
 }
 
 abstract class RpcFamily implements IRpcFamily {
-  protected actions: (() => void)[] = [];
+  protected actions: (() => Promise<any>)[] = [];
   protected endpoint: string;
 
   async validate(endpoint: string) {
@@ -75,6 +81,9 @@ abstract class RpcFamily implements IRpcFamily {
     throw new Error('Method not implemented.');
   }
   withClientVersion(clientVersion: string): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
+  getLastHeight(endpoint: string): Promise<number> {
     throw new Error('Method not implemented.');
   }
 }
@@ -129,7 +138,7 @@ export class RpcFamilyEvm extends RpcFamily {
       } else {
         nodeTypeFromRpc = 'archive';
       }
-      if (nodeTypeFromRpc !== nodeType) {
+      if (nodeTypeFromRpc !== _.toLower(nodeType)) {
         throw new Error(`NodeType mismatch: ${nodeTypeFromRpc} != ${nodeType}`);
       }
     });
@@ -145,14 +154,22 @@ export class RpcFamilyEvm extends RpcFamily {
       const resultSet = result.data.result.split('/');
       const clientNameFromRpc = resultSet[0];
       const clientVersionFromRpc = resultSet[1];
-      if (clientNameFromRpc !== clientName) {
+      if (!_.eq(_.toLower(clientNameFromRpc), _.toLower(clientName))) {
         throw new Error(`ClientName mismatch: ${clientNameFromRpc} != ${clientName}`);
       }
-      if (clientVersionFromRpc !== clientVersion) {
-        throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} != ${clientVersion}`);
+      if (!semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)) {
+        throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
       }
     });
     return this;
+  }
+
+  async getLastHeight(endpoint: string): Promise<number> {
+    const result = await jsonRpcRequest(endpoint, 'eth_blockNumber', []);
+    if (result.data.error) {
+      throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
+    }
+    return BigNumber.from(result.data.result).toNumber();
   }
 }
 

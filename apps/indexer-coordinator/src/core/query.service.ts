@@ -87,25 +87,29 @@ export class QueryService {
       const metadata = data.data._metadata;
 
       return {
-        ...metadata,
+        lastHeight: metadata.lastProcessedHeight ?? 0,
+        lastTime: metadata.lastProcessedTimestamp ?? 0,
         startHeight: metadata.startHeight ?? 0,
         targetHeight: metadata.targetHeight ?? 0,
-        lastProcessedTimestamp: metadata.lastProcessedTimestamp ?? 0,
-        lastProcessedHeight: metadata.lastProcessedHeight ?? 0,
-        indexerHealthy: metadata.indexerHealthy ?? false,
+        healthy: metadata.indexerHealthy ?? false,
+        chain: metadata.chain ?? '',
+        specName: metadata.specName ?? '',
+        genesisHash: metadata.genesisHash ?? '',
+        indexerNodeVersion: metadata.indexerNodeVersion ?? '',
+        queryNodeVersion: metadata.queryNodeVersion ?? '',
         indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
     } catch (e) {
       return {
-        lastProcessedHeight: 0,
-        lastProcessedTimestamp: 0,
+        lastHeight: 0,
+        lastTime: 0,
         startHeight: 0,
         targetHeight: 0,
+        healthy: false,
         chain: '',
         specName: '',
         genesisHash: '',
-        indexerHealthy: false,
         indexerNodeVersion: '',
         queryNodeVersion: '',
         indexerStatus,
@@ -164,7 +168,7 @@ export class QueryService {
     } = project;
 
     const metadata = await this.getQueryMetaData(id, queryEndpoint);
-    const blockHeight = metadata.lastProcessedHeight;
+    const blockHeight = metadata.lastHeight;
     if (blockHeight === 0) return this.emptyPoi;
 
     if (!poiEnabled) return { blockHeight, mmrRoot: ZERO_BYTES32 };

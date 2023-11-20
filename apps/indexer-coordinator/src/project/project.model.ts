@@ -48,30 +48,30 @@ export class ValidationResponse {
 
 @ObjectType('Metadata')
 export class MetadataType {
-  @Field(() => Int)
-  lastProcessedHeight: number;
   @Field()
-  lastProcessedTimestamp: number;
-  @Field(() => Int)
+  lastHeight: number;
+  @Field()
+  lastTime: number;
+  @Field()
   startHeight: number;
-  @Field(() => Int)
+  @Field()
   targetHeight: number;
+  @Field()
+  healthy: boolean;
   @Field({ nullable: true })
   chain?: string;
   @Field({ nullable: true })
   specName?: string;
   @Field({ nullable: true })
   genesisHash?: string;
-  @Field()
-  indexerHealthy: boolean;
-  @Field()
-  indexerNodeVersion: string;
-  @Field()
-  queryNodeVersion: string;
-  @Field()
-  indexerStatus: string;
-  @Field()
-  queryStatus: string;
+  @Field({ nullable: true })
+  indexerNodeVersion?: string;
+  @Field({ nullable: true })
+  queryNodeVersion?: string;
+  @Field({ nullable: true })
+  indexerStatus?: string;
+  @Field({ nullable: true })
+  queryStatus?: string;
 }
 
 export interface IProjectBaseConfig {
@@ -156,7 +156,7 @@ export interface IProjectConfig {
   cpu: number;
   memory: number;
   // rpc config
-  serviceEndpoints: KeyValuePair[];
+  serviceEndpoints: SeviceEndpoint[];
 }
 
 @InputType('ProjectConfigInput')
@@ -191,8 +191,8 @@ export class ProjectConfig implements IProjectConfig {
   @Field(() => Int)
   memory: number;
   // rpc config
-  @Field(() => [KeyValuePair])
-  serviceEndpoints: KeyValuePair[];
+  @Field(() => [SeviceEndpoint])
+  serviceEndpoints: SeviceEndpoint[];
 }
 
 const defaultBaseConfig: IProjectBaseConfig = {
@@ -236,15 +236,21 @@ const defaultProjectConfig: IProjectConfig = {
 
 @InputType('KeyValuePairInput')
 @ObjectType('KeyValuePair')
-export class KeyValuePair {
+export class SeviceEndpoint {
   constructor(key: string, value: string) {
     this.key = key;
     this.value = value;
+    this.valid = true;
+    this.reason = '';
   }
   @Field()
   key: string;
   @Field()
   value: string;
+  @Field({ nullable: true })
+  valid?: boolean;
+  @Field({ nullable: true })
+  reason?: string;
 }
 
 @Entity()
@@ -275,8 +281,8 @@ export class ProjectEntity {
   queryEndpoint: string; // endpoint of query service
 
   @Column('jsonb', { default: {} })
-  @Field(() => [KeyValuePair], { nullable: true })
-  serviceEndpoints: KeyValuePair[];
+  @Field(() => [SeviceEndpoint], { nullable: true })
+  serviceEndpoints: SeviceEndpoint[];
 
   @Column('jsonb', { default: {} })
   @Field(() => ProjectInfo)
@@ -285,18 +291,18 @@ export class ProjectEntity {
   @Column('jsonb', { default: {} })
   manifest: any;
 
-  @Column('jsonb', { default: defaultBaseConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectBaseConfig)
   baseConfig: ProjectBaseConfig;
 
-  @Column('jsonb', { default: defaultAdvancedConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
 
   @Column('jsonb', { default: {} })
+  @Field(() => ProjectConfig)
   projectConfig: ProjectConfig;
-  @Field(() => String, { nullable: true })
-  projectConfigStr: string;
+  // projectConfigStr: string;
 
   // Explicitly set default values for the fields, ignoring the default values set in the DB schema.
   @BeforeInsert()
