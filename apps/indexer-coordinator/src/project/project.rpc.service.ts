@@ -115,7 +115,7 @@ export class ProjectRpcService {
         .validate(endpoint);
       return this.formatResponse(true);
     } catch (e) {
-      logger.error(e);
+      logger.debug(e);
       return this.formatResponse(false, e.message);
     }
   }
