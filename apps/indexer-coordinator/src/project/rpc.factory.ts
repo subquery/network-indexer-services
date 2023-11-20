@@ -3,6 +3,7 @@
 
 import axios from 'axios';
 import { BigNumber } from 'ethers';
+import _ from 'lodash';
 import { getLogger } from 'src/utils/logger';
 
 const logger = getLogger('rpc.factory');
@@ -136,7 +137,7 @@ export class RpcFamilyEvm extends RpcFamily {
       } else {
         nodeTypeFromRpc = 'archive';
       }
-      if (nodeTypeFromRpc !== nodeType) {
+      if (nodeTypeFromRpc !== _.toLower(nodeType)) {
         throw new Error(`NodeType mismatch: ${nodeTypeFromRpc} != ${nodeType}`);
       }
     });
@@ -152,10 +153,10 @@ export class RpcFamilyEvm extends RpcFamily {
       const resultSet = result.data.result.split('/');
       const clientNameFromRpc = resultSet[0];
       const clientVersionFromRpc = resultSet[1];
-      if (clientNameFromRpc !== clientName) {
+      if (!_.eq(_.toLower(clientNameFromRpc), _.toLower(clientName))) {
         throw new Error(`ClientName mismatch: ${clientNameFromRpc} != ${clientName}`);
       }
-      if (clientVersionFromRpc !== clientVersion) {
+      if (!_.eq(_.toLower(clientVersionFromRpc), _.toLower(clientVersion))) {
         throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} != ${clientVersion}`);
       }
     });
