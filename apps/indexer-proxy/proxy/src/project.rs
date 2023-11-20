@@ -44,7 +44,7 @@ use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
 use crate::cli::redis;
-use crate::metadata::{rpc_evm_metadata, subquery_metadata};
+use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
 use crate::payg::merket_price;
@@ -85,7 +85,7 @@ impl Project {
         let mut metadata = match self.ptype {
             ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
             ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
-            ProjectType::RpcSubstrate => json!("TODO"),
+            ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, block, network).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -158,8 +158,14 @@ impl Project {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm => self.rpcquery_raw(body, ep_name, payment, network).await,
-            ProjectType::RpcSubstrate => Ok((vec![], "TODO".to_owned())),
+            ProjectType::RpcEvm => {
+                // TODO filter the methods
+                self.rpcquery_raw(body, ep_name, payment, network).await
+            }
+            ProjectType::RpcSubstrate => {
+                // TODO filter the methods
+                self.rpcquery_raw(body, ep_name, payment, network).await
+            }
         }
     }
 

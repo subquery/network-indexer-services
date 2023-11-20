@@ -12,9 +12,8 @@ pub async fn metadata(
     block: Option<u64>,
     network: MetricsNetwork,
 ) -> Result<Value> {
-    //
-    let rpc = "https://rpc.ankr.com/polygon_mumbai";
-    let provider = Provider::<Http>::try_from(rpc).map_err(|_e| Error::ServiceException(1200))?;
+    let provider = Provider::<Http>::try_from(project.endpoint())
+        .map_err(|_e| Error::ServiceException(1200))?;
 
     let now = Instant::now();
     let chain = provider
