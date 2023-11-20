@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - develop
     paths-ignore:
       - '.github/workflows/**'
 
@@ -29,13 +30,13 @@ jobs:
           username: subquerynetwork
           password: ${{ secrets.SQ_DOCKERHUB_TOKEN }}
 
-      # build admin
+      # build admin and coordinator
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
         with:
           node-version: 16
-      - run: yarn install:admin
-      - run: yarn build:admin
+      - run: yarn install
+      - run: yarn build
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v2
@@ -68,7 +69,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: amd64
+          platforms: amd64,arm64
           file: ./Dockerfile
           tags: subquerynetwork/indexer-coordinator-dev:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
