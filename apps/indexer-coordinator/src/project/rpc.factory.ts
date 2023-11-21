@@ -53,7 +53,9 @@ export interface IRpcFamily {
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
   validate(endpoint: string): Promise<void>;
+  getTargetHeight(endpoint: string): Promise<number>;
   getLastHeight(endpoint: string): Promise<number>;
+  getLastTimestamp(endpoint: string): Promise<number>;
 }
 
 abstract class RpcFamily implements IRpcFamily {
@@ -83,7 +85,13 @@ abstract class RpcFamily implements IRpcFamily {
   withClientVersion(clientVersion: string): IRpcFamily {
     throw new Error('Method not implemented.');
   }
+  getTargetHeight(endpoint: string): Promise<number> {
+    throw new Error('Method not implemented.');
+  }
   getLastHeight(endpoint: string): Promise<number> {
+    throw new Error('Method not implemented.');
+  }
+  getLastTimestamp(endpoint: string): Promise<number> {
     throw new Error('Method not implemented.');
   }
 }
@@ -138,7 +146,7 @@ export class RpcFamilyEvm extends RpcFamily {
       } else {
         nodeTypeFromRpc = 'archive';
       }
-      if (nodeTypeFromRpc !== _.toLower(nodeType)) {
+      if (nodeTypeFromRpc === 'full' && _.toLower(nodeType) === 'archive') {
         throw new Error(`NodeType mismatch: ${nodeTypeFromRpc} != ${nodeType}`);
       }
     });
@@ -164,12 +172,31 @@ export class RpcFamilyEvm extends RpcFamily {
     return this;
   }
 
-  async getLastHeight(endpoint: string): Promise<number> {
+  async getTargetHeight(endpoint: string): Promise<number> {
     const result = await jsonRpcRequest(endpoint, 'eth_blockNumber', []);
     if (result.data.error) {
       throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
     }
     return BigNumber.from(result.data.result).toNumber();
+  }
+
+  async getLastHeight(endpoint: string): Promise<number> {
+    const result = await jsonRpcRequest(endpoint, 'eth_syncing', []);
+    if (result.data.error) {
+      throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
+    }
+    if (result.data.result === false) {
+      return 0;
+    }
+    return BigNumber.from(result.data.result.currentBlock).toNumber();
+  }
+
+  async getLastTimestamp(endpoint: string): Promise<number> {
+    const result = await jsonRpcRequest(endpoint, 'eth_getBlockByNumber', ['latest', false]);
+    if (result.data.error) {
+      throw new Error(`Request eth_getBlockByNumber failed: ${result.data.error.message}`);
+    }
+    return BigNumber.from(result.data.result.timestamp).toNumber();
   }
 }
 
