@@ -199,6 +199,48 @@ pub fn jsonrpc_params(id: u64, method: &str, params: Vec<Value>) -> Value {
     })
 }
 
+pub async fn jsonrpc_request(uri: &str, method: &str, params: Vec<Value>) -> Result<Value, Error> {
+    let query = jsonrpc_params(1, method, params);
+    let response_result = REQUEST_CLIENT
+        .post(uri)
+        .timeout(Duration::from_secs(REQUEST_TIMEOUT))
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .header(CONNECTION, KEEP_ALIVE)
+        .body(serde_json::to_string(&query).unwrap_or("".to_owned()))
+        .send()
+        .await;
+
+    let res = match response_result {
+        Ok(res) => res,
+        Err(_e) => {
+            return Err(Error::GraphQLInternal(
+                1010,
+                "Service exception or timeout".to_owned(),
+            ))
+        }
+    };
+
+    let json_result = res.json().await;
+    let mut data: Value = match json_result {
+        Ok(res) => res,
+        Err(e) => return Err(Error::GraphQLQuery(1011, e.to_string())),
+    };
+
+    if data.get("result").is_some() {
+        return Ok(data["result"].take());
+    } else if data.get("error").is_some() {
+        return Err(Error::GraphQLQuery(
+            1012,
+            data["error"]["message"].to_string(),
+        ));
+    }
+
+    Err(Error::GraphQLQuery(
+        1012,
+        "Invalid jsonrpc response".to_owned(),
+    ))
+}
+
 pub fn jsonrpc_response(res: Result<Value, Error>) -> Result<Value, Value> {
     match res {
         Ok(data) => {

@@ -27,24 +27,20 @@ pub async fn metadata(
     );
     let metadata = metadata_res?;
 
-    let last_height = if let Some(block) = block {
-        block
-    } else {
-        if let Some(target) = metadata.pointer("/data/_metadata/lastProcessedHeight") {
-            target.as_u64().unwrap_or(0)
-        } else {
-            0
-        }
+    let last_height = match metadata.pointer("/data/_metadata/lastProcessedHeight") {
+        Some(target) => target.as_u64().unwrap_or(0),
+        None => 0,
     };
     let last_time = match metadata.pointer("/data/_metadata/lastProcessedTimestamp") {
         Some(data) => data.as_u64().unwrap_or(0),
         None => 0,
     };
+    let poi_height = if let Some(b) = block { b } else { last_height };
 
     let now = Instant::now();
     let poi_res = graphql_request(
         project.endpoint(),
-        &GraphQLQuery::query(&poi_with_block(last_height)),
+        &GraphQLQuery::query(&poi_with_block(poi_height)),
     )
     .await;
     let time = now.elapsed().as_millis() as u64;
