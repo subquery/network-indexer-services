@@ -115,7 +115,7 @@ export class ProjectRpcService {
         .validate(endpoint);
       return this.formatResponse(true);
     } catch (e) {
-      logger.error(e);
+      logger.debug(e);
       return this.formatResponse(false, e.message);
     }
   }
@@ -168,15 +168,31 @@ export class ProjectRpcService {
       return;
     }
     const manifest = project.manifest as RpcManifest;
-    // const lastHeight = await getRpcFamilyObject(manifest.rpcFamily[0]).getLastHeight('');
+    // TODO: support multiple rpc family
+    const rpcFamily = manifest.rpcFamily[0];
+    const family = getRpcFamilyObject(rpcFamily);
+    const key = family.getEndpointKeys().find((key) => key.endsWith('Http'));
+    const endpoint = project.serviceEndpoints.find((endpoint) => endpoint.key === key);
+    let targetHeight = 0;
+    let lastHeight = 0;
+    let lastTime = 0;
+    try {
+      if (family && endpoint) {
+        targetHeight = await family.getTargetHeight(endpoint.value);
+        lastHeight = (await family.getLastHeight(endpoint.value)) || targetHeight;
+        lastTime = await family.getLastTimestamp(endpoint.value);
+      }
+    } catch (e) {
+      logger.debug(`getRpcMetadata error: ${e}`);
+    }
     return {
-      lastHeight: 0,
-      lastTime: 0,
+      lastHeight,
+      lastTime,
       startHeight: 0,
-      targetHeight: 0,
-      healthy: false,
+      targetHeight,
+      healthy: !!endpoint?.valid,
       chain: manifest.chain.chainId,
-      specName: manifest.name,
+      specName: '',
       genesisHash: manifest.chain.genesisHash,
       indexerNodeVersion: '',
       queryNodeVersion: '',
