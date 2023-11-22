@@ -17,24 +17,29 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use once_cell::sync::Lazy;
-use prometheus_client::{
-    encoding::{text::encode, EncodeLabelSet},
-    metrics::{counter::Counter, family::Family},
-    registry::Registry,
-};
+use serde::Serialize;
+use serde_json::json;
 use std::collections::HashMap;
 use std::time::Instant;
+use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{System, SystemExt};
 use tokio::sync::Mutex;
+
+use crate::cli::COMMAND;
+use crate::primitives::METRICS_LOOP_TIME;
 
 const PROXY_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static COORDINATOR_VERSION: Lazy<Mutex<u32>> = Lazy::new(|| Mutex::new(0));
 
+static UPTIME: Lazy<Instant> = Lazy::new(|| Instant::now());
+
 /// query count
-#[derive(Default)]
+#[derive(Default, Serialize)]
 struct QueryCounter {
     /// total count spent time
     time: u64,
+    /// failure count
+    failure: u64,
     /// free query from http
     free_http: u64,
     /// free query from p2p
@@ -49,37 +54,57 @@ struct QueryCounter {
     payg_p2p: u64,
 }
 
+impl QueryCounter {
+    fn default_failure() -> Self {
+        let mut q = Self::default();
+        q.failure += 1;
+        q
+    }
+}
+
 /// project => (query_count_http, query_count_p2p, query_time)
 static TIMER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-static UPTIME: Lazy<Instant> = Lazy::new(|| Instant::now());
+/// project => (query_count_http, query_count_p2p, query_time)
+static OWNER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
-static OWNER_SUCCESS: Lazy<Mutex<Family<Labels, Counter>>> =
-    Lazy::new(|| Mutex::new(Family::default()));
+pub fn listen() {
+    tokio::spawn(async {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(METRICS_LOOP_TIME)).await;
 
-static OWNER_FAILURE: Lazy<Mutex<Family<Labels, Counter>>> =
-    Lazy::new(|| Mutex::new(Family::default()));
+            let lock = OWNER_COUNTER.lock().await;
+            let data = json!(*lock);
+            drop(lock);
 
-static OWNER_TIME: Lazy<Mutex<Family<Labels, Counter>>> =
-    Lazy::new(|| Mutex::new(Family::default()));
+            let res = REQUEST_CLIENT
+                .post(format!("{}/metrics", COMMAND.coordinator_endpoint))
+                .header("content-type", "application/json")
+                .json(&json!(data))
+                .send()
+                .await;
 
-const FIELD_NAME_SUCCESS: &str = "query_success";
-const FIELD_NAME_FAILURE: &str = "query_failure";
-const FIELD_NAME_TIME: &str = "query_time";
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
-struct Labels {
-    pub deployment: String,
+            if let Ok(res) = res {
+                if res.error_for_status().is_ok() {
+                    // reset metrics data
+                    let mut lock = OWNER_COUNTER.lock().await;
+                    lock.clear(); // here is safe, because owner metrics
+                    drop(lock);
+                }
+            }
+        }
+    });
 }
 
+// If project not report, the indexer will tag `offline` in metrics
 pub async fn update_metrics_projects(new_deployments: Vec<String>) {
     let mut old_deployments = vec![];
-    let mut lock = TIMER_COUNTER.lock().await;
-    let os_lock = OWNER_SUCCESS.lock().await;
-    let of_lock = OWNER_FAILURE.lock().await;
-    let ot_lock = OWNER_TIME.lock().await;
-    for deployment in lock.keys() {
+    let mut timer = TIMER_COUNTER.lock().await;
+    let mut owner = OWNER_COUNTER.lock().await;
+
+    for deployment in timer.keys() {
         old_deployments.push(deployment.clone());
     }
 
@@ -87,31 +112,21 @@ pub async fn update_metrics_projects(new_deployments: Vec<String>) {
         if new_deployments.contains(o) {
             continue;
         } else {
-            lock.remove(o);
-            let label = Labels {
-                deployment: o.clone(),
-            };
-            os_lock.remove(&label);
-            of_lock.remove(&label);
-            ot_lock.remove(&label);
+            timer.remove(o);
+            owner.remove(o);
         }
     }
     for n in new_deployments {
         if old_deployments.contains(&n) {
             continue;
         } else {
-            lock.insert(n.clone(), QueryCounter::default());
-            let label = Labels { deployment: n };
-            let _ = os_lock.get_or_create(&label);
-            let _ = of_lock.get_or_create(&label);
-            let _ = ot_lock.get_or_create(&label);
+            timer.insert(n.clone(), QueryCounter::default());
+            owner.insert(n.clone(), QueryCounter::default());
         }
     }
 
-    drop(lock);
-    drop(os_lock);
-    drop(of_lock);
-    drop(ot_lock);
+    drop(timer);
+    drop(owner);
 }
 
 pub async fn get_services_version() -> u64 {
@@ -175,26 +190,6 @@ pub async fn get_timer_metrics() -> Vec<(String, u64, Vec<(u64, u64, u64)>)> {
     results
 }
 
-pub async fn get_owner_metrics() -> String {
-    let mut registry = Registry::default();
-
-    let family = OWNER_SUCCESS.lock().await;
-    registry.register(FIELD_NAME_SUCCESS, "Count of success", (*family).clone());
-    drop(family);
-
-    let family = OWNER_FAILURE.lock().await;
-    registry.register(FIELD_NAME_FAILURE, "Count of failure", (*family).clone());
-    drop(family);
-
-    let family = OWNER_TIME.lock().await;
-    registry.register(FIELD_NAME_TIME, "Time of requests", (*family).clone());
-    drop(family);
-
-    let mut body = String::new();
-    let _ = encode(&mut body, &registry);
-    body
-}
-
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum MetricsQuery {
     Free,
@@ -225,6 +220,8 @@ pub fn add_metrics_query(
             (MetricsQuery::PAYG, MetricsNetwork::HTTP)           => (0, 0, 0, 0, 1, 0),
             (MetricsQuery::PAYG, MetricsNetwork::P2P)            => (0, 0, 0, 0, 0, 1),
         };
+
+        // report not handle failure query
         let mut counter = TIMER_COUNTER.lock().await;
         counter
             .entry(deployment.clone())
@@ -239,6 +236,7 @@ pub fn add_metrics_query(
             })
             .or_insert(QueryCounter {
                 time,
+                failure: 0,
                 free_http: f0,
                 free_p2p: f1,
                 ca_http: c0,
@@ -248,20 +246,38 @@ pub fn add_metrics_query(
             });
         drop(counter);
 
-        let label = Labels { deployment };
-
+        let mut owner = OWNER_COUNTER.lock().await;
         if success {
-            let family = OWNER_SUCCESS.lock().await;
-            family.get_or_create(&label).inc();
-            drop(family);
+            owner
+                .entry(deployment.clone())
+                .and_modify(|f| {
+                    f.time += time;
+                    f.free_http += f0;
+                    f.free_p2p += f1;
+                    f.ca_http += c0;
+                    f.ca_p2p += c1;
+                    f.payg_http += p0;
+                    f.payg_p2p += p1;
+                })
+                .or_insert(QueryCounter {
+                    time,
+                    failure: 0,
+                    free_http: f0,
+                    free_p2p: f1,
+                    ca_http: c0,
+                    ca_p2p: c1,
+                    payg_http: p0,
+                    payg_p2p: p1,
+                });
         } else {
-            let family = OWNER_FAILURE.lock().await;
-            family.get_or_create(&label).inc();
-            drop(family);
+            owner
+                .entry(deployment.clone())
+                .and_modify(|f| {
+                    f.failure += 1;
+                })
+                .or_insert(QueryCounter::default_failure());
         }
 
-        let family = OWNER_TIME.lock().await;
-        family.get_or_create(&label).inc_by(time);
-        drop(family);
+        drop(owner);
     });
 }

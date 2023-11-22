@@ -26,7 +26,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -42,7 +41,7 @@ use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
+use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
 use crate::project::get_project;
 
@@ -78,8 +77,6 @@ pub async fn start_server(port: u16) {
         .route("/metadata/:deployment", get(metadata_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
-        // `Get /metrics` goes to get the metrics data
-        .route("/metrics", get(metrics_handler))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -322,25 +319,6 @@ async fn metadata_handler(
 async fn healthy_handler() -> Result<Json<Value>, Error> {
     let info = indexer_healthy().await;
     Ok(Json(info))
-}
-
-async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
-    if token == COMMAND.metrics_token {
-        let body = get_owner_metrics().await;
-
-        build_response(
-            body,
-            vec![(
-                "Content-Type",
-                "application/openmetrics-text; version=1.0.0; charset=utf-8",
-            )],
-        )
-    } else {
-        Response::builder()
-            .status(StatusCode::FORBIDDEN)
-            .body("".to_owned())
-            .unwrap()
-    }
 }
 
 fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> {
