@@ -92,7 +92,7 @@ pub async fn metadata(
     add_metrics_query(project.id.clone(), time, MetricsQuery::Free, network, true);
 
     Ok(json!({
-        "startHeight": 0,
+        "startHeight": 1,
         "lastHeight": last_height,
         "targetHeight": last_height,
         "lastTime": Utc::now().timestamp(),
