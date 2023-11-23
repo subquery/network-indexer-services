@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use chrono::prelude::*;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use serde_json::json;
@@ -34,7 +35,7 @@ pub static COORDINATOR_VERSION: Lazy<Mutex<u32>> = Lazy::new(|| Mutex::new(0));
 static UPTIME: Lazy<Instant> = Lazy::new(|| Instant::now());
 
 /// query count
-#[derive(Default, Serialize)]
+#[derive(Clone, Default, Serialize)]
 struct QueryCounter {
     /// total count spent time
     time: u64,
@@ -66,6 +67,13 @@ impl QueryCounter {
 static TIMER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+/// previous hour => project => (query_count_http, query_count_p2p, query_time)
+static PREVIOUS_COUNTER: Lazy<Mutex<HashMap<String, HashMap<String, QueryCounter>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// current owner counter hour
+static CURRENT_HOUR: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
+
 /// project => (query_count_http, query_count_p2p, query_time)
 static OWNER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -76,8 +84,23 @@ pub fn listen() {
             tokio::time::sleep(std::time::Duration::from_secs(METRICS_LOOP_TIME)).await;
 
             let lock = OWNER_COUNTER.lock().await;
-            let data = json!(*lock);
+            let current = lock.clone();
             drop(lock);
+
+            let current_hour = CURRENT_HOUR.lock().await;
+            let hour = current_hour.to_string();
+            drop(current_hour);
+
+            let mut data: HashMap<String, HashMap<String, QueryCounter>> = HashMap::new();
+            data.insert(hour, current);
+
+            let mut previous_keys: Vec<String> = vec![];
+            let previous = PREVIOUS_COUNTER.lock().await;
+            for (hour, counter) in previous.iter() {
+                data.insert(hour.to_string(), counter.clone());
+                previous_keys.push(hour.to_string());
+            }
+            drop(previous);
 
             let res = REQUEST_CLIENT
                 .post(format!("{}/metrics", COMMAND.coordinator_endpoint))
@@ -88,9 +111,11 @@ pub fn listen() {
 
             if let Ok(res) = res {
                 if res.error_for_status().is_ok() {
-                    // reset metrics data
-                    let mut lock = OWNER_COUNTER.lock().await;
-                    lock.clear(); // here is safe, because owner metrics
+                    // clear old previous
+                    let mut lock = PREVIOUS_COUNTER.lock().await;
+                    for key in previous_keys {
+                        lock.remove(&key);
+                    }
                     drop(lock);
                 }
             }
@@ -245,6 +270,24 @@ pub fn add_metrics_query(
                 payg_p2p: p1,
             });
         drop(counter);
+
+        let now = Utc::now();
+        let hour = format!("{}", now.format("%Y-%m-%d %H"));
+        let mut current_hour = CURRENT_HOUR.lock().await;
+        if *current_hour != hour {
+            // reset owner_counter & previous_counter
+
+            let mut owner = OWNER_COUNTER.lock().await;
+            let mut previous = PREVIOUS_COUNTER.lock().await;
+            previous.insert(current_hour.to_string(), owner.clone());
+
+            owner.clear();
+            *current_hour = hour;
+
+            drop(previous);
+            drop(owner);
+        }
+        drop(current_hour);
 
         let mut owner = OWNER_COUNTER.lock().await;
         if success {
