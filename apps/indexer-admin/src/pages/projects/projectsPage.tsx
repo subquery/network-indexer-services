@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
+import { openNotification } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
 import { isEmpty } from 'lodash';
 
@@ -47,7 +48,12 @@ const Projects = () => {
       <ContentContainer>
         <HeaderContainer>
           <Text size={45}>Projects</Text>
-          <Button title="Add Project" onClick={() => setVisible(true)} />
+          <Button
+            title="Add Project"
+            onClick={() => {
+              setVisible(true);
+            }}
+          />
         </HeaderContainer>
         <ProjecItemsHeader />
         {projectList.map((props: ProjectDetails) => (
@@ -55,12 +61,25 @@ const Projects = () => {
         ))}
       </ContentContainer>
     ) : (
-      <EmptyView onClick={() => setVisible(true)} />
+      <EmptyView
+        onClick={() => {
+          setVisible(true);
+        }}
+      />
     );
 
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
-    error: () => <EmptyView onClick={() => setVisible(true)} />,
+    error: (error) => (
+      <EmptyView
+        onClick={() => {
+          openNotification({
+            type: 'error',
+            description: `There have errors, please contract developer or upgrade to latest version. ${error.message}`,
+          });
+        }}
+      />
+    ),
     data: ({ getProjects: projects }) => (
       <Container>
         {isIndexer && renderProjects(projects)}

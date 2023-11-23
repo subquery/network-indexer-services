@@ -50,7 +50,15 @@ const IntroductionView: FC<Props> = ({ item, onClick, loading, link }) => {
           {link}
         </Text>
       </TextContainer>
-      <Button mt={80} type="primary" title={buttonTitle} loading={loading} onClick={onClick} />
+      <Button
+        mt={80}
+        type="primary"
+        title={buttonTitle}
+        loading={loading}
+        onClick={() => {
+          onClick();
+        }}
+      />
     </Container>
   );
 };

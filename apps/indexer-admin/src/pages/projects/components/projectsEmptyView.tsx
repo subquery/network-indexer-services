@@ -36,7 +36,9 @@ const EmptyView: FC<Props> = ({ onClick }) => {
           desc: 'To begin exploring query projects, go to the Subquery Explorer. Select the project that interests you and copy its deployment ID from the page. Next, click the "Add Project" button and paste in the deployment ID. This will add the project to your coordinator service, allowing you to manage it in the indexer app. ',
           buttonTitle: 'Add Project',
         }}
-        onClick={onClick}
+        onClick={() => {
+          onClick();
+        }}
         link={ExplorerLink()}
       />
     </Container>

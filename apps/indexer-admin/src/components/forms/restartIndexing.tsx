@@ -163,6 +163,8 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
           workers: values.worker,
           networkDictionary: values.networkDictionary ?? '',
           id,
+          projectType: projectQuery.data.project.projectType,
+          serviceEndpoints: [],
         },
       });
       form.resetFields();
@@ -197,10 +199,11 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
       return <>Unable to get default values</>;
     },
     data: ({ project }) => {
-      const { baseConfig, advancedConfig } = cloneDeep(project);
+      const { projectConfig } = cloneDeep(project);
 
       const networkEndpoints =
-        baseConfig?.networkEndpoints.length === 0 ? [''] : baseConfig?.networkEndpoints;
+        projectConfig?.networkEndpoints.length === 0 ? [''] : projectConfig?.networkEndpoints;
+
       return (
         <StartINdexingForm>
           <Form
@@ -208,7 +211,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
             name="form"
             layout="vertical"
             onFinish={handleSubmit(setVisible)}
-            initialValues={{ ...baseConfig, ...advancedConfig, networkEndpoints }}
+            initialValues={{ ...projectConfig, networkEndpoints }}
           >
             <Typography variant="medium" style={{ marginBottom: 24 }}>
               <InfoCircleOutlined
