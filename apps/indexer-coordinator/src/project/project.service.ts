@@ -3,12 +3,17 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import {
+  bytes32ToCid,
+  GraphqlQueryClient,
+  IPFS_URLS,
+  IPFSClient,
+  NETWORK_CONFIGS,
+} from '@subql/network-clients';
+import _ from 'lodash';
 import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
-
 import { Config } from '../configure/configure.module';
-
 import { AccountService } from '../core/account.service';
 import { ContractService } from '../core/contract.service';
 import { DockerService } from '../core/docker.service';
@@ -149,6 +154,12 @@ export class ProjectService {
 
     const deployment = result.data.deployment;
     const project = deployment.project;
+    if (_.startsWith(project.metadata, '0x')) {
+      project.metadata = bytes32ToCid(project.metadata);
+    }
+    if (_.startsWith(deployment.metadata, '0x')) {
+      deployment.metadata = bytes32ToCid(deployment.metadata);
+    }
     const projectMetadataStr = await this.ipfsClient.cat(project.metadata);
     const deploymentMetadataStr = await this.ipfsClient.cat(deployment.metadata);
     const projectMetadata = JSON.parse(projectMetadataStr);
