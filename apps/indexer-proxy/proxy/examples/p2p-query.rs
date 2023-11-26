@@ -275,7 +275,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let query = params[3].as_str().ok_or(RpcError::ParseError)?.to_owned();
             let pid = PeerId::from_hex(remote)?;
 
-            let data = Event::CloseAgreementQuery(uid, agreement, query).to_bytes();
+            let data = Event::CloseAgreementQuery(uid, agreement, query, None).to_bytes();
             Ok(HandleResult::group(
                 gid,
                 SendType::Event(0, pid, data.clone()),
@@ -349,9 +349,9 @@ async fn handle_group(
                     }
                     drop(ledger);
                 }
-                Event::ProjectHealthy(metadata) => {
+                Event::IndexerHealthy(metadata) => {
                     let res: RpcParam = serde_json::from_str(&metadata)?;
-                    println!("GOT project healthy report: {}", res);
+                    println!("GOT indexer healthy report: {}", res);
                 }
                 Event::CloseAgreementLimitRes(uid, data) => {
                     let state: RpcParam = serde_json::from_str(&data)?;
