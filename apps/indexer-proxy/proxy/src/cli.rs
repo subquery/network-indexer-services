@@ -100,9 +100,6 @@ pub struct CommandLineArgs {
     /// Open telemetry for SubQuery
     #[structopt(long = "telemetry", parse(try_from_str), default_value = "true")]
     pub telemetry: bool,
-    /// The auth bearer for prometheus fetch metrics
-    #[structopt(long = "metrics-token", default_value = "thisismyAuthtoken")]
-    pub metrics_token: String,
 }
 
 impl CommandLineArgs {

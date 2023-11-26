@@ -34,6 +34,9 @@ pub const MONITOR_INIT_TIME: u64 = 10;
 /// loop report status to coordinator time: 1min = 60s
 pub const MONITOR_LOOP_TIME: u64 = 60;
 
+/// loop report metrics to coordinator time: 3min = 180s
+pub const METRICS_LOOP_TIME: u64 = 180;
+
 /// subscriber loop time (no account and projects): 10s
 pub const SUBSCRIBER_INIT_TIME: u64 = 10;
 

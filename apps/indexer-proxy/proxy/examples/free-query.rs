@@ -115,7 +115,7 @@ async fn main() -> std::io::Result<()> {
         let r = client
             .post(&query_url)
             .header("Authorization", query_token.clone())
-            .body(query_body)
+            .body(query_body.clone())
             .send()
             .await
             .unwrap();
