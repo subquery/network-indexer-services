@@ -848,6 +848,7 @@ async fn handle_close_agreement_query(
         query,
         MetricsQuery::CloseAgreement,
         MetricsNetwork::P2P,
+        false,
     )
     .await
 }

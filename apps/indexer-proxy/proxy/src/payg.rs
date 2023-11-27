@@ -350,7 +350,7 @@ pub async fn query_state(
 
     // query the data.
     let (data, signature) =
-        project_query_raw(project_id, query, MetricsQuery::PAYG, network_type).await?;
+        project_query_raw(project_id, query, MetricsQuery::PAYG, network_type, true).await?;
 
     state_cache.spent = local_prev + remote_next - remote_prev;
     state_cache.remote = remote_next;

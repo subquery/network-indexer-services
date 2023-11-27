@@ -189,6 +189,7 @@ async fn query_handler(
         &query,
         MetricsQuery::CloseAgreement,
         MetricsNetwork::HTTP,
+        false,
     )
     .await?;
 

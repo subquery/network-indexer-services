@@ -25,6 +25,7 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
+use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -39,6 +40,7 @@ use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
+use crate::cli::redis;
 use crate::graphql::{poi_with_block, METADATA_QUERY};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -53,6 +55,7 @@ pub struct Project {
     pub id: String,
     pub query_endpoint: String,
     pub node_endpoint: String,
+    pub rate_limit: Option<i64>,
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
@@ -152,6 +155,8 @@ pub struct ProjectItem {
     pub query_endpoint: String,
     #[serde(rename = "nodeEndpoint")]
     pub node_endpoint: String,
+    #[serde(rename = "rateLimit")]
+    pub project_rate_limit: Option<i64>,
     #[serde(rename = "price")]
     pub payg_price: String,
     #[serde(rename = "token")]
@@ -166,14 +171,18 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut project_ids = vec![];
     let mut new_projects = vec![];
     for item in projects {
+        let rate_limit = item.project_rate_limit;
+
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
         let payg_overflow = item.payg_overflow.into();
+
         project_ids.push(item.id.clone());
         let project = Project {
             id: item.id,
             query_endpoint: item.query_endpoint,
             node_endpoint: item.node_endpoint,
+            rate_limit,
             payg_price,
             payg_token,
             payg_expiration: item.payg_expiration,
@@ -194,6 +203,7 @@ pub async fn project_metadata(id: &str, network: MetricsNetwork) -> Result<Value
         &GraphQLQuery::query(METADATA_QUERY),
         MetricsQuery::Free,
         network,
+        true,
     )
     .await
 }
@@ -274,6 +284,7 @@ pub async fn project_poi(id: &str, block: Option<u64>, network: MetricsNetwork) 
         &GraphQLQuery::query(&poi_with_block(last_block)),
         MetricsQuery::Free,
         network,
+        true,
     )
     .await
 }
@@ -283,8 +294,24 @@ pub async fn project_query(
     query: &GraphQLQuery,
     payment: MetricsQuery,
     network: MetricsNetwork,
+    is_limit: bool,
 ) -> Result<Value> {
     let project = get_project(id).await?;
+
+    if let Some(limit) = project.rate_limit {
+        // project rate limit
+        let conn = redis();
+        let mut conn_lock = conn.lock().await;
+        let second = Utc::now().timestamp();
+        let used_key = format!("{}-rate-{}", project.id, second);
+
+        let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
+        if is_limit && used + 1 > limit {
+            return Err(Error::RateLimit(1057));
+        }
+        let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
+        drop(conn_lock);
+    }
 
     let now = Instant::now();
     let res = graphql_request(&project.query_endpoint, query).await;
@@ -299,8 +326,24 @@ pub async fn project_query_raw(
     query: &GraphQLQuery,
     payment: MetricsQuery,
     network: MetricsNetwork,
+    is_limit: bool,
 ) -> Result<(Vec<u8>, String)> {
     let project = get_project(id).await?;
+
+    if let Some(limit) = project.rate_limit {
+        // project rate limit
+        let conn = redis();
+        let mut conn_lock = conn.lock().await;
+        let second = Utc::now().timestamp();
+        let used_key = format!("{}-rate-{}", project.id, second);
+
+        let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
+        if is_limit && used + 1 > limit {
+            return Err(Error::RateLimit(1057));
+        }
+        let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
+        drop(conn_lock);
+    }
 
     let now = Instant::now();
     let res = graphql_request_raw(&project.query_endpoint, query).await;
