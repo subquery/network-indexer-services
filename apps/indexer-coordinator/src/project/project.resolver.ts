@@ -150,6 +150,14 @@ export class ProjectResolver {
     }
   }
 
+  @Mutation(() => Project)
+  async updateProjectRateLimit(
+    @Args('id') id: string,
+    @Args('rateLimit') rateLimit: number
+  ): Promise<Project> {
+    return this.projectService.updateProjectRateLimit(id, rateLimit);
+  }
+
   @Mutation(() => Payg)
   updateProjectPayg(@Args('id') id: string, @Args('paygConfig') paygConfig: PaygConfig) {
     return this.projectService.updateProjectPayg(id, paygConfig);

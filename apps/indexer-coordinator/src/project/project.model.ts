@@ -272,6 +272,10 @@ export class ProjectEntity {
   @Field()
   projectType: ProjectType;
 
+  @Column({ default: 0 })
+  @Field()
+  rateLimit: number;
+
   @Column({ default: '' })
   @Field()
   nodeEndpoint: string; // endpoint of indexer service
@@ -308,6 +312,8 @@ export class ProjectEntity {
   @BeforeInsert()
   setupDefaultValuesOnInsert: () => void = () => {
     this.chainType = this.chainType ?? '';
+    this.projectType = this.projectType ?? ProjectType.SUBQUERY;
+    this.rateLimit = this.rateLimit ?? 0;
     this.nodeEndpoint = this.nodeEndpoint ?? '';
     this.queryEndpoint = this.queryEndpoint ?? '';
     this.serviceEndpoints = this.serviceEndpoints ?? [];

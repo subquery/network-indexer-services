@@ -359,6 +359,15 @@ export class ProjectService {
     return this.projectRepo.remove([project]);
   }
 
+  async updateProjectRateLimit(id: string, rateLimit: number): Promise<Project> {
+    const project = await this.getProject(id);
+    if (!project) {
+      return;
+    }
+    project.rateLimit = rateLimit;
+    return this.projectRepo.save(project);
+  }
+
   async updateProjectPayg(id: string, paygConfig: PaygConfig) {
     const payg = await this.paygRepo.findOneBy({ id });
     if (!payg) {
