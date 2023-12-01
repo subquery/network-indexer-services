@@ -291,7 +291,7 @@ const ProjectDetailsPage = () => {
         indexingProgress({
           startHeight: metadata.startHeight ?? 0,
           targetHeight: metadata.targetHeight,
-          currentHeight: metadata.lastProcessedHeight,
+          currentHeight: metadata.lastHeight,
         })
       );
   }, [metadata]);

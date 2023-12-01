@@ -44,13 +44,13 @@ const ProjectFields = `
 
 const MetadataFields = `
   metadata {
-    lastProcessedHeight
-    lastProcessedTimestamp
+    lastHeight
+    lastTime
     targetHeight
     chain
     specName
     genesisHash
-    indexerHealthy
+    healthy
     indexerNodeVersion
     queryNodeVersion
     indexerStatus
@@ -237,10 +237,11 @@ export const GET_LOG = gql`
 export const GET_QUERY_METADATA = gql`
   query QueryMetadata($id: String!) {
     queryMetadata(id: $id) {
-      lastProcessedHeight
+      lastHeight
       startHeight
       targetHeight
-      lastProcessedTimestamp
+      healthy
+      lastTime
       specName
       chain
       indexerNodeVersion
