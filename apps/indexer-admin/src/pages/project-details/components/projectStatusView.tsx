@@ -69,7 +69,7 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
               horizontal
               versionType="Indexing Block"
               prefix="#"
-              value={metadata.lastProcessedHeight}
+              value={metadata.lastHeight}
             />
           </TagsContainer>
         )}

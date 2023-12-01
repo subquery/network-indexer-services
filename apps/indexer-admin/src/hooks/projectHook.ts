@@ -3,7 +3,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { NetworkStatus, useLazyQuery, useQuery } from '@apollo/client';
-import { _Metadata } from '@subql/network-query';
 import { useInterval } from 'ahooks';
 import axios from 'axios';
 import yaml from 'js-yaml';
@@ -33,14 +32,13 @@ import {
 import { useGetIndexerMetadataCid } from './transactionHook';
 
 const metadataInitValue = {
-  lastProcessedHeight: 0,
-  lastProcessedTimestamp: 0,
+  lastHeight: 0,
+  lastTime: 0,
   startHeight: 0,
   targetHeight: 0,
   chain: '',
   specName: '',
   genesisHash: '',
-  indexerHealthy: undefined,
   indexerNodeVersion: '',
   queryNodeVersion: '',
   indexerStatus: dockerContainerEnum.TERMINATED,
@@ -238,7 +236,7 @@ export const useIsOnline = (props: {
     try {
       const res = await axios.get<{
         data: {
-          _metadata: _Metadata;
+          _metadata: TQueryMetadata;
         };
       }>(
         wrapGqlUrl({
@@ -249,7 +247,7 @@ export const useIsOnline = (props: {
 
       if (res.status === 200) {
         // eslint-disable-next-line no-underscore-dangle
-        if (res.data?.data?._metadata?.indexerHealthy) {
+        if (res.data?.data?._metadata?.healthy) {
           setOnline(true);
         }
       }
