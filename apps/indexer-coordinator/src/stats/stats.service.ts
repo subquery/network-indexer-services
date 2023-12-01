@@ -3,6 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToInstance } from 'class-transformer';
 import { Between, Repository } from 'typeorm';
 import { ProjectStatisticsEntity, ProjectStatisticsMapInput } from './stats.model';
 
@@ -14,15 +15,35 @@ export class StatsService {
   ) {}
 
   async saveStats(stats: ProjectStatisticsEntity): Promise<ProjectStatisticsEntity> {
+    const existingStats = await this.projectStatisticsRepo.findOne({
+      where: {
+        deploymentCid: stats.deploymentCid,
+        dataTime: stats.dataTime,
+      },
+    });
+    if (existingStats) {
+      if (stats.time > existingStats.time) {
+        existingStats.time = stats.time;
+        existingStats.failure = stats.failure;
+        existingStats.freeHttp = stats.freeHttp;
+        existingStats.freeP2p = stats.freeP2p;
+        existingStats.caHttp = stats.caHttp;
+        existingStats.caP2p = stats.caP2p;
+        existingStats.paygHttp = stats.paygHttp;
+        existingStats.paygP2p = stats.paygP2p;
+        return await this.projectStatisticsRepo.save(existingStats);
+      }
+      return existingStats;
+    }
     return await this.projectStatisticsRepo.save(stats);
   }
 
-  async saveStatsList(statsMap: ProjectStatisticsMapInput) {
+  async saveStatsList(statsMap: any) {
     const statsList: ProjectStatisticsEntity[] = [];
     for (const hour in statsMap) {
       const stats = statsMap[hour];
       for (const cid in stats) {
-        const stat = stats[cid];
+        const stat = plainToInstance(ProjectStatisticsEntity, stats[cid]);
         statsList.push({
           ...stat,
           dataTime: this.houtToTime(hour),
@@ -38,27 +59,31 @@ export class StatsService {
       };
     });
 
-    const existingStats = await this.projectStatisticsRepo.find({
+    const existingStatsList = await this.projectStatisticsRepo.find({
       where: cidHourPairList,
     });
 
-    for (const stat of existingStats) {
+    for (const existingStats of existingStatsList) {
       const index = statsList.findIndex((s) => {
-        return s.deploymentCid === stat.deploymentCid && s.dataTime === stat.dataTime;
+        return (
+          s.deploymentCid === existingStats.deploymentCid &&
+          s.dataTime.getTime() === existingStats.dataTime.getTime()
+        );
       });
       if (index === -1) {
         continue;
       }
-      if (statsList[index].time > stat.time) {
-        stat.time = statsList[index].time;
-        stat.failure = statsList[index].failure;
-        stat.freeHttp = statsList[index].freeHttp;
-        stat.freeP2p = statsList[index].freeP2p;
-        stat.caHttp = statsList[index].caHttp;
-        stat.caP2p = statsList[index].caP2p;
-        stat.paygHttp = statsList[index].paygHttp;
-        stat.paygP2p = statsList[index].paygP2p;
+      if (statsList[index].time > existingStats.time) {
+        existingStats.time = statsList[index].time;
+        existingStats.failure = statsList[index].failure;
+        existingStats.freeHttp = statsList[index].freeHttp;
+        existingStats.freeP2p = statsList[index].freeP2p;
+        existingStats.caHttp = statsList[index].caHttp;
+        existingStats.caP2p = statsList[index].caP2p;
+        existingStats.paygHttp = statsList[index].paygHttp;
+        existingStats.paygP2p = statsList[index].paygP2p;
       }
+      statsList[index] = existingStats;
     }
 
     await this.projectStatisticsRepo.save(statsList);
