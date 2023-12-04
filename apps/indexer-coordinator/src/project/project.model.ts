@@ -234,8 +234,8 @@ const defaultProjectConfig: IProjectConfig = {
   serviceEndpoints: [],
 };
 
-@InputType('KeyValuePairInput')
-@ObjectType('KeyValuePair')
+@InputType('SeviceEndpointInput')
+@ObjectType('SeviceEndpoint')
 export class SeviceEndpoint {
   constructor(key: string, value: string) {
     this.key = key;
