@@ -82,11 +82,13 @@ export class ProjectResolver {
   }
 
   @Query(() => [String])
-  getRpcEndpointKeys(
-    // @Args('projectId') projectId: string,
-    @Args('rpcFamily') rpcFamily: string
+  async getRpcEndpointKeys(
+    @Args('projectId') projectId: string
+    // @Args('rpcFamily') rpcFamily: string
   ) {
-    return this.projectRpcService.getEndpointKeys(rpcFamily);
+    return this.projectRpcService.getAllEndpointKeys(
+      await this.projectRpcService.getRpcFamilyList(projectId)
+    );
   }
 
   @Query(() => ValidationResponse)
