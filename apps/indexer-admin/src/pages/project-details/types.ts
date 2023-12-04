@@ -128,13 +128,13 @@ export type dockerContainerStatus =
   | dockerContainerEnum.STARTING;
 
 export type TQueryMetadata = {
-  lastProcessedHeight: number;
-  lastProcessedTimestamp: number;
+  lastHeight: number;
+  lastTime: number;
   targetHeight: number;
   chain: string;
   specName: string;
   genesisHash: string;
-  indexerHealthy?: boolean;
+  healthy?: boolean;
   indexerNodeVersion: string;
   queryNodeVersion: string;
   indexerStatus: dockerContainerStatus;
