@@ -16,6 +16,7 @@ import {
   dockerContainerEnum,
   DockerRegistry,
   PartialIpfsDeploymentManifest,
+  ProjectDetails,
   ServiceStatus,
   TQueryMetadata,
 } from 'pages/project-details/types';
@@ -50,7 +51,7 @@ const coordinatorClient = createApolloClient(coordinatorServiceUrl);
 export const useProjectDetails = (deploymentId: string) => {
   const { notification } = useNotification();
   // TODO add type
-  const projectQuery = useQuery(GET_PROJECT, {
+  const projectQuery = useQuery<{ project: ProjectDetails }>(GET_PROJECT, {
     fetchPolicy: 'network-only',
     variables: { id: deploymentId },
   });
@@ -82,14 +83,14 @@ export const useServiceStatus = (deploymentId: string): ServiceStatus | undefine
   return status;
 };
 
-export const getQueryMetadata = async (id: string): Promise<TQueryMetadata> => {
+export const getQueryMetadata = async (id: string, type: number): Promise<TQueryMetadata> => {
   try {
-    const result = await coordinatorClient.query<{ queryMetadata: TQueryMetadata }>({
+    const result = await coordinatorClient.query<{ serviceMetadata: TQueryMetadata }>({
       query: GET_QUERY_METADATA,
-      variables: { id },
+      variables: { id, projectType: type },
       fetchPolicy: 'network-only',
     });
-    return result.data.queryMetadata;
+    return result.data.serviceMetadata;
   } catch {
     return metadataInitValue;
   }

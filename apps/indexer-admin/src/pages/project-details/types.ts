@@ -40,6 +40,11 @@ export enum PaygStatus {
   Close = 'CLOSE',
 }
 
+export enum ProjectType {
+  SubQuery = 0,
+  Rpc = 1,
+}
+
 export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceTerminating;
 
 export enum AccountAction {
@@ -158,6 +163,7 @@ export type ProjectDetails = {
     updatedTimestamp: string;
   };
   metadata: TQueryMetadata;
+  projectType: ProjectType;
 } & ProjectServiceMetadata;
 
 // manifest types

@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Button, Table, TableTitle } from '@subql/components';
+import { Button, SubqlTable, TableTitle } from '@subql/components';
 
 import { createTextColumn } from 'utils/table';
 
@@ -26,17 +26,15 @@ export function PAYGConfig({ priceData, period, onEdit }: Props) {
   };
 
   return (
-    <Table
-      tableProps={{
-        pagination: false,
-        columns: [...columns, actionColumn],
-        dataSource: [
-          {
-            price: priceData,
-            period: `${period} days`,
-          },
-        ],
-      }}
+    <SubqlTable
+      pagination={false}
+      columns={[...columns, actionColumn]}
+      dataSource={[
+        {
+          price: priceData,
+          period: `${period} days`,
+        },
+      ]}
     />
   );
 }

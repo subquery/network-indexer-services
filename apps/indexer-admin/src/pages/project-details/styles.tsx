@@ -42,4 +42,11 @@ export const ActionContainer = styled.div`
   align-items: center;
   justify-content: center;
   margin-right: 32px;
+  width: 200px;
+  flex-shrink: 0;
+  gap: 15px;
+
+  a {
+    width: 100%;
+  }
 `;

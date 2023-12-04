@@ -79,25 +79,21 @@ const ProjectDetailsPage = () => {
   const [removeProjectRequest, { loading: removeProjectLoading }] = useMutation(REMOVE_PROJECT);
   const queryVersions = useQueryVersions(id);
   const nodeVersions = useNodeVersions(id);
-
-  const [progress, setProgress] = useState(0);
-  const [metadata, setMetadata] = useState<TQueryMetadata>();
-  const [visible, setVisible] = useState(false);
-
-  const [actionType, setActionType] = useState<ProjectAction>();
   const isOnline = useIsOnline({
     deploymentId: id,
     indexer: account || '',
   });
 
-  const fetchQueryMetadata = useCallback(async () => {
-    const data = await getQueryMetadata(id);
-    setMetadata(data);
-  }, [id, setMetadata]);
+  const [progress, setProgress] = useState(0);
+  const [metadata, setMetadata] = useState<TQueryMetadata>();
+  const [visible, setVisible] = useState(false);
+  const [actionType, setActionType] = useState<ProjectAction>();
 
-  useInterval(() => {
-    fetchQueryMetadata();
-  }, 15000);
+  const fetchQueryMetadata = useCallback(async () => {
+    if (!projectQuery.data) return;
+    const data = await getQueryMetadata(id, projectQuery.data.project.projectType);
+    setMetadata(data);
+  }, [id, setMetadata, projectQuery]);
 
   const updateServiceStatus = useCallback(() => {
     const intervalId = setInterval(() => fetchQueryMetadata(), 6000);
@@ -106,6 +102,88 @@ const ProjectDetailsPage = () => {
       projectQuery.refetch();
     }, 60000);
   }, [fetchQueryMetadata, projectQuery]);
+
+  const projectStateChange = useCallback(
+    (type: ProjectNotification.Started | ProjectNotification.Terminated) => {
+      const notification = notifications[type];
+      dispatchNotification(notification);
+      updateServiceStatus();
+    },
+    [dispatchNotification, updateServiceStatus]
+  );
+
+  const onPopoverClose = useCallback((error?: any) => {
+    if (error) {
+      parseError(error, {
+        alert: true,
+      });
+      return;
+    }
+
+    setVisible(false);
+  }, []);
+
+  const startProject = useCallback(
+    async (values: FormikValues, formHelper: FormikHelpers<FormikValues>) => {
+      try {
+        const { purgeDB } = values;
+        await startProjectRequest({
+          variables: {
+            ...values,
+            purgeDB: isTrue(purgeDB),
+            id,
+          },
+        });
+
+        onPopoverClose();
+        projectStateChange(ProjectNotification.Started);
+      } catch (e) {
+        formHelper.setErrors({ [ProjectFormKey.networkEndpoints]: 'Invalid service endpoint' });
+      }
+    },
+    [startProjectRequest, onPopoverClose, projectStateChange, id]
+  );
+
+  const stopProject = useCallback(async () => {
+    try {
+      await stopProjectRequest({
+        variables: { id, projectType: projectQuery.data?.project.projectType },
+      });
+      onPopoverClose();
+      projectStateChange(ProjectNotification.Terminated);
+    } catch (e) {
+      console.error('fail to stop project', e);
+    }
+  }, [stopProjectRequest, onPopoverClose, projectStateChange, id, projectQuery.data]);
+
+  const removeProject = useCallback(async () => {
+    try {
+      await removeProjectRequest({
+        variables: { id, projectType: projectQuery.data?.project.projectType },
+      });
+      history.replace('/projects');
+    } catch (e) {
+      console.error('fail to remove project', e);
+    }
+  }, [removeProjectRequest, history, id, projectQuery.data]);
+
+  const networkBtnItems = useMemo(
+    () =>
+      createNetworkButtonItems((type: ProjectAction) => {
+        setActionType(type);
+        setVisible(true);
+      }),
+    []
+  );
+
+  const serviceBtnItems = useMemo(
+    () =>
+      createServiceButtonItems((type: ProjectAction) => {
+        setActionType(type);
+        setVisible(true);
+      }),
+    []
+  );
 
   const loading = useMemo(
     () => startProjectLoading || stopProjectLoading || removeProjectLoading,
@@ -149,16 +227,6 @@ const ProjectDetailsPage = () => {
     return undefined;
   }, [projectStatus, status]);
 
-  const networkBtnItems = createNetworkButtonItems((type: ProjectAction) => {
-    setActionType(type);
-    setVisible(true);
-  });
-
-  const serviceBtnItems = createServiceButtonItems((type: ProjectAction) => {
-    setActionType(type);
-    setVisible(true);
-  });
-
   const networkActionItems = useMemo(() => {
     if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
@@ -174,74 +242,10 @@ const ProjectDetailsPage = () => {
     return serviceBtnItems[projectStatus];
   }, [projectStatus, serviceBtnItems]);
 
-  const onPopoverClose = useCallback((error?: any) => {
-    if (error) {
-      parseError(error, {
-        alert: true,
-      });
-      return;
-    }
-
-    setVisible(false);
-  }, []);
-
   const imageVersions = useMemo(
     () => ({ query: queryVersions, node: nodeVersions }),
     [nodeVersions, queryVersions]
   );
-
-  const projectStateChange = useCallback(
-    (type: ProjectNotification.Started | ProjectNotification.Terminated) => {
-      const notification = notifications[type];
-      dispatchNotification(notification);
-      updateServiceStatus();
-    },
-    [dispatchNotification, updateServiceStatus]
-  );
-
-  const startProject = useCallback(
-    async (values: FormikValues, formHelper: FormikHelpers<FormikValues>) => {
-      try {
-        const { purgeDB } = values;
-        await startProjectRequest({
-          variables: {
-            ...values,
-            purgeDB: isTrue(purgeDB),
-            id,
-          },
-        });
-
-        onPopoverClose();
-        projectStateChange(ProjectNotification.Started);
-      } catch (e) {
-        formHelper.setErrors({ [ProjectFormKey.networkEndpoints]: 'Invalid service endpoint' });
-      }
-    },
-    [startProjectRequest, onPopoverClose, projectStateChange, id]
-  );
-
-  const stopProject = useCallback(async () => {
-    try {
-      await stopProjectRequest({
-        variables: { id, projectType: projectQuery.data.project.projectType },
-      });
-      onPopoverClose();
-      projectStateChange(ProjectNotification.Terminated);
-    } catch (e) {
-      console.error('fail to stop project', e);
-    }
-  }, [stopProjectRequest, onPopoverClose, projectStateChange, id, projectQuery.data]);
-
-  const removeProject = useCallback(async () => {
-    try {
-      await removeProjectRequest({
-        variables: { id, projectType: projectQuery.data.project.projectType },
-      });
-      history.replace('/projects');
-    } catch (e) {
-      console.error('fail to remove project', e);
-    }
-  }, [removeProjectRequest, history, id, projectQuery.data]);
 
   const steps = useMemo(() => {
     if (!projectDetails) return false;
@@ -285,6 +289,12 @@ const ProjectDetailsPage = () => {
     onPopoverClose,
   ]);
 
+  const [modalTitle, modalSteps] = useMemo(() => {
+    if (!actionType) return ['', []];
+    if (!steps) return ['', []];
+    return [ProjectActionName[actionType], steps[actionType]];
+  }, [actionType, steps]);
+
   useEffect(() => {
     metadata &&
       setProgress(
@@ -300,49 +310,55 @@ const ProjectDetailsPage = () => {
     fetchQueryMetadata();
   }, [fetchQueryMetadata, status]);
 
-  const [modalTitle, modalSteps] = useMemo(() => {
-    if (!actionType) return ['', []];
-    if (!steps) return ['', []];
-    return [ProjectActionName[actionType], steps[actionType]];
-  }, [actionType, steps]);
+  useInterval(() => {
+    fetchQueryMetadata();
+  }, 15000);
 
   return renderAsync(projectQuery, {
     loading: () => <LoadingSpinner />,
     error: () => <>Unable to get Project Info</>,
-    data: ({ project }) => (
-      <Container>
-        <ContentContainer>
-          <ProjectDetailsHeader
-            id={id}
-            projectStatus={projectStatus}
-            project={project}
-            onlineStatus={isOnline}
+    data: ({ project }) => {
+      return (
+        <Container>
+          <ContentContainer>
+            <ProjectDetailsHeader
+              id={id}
+              projectStatus={projectStatus}
+              project={project}
+              onlineStatus={isOnline}
+            />
+            <ProjectStatusView
+              percent={progress}
+              actionItems={networkActionItems}
+              status={status}
+              metadata={metadata}
+            />
+            <ProjectServiceCard
+              id={id}
+              actionItems={serviceActionItems}
+              data={metadata}
+              type={project.projectType}
+              projectStatus={projectStatus}
+            />
+            <ProjectUptime />
+            {projectDetails && (
+              <ProjectTabbarView id={id} project={project} config={projectDetails} />
+            )}
+          </ContentContainer>
+          <PopupView
+            setVisible={setVisible}
+            visible={visible}
+            title={modalTitle}
+            onClose={() => onPopoverClose()}
+            // @ts-ignore
+            steps={modalSteps}
+            type={actionType}
+            loading={loading}
           />
-          <ProjectStatusView
-            percent={progress}
-            actionItems={networkActionItems}
-            status={status}
-            metadata={metadata}
-          />
-          <ProjectServiceCard id={id} actionItems={serviceActionItems} data={metadata} />
-          <ProjectUptime />
-          {projectDetails && (
-            <ProjectTabbarView id={id} project={project} config={projectDetails} />
-          )}
-        </ContentContainer>
-        <PopupView
-          setVisible={setVisible}
-          visible={visible}
-          title={modalTitle}
-          onClose={() => onPopoverClose()}
-          // @ts-ignore
-          steps={modalSteps}
-          type={actionType}
-          loading={loading}
-        />
-        {alertInfo && <AlertView {...alertInfo} />}
-      </Container>
-    ),
+          {alertInfo && <AlertView {...alertInfo} />}
+        </Container>
+      );
+    },
   });
 };
 

@@ -235,8 +235,8 @@ export const GET_LOG = gql`
 `;
 
 export const GET_QUERY_METADATA = gql`
-  query QueryMetadata($id: String!) {
-    queryMetadata(id: $id) {
+  query QueryMetadata($id: String!, $projectType: Float!) {
+    serviceMetadata(id: $id, projectType: $projectType) {
       lastHeight
       startHeight
       targetHeight
