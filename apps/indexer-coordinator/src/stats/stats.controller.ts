@@ -26,7 +26,7 @@ export class StatsController {
     );
   }
 
-  @Post('saveStatsList')
+  @Post('')
   async saveStatsList(@Body() body: any) {
     await this.statsService.saveStatsList(body);
   }
