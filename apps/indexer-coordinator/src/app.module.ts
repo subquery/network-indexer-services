@@ -23,6 +23,7 @@ import { MonitorModule } from './monitor/monitor.module';
 import { MonitorController } from './monitor.controller';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
+import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
@@ -57,6 +58,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
       exclude: ['/env.js', '/graphql*'],
     }),
     MonitorModule,
+    StatsModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })

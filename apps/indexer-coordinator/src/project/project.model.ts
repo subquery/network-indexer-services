@@ -234,8 +234,8 @@ const defaultProjectConfig: IProjectConfig = {
   serviceEndpoints: [],
 };
 
-@InputType('KeyValuePairInput')
-@ObjectType('KeyValuePair')
+@InputType('SeviceEndpointInput')
+@ObjectType('SeviceEndpoint')
 export class SeviceEndpoint {
   constructor(key: string, value: string) {
     this.key = key;
@@ -271,6 +271,10 @@ export class ProjectEntity {
   @Column({ default: ProjectType.SUBQUERY })
   @Field()
   projectType: ProjectType;
+
+  @Column({ default: 0 })
+  @Field()
+  rateLimit: number;
 
   @Column({ default: '' })
   @Field()
@@ -308,6 +312,8 @@ export class ProjectEntity {
   @BeforeInsert()
   setupDefaultValuesOnInsert: () => void = () => {
     this.chainType = this.chainType ?? '';
+    this.projectType = this.projectType ?? ProjectType.SUBQUERY;
+    this.rateLimit = this.rateLimit ?? 0;
     this.nodeEndpoint = this.nodeEndpoint ?? '';
     this.queryEndpoint = this.queryEndpoint ?? '';
     this.serviceEndpoints = this.serviceEndpoints ?? [];

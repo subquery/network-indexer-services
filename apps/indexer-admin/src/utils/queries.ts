@@ -92,7 +92,7 @@ export const START_PROJECT = gql`
     $memory: Int!
     $id: String!
     $projectType: Float!
-    $serviceEndpoints: [KeyValuePairInput!]!
+    $serviceEndpoints: [SeviceEndpointInput!]!
   ) {
     startProject(
       id: $id
