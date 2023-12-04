@@ -103,7 +103,7 @@ pub fn listen() {
             drop(previous);
 
             let res = REQUEST_CLIENT
-                .post(format!("{}/metrics", COMMAND.service_url))
+                .post(format!("{}/stats", COMMAND.service_url))
                 .header("content-type", "application/json")
                 .json(&json!(data))
                 .send()
