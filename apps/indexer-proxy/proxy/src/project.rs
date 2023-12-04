@@ -171,7 +171,15 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let mut project_ids = vec![];
     let mut new_projects = vec![];
     for item in projects {
-        let rate_limit = item.project_rate_limit;
+        let rate_limit = if let Some(n) = item.project_rate_limit {
+            if n > 0 {
+                Some(n)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
