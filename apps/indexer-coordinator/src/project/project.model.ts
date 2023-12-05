@@ -85,7 +85,7 @@ export interface IProjectAdvancedConfig {
 @InputType('ProjectBaseConfigInput')
 @ObjectType('ProjectBaseConfig')
 export class ProjectBaseConfig implements IProjectBaseConfig {
-  @Field((type) => [String])
+  @Field(() => [String])
   networkEndpoints: string[];
   @Field()
   networkDictionary: string;
@@ -152,6 +152,10 @@ export class ProjectEntity {
   @Field()
   chainType: string;
 
+  @Column({ default: 0 })
+  @Field()
+  rateLimit: number;
+
   @Column({ default: '' })
   @Field()
   nodeEndpoint: string; // endpoint of indexer service
@@ -176,6 +180,7 @@ export class ProjectEntity {
   @BeforeInsert()
   setupDefaultValuesOnInsert: () => void = () => {
     this.chainType = this.chainType ?? '';
+    this.rateLimit = this.rateLimit ?? 0;
     this.nodeEndpoint = this.nodeEndpoint ?? '';
     this.queryEndpoint = this.queryEndpoint ?? '';
     // @ts-ignore
