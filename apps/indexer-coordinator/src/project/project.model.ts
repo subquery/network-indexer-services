@@ -168,11 +168,11 @@ export class ProjectEntity {
   @Field(() => ProjectInfo)
   details: ProjectInfo;
 
-  @Column('jsonb', { default: defaultBaseConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectBaseConfig)
   baseConfig: ProjectBaseConfig;
 
-  @Column('jsonb', { default: defaultAdvancedConfig })
+  @Column('jsonb', { default: {} })
   @Field(() => ProjectAdvancedConfig)
   advancedConfig: ProjectAdvancedConfig;
 
