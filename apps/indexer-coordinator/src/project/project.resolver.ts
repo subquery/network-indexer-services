@@ -7,7 +7,7 @@ import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.s
 import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
-
+import { AggregatedManifest } from './project.manifest';
 import {
   LogType,
   MetadataType,
@@ -47,18 +47,53 @@ export class ProjectResolver {
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
       default:
-        return undefined;
+        throw new Error(`Unknown project type ${projectType}`);
     }
   }
 
   @Query(() => ProjectDetails)
   async project(@Args('id') id: string): Promise<ProjectDetails> {
-    return this.projectService.getProjectDetails(id);
+    return {
+      ...(await this.projectService.getProject(id)),
+      metadata: await this.serviceMetadata(id, ProjectType.SUBQUERY),
+      payg: await this.projectService.getPayg(id),
+    };
   }
 
+  /**
+   * @deprecated use `getProjectsSimple` and `getProjestsMetadata` instead
+   */
   @Query(() => [ProjectDetails])
   async getProjects(): Promise<ProjectDetails[]> {
     return this.projectService.getProjects();
+  }
+
+  @Query(() => [Project])
+  async getProjectsSimple(): Promise<Project[]> {
+    return this.projectService.getAllProjects();
+  }
+
+  @Query(() => [ProjectDetails])
+  async getProjestsMetadata(): Promise<ProjectDetails[]> {
+    const projects = await this.projectService.getAllProjects();
+    return Promise.all(
+      projects.map(async (project) => {
+        switch (project.projectType) {
+          case ProjectType.SUBQUERY:
+            return {
+              ...project,
+              metadata: await this.projectService.getSubqueryMetadata(project.id),
+            };
+          case ProjectType.RPC:
+            return {
+              ...project,
+              metadata: await this.projectRpcService.getRpcMetadata(project.id),
+            };
+          default:
+            throw new Error(`Unknown project type ${project.projectType}`);
+        }
+      })
+    );
   }
 
   @Query(() => [Project])
@@ -69,6 +104,25 @@ export class ProjectResolver {
   @Query(() => [Payg])
   getAlivePaygs() {
     return this.projectService.getAlivePaygs();
+  }
+
+  @Query(() => AggregatedManifest)
+  async getManifest(
+    @Args('projectId') projectId: string,
+    @Args('projectType') projectType: ProjectType
+  ): Promise<AggregatedManifest> {
+    const manifest = new AggregatedManifest();
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        manifest.subqueryManifest = await this.projectService.getManifest(projectId);
+        break;
+      case ProjectType.RPC:
+        manifest.rpcManifest = await this.projectService.getManifest(projectId);
+        break;
+      default:
+        throw new Error(`Unknown project type ${projectType}`);
+    }
+    return manifest;
   }
 
   @Query(() => LogType)
@@ -116,7 +170,7 @@ export class ProjectResolver {
       case ProjectType.RPC:
         return this.projectRpcService.removeRpcProject(id);
       default:
-        return [];
+        throw new Error(`Unknown project type ${projectType}`);
     }
   }
 
@@ -133,7 +187,7 @@ export class ProjectResolver {
       case ProjectType.RPC:
         return this.projectRpcService.startRpcProject(id, projectConfig);
       default:
-        return undefined;
+        throw new Error(`Unknown project type ${projectType}`);
     }
   }
 
@@ -148,7 +202,7 @@ export class ProjectResolver {
       case ProjectType.RPC:
         return this.projectRpcService.stopRpcProject(id);
       default:
-        return undefined;
+        throw new Error(`Unknown project type ${projectType}`);
     }
   }
 

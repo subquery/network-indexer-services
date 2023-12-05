@@ -1,6 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { Field, ObjectType } from '@nestjs/graphql';
 import { IPFSClient, IPFS_URLS } from '@subql/network-clients';
 import * as yaml from 'js-yaml';
 import { PartialIpfsDeploymentManifest } from 'src/utils/project';
@@ -12,22 +13,51 @@ export async function getProjectManifest(cid: string): Promise<any> {
   return await yaml.load(manifestStr, { schema: yaml.FAILSAFE_SCHEMA });
 }
 
-export type SubqueryManifest = PartialIpfsDeploymentManifest;
+@ObjectType('SubqueryManifest')
+export class SubqueryManifest extends PartialIpfsDeploymentManifest {}
 
-export type RpcManifest = {
+@ObjectType('ChainClass')
+class ChainClass {
+  @Field(() => String, { nullable: true })
+  chainId?: string;
+  @Field(() => String, { nullable: true })
+  genesisHash?: string;
+}
+
+@ObjectType('ClientClass')
+class ClientClass {
+  @Field(() => String, { nullable: true })
+  name: string;
+  @Field(() => String, { nullable: true })
+  version: string;
+}
+
+@ObjectType('RpcManifest')
+export class RpcManifest {
+  @Field(() => String, { nullable: true })
   kind?: string;
+  @Field(() => String, { nullable: true })
   specVersion?: string;
+  @Field(() => String, { nullable: true })
   name?: string;
-  chain?: {
-    chainId?: string;
-    genesisHash?: string;
-  };
+  @Field(() => ChainClass, { nullable: true })
+  chain?: ChainClass;
+  @Field(() => String, { nullable: true })
   version?: string;
+  @Field(() => [String], { nullable: true })
   rpcFamily?: string[];
+  @Field(() => String, { nullable: true })
   nodeType?: string;
-  client?: {
-    name?: string;
-    version?: string;
-  };
+  @Field(() => ClientClass, { nullable: true })
+  client?: ClientClass;
+  @Field(() => [String], { nullable: true })
   featureFlags?: string[];
-};
+}
+
+@ObjectType('AggregatedManifest')
+export class AggregatedManifest {
+  @Field(() => SubqueryManifest)
+  subqueryManifest?: SubqueryManifest;
+  @Field(() => RpcManifest)
+  rpcManifest?: RpcManifest;
+}

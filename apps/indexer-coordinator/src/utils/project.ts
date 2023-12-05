@@ -1,39 +1,69 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { Field, ObjectType } from '@nestjs/graphql';
 import { IPFSClient } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import { IProjectConfig, Project } from '../project/project.model';
 import { argv } from '../yargs';
 
+@ObjectType('NodeClass')
+class NodeClass {
+  @Field()
+  name: string;
+  @Field()
+  version: string;
+}
+
+@ObjectType('QueryClass')
+class QueryClass {
+  @Field()
+  name: string;
+  @Field()
+  version: string;
+}
+
 // manifest types
-export type Runner = {
-  node?: {
-    name: string;
-    version: string;
-  };
-  query?: {
-    name: string;
-    version: string;
-  };
-};
+@ObjectType('Runner')
+class Runner {
+  @Field(() => NodeClass)
+  node?: NodeClass;
+  @Field(() => QueryClass)
+  query?: QueryClass;
+}
 
-type DataSources = {
+@ObjectType('DataSources')
+class DataSources {
+  @Field()
   kind: string;
-};
+}
 
-export type PartialIpfsDeploymentManifest = {
+@ObjectType('SchemaClass')
+class SchemaClass {
+  @Field()
+  file: string;
+}
+
+@ObjectType('NetworkClass')
+class NetworkClass {
+  @Field()
+  chainId: string;
+}
+
+@ObjectType('PartialIpfsDeploymentManifest')
+export class PartialIpfsDeploymentManifest {
+  @Field(() => [DataSources])
   dataSources: DataSources[];
-  schema: {
-    file: string;
-  };
-  network: {
-    chainId?: string;
-  };
+  @Field(() => SchemaClass)
+  schema: SchemaClass;
+  @Field(() => NetworkClass)
+  network: NetworkClass;
+  @Field()
   specVersion: string;
+  @Field()
   runner?: Runner;
-};
+}
 
 export type ChainType =
   | 'near'
