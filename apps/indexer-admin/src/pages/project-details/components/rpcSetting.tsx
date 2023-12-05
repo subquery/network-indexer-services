@@ -5,7 +5,6 @@ import React, { FC } from 'react';
 import { useParams } from 'react-router';
 import { Steps, Typography } from '@subql/components';
 import { cidToBytes32 } from '@subql/network-clients';
-import { useUpdate } from 'ahooks';
 import { Button, Form, Input } from 'antd';
 
 import Avatar from 'components/avatar';
@@ -21,8 +20,6 @@ const RpcSetting: FC<IProps> = (props) => {
   const { id } = useParams() as { id: string };
   const projectQuery = useProjectDetails(id);
   const [form] = Form.useForm();
-
-  const update = useUpdate();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -105,7 +102,7 @@ const RpcSetting: FC<IProps> = (props) => {
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
           onClick={async () => {
             await form.validateFields();
-            // onSubmit();
+            onSubmit();
           }}
         >
           Update

@@ -29,17 +29,17 @@ export const TagItem: FC<VersionProps> = ({
   value = '',
   prefix = '',
   children,
-  fw = 500,
+  fw = 400,
 }) => {
-  const mainColor = horizontal ? 'gray' : 'black';
-  const subColor = prefix ? '#4388dd' : 'gray';
+  const mainColor = horizontal ? 'gray' : 'var(--sq-gray600)';
+  const subColor = prefix ? '#4388dd' : 'var(--sq-gray900)';
   return (
     <VersionItemContainer horizontal={horizontal}>
-      <Text color={mainColor} size={horizontal ? 13 : 15} fw={fw}>
+      <Text color={mainColor} size={14} fw={fw}>
         {versionType}
       </Text>
       {horizontal ? (
-        <Text ml={15} mr={15} color={subColor} fw={fw} size={15}>
+        <Text ml={15} mr={15} color={subColor} fw={fw} size={14}>
           {children || `${prefix}${value}`}
         </Text>
       ) : (

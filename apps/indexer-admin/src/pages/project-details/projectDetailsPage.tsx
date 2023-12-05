@@ -32,6 +32,7 @@ import { isTrue } from 'utils/project';
 import { REMOVE_PROJECT, START_PROJECT, STOP_PROJECT } from 'utils/queries';
 
 import ProjectDetailsHeader from './components/projectDetailHeader';
+import ProjectRpcServiceCard from './components/projectRpcServiceCard';
 import ProjectServiceCard from './components/projectServiceCard';
 import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
@@ -56,6 +57,7 @@ import {
   ProjectAction,
   ProjectDetails,
   ProjectStatus,
+  ProjectType,
   ServiceStatus,
   TQueryMetadata,
 } from './types';
@@ -327,18 +329,27 @@ const ProjectDetailsPage = () => {
               project={project}
               onlineStatus={isOnline}
             />
+            {project.projectType === ProjectType.SubQuery && (
+              <ProjectServiceCard
+                id={id}
+                actionItems={serviceActionItems}
+                data={metadata}
+                type={project.projectType}
+                projectStatus={projectStatus}
+              />
+            )}
+            {project.projectType === ProjectType.Rpc && (
+              <ProjectRpcServiceCard
+                project={project}
+                metadata={metadata}
+                projectStatus={projectStatus}
+              />
+            )}
             <ProjectStatusView
               percent={progress}
               actionItems={networkActionItems}
               status={status}
               metadata={metadata}
-            />
-            <ProjectServiceCard
-              id={id}
-              actionItems={serviceActionItems}
-              data={metadata}
-              type={project.projectType}
-              projectStatus={projectStatus}
             />
             <ProjectUptime />
             {projectDetails && (
