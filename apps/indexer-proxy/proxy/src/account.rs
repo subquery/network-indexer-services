@@ -121,7 +121,7 @@ pub async fn indexer_healthy() -> Value {
     let indexer = lock.indexer.clone();
     drop(lock);
 
-    let (uptime, _os) = get_status().await;
+    let (uptime, os) = get_status().await;
     let version = get_services_version().await;
     let v_bytes = version.to_le_bytes();
     let mut p_v = [0u8; 4];
@@ -137,5 +137,6 @@ pub async fn indexer_healthy() -> Value {
         "uptime": uptime,
         "proxyVersion": proxy_version,
         "coordinatorVersion": coordinator_version,
+        "os": os
     })
 }
