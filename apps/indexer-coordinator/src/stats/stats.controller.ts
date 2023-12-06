@@ -27,12 +27,12 @@ export class StatsController {
   }
 
   @Post('')
-  async saveStatsList(@Body() body: any) {
-    await this.statsService.saveStatsList(body);
+  async saveStatsMap(@Body() body: any) {
+    await this.statsService.saveStatsMap(body);
   }
 
   @Get(':deploymentId/:from/:to')
-  async getStats(
+  async getStatsMap(
     @Param('deploymentId') deploymentId: string,
     @Param('from') from: string,
     @Param('to') to: string

@@ -25,7 +25,7 @@ export class StatsService {
       },
     });
     if (existingStats) {
-      if (stats.time > existingStats.time) {
+      if (stats.time >= existingStats.time) {
         existingStats.time = stats.time;
         existingStats.failure = stats.failure;
         existingStats.freeHttp = stats.freeHttp;
@@ -41,7 +41,7 @@ export class StatsService {
     return await this.projectStatisticsRepo.save(stats);
   }
 
-  async saveStatsList(statsMap: any) {
+  async saveStatsMap(statsMap: any) {
     try {
       const statsList: ProjectStatisticsEntity[] = [];
       for (const hour in statsMap) {
@@ -129,7 +129,7 @@ export class StatsService {
     });
     const statsMap: ProjectStatisticsMapInput = {};
     for (const stats of statsList) {
-      const hour = this.timeToHour(stats.dataTime);
+      const hour = stats.dataTime.getTime().toString();
       if (!statsMap[hour]) {
         statsMap[hour] = {};
       }
