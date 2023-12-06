@@ -26,7 +26,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -43,7 +42,7 @@ use crate::account::get_indexer;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
+use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
 use crate::project::{
     get_project, project_metadata, project_poi, project_query_raw, project_status,
@@ -85,7 +84,6 @@ pub async fn start_server(host: &str, port: u16) {
         .route("/poi/:deployment/:block", get(poi_block_handler))
         // `Get /poi/Qm...955X` goes to query the latest block poi
         .route("/poi/:deployment", get(poi_latest_handler))
-        .route("/metrics", get(metrics_handler))
         // `Get /status/Qm...955X` goes to query the project status
         .route("/status/:deployment", get(status_handler))
         .layer(
@@ -320,25 +318,6 @@ async fn poi_latest_handler(Path(deployment): Path<String>) -> Result<Json<Value
 async fn healthy_handler() -> Result<Json<Value>, Error> {
     let indexer = get_indexer().await;
     Ok(Json(json!({ "indexer": indexer })))
-}
-
-async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
-    if token == COMMAND.metrics_token {
-        let body = get_owner_metrics().await;
-
-        build_response(
-            body,
-            vec![(
-                "Content-Type",
-                "application/openmetrics-text; version=1.0.0; charset=utf-8",
-            )],
-        )
-    } else {
-        Response::builder()
-            .status(StatusCode::FORBIDDEN)
-            .body("".to_owned())
-            .unwrap()
-    }
 }
 
 async fn status_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
