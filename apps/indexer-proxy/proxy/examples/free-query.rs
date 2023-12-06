@@ -98,7 +98,7 @@ async fn main() -> std::io::Result<()> {
     if token.get("token").is_some() {
         println!("Token: {}", token["token"]);
     } else {
-        println!("Error: {}", token["error"]);
+        println!("Error: {}", token);
     }
 
     let query_token = format!("Bearer {}", token["token"].as_str().unwrap());
