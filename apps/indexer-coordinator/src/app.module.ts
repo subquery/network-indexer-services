@@ -9,21 +9,20 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
-
 import { ChainModule } from './chain/chain.module';
 import { ConfigureModule } from './configure/configure.module';
 import { CoreModule } from './core/core.module';
 import { dbOption } from './data-source';
 import { DBModule } from './db/db.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { MonitorModule } from './monitor/monitor.module';
 import { MonitorController } from './monitor.controller';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
+import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
   imports: [
@@ -57,6 +56,7 @@ import { MonitorModule } from './monitor/monitor.module';
       exclude: ['/env.js', '/graphql*'],
     }),
     MonitorModule,
+    StatsModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })

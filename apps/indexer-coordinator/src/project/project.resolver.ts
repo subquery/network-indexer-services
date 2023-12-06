@@ -26,7 +26,7 @@ export class ProjectResolver {
     private projectService: ProjectService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
-    private pubSub: SubscriptionService,
+    private pubSub: SubscriptionService
   ) {}
 
   @Query(() => [String])
@@ -80,7 +80,7 @@ export class ProjectResolver {
   startProject(
     @Args('id') id: string,
     @Args('baseConfig') baseConfig: ProjectBaseConfig,
-    @Args('advancedConfig') advancedConfig: ProjectAdvancedConfig,
+    @Args('advancedConfig') advancedConfig: ProjectAdvancedConfig
   ) {
     return this.projectService.startProject(id, baseConfig, advancedConfig);
   }
@@ -88,6 +88,14 @@ export class ProjectResolver {
   @Mutation(() => Project)
   stopProject(@Args('id') id: string) {
     return this.projectService.stopProject(id);
+  }
+
+  @Mutation(() => Project)
+  async updateProjectRateLimit(
+    @Args('id') id: string,
+    @Args('rateLimit') rateLimit: number
+  ): Promise<Project> {
+    return this.projectService.updateProjectRateLimit(id, rateLimit);
   }
 
   @Mutation(() => Project)
