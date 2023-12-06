@@ -45,6 +45,3 @@ pub const SUBSCRIBER_INIT_TIME: u64 = 10;
 
 /// subscriber loop time (had account and projects): 2min=120s
 pub const SUBSCRIBER_LOOP_TIME: u64 = 120;
-
-/// project new to network waiting time: 10s
-pub const PROJECT_JOIN_TIME: u64 = 10;

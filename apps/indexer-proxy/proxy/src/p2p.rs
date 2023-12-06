@@ -512,29 +512,6 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
     );
 
     rpc_handler.add_method(
-        "project-broadcast-payg",
-        |gid: GroupId, params: Vec<RpcParam>, state: Arc<State>| async move {
-            if params.len() != 1 {
-                return Err(RpcError::ParseError);
-            }
-            let payg = params[0].as_str().ok_or(RpcError::ParseError)?;
-
-            let mut results = HandleResult::new();
-            let e = Event::PaygPriceRes(payg.to_owned()).to_bytes();
-            let ledger = state.0.read().await;
-            if let Some((_, peers)) = ledger.groups.get(&gid) {
-                for p in peers {
-                    results
-                        .groups
-                        .push((gid, SendType::Event(0, *p, e.clone())));
-                }
-            }
-
-            Ok(results)
-        },
-    );
-
-    rpc_handler.add_method(
         "project-broadcast-healthy",
         |_gid: GroupId, _params: Vec<RpcParam>, state: Arc<State>| async move {
             let mut results = HandleResult::new();

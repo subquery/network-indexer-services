@@ -47,8 +47,6 @@ use crate::cli::redis;
 use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
-use crate::payg::merket_price;
-use crate::primitives::PROJECT_JOIN_TIME;
 
 pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -310,25 +308,11 @@ async fn update_projects(deployments: Vec<Project>) {
 
     for n in deployments {
         let did = n.id.clone();
-        if old_deployments.contains(&did) {
-            lock.insert(did.clone(), n);
-            // project update
-            tokio::spawn(async move {
-                // waiting a moment for update all projects
-                tokio::time::sleep(std::time::Duration::from_secs(PROJECT_JOIN_TIME)).await;
-                let gid = hash_to_group_id(did.as_bytes());
-                if let Ok(price) = merket_price(Some(did)).await {
-                    let data = serde_json::to_string(&price).unwrap();
-                    send("project-broadcast-payg", vec![json!(data)], gid).await
-                }
-            });
-        } else {
-            lock.insert(did.clone(), n);
-            // project join
-            tokio::spawn(async move {
-                send("project-join", vec![json!(did)], 0).await;
-            });
-        }
+        lock.insert(did.clone(), n);
+        // project join
+        tokio::spawn(async move {
+            send("project-join", vec![json!(did)], 0).await;
+        });
     }
 
     drop(lock);
