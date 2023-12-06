@@ -323,7 +323,6 @@ pub fn add_metrics_query(
                 })
                 .or_insert(QueryCounter::default_failure());
         }
-
         drop(owner);
     });
 }
