@@ -129,6 +129,23 @@ async fn report_metrics() {
     }
 }
 
+async fn report_status() {
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(P2P_METRICS_STATUS_TIME)).await;
+        let senders = P2P_SENDER.read().await;
+        if senders.is_empty() {
+            drop(senders);
+            continue;
+        } else {
+            debug!("Report projects status");
+            senders[0]
+                .send(rpc_request(0, "project-report-status", vec![], 0))
+                .await;
+        }
+        drop(senders);
+    }
+}
+
 async fn broadcast_healthy() {
     loop {
         tokio::time::sleep(std::time::Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
@@ -148,6 +165,7 @@ async fn broadcast_healthy() {
 
 pub fn listen() {
     tokio::spawn(report_metrics());
+    tokio::spawn(report_status());
     tokio::spawn(check_stable());
     tokio::spawn(broadcast_healthy());
 }
@@ -417,6 +435,44 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
                 let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
                 drop(ledger);
                 for peer in telemetries {
+                    results
+                        .groups
+                        .push((ROOT_GROUP_ID, SendType::Event(0, peer, event.clone())));
+                }
+            }
+
+            Ok(results)
+        },
+    );
+
+    rpc_handler.add_method(
+        "project-report-status",
+        |_, _, state: Arc<State>| async move {
+            let mut results = HandleResult::new();
+
+            let ledger = state.0.read().await;
+            let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
+            let project_ids: Vec<String> = ledger
+                .groups
+                .iter()
+                .map(|(_, (id, _))| id.clone())
+                .collect();
+            drop(ledger);
+
+            let mut events = vec![];
+            for project_id in project_ids {
+                if let Ok(project) = get_project(&project_id).await {
+                    if let Ok(data) = project.metadata(None, MetricsNetwork::P2P).await {
+                        let e = Event::ProjectMetadataRes(
+                            serde_json::to_string(&data).map_err(|_| RpcError::ParseError)?,
+                        );
+                        events.push(e.to_bytes());
+                    }
+                }
+            }
+
+            for peer in telemetries {
+                for event in &events {
                     results
                         .groups
                         .push((ROOT_GROUP_ID, SendType::Event(0, peer, event.clone())));

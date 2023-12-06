@@ -51,7 +51,7 @@ async fn main() {
     subscriber::subscribe();
     monitor::listen();
     p2p::listen();
-    // metrics::listen(); TODO until coordinator support metrics API
+    metrics::listen(); // TODO until coordinator support metrics API
 
     server::start_server(port).await;
 }

@@ -19,11 +19,14 @@
 /// waiting time (seconds) for p2p network restart
 pub const P2P_RESTART_TIME: u64 = 5;
 
-/// broadcast healthy time: 1min = 3600s
+/// broadcast healthy time: 1h = 3600s
 pub const P2P_BROADCAST_HEALTHY_TIME: u64 = 3600;
 
-/// report metrics time: 1h = 3600s
+/// report metrics time: 20min = 1200s
 pub const P2P_METRICS_TIME: u64 = 1200;
+
+/// report metrics status time: 30min = 1800s
+pub const P2P_METRICS_STATUS_TIME: u64 = 1800;
 
 /// check stable connections time: 2h = 7200s
 pub const P2P_STABLE_TIME: u64 = 7200;
