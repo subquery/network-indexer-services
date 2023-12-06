@@ -277,15 +277,18 @@ pub fn add_metrics_query(
         if *current_hour != hour {
             // reset owner_counter & previous_counter
 
-            let mut owner = OWNER_COUNTER.lock().await;
-            let mut previous = PREVIOUS_COUNTER.lock().await;
-            previous.insert(current_hour.to_string(), owner.clone());
+            if !current_hour.is_empty() {
+                let mut owner = OWNER_COUNTER.lock().await;
+                let mut previous = PREVIOUS_COUNTER.lock().await;
 
-            owner.clear();
+                previous.insert(current_hour.to_string(), owner.clone());
+                owner.clear();
+
+                drop(previous);
+                drop(owner);
+            }
+
             *current_hour = hour;
-
-            drop(previous);
-            drop(owner);
         }
         drop(current_hour);
 
