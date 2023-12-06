@@ -38,6 +38,10 @@ const ProjectFields = `
     cache
     cpu
     memory
+    serviceEndpoints {
+      key
+      value
+    }
 
   }
 `;
@@ -337,6 +341,21 @@ export const CHANNEL_CHECKPOINT = gql`
       spent
       remote
       onchain
+    }
+  }
+`;
+
+export const GET_RPC_ENDPOINT_KEYS = gql`
+  query getRpcEndpointKeys($projectId: String!) {
+    getRpcEndpointKeys(projectId: $projectId)
+  }
+`;
+
+export const VALID_RPC_ENDPOINT = gql`
+  query validateRpcEndpoint($projectId: String!, $endpointKey: String!, $endpoint: String!) {
+    validateRpcEndpoint(projectId: $projectId, endpointKey: $endpointKey, endpoint: $endpoint) {
+      valid
+      reason
     }
   }
 `;

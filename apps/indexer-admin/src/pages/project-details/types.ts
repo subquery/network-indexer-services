@@ -87,13 +87,11 @@ export interface AsyncMemoReturn<T> extends AsyncData<T> {
 }
 
 export type ProjectConfig = {
-  baseConfig: {
+  projectConfig: {
     networkEndpoints: string[];
     networkDictionary: string;
     nodeVersion: string;
     queryVersion: string;
-  };
-  advancedConfig: {
     poiEnabled: boolean;
     purgeDB: boolean;
     timeout: number;
@@ -102,7 +100,9 @@ export type ProjectConfig = {
     cache: number;
     cpu: number;
     memory: number;
+    serviceEndpoints: { key: string; value: string }[];
   };
+
   payg: {
     id: string;
     threshold: number;
