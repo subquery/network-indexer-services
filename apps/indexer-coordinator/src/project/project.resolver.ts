@@ -62,12 +62,12 @@ export class ProjectResolver {
   }
 
   /**
-   * @deprecated use `getProjectsSimple` and `getProjestsMetadata` instead
+   * // @deprecated use `getProjectsSimple` and `getProjectsMetadata` instead
    */
-  @Query(() => [ProjectDetails])
-  async getProjects(): Promise<ProjectDetails[]> {
-    return this.projectService.getProjects();
-  }
+  // @Query(() => [ProjectDetails])
+  // async getProjects(): Promise<ProjectDetails[]> {
+  //   return this.projectService.getProjects();
+  // }
 
   @Query(() => [Project])
   async getProjectsSimple(): Promise<Project[]> {
@@ -75,7 +75,7 @@ export class ProjectResolver {
   }
 
   @Query(() => [ProjectDetails])
-  async getProjestsMetadata(): Promise<ProjectDetails[]> {
+  async getProjectsMetadata(): Promise<ProjectDetails[]> {
     const projects = await this.projectService.getAllProjects();
     return Promise.all(
       projects.map(async (project) => {
