@@ -10,11 +10,13 @@ import ProjectLogView from '../../../components/logView';
 import { ProjectPAYG } from '../payg/projectPayg';
 import { ProjectDetails, ProjectServiceMetadata } from '../types';
 import ProjectDetailsView from './projectDetailsView';
+import ProjectInsights from './projectInsights';
 
 enum TabbarItem {
   ProjectDetails,
   NodeLog,
   PAYG,
+  ProjectInsights,
 }
 
 type Props = {
@@ -32,6 +34,9 @@ const tabItems = [
   },
   {
     label: 'Flex Plan',
+  },
+  {
+    label: 'Project Insights',
   },
 ];
 
@@ -51,6 +56,8 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
         return <ProjectDetailsView id={id} project={project} />;
       case TabbarItem.PAYG:
         return <ProjectPAYG id={id} config={config} />;
+      case TabbarItem.ProjectInsights:
+        return <ProjectInsights id={id} />;
       default:
         return <div />;
     }
