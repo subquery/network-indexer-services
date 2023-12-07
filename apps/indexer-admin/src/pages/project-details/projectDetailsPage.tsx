@@ -332,11 +332,11 @@ const ProjectDetailsPage = () => {
               percent={progress}
               status={status}
               metadata={metadata}
-              annonceReady={() => {
+              announceReady={() => {
                 setActionType(ProjectAction.AnnounceReady);
                 setVisible(true);
               }}
-              annonceStop={() => {
+              announceStop={() => {
                 setActionType(ProjectAction.AnnounceTerminating);
                 setVisible(true);
               }}
