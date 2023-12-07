@@ -11,6 +11,11 @@ async function bootstrap() {
     const port = argv.port;
     const app = await NestFactory.create(AppModule, { logger: new NestLogger() });
 
+    app.enableCors({
+      origin: '*',
+      credentials: true,
+    });
+
     await app.listen(port);
     getLogger(LogCategory.coordinator).info('coordinator service started');
     getLogger(LogCategory.admin).info('indexer admin app started');

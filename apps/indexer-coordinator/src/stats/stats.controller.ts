@@ -32,11 +32,11 @@ export class StatsController {
   }
 
   @Get(':deploymentId/:from/:to')
-  async getStatsMap(
+  async getStatsList(
     @Param('deploymentId') deploymentId: string,
     @Param('from') from: string,
     @Param('to') to: string
   ): Promise<any> {
-    return instanceToPlain(await this.statsService.getStatsMap(deploymentId, from, to));
+    return instanceToPlain(await this.statsService.getStatsList(deploymentId, from, to));
   }
 }
