@@ -27,6 +27,7 @@ export function PAYGConfig({ priceData, period, onEdit }: Props) {
 
   return (
     <SubqlTable
+      style={{ width: '100%' }}
       pagination={false}
       columns={[...columns, actionColumn]}
       dataSource={[
