@@ -10,7 +10,7 @@ export const Container = styled.div`
   justify-content: space-between;
   min-height: 80px;
   padding: 0px 40px;
-  border-bottom: 1px solid lightgray;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 `;
 
 export const LeftContainer = styled.div`

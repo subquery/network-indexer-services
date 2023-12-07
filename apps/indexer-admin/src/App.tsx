@@ -4,6 +4,7 @@
 import { FC } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
+import { loadDevMessages, loadErrorMessages } from '@apollo/client/dev';
 
 import Loading from 'components/loading';
 import { AccountProvider } from 'containers/account';
@@ -24,6 +25,10 @@ import 'react-notifications-component/dist/theme.css';
 import 'antd/dist/reset.css';
 import './App.css';
 import '@subql/components/dist/subquery-components.css';
+
+// Adds messages only in a dev environment
+loadDevMessages();
+loadErrorMessages();
 
 const AppContents = () => {
   const showMetaMask = useShowMetaMask();

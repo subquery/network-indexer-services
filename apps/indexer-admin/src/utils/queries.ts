@@ -38,6 +38,12 @@ const ProjectFields = `
     cache
     cpu
     memory
+    serviceEndpoints {
+      key
+      value
+      valid
+      reason
+    }
 
   }
 `;
@@ -137,10 +143,8 @@ export const GET_PROJECT = gql`
 
 export const GET_PROJECTS = gql`
   query {
-    getProjects {
+    getProjects: getProjectsSimple {
       ${ProjectFields}
-      ${MetadataFields}
-      ${PaygFields}
     }
   }
 `;
@@ -235,8 +239,8 @@ export const GET_LOG = gql`
 `;
 
 export const GET_QUERY_METADATA = gql`
-  query QueryMetadata($id: String!) {
-    queryMetadata(id: $id) {
+  query QueryMetadata($id: String!, $projectType: Float!) {
+    serviceMetadata(id: $id, projectType: $projectType) {
       lastHeight
       startHeight
       targetHeight
@@ -337,6 +341,47 @@ export const CHANNEL_CHECKPOINT = gql`
       spent
       remote
       onchain
+    }
+  }
+`;
+
+export const GET_RPC_ENDPOINT_KEYS = gql`
+  query getRpcEndpointKeys($projectId: String!) {
+    getRpcEndpointKeys(projectId: $projectId)
+  }
+`;
+
+export const VALID_RPC_ENDPOINT = gql`
+  query validateRpcEndpoint($projectId: String!, $endpointKey: String!, $endpoint: String!) {
+    validateRpcEndpoint(projectId: $projectId, endpointKey: $endpointKey, endpoint: $endpoint) {
+      valid
+      reason
+    }
+  }
+`;
+
+export const GET_MANIFEST = gql`
+  query getManifest($projectId: String!, $projectType: Float!) {
+    getManifest(projectId: $projectId, projectType: $projectType) {
+      rpcManifest {
+        chain {
+          chainId
+        }
+        nodeType
+      }
+    }
+  }
+`;
+
+export const GET_PROJECTS_METADATA = gql`
+  query {
+    getProjectsMetadata {
+      id
+      metadata {
+        lastHeight
+        startHeight
+        targetHeight
+      }
     }
   }
 `;

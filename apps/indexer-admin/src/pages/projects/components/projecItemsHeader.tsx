@@ -19,7 +19,8 @@ const Container = styled.div`
 const projetHeaderItems = [
   { title: 'Project Name', flex: 7 },
   { title: 'Progress', flex: 8 },
-  { title: 'Uptime', flex: 6 },
+  { title: 'Uptime', flex: 5 },
+  { title: 'Type', flex: 3 },
   { title: 'Indexing Status', flex: 3 },
 ];
 

@@ -3,7 +3,7 @@
 
 import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Spinner, Tag } from '@subql/components';
+import { Spinner, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
 import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
@@ -13,17 +13,19 @@ import { Text } from 'components/primary';
 import StatusLabel from 'components/statusLabel';
 import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
-import { ProjectDetails } from 'pages/project-details/types';
+import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
 
 import { OnlineStatus, statusColor, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
 
-type Props = ProjectDetails;
+type Props = Omit<ProjectDetails, 'metadata'> & {
+  metadata?: TQueryMetadata;
+};
 
 const ProjectItem: FC<Props> = (props) => {
-  const { id, details, metadata } = props;
+  const { id, details, metadata, projectType } = props;
 
   const { account } = useAccount();
   const history = useHistory();
@@ -62,13 +64,18 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={8}>
         <Progress percent={formatValueToFixed(progress * 100)} />
       </ItemContainer>
-      <ItemContainer flex={6}>
+      <ItemContainer flex={5}>
         <Tag
           state={onlineStatus ? 'success' : 'error'}
           style={{ height: '22px', lineHeight: '18px' }}
         >
           {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
         </Tag>
+      </ItemContainer>
+      <ItemContainer flex={3}>
+        <Typography variant="medium">
+          {projectType === ProjectType.SubQuery ? 'SubQuery Project' : 'RPC Service'}
+        </Typography>
       </ItemContainer>
       <ItemContainer flex={3}>
         {!isUndefined(status) ? (

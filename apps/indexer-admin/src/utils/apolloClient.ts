@@ -28,6 +28,9 @@ export function createApolloClient(uri: string) {
     uri,
     cache: new InMemoryCache(),
     defaultOptions: {
+      query: {
+        fetchPolicy: 'network-only',
+      },
       watchQuery: {
         fetchPolicy: 'network-only',
       },

@@ -163,7 +163,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
           workers: values.worker,
           networkDictionary: values.networkDictionary ?? '',
           id,
-          projectType: projectQuery.data.project.projectType,
+          projectType: projectQuery.data?.project.projectType,
           serviceEndpoints: [],
         },
       });
@@ -186,7 +186,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
   useEffect(() => {
     if (projectQuery.data) {
       const { project } = projectQuery.data;
-      if (project?.baseConfig?.networkDictionary) {
+      if (project?.projectConfig?.networkDictionary) {
         setShowInput(true);
       }
     }

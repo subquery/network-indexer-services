@@ -29,7 +29,7 @@ export function usePAYGConfig(deploymentId: string) {
   const sdk = useContractSDK();
 
   const paygConfig = useMemo(() => {
-    const { data: { project: { payg } } = { project: { payg: {} } } } = projectQuery;
+    const payg = projectQuery.data?.project.payg;
     if (!payg || !payg.price) {
       return { paygPrice: '', paygExpiration: 0, token: sdk?.sqToken.address };
     }

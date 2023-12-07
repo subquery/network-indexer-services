@@ -2,66 +2,68 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { Tag, TagProps } from '@subql/components';
-import { Tooltip } from 'antd';
+import { Typography } from '@subql/components';
+import { Button } from 'antd';
 import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
-import { Separator, Text } from 'components/primary';
+import { Separator } from 'components/primary';
 import { TagItem } from 'components/tagItem';
-import { OnlineStatus } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
 
-import { ProjectDetails, ProjectStatus } from '../types';
+import { ProjectDetails, ProjectType } from '../types';
 
 type Props = {
   id: string;
   project: ProjectDetails;
-  projectStatus: ProjectStatus;
-  onlineStatus: boolean;
+  onRemoveProject: () => void;
 };
 
-const getProjectStatusTagState = (status: ProjectStatus): TagProps['state'] => {
-  if (status === ProjectStatus.Ready) return 'success';
-  if (status === ProjectStatus.Started || status === ProjectStatus.Indexing) return 'info';
-  if (status === ProjectStatus.Unhealthy) return 'error';
-  return 'default';
-};
-
-const ProjectDetailsHeader: FC<Props> = ({ id, projectStatus, project, onlineStatus }) => {
+const ProjectDetailsHeader: FC<Props> = ({ id, project, onRemoveProject }) => {
   return (
     <Container>
       <LeftContainer>
-        <Avatar address={cidToBytes32(id)} size={100} />
-        <ContentContainer>
-          <Text fw="600" size={30}>
-            {project.details.name}
-          </Text>
-          <Text fw="400" size={15}>
-            {project.id}
-          </Text>
-          <VersionContainer>
-            <TagItem versionType="INDEXED NETWORK" value={project.metadata?.chain} />
+        <Avatar address={cidToBytes32(id)} size={144} />
+        <ContentContainer style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="h4" weight={600}>
+              {project.details.name}
+            </Typography>
+
+            <Button
+              shape="round"
+              size="large"
+              danger
+              type="primary"
+              onClick={() => {
+                onRemoveProject();
+              }}
+            >
+              Remove Project
+            </Button>
+          </div>
+          <Typography variant="medium" style={{ marginTop: 8 }}>
+            {project.details.owner}
+          </Typography>
+          <VersionContainer style={{ justifyContent: 'flex-start' }}>
+            {project.projectType === ProjectType.SubQuery && (
+              <>
+                <TagItem versionType="Indexed Network" value={project.metadata?.chain} />
+                <Separator height={30} mr={36} ml={36} />
+              </>
+            )}
+            <TagItem
+              versionType="Project Type"
+              value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
+            />
             <Separator height={30} mr={36} ml={36} />
-            <TagItem versionType="VERSION" value={`V${project.details.version ?? '1.0.0'}`} />
-            <Separator height={30} mr={36} ml={36} />
-            <TagItem versionType="PROJECT STATUS" fw="normal">
-              <Tooltip
-                title={
-                  projectStatus === ProjectStatus.Unknown
-                    ? 'Coordinator service is not reachable, please make sure is can be reach.'
-                    : ''
-                }
-              >
-                <Tag state={getProjectStatusTagState(projectStatus)}>{projectStatus}</Tag>
-              </Tooltip>
-            </TagItem>
-            <Separator height={30} mr={36} ml={36} />
-            <TagItem versionType="UPTIME" fw="normal">
-              <Tag state={onlineStatus ? 'success' : 'error'}>
-                {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
-              </Tag>
-            </TagItem>
+            {/* <TagItem
+              versionType="Node Type"
+              value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
+            />
+            <Separator height={30} mr={36} ml={36} /> */}
+
+            <TagItem versionType="Deployment ID" value={project.id} />
           </VersionContainer>
         </ContentContainer>
       </LeftContainer>
@@ -89,13 +91,13 @@ const ContentContainer = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  margin-left: 40px;
+  margin-left: 24px;
 `;
 
 const VersionContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 25px;
+  margin-top: 14px;
   height: 50px;
 `;

@@ -13,11 +13,9 @@ import { isUndefined } from 'lodash';
 import AlertView from 'components/alertView';
 import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
-import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
   getQueryMetadata,
-  useIsOnline,
   useNodeVersions,
   useProjectDetails,
   useQueryVersions,
@@ -32,13 +30,13 @@ import { isTrue } from 'utils/project';
 import { REMOVE_PROJECT, START_PROJECT, STOP_PROJECT } from 'utils/queries';
 
 import ProjectDetailsHeader from './components/projectDetailHeader';
+import ProjectRpcServiceCard from './components/projectRpcServiceCard';
 import ProjectServiceCard from './components/projectServiceCard';
 import ProjectStatusView from './components/projectStatusView';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
   alertMessages,
-  createNetworkButtonItems,
   createNotIndexingSteps,
   createReadyIndexingSteps,
   createRemoveProjectSteps,
@@ -56,13 +54,13 @@ import {
   ProjectAction,
   ProjectDetails,
   ProjectStatus,
+  ProjectType,
   ServiceStatus,
   TQueryMetadata,
 } from './types';
 
 const ProjectDetailsPage = () => {
   const { id } = useParams() as { id: string };
-  const { account } = useAccount();
   const {
     state: { data: projectDetails } = { data: undefined },
   }: { state: { data: ProjectDetails | undefined } } = useLocation();
@@ -83,21 +81,13 @@ const ProjectDetailsPage = () => {
   const [progress, setProgress] = useState(0);
   const [metadata, setMetadata] = useState<TQueryMetadata>();
   const [visible, setVisible] = useState(false);
-
   const [actionType, setActionType] = useState<ProjectAction>();
-  const isOnline = useIsOnline({
-    deploymentId: id,
-    indexer: account || '',
-  });
 
   const fetchQueryMetadata = useCallback(async () => {
-    const data = await getQueryMetadata(id);
+    if (!projectQuery.data) return;
+    const data = await getQueryMetadata(id, projectQuery.data.project.projectType);
     setMetadata(data);
-  }, [id, setMetadata]);
-
-  useInterval(() => {
-    fetchQueryMetadata();
-  }, 15000);
+  }, [id, setMetadata, projectQuery]);
 
   const updateServiceStatus = useCallback(() => {
     const intervalId = setInterval(() => fetchQueryMetadata(), 6000);
@@ -107,72 +97,14 @@ const ProjectDetailsPage = () => {
     }, 60000);
   }, [fetchQueryMetadata, projectQuery]);
 
-  const loading = useMemo(
-    () => startProjectLoading || stopProjectLoading || removeProjectLoading,
-    [startProjectLoading, stopProjectLoading, removeProjectLoading]
+  const projectStateChange = useCallback(
+    (type: ProjectNotification.Started | ProjectNotification.Terminated) => {
+      const notification = notifications[type];
+      dispatchNotification(notification);
+      updateServiceStatus();
+    },
+    [dispatchNotification, updateServiceStatus]
   );
-
-  const projectStatus = useMemo(() => {
-    if (!metadata) return ProjectStatus.Unknown;
-
-    if (
-      metadata.indexerStatus === dockerContainerEnum.TERMINATED &&
-      metadata.queryStatus === dockerContainerEnum.TERMINATED
-    ) {
-      return ProjectStatus.Terminated;
-    }
-
-    if (
-      metadata.indexerStatus === dockerContainerEnum.STARTING ||
-      metadata.queryStatus === dockerContainerEnum.STARTING
-    ) {
-      return ProjectStatus.Starting;
-    }
-
-    const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
-    switch (status) {
-      case ServiceStatus.TERMINATED:
-        return healthy ? ProjectStatus.Started : ProjectStatus.NotIndexing;
-      case ServiceStatus.READY:
-        return healthy ? ProjectStatus.Ready : ProjectStatus.Unhealthy;
-      default:
-        return ProjectStatus.NotIndexing;
-    }
-  }, [status, metadata]);
-
-  const alertInfo = useMemo(() => {
-    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status !== ServiceStatus.TERMINATED) {
-        return { ...alertMessages[projectStatus] };
-      }
-    }
-    return undefined;
-  }, [projectStatus, status]);
-
-  const networkBtnItems = createNetworkButtonItems((type: ProjectAction) => {
-    setActionType(type);
-    setVisible(true);
-  });
-
-  const serviceBtnItems = createServiceButtonItems((type: ProjectAction) => {
-    setActionType(type);
-    setVisible(true);
-  });
-
-  const networkActionItems = useMemo(() => {
-    if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
-    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status === ServiceStatus.TERMINATED) {
-        return [];
-      }
-    }
-    return networkBtnItems[projectStatus];
-  }, [networkBtnItems, projectStatus, status]);
-
-  const serviceActionItems = useMemo(() => {
-    if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
-    return serviceBtnItems[projectStatus];
-  }, [projectStatus, serviceBtnItems]);
 
   const onPopoverClose = useCallback((error?: any) => {
     if (error) {
@@ -184,20 +116,6 @@ const ProjectDetailsPage = () => {
 
     setVisible(false);
   }, []);
-
-  const imageVersions = useMemo(
-    () => ({ query: queryVersions, node: nodeVersions }),
-    [nodeVersions, queryVersions]
-  );
-
-  const projectStateChange = useCallback(
-    (type: ProjectNotification.Started | ProjectNotification.Terminated) => {
-      const notification = notifications[type];
-      dispatchNotification(notification);
-      updateServiceStatus();
-    },
-    [dispatchNotification, updateServiceStatus]
-  );
 
   const startProject = useCallback(
     async (values: FormikValues, formHelper: FormikHelpers<FormikValues>) => {
@@ -223,7 +141,7 @@ const ProjectDetailsPage = () => {
   const stopProject = useCallback(async () => {
     try {
       await stopProjectRequest({
-        variables: { id, projectType: projectQuery.data.project.projectType },
+        variables: { id, projectType: projectQuery.data?.project.projectType },
       });
       onPopoverClose();
       projectStateChange(ProjectNotification.Terminated);
@@ -235,13 +153,82 @@ const ProjectDetailsPage = () => {
   const removeProject = useCallback(async () => {
     try {
       await removeProjectRequest({
-        variables: { id, projectType: projectQuery.data.project.projectType },
+        variables: { id, projectType: projectQuery.data?.project.projectType },
       });
       history.replace('/projects');
     } catch (e) {
       console.error('fail to remove project', e);
     }
   }, [removeProjectRequest, history, id, projectQuery.data]);
+
+  const serviceBtnItems = useMemo(
+    () =>
+      createServiceButtonItems((type: ProjectAction) => {
+        setActionType(type);
+        setVisible(true);
+      }),
+    []
+  );
+
+  const loading = useMemo(
+    () => startProjectLoading || stopProjectLoading || removeProjectLoading,
+    [startProjectLoading, stopProjectLoading, removeProjectLoading]
+  );
+
+  const projectStatus = useMemo(() => {
+    if (!metadata) return ProjectStatus.Unknown;
+
+    if (projectQuery.data?.project.projectConfig.serviceEndpoints.length) {
+      if (projectQuery.data?.project.projectConfig.serviceEndpoints.every((i) => i.valid)) {
+        return ProjectStatus.Ready;
+      }
+
+      return ProjectStatus.Unhealthy;
+    }
+
+    if (
+      metadata.indexerStatus === dockerContainerEnum.TERMINATED &&
+      metadata.queryStatus === dockerContainerEnum.TERMINATED
+    ) {
+      return ProjectStatus.Terminated;
+    }
+
+    if (
+      metadata.indexerStatus === dockerContainerEnum.STARTING ||
+      metadata.queryStatus === dockerContainerEnum.STARTING
+    ) {
+      return ProjectStatus.Starting;
+    }
+
+    const healthy = metadata?.indexerStatus === dockerContainerEnum.HEALTHY;
+    switch (status) {
+      case ServiceStatus.TERMINATED:
+        return healthy ? ProjectStatus.Started : ProjectStatus.NotIndexing;
+      case ServiceStatus.READY:
+        return healthy ? ProjectStatus.Ready : ProjectStatus.Unhealthy;
+      default:
+        return ProjectStatus.NotIndexing;
+    }
+  }, [status, metadata, projectQuery]);
+
+  const alertInfo = useMemo(() => {
+    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
+      if (status !== ServiceStatus.TERMINATED) {
+        return { ...alertMessages[projectStatus] };
+      }
+    }
+    return undefined;
+  }, [projectStatus, status]);
+
+  const serviceActionItems = useMemo(() => {
+    if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
+    return serviceBtnItems[projectStatus];
+  }, [projectStatus, serviceBtnItems]);
+
+  const imageVersions = useMemo(
+    () => ({ query: queryVersions, node: nodeVersions }),
+    [nodeVersions, queryVersions]
+  );
 
   const steps = useMemo(() => {
     if (!projectDetails) return false;
@@ -285,6 +272,12 @@ const ProjectDetailsPage = () => {
     onPopoverClose,
   ]);
 
+  const [modalTitle, modalSteps] = useMemo(() => {
+    if (!actionType) return ['', []];
+    if (!steps) return ['', []];
+    return [ProjectActionName[actionType], steps[actionType]];
+  }, [actionType, steps]);
+
   useEffect(() => {
     metadata &&
       setProgress(
@@ -300,49 +293,73 @@ const ProjectDetailsPage = () => {
     fetchQueryMetadata();
   }, [fetchQueryMetadata, status]);
 
-  const [modalTitle, modalSteps] = useMemo(() => {
-    if (!actionType) return ['', []];
-    if (!steps) return ['', []];
-    return [ProjectActionName[actionType], steps[actionType]];
-  }, [actionType, steps]);
+  useInterval(() => {
+    fetchQueryMetadata();
+  }, 15000);
 
   return renderAsync(projectQuery, {
     loading: () => <LoadingSpinner />,
     error: () => <>Unable to get Project Info</>,
-    data: ({ project }) => (
-      <Container>
-        <ContentContainer>
-          <ProjectDetailsHeader
-            id={id}
-            projectStatus={projectStatus}
-            project={project}
-            onlineStatus={isOnline}
+    data: ({ project }) => {
+      return (
+        <Container>
+          <ContentContainer>
+            <ProjectDetailsHeader
+              id={id}
+              project={project}
+              onRemoveProject={() => {
+                setActionType(ProjectAction.RemoveProject);
+                setVisible(true);
+              }}
+            />
+            {project.projectType === ProjectType.SubQuery && (
+              <ProjectServiceCard
+                id={id}
+                actionItems={serviceActionItems}
+                data={metadata}
+                type={project.projectType}
+                projectStatus={projectStatus}
+              />
+            )}
+            {project.projectType === ProjectType.Rpc && (
+              <ProjectRpcServiceCard
+                project={project}
+                metadata={metadata}
+                projectStatus={projectStatus}
+              />
+            )}
+            <ProjectStatusView
+              percent={progress}
+              status={status}
+              metadata={metadata}
+              annonceReady={() => {
+                setActionType(ProjectAction.AnnounceReady);
+                setVisible(true);
+              }}
+              annonceStop={() => {
+                setActionType(ProjectAction.AnnounceTerminating);
+                setVisible(true);
+              }}
+            />
+            <ProjectUptime />
+            {projectDetails && (
+              <ProjectTabbarView id={id} project={project} config={projectDetails} />
+            )}
+          </ContentContainer>
+          <PopupView
+            setVisible={setVisible}
+            visible={visible}
+            title={modalTitle}
+            onClose={() => onPopoverClose()}
+            // @ts-ignore
+            steps={modalSteps}
+            type={actionType}
+            loading={loading}
           />
-          <ProjectStatusView
-            percent={progress}
-            actionItems={networkActionItems}
-            status={status}
-            metadata={metadata}
-          />
-          <ProjectServiceCard id={id} actionItems={serviceActionItems} data={metadata} />
-          <ProjectUptime />
-          {projectDetails && (
-            <ProjectTabbarView id={id} project={project} config={projectDetails} />
-          )}
-        </ContentContainer>
-        <PopupView
-          setVisible={setVisible}
-          visible={visible}
-          title={modalTitle}
-          onClose={() => onPopoverClose()}
-          // @ts-ignore
-          steps={modalSteps}
-          type={actionType}
-          loading={loading}
-        />
-        {alertInfo && <AlertView {...alertInfo} />}
-      </Container>
-    ),
+          {alertInfo && <AlertView {...alertInfo} />}
+        </Container>
+      );
+    },
   });
 };
 

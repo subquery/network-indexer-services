@@ -40,6 +40,11 @@ export enum PaygStatus {
   Close = 'CLOSE',
 }
 
+export enum ProjectType {
+  SubQuery = 0,
+  Rpc = 1,
+}
+
 export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceTerminating;
 
 export enum AccountAction {
@@ -82,13 +87,11 @@ export interface AsyncMemoReturn<T> extends AsyncData<T> {
 }
 
 export type ProjectConfig = {
-  baseConfig: {
+  projectConfig: {
     networkEndpoints: string[];
     networkDictionary: string;
     nodeVersion: string;
     queryVersion: string;
-  };
-  advancedConfig: {
     poiEnabled: boolean;
     purgeDB: boolean;
     timeout: number;
@@ -97,7 +100,9 @@ export type ProjectConfig = {
     cache: number;
     cpu: number;
     memory: number;
+    serviceEndpoints: { key: string; value: string; valid: boolean; reason: string }[];
   };
+
   payg: {
     id: string;
     threshold: number;
@@ -158,6 +163,7 @@ export type ProjectDetails = {
     updatedTimestamp: string;
   };
   metadata: TQueryMetadata;
+  projectType: ProjectType;
 } & ProjectServiceMetadata;
 
 // manifest types

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useMemo, useState } from 'react';
-import { Button, Table, TableTitle, Tabs } from '@subql/components';
+import { Button, SubqlTable, TableTitle, Tabs } from '@subql/components';
 import { useMount } from 'ahooks';
 
 import { Text } from 'components/primary';
@@ -58,7 +58,7 @@ export function PAYGPlan({ deploymentId, onTerminate }: Props) {
         {channels.title}
       </Text>
       <Tabs tabs={tabItems} onTabClick={onTabChange} />
-      <Table tableProps={{ columns: [...planColumns, actionColumn], dataSource }} />
+      <SubqlTable columns={[...planColumns, actionColumn]} dataSource={dataSource} />
     </PlansContainer>
   );
 }

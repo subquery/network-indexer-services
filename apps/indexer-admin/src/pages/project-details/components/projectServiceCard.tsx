@@ -1,8 +1,9 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
-import { Button, Tag } from '@subql/components';
+import { FC, useMemo, useState } from 'react';
+import { Button, Tag, Typography } from '@subql/components';
+import { Drawer } from 'antd';
 import styled from 'styled-components';
 
 import { Text } from 'components/primary';
@@ -12,7 +13,8 @@ import { statusCode } from 'utils/project';
 
 import { ButtonItem } from '../config';
 import { ActionContainer, CardContainer } from '../styles';
-import { TQueryMetadata } from '../types';
+import { ProjectStatus, ProjectType, TQueryMetadata } from '../types';
+import RpcSetting from './rpcSetting';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -57,11 +59,74 @@ type Props = {
   id: string;
   actionItems: ButtonItem[];
   data?: TQueryMetadata;
+  type: ProjectType;
+  projectStatus: ProjectStatus;
 };
 
-const ProjectServiceCard: FC<Props> = ({ id, actionItems, data }) => {
+const ProjectServiceCard: FC<Props> = ({ id, actionItems, data, type, projectStatus }) => {
   const { account } = useAccount();
   const indexMetadata = useGetIndexerMetadata(account || '');
+  const [showRpcDrawer, setShowRpcDrawer] = useState(false);
+  const rpcButtons = useMemo(() => {
+    const btns = [];
+    if ([ProjectStatus.NotIndexing].includes(projectStatus)) {
+      // start
+      btns.push(
+        <Button
+          label="Start Indexing"
+          type="primary"
+          onClick={() => {
+            setShowRpcDrawer(true);
+          }}
+        />
+      );
+    }
+
+    if (
+      [
+        ProjectStatus.Indexing,
+        ProjectStatus.Ready,
+        ProjectStatus.Started,
+        ProjectStatus.Starting,
+        ProjectStatus.Unhealthy,
+        ProjectStatus.Terminated,
+      ].includes(projectStatus)
+    ) {
+      // update
+      btns.push(
+        <Button
+          label="Update Indexing"
+          type="primary"
+          onClick={() => {
+            setShowRpcDrawer(true);
+          }}
+        />
+      );
+    }
+
+    if (
+      [ProjectStatus.Terminated, ProjectStatus.NotIndexing, ProjectStatus.Unhealthy].includes(
+        projectStatus
+      )
+    ) {
+      // remove
+      btns.push(<Button label="Remove Project" type="secondary" />);
+    }
+
+    if (
+      [
+        ProjectStatus.Indexing,
+        ProjectStatus.Ready,
+        ProjectStatus.Started,
+        ProjectStatus.Starting,
+      ].includes(projectStatus)
+    ) {
+      // stop
+      btns.push(<Button label="Stop Project" type="secondary" />);
+    }
+
+    return btns;
+  }, [projectStatus]);
 
   if (!data) return null;
 
@@ -87,17 +152,38 @@ const ProjectServiceCard: FC<Props> = ({ id, actionItems, data }) => {
         />
       </ContentContainer>
       <ActionContainer>
-        {actionItems.map(({ title, action, options = { type: 'secondary' } }) => (
-          <Button
-            key={title}
-            title={title}
-            onClick={action}
-            type={options.type}
-            label={title}
-            style={{ width: '200px', marginBottom: 15 }}
-          />
-        ))}
+        {type === ProjectType.SubQuery
+          ? actionItems.map(({ title, action, options = { type: 'secondary' } }) => (
+              <Button
+                key={title}
+                title={title}
+                onClick={action}
+                type={options.type}
+                label={title}
+              />
+            ))
+          : rpcButtons}
       </ActionContainer>
+
+      <Drawer
+        open={showRpcDrawer}
+        rootClassName="popupViewDrawer"
+        width="30%"
+        onClose={() => {
+          setShowRpcDrawer(false);
+        }}
+        title={<Typography> Update Project Setting </Typography>}
+        footer={null}
+      >
+        <RpcSetting
+          onCancel={() => {
+            setShowRpcDrawer(false);
+          }}
+          onSubmit={() => {
+            setShowRpcDrawer(false);
+          }}
+        />
+      </Drawer>
     </CardContainer>
   );
 };

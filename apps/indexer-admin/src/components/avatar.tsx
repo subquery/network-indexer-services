@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
+import { toSvg } from 'jdenticon';
 
 type Props = {
   size: number;
@@ -10,7 +10,7 @@ type Props = {
 };
 
 const Avatar: FC<Props> = ({ size, address }) => (
-  <Jazzicon diameter={size} seed={jsNumberForAddress(address)} />
+  <img src={`data:image/svg+xml;utf8,${encodeURIComponent(toSvg(address, size))}`} alt="" />
 );
 
 export default Avatar;
