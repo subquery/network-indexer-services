@@ -145,7 +145,6 @@ export const GET_PROJECTS = gql`
   query {
     getProjects {
       ${ProjectFields}
-      ${MetadataFields}
       ${PaygFields}
     }
   }
@@ -370,6 +369,19 @@ export const GET_MANIFEST = gql`
           chainId
         }
         nodeType
+      }
+    }
+  }
+`;
+
+export const GET_PROJECTS_METADATA = gql`
+  query {
+    getProjectsMetadata {
+      id
+      metadata {
+        lastHeight
+        startHeight
+        targetHeight
       }
     }
   }
