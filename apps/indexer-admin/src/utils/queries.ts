@@ -143,9 +143,8 @@ export const GET_PROJECT = gql`
 
 export const GET_PROJECTS = gql`
   query {
-    getProjects {
+    getProjects: getProjectsSimple {
       ${ProjectFields}
-      ${PaygFields}
     }
   }
 `;
