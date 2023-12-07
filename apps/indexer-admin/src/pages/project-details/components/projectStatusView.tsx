@@ -38,11 +38,17 @@ type Props = {
   percent: number;
   status?: ServiceStatus;
   metadata?: TQueryMetadata;
-  annonceReady: () => void;
-  annonceStop: () => void;
+  announceReady: () => void;
+  announceStop: () => void;
 };
 
-const ProjectStatusView: FC<Props> = ({ percent, status, metadata, annonceReady, annonceStop }) => {
+const ProjectStatusView: FC<Props> = ({
+  percent,
+  status,
+  metadata,
+  announceReady,
+  announceStop,
+}) => {
   return (
     <CardContainer>
       <ContentContainer>
@@ -64,10 +70,10 @@ const ProjectStatusView: FC<Props> = ({ percent, status, metadata, annonceReady,
             type="primary"
             disabled={status === ServiceStatus.READY}
             onClick={() => {
-              annonceReady();
+              announceReady();
             }}
           >
-            Annonce Ready
+            Announce Ready
           </Button>
           <Button
             size="large"
@@ -76,10 +82,10 @@ const ProjectStatusView: FC<Props> = ({ percent, status, metadata, annonceReady,
             style={{ marginLeft: 16 }}
             disabled={status === ServiceStatus.TERMINATED}
             onClick={() => {
-              annonceStop();
+              announceStop();
             }}
           >
-            Annonce Stop
+            Announce Stop
           </Button>
         </LabelContainer>
         {!!metadata?.targetHeight && (
