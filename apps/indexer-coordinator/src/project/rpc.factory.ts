@@ -53,6 +53,7 @@ export interface IRpcFamily {
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
   validate(endpoint: string): Promise<void>;
+  getStartHeight(endpoint: string): Promise<number>;
   getTargetHeight(endpoint: string): Promise<number>;
   getLastHeight(endpoint: string): Promise<number>;
   getLastTimestamp(endpoint: string): Promise<number>;
@@ -83,6 +84,9 @@ abstract class RpcFamily implements IRpcFamily {
     throw new Error('Method not implemented.');
   }
   withClientVersion(clientVersion: string): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
+  getStartHeight(endpoint: string): Promise<number> {
     throw new Error('Method not implemented.');
   }
   getTargetHeight(endpoint: string): Promise<number> {
@@ -172,23 +176,42 @@ export class RpcFamilyEvm extends RpcFamily {
     return this;
   }
 
-  async getTargetHeight(endpoint: string): Promise<number> {
-    const result = await jsonRpcRequest(endpoint, 'eth_blockNumber', []);
-    if (result.data.error) {
-      throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
-    }
-    return BigNumber.from(result.data.result).toNumber();
-  }
-
-  async getLastHeight(endpoint: string): Promise<number> {
+  async getStartHeight(endpoint: string): Promise<number> {
     const result = await jsonRpcRequest(endpoint, 'eth_syncing', []);
     if (result.data.error) {
-      throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
+      throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
     }
     if (result.data.result === false) {
       return 0;
     }
-    return BigNumber.from(result.data.result.currentBlock).toNumber();
+    // rpc's start block from latest startup, useless at this moment
+    return BigNumber.from(result.data.result.startingBlock).toNumber();
+  }
+
+  async getTargetHeight(endpoint: string): Promise<number> {
+    const result = await jsonRpcRequest(endpoint, 'eth_syncing', []);
+    if (result.data.error) {
+      throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
+    }
+    if (result.data.result === false) {
+      return 0;
+    }
+    return BigNumber.from(result.data.result.highestBlock).toNumber();
+  }
+
+  async getLastHeight(endpoint: string): Promise<number> {
+    let result = await jsonRpcRequest(endpoint, 'eth_syncing', []);
+    if (result.data.error) {
+      throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
+    }
+    if (result.data.result !== false) {
+      return BigNumber.from(result.data.result.currentBlock).toNumber();
+    }
+    result = await jsonRpcRequest(endpoint, 'eth_blockNumber', []);
+    if (result.data.error) {
+      throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
+    }
+    return BigNumber.from(result.data.result).toNumber();
   }
 
   async getLastTimestamp(endpoint: string): Promise<number> {

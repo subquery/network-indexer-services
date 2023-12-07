@@ -173,22 +173,24 @@ export class ProjectRpcService {
     const family = getRpcFamilyObject(rpcFamily);
     const key = family.getEndpointKeys().find((key) => key.endsWith('Http'));
     const endpoint = project.serviceEndpoints.find((endpoint) => endpoint.key === key);
-    let targetHeight = 0;
+    const startHeight = 0;
     let lastHeight = 0;
     let lastTime = 0;
+    let targetHeight = 0;
     try {
       if (family && endpoint) {
-        targetHeight = await family.getTargetHeight(endpoint.value);
-        lastHeight = (await family.getLastHeight(endpoint.value)) || targetHeight;
+        // startHeight = await family.getStartHeight(endpoint.value);
+        lastHeight = await family.getLastHeight(endpoint.value);
         lastTime = await family.getLastTimestamp(endpoint.value);
+        targetHeight = (await family.getTargetHeight(endpoint.value)) || lastHeight;
       }
     } catch (e) {
       logger.debug(`getRpcMetadata error: ${e}`);
     }
     return {
+      startHeight,
       lastHeight,
       lastTime,
-      startHeight: 0,
       targetHeight,
       healthy: !!endpoint?.valid,
       chain: manifest.chain.chainId,
