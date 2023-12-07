@@ -53,9 +53,10 @@ export class ProjectResolver {
 
   @Query(() => ProjectDetails)
   async project(@Args('id') id: string): Promise<ProjectDetails> {
+    const project = await this.projectService.getProject(id);
     return {
-      ...(await this.projectService.getProject(id)),
-      metadata: await this.serviceMetadata(id, ProjectType.SUBQUERY),
+      ...project,
+      metadata: await this.serviceMetadata(id, project.projectType),
       payg: await this.projectService.getPayg(id),
     };
   }
