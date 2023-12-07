@@ -13,14 +13,16 @@ import { Text } from 'components/primary';
 import StatusLabel from 'components/statusLabel';
 import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
-import { ProjectDetails, ProjectType } from 'pages/project-details/types';
+import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
 
 import { OnlineStatus, statusColor, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
 
-type Props = ProjectDetails;
+type Props = Omit<ProjectDetails, 'metadata'> & {
+  metadata?: TQueryMetadata;
+};
 
 const ProjectItem: FC<Props> = (props) => {
   const { id, details, metadata, projectType } = props;

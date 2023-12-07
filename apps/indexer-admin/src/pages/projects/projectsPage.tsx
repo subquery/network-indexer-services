@@ -73,8 +73,7 @@ const Projects = () => {
               key={props.id}
               {...props}
               metadata={
-                projectsMetadata.data?.getProjectsMetadata.find((i) => i.id === props.id)
-                  ?.metadata || props.metadata
+                projectsMetadata.data?.getProjectsMetadata.find((i) => i.id === props.id)?.metadata
               }
             />
           );
