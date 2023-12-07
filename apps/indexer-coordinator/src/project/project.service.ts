@@ -49,6 +49,7 @@ import {
   ProjectDetails,
   ProjectEntity,
   ProjectInfo,
+  MetadataType,
 } from './project.model';
 import { MmrStoreType, ProjectType, SubqueryEndpointType, TemplateType } from './types';
 
@@ -78,6 +79,13 @@ export class ProjectService {
     return this.projectRepo.findOneBy({ id });
   }
 
+  getPayg(id: string): Promise<Payg> {
+    return this.paygRepo.findOneBy({ id });
+  }
+
+  /**
+   * @deprecated use `getSubqueryMetadata` instead
+   */
   async getProjectDetails(id: string): Promise<ProjectDetails> {
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) {
@@ -92,6 +100,17 @@ export class ProjectService {
     return { ...project, metadata, payg };
   }
 
+  async getSubqueryMetadata(id: string): Promise<MetadataType> {
+    const project = await this.getProject(id);
+    if (!project) {
+      return;
+    }
+    return this.query.getQueryMetaData(id, project.serviceEndpoints[SubqueryEndpointType.Query]);
+  }
+
+  /**
+   * @deprecated use `getAllProjects` instead
+   */
   async getProjects(): Promise<ProjectDetails[]> {
     const projects = await this.projectRepo.find();
     return Promise.all(projects.map(({ id }) => this.getProjectDetails(id)));
@@ -383,6 +402,18 @@ export class ProjectService {
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
+  }
+
+  async getManifest<T>(id: string): Promise<T> {
+    const project = await this.getProject(id);
+    if (!project) {
+      return;
+    }
+    if (!project.manifest || Object.keys(project.manifest).length === 0) {
+      project.manifest = await getProjectManifest(id);
+      await this.projectRepo.save(project);
+    }
+    return project.manifest as T;
   }
 
   async logs(container: string): Promise<LogType> {

@@ -11,9 +11,6 @@ export class AddProjectStatisticsEntity1701342147690 implements MigrationInterfa
       `CREATE TABLE "project_statistics_entity" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "dataTime" TIMESTAMP NOT NULL, "deploymentCid" character varying NOT NULL, "serviceEndpointType" character varying, "time" integer NOT NULL DEFAULT '0', "failure" integer NOT NULL DEFAULT '0', "freeHttp" integer NOT NULL DEFAULT '0', "freeP2p" integer NOT NULL DEFAULT '0', "caHttp" integer NOT NULL DEFAULT '0', "caP2p" integer NOT NULL DEFAULT '0', "paygHttp" integer NOT NULL DEFAULT '0', "paygP2p" integer NOT NULL DEFAULT '0', CONSTRAINT "UQ_a02e31129efc3b2cc201e201bcd" UNIQUE ("dataTime", "deploymentCid"), CONSTRAINT "PK_db31d98a5d1c5c95ffc5c221a27" PRIMARY KEY ("id"))`
     );
     await queryRunner.query(
-      `ALTER TABLE "project_entity" ALTER COLUMN "serviceEndpoints" SET DEFAULT '{}'`
-    );
-    await queryRunner.query(
       `ALTER TABLE "project_entity" ALTER COLUMN "baseConfig" SET DEFAULT '{}'`
     );
     await queryRunner.query(
@@ -27,9 +24,6 @@ export class AddProjectStatisticsEntity1701342147690 implements MigrationInterfa
     );
     await queryRunner.query(
       `ALTER TABLE "project_entity" ALTER COLUMN "baseConfig" SET DEFAULT '{"nodeVersion": "", "queryVersion": "", "networkEndpoints": [], "networkDictionary": "", "usePrimaryNetworkEndpoint": true}'`
-    );
-    await queryRunner.query(
-      `ALTER TABLE "project_entity" ALTER COLUMN "serviceEndpoints" SET DEFAULT '[]'`
     );
     await queryRunner.query(`DROP TABLE "project_statistics_entity"`);
   }

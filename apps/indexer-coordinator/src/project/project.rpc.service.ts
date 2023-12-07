@@ -108,10 +108,10 @@ export class ProjectRpcService {
       const rpcFamily = projectManifest.rpcFamily.find((family) => endpointKey.startsWith(family));
       // const protocolType = endpointKey.replace(rpcFamily, '').toLowerCase();
       await getRpcFamilyObject(rpcFamily)
-        .withChainId(projectManifest.chain.chainId)
-        .withGenesisHash(projectManifest.chain.genesisHash)
+        .withChainId(projectManifest.chain?.chainId)
+        .withGenesisHash(projectManifest.chain?.genesisHash)
         .withNodeType(projectManifest.nodeType)
-        .withClientNameAndVersion(projectManifest.client.name, projectManifest.client.version)
+        .withClientNameAndVersion(projectManifest.client?.name, projectManifest.client?.version)
         .validate(endpoint);
       return this.formatResponse(true);
     } catch (e) {

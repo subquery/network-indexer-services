@@ -381,6 +381,6 @@ export class ProjectDetails extends ProjectEntity {
   @Field(() => MetadataType)
   metadata: MetadataType;
 
-  @Field(() => Payg)
-  payg: Payg;
+  @Field(() => Payg, { nullable: true })
+  payg?: Payg;
 }
