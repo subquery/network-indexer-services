@@ -11,16 +11,15 @@ import { Separator } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { cidToBytes32 } from 'utils/ipfs';
 
-import { ProjectDetails, ProjectStatus, ProjectType } from '../types';
+import { ProjectDetails, ProjectType } from '../types';
 
 type Props = {
   id: string;
   project: ProjectDetails;
-  projectStatus: ProjectStatus;
-  onlineStatus: boolean;
+  onRemoveProject: () => void;
 };
 
-const ProjectDetailsHeader: FC<Props> = ({ id, project }) => {
+const ProjectDetailsHeader: FC<Props> = ({ id, project, onRemoveProject }) => {
   return (
     <Container>
       <LeftContainer>
@@ -31,7 +30,15 @@ const ProjectDetailsHeader: FC<Props> = ({ id, project }) => {
               {project.details.name}
             </Typography>
 
-            <Button shape="round" size="large" danger type="primary">
+            <Button
+              shape="round"
+              size="large"
+              danger
+              type="primary"
+              onClick={() => {
+                onRemoveProject();
+              }}
+            >
               Remove Project
             </Button>
           </div>
@@ -50,11 +57,11 @@ const ProjectDetailsHeader: FC<Props> = ({ id, project }) => {
               value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
             />
             <Separator height={30} mr={36} ml={36} />
-            <TagItem
+            {/* <TagItem
               versionType="Node Type"
               value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
             />
-            <Separator height={30} mr={36} ml={36} />
+            <Separator height={30} mr={36} ml={36} /> */}
 
             <TagItem versionType="Deployment ID" value={project.id} />
           </VersionContainer>

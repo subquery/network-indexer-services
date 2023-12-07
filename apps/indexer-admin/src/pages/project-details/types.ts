@@ -100,7 +100,7 @@ export type ProjectConfig = {
     cache: number;
     cpu: number;
     memory: number;
-    serviceEndpoints: { key: string; value: string }[];
+    serviceEndpoints: { key: string; value: string; valid: boolean; reason: string }[];
   };
 
   payg: {

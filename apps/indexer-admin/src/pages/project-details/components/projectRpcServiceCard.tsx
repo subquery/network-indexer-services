@@ -2,56 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo, useState } from 'react';
-import { Tag, Typography } from '@subql/components';
+import { useQuery } from '@apollo/client';
+import { Typography } from '@subql/components';
 import { Button, Drawer } from 'antd';
-import styled from 'styled-components';
 
-import { Text } from 'components/primary';
-import { useAccount } from 'containers/account';
-import { statusCode } from 'utils/project';
+import { GET_MANIFEST } from 'utils/queries';
 
 import { CardContainer } from '../styles';
 import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
 import RpcSetting from './rpcSetting';
-
-const ContentContainer = styled.div`
-  display: flex;
-  background-color: white;
-  border-radius: 8px;
-`;
-
-const ServiceContaineer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 200px;
-  margin-right: 30px;
-`;
-
-const HeaderContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-type CardProps = {
-  title: string;
-  subTitle: string;
-  status?: string;
-};
-
-const ServiceView: FC<CardProps> = ({ title, subTitle, status }) => (
-  <ServiceContaineer>
-    <HeaderContainer>
-      <Text mr={20} fw="500">
-        {title}
-      </Text>
-      {!!status && <Tag state={statusCode(status)}>{status}</Tag>}
-    </HeaderContainer>
-    <Text size={15} color="gray" mt={10}>
-      {subTitle}
-    </Text>
-  </ServiceContaineer>
-);
 
 type Props = {
   project: ProjectDetails;
@@ -60,7 +19,14 @@ type Props = {
 };
 
 const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) => {
-  const { account } = useAccount();
+  const manifest = useQuery<{
+    getManifest: { rpcManifest: { chain: { chainId: string }; nodeType: string } };
+  }>(GET_MANIFEST, {
+    variables: {
+      projectId: project.id,
+      projectType: project.projectType,
+    },
+  });
   const [showRpcDrawer, setShowRpcDrawer] = useState(false);
   const rpcButtons = useMemo(() => {
     const btns = [];
@@ -91,15 +57,6 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
       );
     }
 
-    // if (
-    //   [ProjectStatus.Terminated, ProjectStatus.NotIndexing, ProjectStatus.Unhealthy].includes(
-    //     projectStatus
-    //   )
-    // ) {
-    //   // remove
-    //   btns.push(<Button label="Remove Project" type="secondary" />);
-    // }
-
     if (
       [
         ProjectStatus.Indexing,
@@ -116,7 +73,6 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
   }, [projectStatus]);
 
   if (!metadata) return null;
-
   return (
     <CardContainer style={{ flexDirection: 'column' }}>
       <div style={{ display: 'flex' }}>
@@ -131,29 +87,30 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
         <div>
           <Typography weight={500}>Node Type</Typography>
           <Typography style={{ marginLeft: 8 }} variant="medium">
-            Full
+            {manifest.data?.getManifest.rpcManifest?.nodeType}
           </Typography>
         </div>
         <div>
           <Typography>Chain ID</Typography>
           <Typography style={{ marginLeft: 8 }} variant="medium">
-            137
+            {manifest.data?.getManifest.rpcManifest?.chain?.chainId}
           </Typography>
         </div>
       </div>
 
       <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Typography>HTTP</Typography>
-            <Tag color="success" style={{ marginLeft: 8 }}>
-              Healthy
-            </Tag>
-          </div>
-          <Typography style={{ marginTop: 8 }} variant="medium">
-            http://ssss.wwww.xxxyyy
-          </Typography>
-        </div>
+        {project.projectConfig.serviceEndpoints.map((endpoint) => {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <Typography>{endpoint.key}</Typography>
+              </div>
+              <Typography style={{ marginTop: 8 }} variant="medium">
+                {endpoint.value}
+              </Typography>
+            </div>
+          );
+        })}
       </div>
 
       <Drawer

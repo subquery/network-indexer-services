@@ -33,3 +33,7 @@ code {
 :root {
   --ant-primary-color: var(--sq-blue600);
 }
+
+.ant-btn-primary {
+  background-color: var(--sq-blue600);
+}

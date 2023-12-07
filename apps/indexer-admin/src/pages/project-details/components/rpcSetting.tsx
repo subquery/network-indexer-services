@@ -1,12 +1,14 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { FC } from 'react';
+import React, { FC, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { Steps, Typography } from '@subql/components';
 import { cidToBytes32 } from '@subql/network-clients';
 import { Button, Form, Input } from 'antd';
+import { Rule } from 'antd/es/form';
+import debounce from 'debounce-promise';
 import { merge } from 'lodash';
 
 import Avatar from 'components/avatar';
@@ -36,6 +38,35 @@ const RpcSetting: FC<IProps> = (props) => {
   >(VALID_RPC_ENDPOINT);
 
   const [startProjectRequest] = useMutation(START_PROJECT);
+
+  const debouncedValidator = useMemo(() => {
+    return debounce(async (rule: Rule, value: string) => {
+      if (!value) return Promise.reject(new Error('Please input http endpoint'));
+      const res = await validate({
+        variables: {
+          projectId: id,
+          endpoint: value,
+          // not sure if it's a development field or not.
+          // when print it, the rule actrully is { field, fullField, type }
+          // @ts-ignore
+          endpointKey: rule.field,
+        },
+        defaultOptions: {
+          fetchPolicy: 'network-only',
+        },
+      });
+
+      if (!res?.data?.validateRpcEndpoint.valid) {
+        return Promise.reject(new Error(res?.data?.validateRpcEndpoint.reason));
+      }
+      // verification RPC endpoint
+      if (value) {
+        return Promise.resolve();
+      }
+
+      return Promise.reject(new Error('xxxx'));
+    }, 3000);
+  }, [validate, id]);
 
   if (!projectQuery.data) return null;
 
@@ -100,29 +131,7 @@ const RpcSetting: FC<IProps> = (props) => {
                 rules={[
                   () => {
                     return {
-                      validator: async (_, value) => {
-                        if (!value) return Promise.reject(new Error('Please input http endpoint'));
-                        const res = await validate({
-                          variables: {
-                            projectId: id,
-                            endpoint: value,
-                            endpointKey: `${key}Endpoint`,
-                          },
-                          defaultOptions: {
-                            fetchPolicy: 'network-only',
-                          },
-                        });
-
-                        if (!res?.data?.validateRpcEndpoint.valid) {
-                          return Promise.reject(new Error(res?.data?.validateRpcEndpoint.reason));
-                        }
-                        // verification RPC endpoint
-                        if (value) {
-                          return Promise.resolve();
-                        }
-
-                        return Promise.reject(new Error('xxxx'));
-                      },
+                      validator: debouncedValidator,
                     };
                   },
                 ]}

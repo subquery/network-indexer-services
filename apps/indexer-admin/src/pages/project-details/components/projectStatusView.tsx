@@ -3,25 +3,23 @@
 
 import { FC } from 'react';
 import { Spinner, Tag } from '@subql/components';
-import { Progress } from 'antd';
+import { Button, Progress } from 'antd';
 import { isUndefined } from 'lodash';
 import styled from 'styled-components';
 
-import { Button, Text } from 'components/primary';
+import { Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { statusText } from 'pages/projects/constant';
 import { serviceStatusCode } from 'utils/project';
 import { formatValueToFixed } from 'utils/units';
 
-import { ButtonItem } from '../config';
-import { ActionContainer, CardContainer } from '../styles';
+import { CardContainer } from '../styles';
 import { ServiceStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  margin-right: 50px;
 `;
 
 const TagsContainer = styled.div<{ mb?: number }>`
@@ -38,12 +36,13 @@ const LabelContainer = styled.div`
 
 type Props = {
   percent: number;
-  actionItems: ButtonItem[];
   status?: ServiceStatus;
   metadata?: TQueryMetadata;
+  annonceReady: () => void;
+  annonceStop: () => void;
 };
 
-const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }) => {
+const ProjectStatusView: FC<Props> = ({ percent, status, metadata, annonceReady, annonceStop }) => {
   return (
     <CardContainer>
       <ContentContainer>
@@ -56,6 +55,32 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
           ) : (
             <Spinner />
           )}
+
+          <span style={{ flex: 1 }} />
+
+          <Button
+            size="large"
+            shape="round"
+            type="primary"
+            disabled={status === ServiceStatus.READY}
+            onClick={() => {
+              annonceReady();
+            }}
+          >
+            Annonce Ready
+          </Button>
+          <Button
+            size="large"
+            shape="round"
+            type="primary"
+            style={{ marginLeft: 16 }}
+            disabled={status === ServiceStatus.TERMINATED}
+            onClick={() => {
+              annonceStop();
+            }}
+          >
+            Annonce Stop
+          </Button>
         </LabelContainer>
         {!!metadata?.targetHeight && (
           <TagsContainer>
@@ -75,11 +100,6 @@ const ProjectStatusView: FC<Props> = ({ percent, actionItems, status, metadata }
         )}
         <Progress percent={formatValueToFixed(percent * 100)} />
       </ContentContainer>
-      <ActionContainer>
-        {actionItems.map(({ title, action }) => (
-          <Button mt={10} key={title} width={265} title={title} onClick={action} />
-        ))}
-      </ActionContainer>
     </CardContainer>
   );
 };

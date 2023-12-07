@@ -41,6 +41,8 @@ const ProjectFields = `
     serviceEndpoints {
       key
       value
+      valid
+      reason
     }
 
   }
@@ -356,6 +358,19 @@ export const VALID_RPC_ENDPOINT = gql`
     validateRpcEndpoint(projectId: $projectId, endpointKey: $endpointKey, endpoint: $endpoint) {
       valid
       reason
+    }
+  }
+`;
+
+export const GET_MANIFEST = gql`
+  query getManifest($projectId: String!, $projectType: Float!) {
+    getManifest(projectId: $projectId, projectType: $projectType) {
+      rpcManifest {
+        chain {
+          chainId
+        }
+        nodeType
+      }
     }
   }
 `;

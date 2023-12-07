@@ -13,11 +13,9 @@ import { isUndefined } from 'lodash';
 import AlertView from 'components/alertView';
 import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
-import { useAccount } from 'containers/account';
 import { useNotification } from 'containers/notificationContext';
 import {
   getQueryMetadata,
-  useIsOnline,
   useNodeVersions,
   useProjectDetails,
   useQueryVersions,
@@ -39,7 +37,6 @@ import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
   alertMessages,
-  createNetworkButtonItems,
   createNotIndexingSteps,
   createReadyIndexingSteps,
   createRemoveProjectSteps,
@@ -64,7 +61,6 @@ import {
 
 const ProjectDetailsPage = () => {
   const { id } = useParams() as { id: string };
-  const { account } = useAccount();
   const {
     state: { data: projectDetails } = { data: undefined },
   }: { state: { data: ProjectDetails | undefined } } = useLocation();
@@ -81,10 +77,6 @@ const ProjectDetailsPage = () => {
   const [removeProjectRequest, { loading: removeProjectLoading }] = useMutation(REMOVE_PROJECT);
   const queryVersions = useQueryVersions(id);
   const nodeVersions = useNodeVersions(id);
-  const isOnline = useIsOnline({
-    deploymentId: id,
-    indexer: account || '',
-  });
 
   const [progress, setProgress] = useState(0);
   const [metadata, setMetadata] = useState<TQueryMetadata>();
@@ -169,15 +161,6 @@ const ProjectDetailsPage = () => {
     }
   }, [removeProjectRequest, history, id, projectQuery.data]);
 
-  const networkBtnItems = useMemo(
-    () =>
-      createNetworkButtonItems((type: ProjectAction) => {
-        setActionType(type);
-        setVisible(true);
-      }),
-    []
-  );
-
   const serviceBtnItems = useMemo(
     () =>
       createServiceButtonItems((type: ProjectAction) => {
@@ -194,6 +177,14 @@ const ProjectDetailsPage = () => {
 
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
+
+    if (projectQuery.data?.project.projectConfig.serviceEndpoints.length) {
+      if (projectQuery.data?.project.projectConfig.serviceEndpoints.every((i) => i.valid)) {
+        return ProjectStatus.Ready;
+      }
+
+      return ProjectStatus.Unhealthy;
+    }
 
     if (
       metadata.indexerStatus === dockerContainerEnum.TERMINATED &&
@@ -218,7 +209,7 @@ const ProjectDetailsPage = () => {
       default:
         return ProjectStatus.NotIndexing;
     }
-  }, [status, metadata]);
+  }, [status, metadata, projectQuery]);
 
   const alertInfo = useMemo(() => {
     if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
@@ -228,16 +219,6 @@ const ProjectDetailsPage = () => {
     }
     return undefined;
   }, [projectStatus, status]);
-
-  const networkActionItems = useMemo(() => {
-    if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
-    if (projectStatus === ProjectStatus.Terminated || projectStatus === ProjectStatus.Unhealthy) {
-      if (status === ServiceStatus.TERMINATED) {
-        return [];
-      }
-    }
-    return networkBtnItems[projectStatus];
-  }, [networkBtnItems, projectStatus, status]);
 
   const serviceActionItems = useMemo(() => {
     if (isUndefined(projectStatus) || projectStatus === ProjectStatus.Unknown) return [];
@@ -325,9 +306,11 @@ const ProjectDetailsPage = () => {
           <ContentContainer>
             <ProjectDetailsHeader
               id={id}
-              projectStatus={projectStatus}
               project={project}
-              onlineStatus={isOnline}
+              onRemoveProject={() => {
+                setActionType(ProjectAction.RemoveProject);
+                setVisible(true);
+              }}
             />
             {project.projectType === ProjectType.SubQuery && (
               <ProjectServiceCard
@@ -347,9 +330,16 @@ const ProjectDetailsPage = () => {
             )}
             <ProjectStatusView
               percent={progress}
-              actionItems={networkActionItems}
               status={status}
               metadata={metadata}
+              annonceReady={() => {
+                setActionType(ProjectAction.AnnounceReady);
+                setVisible(true);
+              }}
+              annonceStop={() => {
+                setActionType(ProjectAction.AnnounceTerminating);
+                setVisible(true);
+              }}
             />
             <ProjectUptime />
             {projectDetails && (
