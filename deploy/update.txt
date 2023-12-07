@@ -1,0 +1,8 @@
+need to overwrite this step at our academy page to deploy the Kepler node https://academy.subquery.network/subquery_network/indexers/become-an-indexer.html#setting-up-a-grafana-dashboard
+cd indexer-services-folder
+# Note the next step will overwrite your existing docker-compose.yml, make sure you have a backup
+after curl
+curl -L https://api.github.com/repos/subquery/indexer-services/tarball/kepler | tar -xzf - --strip-components=1 -C .
+no create docker-compose.yml and folders ipfs and metrics
+need manually clone from 
+https://github.com/subquery/network-indexer-services/tree/main/deploy
