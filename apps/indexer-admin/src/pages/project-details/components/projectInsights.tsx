@@ -5,7 +5,7 @@
 
 import React, { FC, useMemo, useState } from 'react';
 import { Typography } from '@subql/components';
-import { useMount } from 'ahooks';
+import { useInterval, useMount } from 'ahooks';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -86,6 +86,10 @@ const ProjectInsights: FC<IProps> = (props) => {
   useMount(() => {
     getInsightData();
   });
+
+  useInterval(() => {
+    getInsightData();
+  }, 30000);
 
   return (
     <div style={{ padding: '0 6px', display: 'flex', flexDirection: 'column' }}>
