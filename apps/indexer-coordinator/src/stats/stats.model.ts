@@ -18,15 +18,15 @@ export class ProjectStatisticsEntity {
   @Expose({ name: 'id' })
   id: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   @Expose({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   @Expose({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column('timestamp')
+  @Column('timestamp with time zone')
   @Expose({ name: 'data_time' })
   dataTime: Date;
 
@@ -88,6 +88,9 @@ export class ProjectStatisticsMapInput {
   };
 }
 
+export class ProjectStatisticsMapResponse {
+  [hour: string]: ProjectStatisticsEntity;
+}
 // export class ProjectStatisticMapInputClass implements ProjectStatisticMapInput {
 //   [hour: string]: {
 //     [deployment_cid: string]: ProjectStatisticEntity;

@@ -113,6 +113,9 @@ export class StatsService {
         deploymentCid: deploymentId,
         dataTime: Between(new Date(from), new Date(to)),
       },
+      order: {
+        dataTime: 'ASC',
+      },
     });
   }
 
@@ -125,6 +128,9 @@ export class StatsService {
       where: {
         deploymentCid: deploymentId,
         dataTime: Between(new Date(from), new Date(to)),
+      },
+      order: {
+        dataTime: 'ASC',
       },
     });
     const statsMap: ProjectStatisticsMapInput = {};
