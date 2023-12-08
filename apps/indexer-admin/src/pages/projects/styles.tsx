@@ -39,8 +39,6 @@ export const ItemContainer = styled.div<{
   background-color: ${({ color }) => color ?? 'white'};
   padding-left: ${({ pl }) => pl ?? 0}px;
   min-width: ${({ mw }) => mw ?? 100}px;
-  margin-right: 15px;
-  margin-left: 15px;
   align-items: center;
 `;
 
@@ -49,19 +47,16 @@ export const ProjectItemContainer = styled.div`
   display: flex;
   width: 100%;
   min-width: 600px;
-  min-height: 90px;
-  margin: 10px 0px;
-  padding: 10px 10px;
+  min-height: 84px;
   background-color: white;
-  :hover {
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-    cursor: pointer;
-  }
+  padding: 16px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--sq-gray300);
 `;
 
 export const ProfileContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 80%;
-  margin-left: 20px;
+  margin-left: 16px;
 `;

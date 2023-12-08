@@ -317,8 +317,15 @@ const ProjectDetailsPage = () => {
                 id={id}
                 actionItems={serviceActionItems}
                 data={metadata}
-                type={project.projectType}
                 projectStatus={projectStatus}
+                update={() => {
+                  setActionType(ProjectAction.RestartProject);
+                  setVisible(true);
+                }}
+                stop={() => {
+                  setActionType(ProjectAction.StopProject);
+                  setVisible(true);
+                }}
               />
             )}
             {project.projectType === ProjectType.Rpc && (

@@ -66,7 +66,19 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
       ].includes(projectStatus)
     ) {
       // stop
-      // btns.push(<Button label="Stop Project" type="secondary" />);
+      // btns.push(
+      //   <Button
+      //     type="primary"
+      //     danger
+      //     onClick={() => {
+      //       setShowRpcDrawer(true);
+      //     }}
+      //     shape="round"
+      //     style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
+      //   >
+      //     Stop
+      //   </Button>
+      // );
     }
 
     return btns;

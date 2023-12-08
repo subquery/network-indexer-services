@@ -1,9 +1,9 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC, useMemo, useState } from 'react';
-import { Button, Tag, Typography } from '@subql/components';
-import { Drawer } from 'antd';
+import { FC, useMemo } from 'react';
+import { Tag, Typography } from '@subql/components';
+import { Button } from 'antd';
 import styled from 'styled-components';
 
 import { Text } from 'components/primary';
@@ -12,9 +12,8 @@ import { useGetIndexerMetadata } from 'hooks/projectHook';
 import { statusCode } from 'utils/project';
 
 import { ButtonItem } from '../config';
-import { ActionContainer, CardContainer } from '../styles';
-import { ProjectStatus, ProjectType, TQueryMetadata } from '../types';
-import RpcSetting from './rpcSetting';
+import { CardContainer } from '../styles';
+import { ProjectStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -59,31 +58,21 @@ type Props = {
   id: string;
   actionItems: ButtonItem[];
   data?: TQueryMetadata;
-  type: ProjectType;
   projectStatus: ProjectStatus;
+  update: () => void;
+  stop: () => void;
 };
 
-const ProjectServiceCard: FC<Props> = ({ id, actionItems, data, type, projectStatus }) => {
+const ProjectServiceCard: FC<Props> = ({ id, data, projectStatus, update, stop }) => {
   const { account } = useAccount();
   const indexMetadata = useGetIndexerMetadata(account || '');
-  const [showRpcDrawer, setShowRpcDrawer] = useState(false);
-  const rpcButtons = useMemo(() => {
+
+  const connectionButtons = useMemo(() => {
     const btns = [];
-    if ([ProjectStatus.NotIndexing].includes(projectStatus)) {
-      // start
-      btns.push(
-        <Button
-          label="Start Indexing"
-          type="primary"
-          onClick={() => {
-            setShowRpcDrawer(true);
-          }}
-        />
-      );
-    }
 
     if (
       [
+        ProjectStatus.NotIndexing,
         ProjectStatus.Indexing,
         ProjectStatus.Ready,
         ProjectStatus.Started,
@@ -95,22 +84,18 @@ const ProjectServiceCard: FC<Props> = ({ id, actionItems, data, type, projectSta
       // update
       btns.push(
         <Button
-          label="Update Indexing"
+          key="update"
           type="primary"
           onClick={() => {
-            setShowRpcDrawer(true);
+            update();
           }}
-        />
+          shape="round"
+          style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
+          size="large"
+        >
+          Update
+        </Button>
       );
-    }
-
-    if (
-      [ProjectStatus.Terminated, ProjectStatus.NotIndexing, ProjectStatus.Unhealthy].includes(
-        projectStatus
-      )
-    ) {
-      // remove
-      btns.push(<Button label="Remove Project" type="secondary" />);
     }
 
     if (
@@ -122,11 +107,24 @@ const ProjectServiceCard: FC<Props> = ({ id, actionItems, data, type, projectSta
       ].includes(projectStatus)
     ) {
       // stop
-      btns.push(<Button label="Stop Project" type="secondary" />);
+      btns.push(
+        <Button
+          key="stop"
+          type="primary"
+          danger
+          onClick={() => {
+            stop();
+          }}
+          shape="round"
+          size="large"
+        >
+          Stop
+        </Button>
+      );
     }
 
     return btns;
-  }, [projectStatus]);
+  }, [projectStatus, update, stop]);
 
   if (!data) return null;
 
@@ -134,56 +132,32 @@ const ProjectServiceCard: FC<Props> = ({ id, actionItems, data, type, projectSta
 
   return (
     <CardContainer>
-      <ContentContainer>
-        <ServiceView
-          title="Indexer Service"
-          subTitle={`Image Version: ${imageVersion('indexer', data.indexerNodeVersion)}`}
-          status={data.indexerStatus}
-        />
-        <ServiceView
-          title="Query Service"
-          subTitle={`Image Version: ${imageVersion('query', data.queryNodeVersion)}`}
-          status={data.queryStatus}
-        />
-        <ServiceView
-          title="Proxy Service"
-          subTitle={`Url: ${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`}
-          status={data.queryStatus}
-        />
-      </ContentContainer>
-      <ActionContainer>
-        {type === ProjectType.SubQuery
-          ? actionItems.map(({ title, action, options = { type: 'secondary' } }) => (
-              <Button
-                key={title}
-                title={title}
-                onClick={action}
-                type={options.type}
-                label={title}
-              />
-            ))
-          : rpcButtons}
-      </ActionContainer>
-
-      <Drawer
-        open={showRpcDrawer}
-        rootClassName="popupViewDrawer"
-        width="30%"
-        onClose={() => {
-          setShowRpcDrawer(false);
-        }}
-        title={<Typography> Update Project Setting </Typography>}
-        footer={null}
-      >
-        <RpcSetting
-          onCancel={() => {
-            setShowRpcDrawer(false);
-          }}
-          onSubmit={() => {
-            setShowRpcDrawer(false);
-          }}
-        />
-      </Drawer>
+      <div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <Typography variant="large" weight={600} style={{ marginBottom: 16 }}>
+            Project Connection Settings
+          </Typography>
+          <span style={{ flex: 1 }} />
+          {connectionButtons}
+        </div>
+        <ContentContainer>
+          <ServiceView
+            title="Indexer Service"
+            subTitle={`Image Version: ${imageVersion('indexer', data.indexerNodeVersion)}`}
+            status={data.indexerStatus}
+          />
+          <ServiceView
+            title="Query Service"
+            subTitle={`Image Version: ${imageVersion('query', data.queryNodeVersion)}`}
+            status={data.queryStatus}
+          />
+          <ServiceView
+            title="Proxy Service"
+            subTitle={`Url: ${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`}
+            status={data.queryStatus}
+          />
+        </ContentContainer>
+      </div>
     </CardContainer>
   );
 };

@@ -5,11 +5,12 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { openNotification } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
+import { Button } from 'antd';
 import { isEmpty } from 'lodash';
 
 import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
-import { Button, Text } from 'components/primary';
+import { Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
 import { ProjectDetails, ProjectsAction, TQueryMetadata } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
@@ -58,26 +59,34 @@ const Projects = () => {
     return !isEmpty(projectList) ? (
       <ContentContainer>
         <HeaderContainer>
-          <Text size={45}>Projects</Text>
+          <Text size={32}>Projects</Text>
           <Button
-            title="Add Project"
             onClick={() => {
               setVisible(true);
             }}
-          />
+            shape="round"
+            size="large"
+            type="primary"
+          >
+            Add Project
+          </Button>
         </HeaderContainer>
         <ProjecItemsHeader />
-        {projectList.map((props: ProjectDetails) => {
-          return (
-            <ProjectItem
-              key={props.id}
-              {...props}
-              metadata={
-                projectsMetadata.data?.getProjectsMetadata.find((i) => i.id === props.id)?.metadata
-              }
-            />
-          );
-        })}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%' }}>
+          {projectList.map((props: ProjectDetails) => {
+            return (
+              <ProjectItem
+                key={props.id}
+                {...props}
+                metadata={
+                  projectsMetadata.data?.getProjectsMetadata.find((i) => i.id === props.id)
+                    ?.metadata
+                }
+              />
+            );
+          })}
+        </div>
       </ContentContainer>
     ) : (
       <EmptyView

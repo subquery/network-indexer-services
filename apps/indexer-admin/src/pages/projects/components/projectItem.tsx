@@ -9,15 +9,18 @@ import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
-import { Text } from 'components/primary';
-import StatusLabel from 'components/statusLabel';
 import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
-import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
+import {
+  ProjectDetails,
+  ProjectType,
+  ServiceStatus,
+  TQueryMetadata,
+} from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
 
-import { OnlineStatus, statusColor, statusText } from '../constant';
+import { statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
 
 type Props = Omit<ProjectDetails, 'metadata'> & {
@@ -50,28 +53,27 @@ const ProjectItem: FC<Props> = (props) => {
 
   return (
     <ProjectItemContainer onClick={pushDetailPage}>
-      <ItemContainer pl={15} flex={6.5}>
-        <Avatar address={cidToBytes32(id)} size={70} />
+      <ItemContainer flex={12}>
+        <Avatar address={cidToBytes32(id)} size={50} />
         <ProfileContainer>
-          <Text fw="600" size={18}>
-            {details.name}
-          </Text>
-          <Text size={13} mt={5}>
-            {id}
-          </Text>
+          <Typography>{details.name}</Typography>
+          <Typography style={{ width: '100%', marginTop: 8, minWidth: 500 }} type="secondary">
+            <span>Deployment ID:</span>
+            <span style={{ overflowWrap: 'anywhere' }}>{id}</span>
+          </Typography>
         </ProfileContainer>
       </ItemContainer>
-      <ItemContainer flex={8}>
+      <ItemContainer flex={5}>
         <Progress percent={formatValueToFixed(progress * 100)} />
       </ItemContainer>
-      <ItemContainer flex={5}>
+      {/* <ItemContainer flex={5}>
         <Tag
           state={onlineStatus ? 'success' : 'error'}
           style={{ height: '22px', lineHeight: '18px' }}
         >
           {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
         </Tag>
-      </ItemContainer>
+      </ItemContainer> */}
       <ItemContainer flex={3}>
         <Typography variant="medium">
           {projectType === ProjectType.SubQuery ? 'SubQuery Project' : 'RPC Service'}
@@ -79,7 +81,10 @@ const ProjectItem: FC<Props> = (props) => {
       </ItemContainer>
       <ItemContainer flex={3}>
         {!isUndefined(status) ? (
-          <StatusLabel text={statusText[status]} color={statusColor[status]} />
+          // <StatusLabel text={statusText[status]} color={statusColor[status]} />
+          <Tag color={status === ServiceStatus.READY ? 'success' : 'default'}>
+            {statusText[status]}
+          </Tag>
         ) : (
           <Spinner />
         )}
