@@ -73,14 +73,16 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                 {paygConfig.paygPrice} {TOKEN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
               </Typography>
             ) : (
-              <Typography variant="medium">
-                {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
-                <br />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="medium">
+                  {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
+                  <br />
+                </Typography>
                 <Typography variant="medium" type="secondary">
                   = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
                   {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
                 </Typography>
-              </Typography>
+              </div>
             )
           }
           period={innerConfig.paygExpiration}
