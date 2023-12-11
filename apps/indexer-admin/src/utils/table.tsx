@@ -9,6 +9,7 @@ export function createTextColumn<T>(index: T, title: string, toolTip?: string) {
     dataIndex: index,
     title: <TableTitle tooltip={toolTip} title={title} />,
     render: (val: string) => <TableText>{val}</TableText>,
+    key: index,
   };
 }
 

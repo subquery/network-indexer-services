@@ -11,18 +11,21 @@ import { ProjectPAYG } from '../payg/projectPayg';
 import { ProjectDetails, ProjectServiceMetadata } from '../types';
 import ProjectDetailsView from './projectDetailsView';
 import ProjectInsights from './projectInsights';
+import RateLimit from './rateLimit';
 
 enum TabbarItem {
   ProjectDetails,
   NodeLog,
   PAYG,
   ProjectInsights,
+  RateLimit,
 }
 
 type Props = {
   id: string;
   project: ProjectDetails;
   config: ProjectServiceMetadata;
+  refreshProject: () => void;
 };
 
 const tabItems = [
@@ -38,9 +41,12 @@ const tabItems = [
   {
     label: 'Project Insights',
   },
+  {
+    label: 'Rate Limit',
+  },
 ];
 
-const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
+const ProjectTabbarView: FC<Props> = ({ id, project, config, refreshProject }) => {
   const [value, setValue] = useState<TabbarItem>(TabbarItem.ProjectDetails);
 
   const handleChange = (newValue: TabbarItem) => {
@@ -58,10 +64,12 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
         return <ProjectPAYG id={id} config={config} />;
       case TabbarItem.ProjectInsights:
         return <ProjectInsights id={id} />;
+      case TabbarItem.RateLimit:
+        return <RateLimit id={id} project={project} refreshProject={refreshProject} />;
       default:
         return <div />;
     }
-  }, [config, id, project, value]);
+  }, [config, id, project, value, refreshProject]);
 
   return (
     <div style={{ marginTop: 30 }}>
