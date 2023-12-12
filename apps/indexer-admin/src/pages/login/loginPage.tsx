@@ -10,6 +10,7 @@ import { useLoading } from 'containers/loadingContext';
 import { isUndefined } from 'lodash';
 import { Container } from './styles';
 import { useAccount } from 'containers/account';
+import ErrorPlaceholder from 'components/errorPlaceholder';
 
 const LoginPage = () => {
   const { account } = useAccount();
@@ -27,20 +28,22 @@ const LoginPage = () => {
 
   if (error || isUndefined(isIndexer)) {
     return (
-      <div>
-        {error
-          ? 'Connect coordinator services error, please check your coordinator services and try again later.'
-          : 'Network unstable, please refresh the page or change the RPC URL and try again later.'}
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+        <ErrorPlaceholder />
       </div>
     );
   }
 
   return (
     <Container>
-      <div>
-        {account && !isIndexer && <Redirect to="/register" />}
-        {account && isIndexer && <Redirect to="/account" />}
-      </div>
+      {loading ? (
+        <div />
+      ) : (
+        <div>
+          {account && !isIndexer && <Redirect to="/register" />}
+          {account && isIndexer && <Redirect to="/account" />}
+        </div>
+      )}
     </Container>
   );
 };
