@@ -31,7 +31,6 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
 
     try {
       const status = await sdk.indexerRegistry.isIndexer(account);
-
       updateIsRegisterIndexer(status);
     } catch (e) {
       notificationMsg({

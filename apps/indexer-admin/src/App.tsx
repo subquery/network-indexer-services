@@ -27,7 +27,6 @@ import '@subql/components/dist/subquery-components.css';
 
 const AppContents = () => {
   const showMetaMask = useShowMetaMask();
-
   return (
     <Router>
       <Pages.Header />

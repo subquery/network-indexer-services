@@ -18,7 +18,7 @@
     "@ethersproject/units": "~5.7.0",
     "@mui/material": "^5.5.1",
     "@patternfly/react-log-viewer": "^4.43.19",
-    "@subql/components": "1.0.3-8",
+    "@subql/components": "1.0.3-20",
     "@subql/contract-sdk": "^0.16.2",
     "@subql/network-clients": "~0.3.17",
     "@subql/network-config": "0.3.17-0",

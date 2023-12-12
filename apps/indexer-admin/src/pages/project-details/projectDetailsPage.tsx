@@ -96,10 +96,6 @@ const ProjectDetailsPage = () => {
     setMetadata(data);
   }, [id, setMetadata]);
 
-  useInterval(() => {
-    fetchQueryMetadata();
-  }, 15000);
-
   const updateServiceStatus = useCallback(() => {
     const intervalId = setInterval(() => fetchQueryMetadata(), 6000);
     setTimeout(() => {
@@ -288,6 +284,12 @@ const ProjectDetailsPage = () => {
     onPopoverClose,
   ]);
 
+  const [modalTitle, modalSteps] = useMemo(() => {
+    if (!actionType) return ['', []];
+    if (!steps) return ['', []];
+    return [ProjectActionName[actionType], steps[actionType]];
+  }, [actionType, steps]);
+
   useEffect(() => {
     metadata &&
       setProgress(
@@ -303,11 +305,9 @@ const ProjectDetailsPage = () => {
     fetchQueryMetadata();
   }, [fetchQueryMetadata, status]);
 
-  const [modalTitle, modalSteps] = useMemo(() => {
-    if (!actionType) return ['', []];
-    if (!steps) return ['', []];
-    return [ProjectActionName[actionType], steps[actionType]];
-  }, [actionType, steps]);
+  useInterval(() => {
+    fetchQueryMetadata();
+  }, 15000);
 
   return renderAsync(projectQuery, {
     loading: () => <LoadingSpinner />,
@@ -330,7 +330,12 @@ const ProjectDetailsPage = () => {
           <ProjectServiceCard id={id} actionItems={serviceActionItems} data={metadata} />
           <ProjectUptime />
           {projectDetails && (
-            <ProjectTabbarView id={id} project={project} config={projectDetails} />
+            <ProjectTabbarView
+              id={id}
+              project={project}
+              config={projectDetails}
+              refreshProject={projectQuery.refetch}
+            />
           )}
         </ContentContainer>
         <PopupView

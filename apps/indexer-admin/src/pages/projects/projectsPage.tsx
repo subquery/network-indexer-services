@@ -57,7 +57,6 @@ const Projects = () => {
     ) : (
       <EmptyView onClick={() => setVisible(true)} />
     );
-
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
     error: () => <EmptyView onClick={() => setVisible(true)} />,

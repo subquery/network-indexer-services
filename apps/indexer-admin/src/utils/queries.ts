@@ -13,6 +13,7 @@ const ProjectFields = `
   chainType
   nodeEndpoint
   queryEndpoint
+  rateLimit
   details {
     name
     owner
@@ -328,14 +329,10 @@ export const GET_ALL_ALIVEPAYG = gql`
   }
 `;
 
-// TODO: don't need this anymore
-export const CHANNEL_CHECKPOINT = gql`
-  mutation ChannelCheckpoint($id: String!) {
-    channelCheckpoint(id: $id) {
-      id
-      spent
-      remote
-      onchain
+export const UPDATE_RATE_LIMIT = gql`
+  mutation updateRateLimit($id: String!, $rateLimit: Float!) {
+    updateProjectRateLimit(id: $id, rateLimit: $rateLimit) {
+      rateLimit
     }
   }
 `;
