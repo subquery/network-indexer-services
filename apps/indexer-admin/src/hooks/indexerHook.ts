@@ -52,7 +52,7 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
   return isRegisterIndexer;
 };
 
-export const useIsIndexer = (): boolean | undefined => {
+export const useIsIndexer = () => {
   const isRegisteredIndexer = useIsRegistedIndexer();
   const isCoordinatorIndexer = useIsCoordinatorIndexer();
 
