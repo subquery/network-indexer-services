@@ -19,6 +19,8 @@
 #![deny(warnings)]
 use axum::{
     extract::{ConnectInfo, Path, Query},
+    extract::ws::{ WebSocket, WebSocketUpgrade},
+    response::{Response as AxumResponse},
     http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
@@ -36,6 +38,7 @@ use subql_indexer_utils::{
     tools::{hex_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
+
 
 use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
@@ -63,6 +66,8 @@ pub async fn start_server(port: u16) {
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
         .route("/query/:deployment", post(query_handler))
+        // `GET /query/Qm...955X` goes to websocket query with agreement
+        .route("/query/:deployment", get(ws_query_handler))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `GET /payg-price` get the payg price
@@ -334,5 +339,32 @@ fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> 
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body("".to_owned())
             .unwrap(),
+    }
+}
+
+
+async fn ws_query_handler(
+    ws: WebSocketUpgrade,
+    Path(_deployment): Path<String>,
+    _ep_name: Query<EpName>,
+) -> AxumResponse {
+    ws.on_upgrade(handle_socket)
+}
+
+async fn handle_socket(mut socket: WebSocket) {
+    while let Some(msg) = socket.recv().await {
+        let msg = if let Ok(msg) = msg {
+            msg
+        } else {
+            // client disconnected
+            return;
+        };
+
+        println!("msg: {:?}", msg);
+
+        if socket.send(msg).await.is_err() {
+            // client disconnected
+            return;
+        }
     }
 }
