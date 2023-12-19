@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
+import { GithubOutlined, GlobalOutlined } from '@ant-design/icons';
+import { Markdown, SubqlCard, Typography } from '@subql/components';
 import styled from 'styled-components';
 
 import { Text } from 'components/primary';
@@ -33,52 +35,65 @@ type Props = {
 const formatDate = (date: string) => new Date(date).toLocaleDateString();
 
 const ProjectDetailsView: FC<Props> = ({ project }) => {
-  const { description, websiteUrl, codeUrl, createdTimestamp, updatedTimestamp } = project.details;
+  const { description, websiteUrl, codeUrl } = project.details;
   return (
     <Container>
-      <LeftContainer>
-        <InfoView title="Description" desc={description} />
-        <BottomContainer>
-          <InfoView title="Created" desc={formatDate(createdTimestamp)} />
-          <InfoView ml={150} title="Last Updated" desc={formatDate(updatedTimestamp)} />
-        </BottomContainer>
-      </LeftContainer>
-      <RightContainer>
-        <InfoView title="Deployment ID" desc={project.id} />
-        <InfoView mt={30} title="Website URL" desc={websiteUrl} />
-        <InfoView mt={30} title="Source Code URL" desc={codeUrl} />
-      </RightContainer>
+      <Left>
+        <Markdown.Preview>{description}</Markdown.Preview>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--sq-blue600)',
+              gap: 8,
+            }}
+          >
+            <GlobalOutlined />
+            <Typography variant="medium">{websiteUrl}</Typography>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--sq-blue600)',
+              gap: 8,
+            }}
+          >
+            <GithubOutlined />
+            <Typography variant="medium">{codeUrl}</Typography>
+          </div>
+        </div>
+      </Left>
+      <Right>
+        <SubqlCard title="Totoal Rewards">
+          <div>123</div>
+        </SubqlCard>
+      </Right>
     </Container>
   );
 };
 
 export default ProjectDetailsView;
 
+const Left = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-width: 713px;
+  flex: 1;
+`;
+
+const Right = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+`;
+
 const Container = styled.div`
   display: flex;
   min-height: 350px;
   margin-top: 20px;
-`;
-
-const LeftContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-width: 500px;
-  width: 45%;
-`;
-
-const BottomContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-top: 50px;
-`;
-
-const RightContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  margin-left: 80px;
+  gap: 48px;
 `;
 
 const InfoContainer = styled.div<{ mt?: number; ml?: number }>`

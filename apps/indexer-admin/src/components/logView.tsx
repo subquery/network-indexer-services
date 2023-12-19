@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useMemo, VFC } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import { useLazyQuery } from '@apollo/client';
 import { LogViewer } from '@patternfly/react-log-viewer';
 import { Button, Spinner } from '@subql/components';
@@ -14,7 +14,7 @@ type Props = {
   height: number;
 };
 
-const LogView: VFC<Props> = ({ container, height = 650 }) => {
+const LogView: FC<Props> = ({ container, height = 650 }) => {
   const [getLog, { loading, data, error }] = useLazyQuery(GET_LOG, {
     fetchPolicy: 'network-only',
   });

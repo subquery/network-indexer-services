@@ -10,8 +10,8 @@ export const statusColor = {
 };
 
 export const statusText = {
-  [ServiceStatus.TERMINATED]: 'NOT INDEXED',
-  [ServiceStatus.READY]: 'READY',
+  [ServiceStatus.TERMINATED]: 'Offline',
+  [ServiceStatus.READY]: 'Online',
 };
 
 export enum OnlineStatus {

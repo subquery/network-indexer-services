@@ -17,16 +17,19 @@ const Container = styled.div`
 `;
 
 const projetHeaderItems = [
-  { title: 'Project Name', flex: 12 },
-  { title: 'Progress', flex: 5 },
-  { title: 'Type', flex: 3 },
+  { title: 'Project Name', flex: 13 },
+  { title: 'Type', flex: 5 },
+  { title: 'Progress', flex: 3 },
+  { title: '', flex: 1 },
+  { title: 'Connection status', flex: 3 },
+  { title: '', flex: 1 },
   { title: 'Status', flex: 3 },
 ];
 
 const ProjecItemsHeader = () => (
   <Container>
-    {projetHeaderItems.map(({ title, flex }) => (
-      <ItemContainer key={title} flex={flex}>
+    {projetHeaderItems.map(({ title, flex }, index) => (
+      <ItemContainer key={title || index} flex={flex}>
         <Typography
           variant="small"
           weight={600}

@@ -45,6 +45,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
       // update
       btns.push(
         <Button
+          key="update"
           type="primary"
           onClick={() => {
             setShowRpcDrawer(true);
@@ -111,9 +112,9 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
       </div>
 
       <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' }}>
-        {project.projectConfig.serviceEndpoints.map((endpoint) => {
+        {project.projectConfig.serviceEndpoints.map((endpoint, index) => {
           return (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }} key={endpoint.key || index}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Typography>{endpoint.key}</Typography>
               </div>

@@ -60,7 +60,7 @@ const ControllerItem: FC<Props> = ({
           </Text>
         </AccountContainer>
         <Balance>{asyncRender(!!balance, <Text>{`${balance} ${tokenSymbol}`}</Text>)}</Balance>
-        <Status>{isActived && <Tag state="success">{active}</Tag>}</Status>
+        <Status>{isActived && <Tag color="success">{active}</Tag>}</Status>
       </ItemContentContainer>
       {asyncRender(
         !isUndefined(controller) && !isUndefined(balance),

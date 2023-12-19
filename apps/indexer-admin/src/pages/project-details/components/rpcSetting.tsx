@@ -16,19 +16,22 @@ import { useProjectDetails } from 'hooks/projectHook';
 import { GET_RPC_ENDPOINT_KEYS, START_PROJECT, VALID_RPC_ENDPOINT } from 'utils/queries';
 
 interface IProps {
-  onSubmit: () => void;
-  onCancel: () => void;
+  onSubmit?: () => void;
+  onCancel?: () => void;
+  id?: string;
 }
 
 const RpcSetting: FC<IProps> = (props) => {
-  const { onCancel, onSubmit } = props;
+  const { onCancel, onSubmit, id: propsId } = props;
+
   const { id } = useParams() as { id: string };
-  const projectQuery = useProjectDetails(id);
+  const mineId = useMemo(() => propsId || id, [propsId, id]);
+  const projectQuery = useProjectDetails(mineId);
   const [form] = Form.useForm();
 
   const keys = useQuery<{ getRpcEndpointKeys: string[] }>(GET_RPC_ENDPOINT_KEYS, {
     variables: {
-      projectId: id,
+      projectId: mineId,
     },
   });
 
@@ -44,7 +47,7 @@ const RpcSetting: FC<IProps> = (props) => {
       if (!value) return Promise.reject(new Error('Please input http endpoint'));
       const res = await validate({
         variables: {
-          projectId: id,
+          projectId: mineId,
           endpoint: value,
           // not sure if it's a development field or not.
           // when print it, the rule actrully is { field, fullField, type }
@@ -66,7 +69,7 @@ const RpcSetting: FC<IProps> = (props) => {
 
       return Promise.reject(new Error('xxxx'));
     }, 3000);
-  }, [validate, id]);
+  }, [validate, mineId]);
 
   if (!projectQuery.data) return null;
 
@@ -148,7 +151,7 @@ const RpcSetting: FC<IProps> = (props) => {
         <Button
           shape="round"
           onClick={() => {
-            onCancel();
+            onCancel?.();
           }}
         >
           Back
@@ -183,7 +186,7 @@ const RpcSetting: FC<IProps> = (props) => {
                 serviceEndpoints,
               },
             });
-            onSubmit();
+            onSubmit?.();
           }}
         >
           Update

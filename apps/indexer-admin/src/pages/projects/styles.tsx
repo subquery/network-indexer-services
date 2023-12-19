@@ -36,7 +36,7 @@ export const ItemContainer = styled.div<{
 }>`
   display: flex;
   flex: ${({ flex }) => flex ?? 1};
-  background-color: ${({ color }) => color ?? 'white'};
+  background-color: ${({ color }) => color ?? 'transparent'};
   padding-left: ${({ pl }) => pl ?? 0}px;
   min-width: ${({ mw }) => mw ?? 100}px;
   align-items: center;
@@ -52,6 +52,12 @@ export const ProjectItemContainer = styled.div`
   padding: 16px 24px;
   border-radius: 8px;
   border: 1px solid var(--sq-gray300);
+
+  &:hover {
+    background-color: rgba(67, 136, 221, 0.08);
+    border-color: var(--sq-blue600);
+    cursor: pointer;
+  }
 `;
 
 export const ProfileContainer = styled.div`
