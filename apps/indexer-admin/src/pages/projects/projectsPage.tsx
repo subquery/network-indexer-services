@@ -11,11 +11,12 @@ import { isEmpty } from 'lodash';
 import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
+import { IndexingForm } from 'components/forms/restartIndexing';
 import { LoadingSpinner } from 'components/loading';
 import { Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
 import RpcSetting from 'pages/project-details/components/rpcSetting';
-import { ProjectDetails, TQueryMetadata } from 'pages/project-details/types';
+import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
 import { cidToBytes32 } from 'utils/ipfs';
@@ -27,7 +28,10 @@ import EmptyView from './components/projectsEmptyView';
 import { Container, ContentContainer, HeaderContainer } from './styles';
 
 const Projects = () => {
-  const projectsQuery = useQuery(GET_PROJECTS, { fetchPolicy: 'network-only' });
+  const projectsQuery = useQuery(GET_PROJECTS, {
+    defaultOptions: { fetchPolicy: 'network-only' },
+    fetchPolicy: 'network-only',
+  });
   const projectsMetadata = useQuery<{
     getProjectsMetadata: {
       id: string;
@@ -39,27 +43,12 @@ const Projects = () => {
   });
   const [addProject] = useMutation(ADD_PROJECT);
   const isIndexer = useIsIndexer();
+  const [form] = useForm();
+  const processingId = Form.useWatch('deploymentId', { form, preserve: true });
 
   const [visible, setVisible] = useState(false);
   const [addProjectLoading, setAddProjectLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-
-  const [form] = useForm();
-
-  const addProjectFunc = async (values: { deploymentId: string }) => {
-    try {
-      setAddProjectLoading(true);
-      const id = values[ProjectFormKey.deploymentId].trim();
-      await addProject({ variables: { id } });
-      await projectsQuery.refetch();
-      await projectsMetadata.refetch();
-      setCurrentStep(1);
-    } catch (_) {
-      parseError(_, { alert: true, rawMsg: true });
-    } finally {
-      setAddProjectLoading(false);
-    }
-  };
 
   const renderProjects = useMemo(() => {
     if (!projectsQuery.data) return null;
@@ -107,6 +96,25 @@ const Projects = () => {
     );
   }, [projectsQuery, projectsMetadata, form]);
 
+  const processingProject = useMemo(() => {
+    return projectsQuery.data?.getProjects?.find((i: { id: string }) => i.id === processingId);
+  }, [processingId, projectsQuery.data]);
+  console.warn(processingId);
+  const addProjectFunc = async (values: { deploymentId: string }) => {
+    try {
+      setAddProjectLoading(true);
+      const id = values[ProjectFormKey.deploymentId].trim();
+      await addProject({ variables: { id } });
+      await projectsQuery.refetch();
+      await projectsMetadata.refetch();
+      setCurrentStep(1);
+    } catch (_) {
+      parseError(_, { alert: true, rawMsg: true });
+    } finally {
+      setAddProjectLoading(false);
+    }
+  };
+
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
     error: (error) => (
@@ -152,7 +160,7 @@ const Projects = () => {
                 </Typography>
 
                 <Form layout="vertical" form={form}>
-                  <Form.Item label="Deployment ID" name="deploymentId">
+                  <Form.Item label="Deployment ID" name="deploymentId" rules={[{ required: true }]}>
                     <Input />
                   </Form.Item>
                   <Form.Item label="Project Details">
@@ -197,6 +205,7 @@ const Projects = () => {
                   type="primary"
                   loading={addProjectLoading}
                   onClick={async () => {
+                    await form.validateFields();
                     await addProjectFunc({
                       ...form.getFieldsValue(),
                     });
@@ -207,9 +216,12 @@ const Projects = () => {
               </div>
             </div>
           )}
-          {currentStep === 1 && (
+          {currentStep === 1 && processingProject.projectType === ProjectType.SubQuery && (
+            <IndexingForm id={processingId} />
+          )}
+          {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
             <RpcSetting
-              id={form.getFieldValue('deploymentId')}
+              id={processingId}
               onCancel={() => {
                 setCurrentStep(0);
               }}

@@ -2,45 +2,97 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { Typography } from '@subql/components';
+import { Spinner, Tag, Typography } from '@subql/components';
 import { Button } from 'antd';
+import { isUndefined } from 'lodash';
 import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
 import { Separator } from 'components/primary';
 import { TagItem } from 'components/tagItem';
+import { statusText } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
+import { serviceStatusCode } from 'utils/project';
 
-import { ProjectDetails, ProjectType } from '../types';
+import { ProjectDetails, ProjectType, ServiceStatus } from '../types';
 
 type Props = {
   id: string;
   project: ProjectDetails;
   onRemoveProject: () => void;
+  status?: ServiceStatus;
+  announceReady: () => void;
+  announceStop: () => void;
 };
 
-const ProjectDetailsHeader: FC<Props> = ({ id, project, onRemoveProject }) => {
+const ProjectDetailsHeader: FC<Props> = ({
+  id,
+  project,
+  status,
+  announceReady,
+  announceStop,
+  onRemoveProject,
+}) => {
   return (
     <Container>
       <LeftContainer>
         <Avatar address={cidToBytes32(id)} size={144} />
         <ContentContainer style={{ width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="h4" weight={600}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography
+              variant="h4"
+              weight={600}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
               {project.details.name}
+              {!isUndefined(status) ? (
+                <Tag color={serviceStatusCode(status)}>{statusText[status]}</Tag>
+              ) : (
+                <Spinner />
+              )}
             </Typography>
 
-            <Button
-              shape="round"
-              size="large"
-              danger
-              type="primary"
-              onClick={() => {
-                onRemoveProject();
-              }}
-            >
-              Remove Project
-            </Button>
+            <div>
+              {status === ServiceStatus.TERMINATED && (
+                <Button
+                  size="large"
+                  shape="round"
+                  type="primary"
+                  onClick={() => {
+                    announceReady();
+                  }}
+                >
+                  Go Online
+                </Button>
+              )}
+              {status === ServiceStatus.READY && (
+                <Button
+                  size="large"
+                  shape="round"
+                  type="primary"
+                  style={{ marginLeft: 16 }}
+                  onClick={() => {
+                    announceStop();
+                  }}
+                >
+                  Go Offline
+                </Button>
+              )}
+
+              {status === ServiceStatus.TERMINATED && (
+                <Button
+                  shape="round"
+                  size="large"
+                  danger
+                  type="text"
+                  onClick={() => {
+                    onRemoveProject();
+                  }}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
           </div>
           <Typography variant="medium" style={{ marginTop: 8 }}>
             {project.details.owner}

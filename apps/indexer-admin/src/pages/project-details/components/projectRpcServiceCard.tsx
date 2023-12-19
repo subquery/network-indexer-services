@@ -4,7 +4,7 @@
 import { FC, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { Typography } from '@subql/components';
-import { Button, Drawer } from 'antd';
+import { Button, Drawer, Skeleton } from 'antd';
 
 import { GET_MANIFEST } from 'utils/queries';
 
@@ -85,7 +85,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
     return btns;
   }, [projectStatus]);
 
-  if (!metadata) return null;
+  if (!metadata) return <Skeleton paragraph={{ rows: 5 }} active />;
   return (
     <CardContainer style={{ flexDirection: 'column' }}>
       <div style={{ display: 'flex' }}>

@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { NOTIFICATION_TYPE } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
 import {
@@ -117,19 +117,22 @@ const NetworkEndpointsTooltip = () => (
 );
 
 type Props = {
-  setVisible: Dispatch<SetStateAction<boolean>>;
+  setVisible?: Dispatch<SetStateAction<boolean>>;
+  id?: string;
 };
 
-export const IndexingForm: FC<Props> = ({ setVisible }) => {
+export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
   const [form] = Form.useForm();
   const [showInput, setShowInput] = useState(false);
   const { dispatchNotification } = useNotification();
   const { id } = useParams() as { id: string };
 
-  const projectQuery = useProjectDetails(id);
+  const mineId = useMemo(() => propsId || id, [propsId, id]);
 
-  const nodeVersions = useNodeVersions(id);
-  const queryVersions = useQueryVersions(id);
+  const projectQuery = useProjectDetails(mineId);
+
+  const nodeVersions = useNodeVersions(mineId);
+  const queryVersions = useQueryVersions(mineId);
   const [startProjectRequest] = useMutation(START_PROJECT);
 
   const onSwitchChange = () => {
@@ -137,8 +140,8 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
     form.setFieldValue(ProjectFormKey.networkDictionary, '');
   };
 
-  const handleSubmit = (setVisible: Dispatch<SetStateAction<boolean>>) => async (values: any) => {
-    setVisible(false);
+  const handleSubmit = (setVisible?: Dispatch<SetStateAction<boolean>>) => async (values: any) => {
+    setVisible?.(false);
     dispatchNotification({
       type: 'default' as NOTIFICATION_TYPE,
       title: 'Indexing Request',

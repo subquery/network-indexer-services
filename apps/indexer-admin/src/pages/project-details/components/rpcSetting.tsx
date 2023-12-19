@@ -4,12 +4,13 @@
 import React, { FC, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
-import { Steps, Typography } from '@subql/components';
+import { Spinner, Steps, Typography } from '@subql/components';
 import { cidToBytes32 } from '@subql/network-clients';
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, InputNumber } from 'antd';
 import { Rule } from 'antd/es/form';
 import debounce from 'debounce-promise';
 import { merge } from 'lodash';
+import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
 import { useProjectDetails } from 'hooks/projectHook';
@@ -71,7 +72,7 @@ const RpcSetting: FC<IProps> = (props) => {
     }, 3000);
   }, [validate, mineId]);
 
-  if (!projectQuery.data) return null;
+  if (!projectQuery.data) return <Spinner />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -100,7 +101,10 @@ const RpcSetting: FC<IProps> = (props) => {
           gap: 12,
         }}
       >
-        <Avatar address={projectQuery.data?.project.details.image || cidToBytes32(id)} size={40} />
+        <Avatar
+          address={projectQuery.data?.project.details.image || cidToBytes32(mineId)}
+          size={40}
+        />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography>{projectQuery.data?.project.details.name}</Typography>
           <Typography variant="small" type="secondary">
@@ -143,6 +147,16 @@ const RpcSetting: FC<IProps> = (props) => {
               </Form.Item>
             );
           })}
+          <HorizeFormItem>
+            <Form.Item
+              label="Rate Limit"
+              tooltip="This feature allows you to manage and set rate limits for your agreement service and Flex Plan, helping you optimize service stability and performance"
+              name="rateLimit"
+            >
+              <InputNumber />
+            </Form.Item>
+            <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
+          </HorizeFormItem>
         </Form>
       </div>
       <div style={{ flex: 1 }} />
@@ -181,7 +195,7 @@ const RpcSetting: FC<IProps> = (props) => {
                 cache: 1,
                 cpu: 1,
                 memory: 1,
-                id,
+                id: mineId,
                 projectType: projectQuery.data?.project.projectType,
                 serviceEndpoints,
               },
@@ -195,4 +209,18 @@ const RpcSetting: FC<IProps> = (props) => {
     </div>
   );
 };
+
+const HorizeFormItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  .ant-row {
+    flex-direction: row;
+    align-items: center;
+    .ant-col {
+      width: auto;
+    }
+  }
+`;
+
 export default RpcSetting;

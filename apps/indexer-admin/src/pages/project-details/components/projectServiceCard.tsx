@@ -46,7 +46,7 @@ const ServiceView: FC<CardProps> = ({ title, subTitle, status }) => (
       <Text mr={20} fw="500">
         {title}
       </Text>
-      {!!status && <Tag state={statusCode(status)}>{status}</Tag>}
+      {!!status && <Tag color={statusCode(status)}>{status}</Tag>}
     </HeaderContainer>
     <Text size={15} color="gray" mt={10}>
       {subTitle}

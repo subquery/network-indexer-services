@@ -72,7 +72,7 @@ const ProjectItem: FC<Props> = (props) => {
         </Typography>
       </ItemContainer>
       <ItemContainer flex={4}>
-        <SubqlProgress percent={formatValueToFixed(progress * 100 + 100)} />
+        <SubqlProgress percent={formatValueToFixed(progress * 100)} />
       </ItemContainer>
       <ItemContainer flex={1} />
       <ItemContainer flex={3}>

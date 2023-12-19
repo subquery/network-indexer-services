@@ -307,8 +307,17 @@ const ProjectDetailsPage = () => {
             <ProjectDetailsHeader
               id={id}
               project={project}
+              status={status}
               onRemoveProject={() => {
                 setActionType(ProjectAction.RemoveProject);
+                setVisible(true);
+              }}
+              announceReady={() => {
+                setActionType(ProjectAction.AnnounceReady);
+                setVisible(true);
+              }}
+              announceStop={() => {
+                setActionType(ProjectAction.AnnounceTerminating);
                 setVisible(true);
               }}
             />
@@ -335,19 +344,7 @@ const ProjectDetailsPage = () => {
                 projectStatus={projectStatus}
               />
             )}
-            <ProjectStatusView
-              percent={progress}
-              status={status}
-              metadata={metadata}
-              announceReady={() => {
-                setActionType(ProjectAction.AnnounceReady);
-                setVisible(true);
-              }}
-              announceStop={() => {
-                setActionType(ProjectAction.AnnounceTerminating);
-                setVisible(true);
-              }}
-            />
+            <ProjectStatusView percent={progress} metadata={metadata} />
             <ProjectUptime />
             {projectDetails && (
               <ProjectTabbarView id={id} project={project} config={projectDetails} />
