@@ -127,13 +127,18 @@ export class ProjectRpcService {
     };
   }
 
-  async startRpcProject(id: string, projectConfig: IProjectConfig): Promise<Project> {
+  async startRpcProject(
+    id: string,
+    projectConfig: IProjectConfig,
+    rateLimit: number
+  ): Promise<Project> {
     let project = await this.projectService.getProject(id);
     if (!project) {
       project = await this.projectService.addProject(id);
     }
     project.projectConfig = projectConfig;
     project.status = DesiredStatus.RUNNING;
+    project.rateLimit = rateLimit;
 
     const manifest = project.manifest as RpcManifest;
     const endpointKeys = this.getAllEndpointKeys(manifest.rpcFamily || []);

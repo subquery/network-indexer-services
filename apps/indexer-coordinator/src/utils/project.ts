@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ObjectType } from '@nestjs/graphql';
-import { IPFSClient } from '@subql/network-clients';
+import { IPFSClient, IPFS_URLS } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import { IProjectConfig, Project } from '../project/project.model';
@@ -74,7 +74,7 @@ export type ChainType =
   | 'ethereum'
   | 'stellar';
 
-export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
+export const IPFS_URL = argv['ipfs'] ?? IPFS_URLS.metadata;
 const clientSDK = new IPFSClient(IPFS_URL);
 
 export function projectConfigChanged(project: Project, projectConfig: IProjectConfig): boolean {

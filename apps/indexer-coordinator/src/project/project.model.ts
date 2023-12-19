@@ -14,6 +14,8 @@ export class ProjectInfo {
   name: string;
   @Field()
   owner: string;
+  @Field()
+  projectType: ProjectType;
   @Field({ nullable: true })
   image: string;
   @Field({ nullable: true })

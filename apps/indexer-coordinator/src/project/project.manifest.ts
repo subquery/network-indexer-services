@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ObjectType } from '@nestjs/graphql';
-import { IPFSClient, IPFS_URLS } from '@subql/network-clients';
+import { IPFSClient } from '@subql/network-clients';
 import * as yaml from 'js-yaml';
-import { PartialIpfsDeploymentManifest } from 'src/utils/project';
+import { IPFS_URL, PartialIpfsDeploymentManifest } from 'src/utils/project';
 
-export const ipfsClient = new IPFSClient(IPFS_URLS.project);
+export const ipfsClient = new IPFSClient(IPFS_URL);
 
 export async function getProjectManifest(cid: string): Promise<any> {
   const manifestStr = await ipfsClient.cat(cid);
@@ -56,8 +56,8 @@ export class RpcManifest {
 
 @ObjectType('AggregatedManifest')
 export class AggregatedManifest {
-  @Field(() => SubqueryManifest)
+  @Field(() => SubqueryManifest, { nullable: true })
   subqueryManifest?: SubqueryManifest;
-  @Field(() => RpcManifest)
+  @Field(() => RpcManifest, { nullable: true })
   rpcManifest?: RpcManifest;
 }

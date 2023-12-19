@@ -13,6 +13,7 @@ export const GET_DEPLOYMENT: DocumentNode = gql`
       createdTimestamp
       project {
         id
+        type
         metadata
         createdTimestamp
         owner
