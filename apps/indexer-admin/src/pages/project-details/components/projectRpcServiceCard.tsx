@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo, useState } from 'react';
-import { useQuery } from '@apollo/client';
 import { Typography } from '@subql/components';
 import { Button, Drawer, Skeleton } from 'antd';
-
-import { GET_MANIFEST } from 'utils/queries';
 
 import { CardContainer } from '../styles';
 import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
@@ -19,14 +16,6 @@ type Props = {
 };
 
 const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) => {
-  const manifest = useQuery<{
-    getManifest: { rpcManifest: { chain: { chainId: string }; nodeType: string } };
-  }>(GET_MANIFEST, {
-    variables: {
-      projectId: project.id,
-      projectType: project.projectType,
-    },
-  });
   const [showRpcDrawer, setShowRpcDrawer] = useState(false);
   const rpcButtons = useMemo(() => {
     const btns = [];
@@ -96,27 +85,12 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
         {rpcButtons}
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
-        <div>
-          <Typography weight={500}>Node Type</Typography>
-          <Typography style={{ marginLeft: 8 }} variant="medium">
-            {manifest.data?.getManifest.rpcManifest?.nodeType}
-          </Typography>
-        </div>
-        <div>
-          <Typography>Chain ID</Typography>
-          <Typography style={{ marginLeft: 8 }} variant="medium">
-            {manifest.data?.getManifest.rpcManifest?.chain?.chainId}
-          </Typography>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
         {project.projectConfig.serviceEndpoints.map((endpoint, index) => {
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }} key={endpoint.key || index}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <Typography>{endpoint.key}</Typography>
+                <Typography type="secondary">{endpoint.key}</Typography>
               </div>
               <Typography style={{ marginTop: 8 }} variant="medium">
                 {endpoint.value}
@@ -124,6 +98,17 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
             </div>
           );
         })}
+
+        <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography type="secondary">Rate Limits</Typography>
+          </div>
+          <Typography style={{ marginTop: 8 }} variant="medium">
+            {project.rateLimit} rps
+          </Typography>
+        </div>
       </div>
 
       <Drawer

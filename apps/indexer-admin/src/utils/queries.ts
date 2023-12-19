@@ -12,6 +12,7 @@ const ProjectFields = `
   status
   chainType
   projectType
+  rateLimit
   details {
     name
     owner
@@ -99,9 +100,11 @@ export const START_PROJECT = gql`
     $id: String!
     $projectType: Float!
     $serviceEndpoints: [SeviceEndpointInput!]!
+    $rateLimit: Float!
   ) {
     startProject(
       id: $id
+      rateLimit: $rateLimit
       projectConfig: {
         networkEndpoints: $networkEndpoints
         networkDictionary: $networkDictionary
@@ -360,14 +363,71 @@ export const VALID_RPC_ENDPOINT = gql`
   }
 `;
 
+export interface ManiFest {
+  getManifest: {
+    rpcManifest?: {
+      chain: { chainId: string };
+      nodeType: string;
+      name: string;
+      rpcFamily: string[];
+      client?: { name: string; version: string };
+    };
+    subqueryManifest?: {
+      dataSources: { kind: string }[];
+      schema: { file: string };
+      network: { chainId: string };
+      specVersion: string;
+      runner: {
+        node: {
+          name?: string;
+          version?: string;
+        };
+        query: {
+          name?: string;
+          version?: string;
+        };
+      };
+    };
+  };
+}
+
 export const GET_MANIFEST = gql`
-  query getManifest($projectId: String!, $projectType: Float!) {
-    getManifest(projectId: $projectId, projectType: $projectType) {
+  query getManifest($projectId: String!) {
+    getManifest(projectId: $projectId) {
       rpcManifest {
         chain {
           chainId
         }
+        name
+        rpcFamily
+        client {
+          name
+          version
+        }
         nodeType
+      }
+
+      subqueryManifest {
+        dataSources {
+          kind
+        }
+        schema {
+          file
+        }
+        network {
+          chainId
+        }
+        specVersion
+        runner {
+          node {
+            name
+            version
+          }
+          query {
+            name
+            version
+          }
+        }
       }
     }
   }

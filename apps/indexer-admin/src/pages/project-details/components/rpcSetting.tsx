@@ -120,7 +120,9 @@ const RpcSetting: FC<IProps> = (props) => {
           layout="vertical"
           form={form}
           initialValues={merge(
-            {},
+            {
+              rateLimit: projectQuery.data.project.rateLimit,
+            },
             ...projectQuery.data.project.projectConfig.serviceEndpoints.map((val) => {
               return {
                 [`${val.key}Endpoint`]: val.value,
@@ -175,7 +177,7 @@ const RpcSetting: FC<IProps> = (props) => {
           type="primary"
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
           onClick={async () => {
-            await form.validateFields();
+            // await form.validateFields();
             const serviceEndpoints = keys.data?.getRpcEndpointKeys.map((key) => {
               return {
                 key,
@@ -184,6 +186,7 @@ const RpcSetting: FC<IProps> = (props) => {
             });
             await startProjectRequest({
               variables: {
+                rateLimit: form.getFieldValue('rateLimit'),
                 poiEnabled: false,
                 queryVersion: '',
                 nodeVersion: '',

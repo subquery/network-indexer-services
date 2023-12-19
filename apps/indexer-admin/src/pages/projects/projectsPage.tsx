@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { openNotification, Steps, Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
 import { Button, Collapse, Drawer, Form, Input } from 'antd';
 import { useForm } from 'antd/es/form/Form';
+import debounce from 'debounce-promise';
 import { isEmpty } from 'lodash';
 import styled from 'styled-components';
 
@@ -19,8 +20,13 @@ import RpcSetting from 'pages/project-details/components/rpcSetting';
 import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
-import { cidToBytes32 } from 'utils/ipfs';
-import { ADD_PROJECT, GET_PROJECTS, GET_PROJECTS_METADATA } from 'utils/queries';
+import {
+  ADD_PROJECT,
+  GET_MANIFEST,
+  GET_PROJECTS,
+  GET_PROJECTS_METADATA,
+  ManiFest,
+} from 'utils/queries';
 
 import ProjecItemsHeader from './components/projecItemsHeader';
 import ProjectItem from './components/projectItem';
@@ -42,6 +48,7 @@ const Projects = () => {
     fetchPolicy: 'network-only',
   });
   const [addProject] = useMutation(ADD_PROJECT);
+  const [validateManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
   const isIndexer = useIsIndexer();
   const [form] = useForm();
   const processingId = Form.useWatch('deploymentId', { form, preserve: true });
@@ -99,7 +106,7 @@ const Projects = () => {
   const processingProject = useMemo(() => {
     return projectsQuery.data?.getProjects?.find((i: { id: string }) => i.id === processingId);
   }, [processingId, projectsQuery.data]);
-  console.warn(processingId);
+
   const addProjectFunc = async (values: { deploymentId: string }) => {
     try {
       setAddProjectLoading(true);
@@ -114,6 +121,22 @@ const Projects = () => {
       setAddProjectLoading(false);
     }
   };
+
+  const debouncedValidator = useMemo(() => {
+    return debounce(async (_: any, value: string) => {
+      const res = await validateManifest({
+        variables: {
+          projectId: value,
+        },
+      });
+
+      if (!res.data?.getManifest.rpcManifest && !res.data?.getManifest.subqueryManifest) {
+        return Promise.reject(new Error("Can't found the manifest information"));
+      }
+
+      return Promise.resolve();
+    }, 1000);
+  }, [validateManifest]);
 
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
@@ -160,42 +183,87 @@ const Projects = () => {
                 </Typography>
 
                 <Form layout="vertical" form={form}>
-                  <Form.Item label="Deployment ID" name="deploymentId" rules={[{ required: true }]}>
+                  <Form.Item
+                    label="Deployment ID"
+                    name="deploymentId"
+                    hasFeedback
+                    rules={[
+                      { required: true },
+                      () => {
+                        return {
+                          validator: debouncedValidator,
+                        };
+                      },
+                    ]}
+                  >
                     <Input />
                   </Form.Item>
-                  <Form.Item label="Project Details">
-                    <SubqlCollapse>
-                      <Collapse
-                        items={[
-                          {
-                            key: 'detail',
-                            label: (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <Avatar address={cidToBytes32('123123')} size={50} />
+                  {manifest.data && (
+                    <Form.Item label="Project Details">
+                      <SubqlCollapse>
+                        <Collapse
+                          items={[
+                            {
+                              key: 'detail',
+                              label: (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <Avatar address={'0x000' || processingId} size={50} />
 
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <Typography>XXX</Typography>
-                                  <Typography variant="small" type="secondary">
-                                    RPC
-                                  </Typography>
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <Typography>
+                                      {manifest.data?.getManifest.rpcManifest?.name}
+                                    </Typography>
+                                    <Typography variant="small" type="secondary">
+                                      {manifest.data?.getManifest.rpcManifest
+                                        ? 'RPC Endpoint'
+                                        : 'Data Indexer'}
+                                    </Typography>
+                                  </div>
                                 </div>
-                              </div>
-                            ),
-                            children: (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <Typography type="secondary" variant="medium">
-                                    xxx:
-                                  </Typography>
-                                  <Typography variant="medium">yyy</Typography>
+                              ),
+                              children: (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Typography type="secondary" variant="medium">
+                                      Chain ID:
+                                    </Typography>
+                                    <Typography variant="medium">
+                                      {manifest.data?.getManifest.rpcManifest?.chain.chainId}
+                                    </Typography>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Typography type="secondary" variant="medium">
+                                      Family:
+                                    </Typography>
+                                    <Typography variant="medium">
+                                      {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(' ')}
+                                    </Typography>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Typography type="secondary" variant="medium">
+                                      Client:
+                                    </Typography>
+                                    <Typography variant="medium">
+                                      {manifest.data?.getManifest.rpcManifest?.client?.name ||
+                                        'Unknown'}
+                                    </Typography>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Typography type="secondary" variant="medium">
+                                      Node type:
+                                    </Typography>
+                                    <Typography variant="medium">
+                                      {manifest.data?.getManifest.rpcManifest?.nodeType}
+                                    </Typography>
+                                  </div>
                                 </div>
-                              </div>
-                            ),
-                          },
-                        ]}
-                      />
-                    </SubqlCollapse>
-                  </Form.Item>
+                              ),
+                            },
+                          ]}
+                        />
+                      </SubqlCollapse>
+                    </Form.Item>
+                  )}
                 </Form>
               </div>
               <div style={{ flex: 1 }} />
