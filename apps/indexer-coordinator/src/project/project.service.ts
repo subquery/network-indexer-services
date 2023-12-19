@@ -6,7 +6,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   bytes32ToCid,
   GraphqlQueryClient,
-  IPFS_URLS,
   IPFSClient,
   NETWORK_CONFIGS,
 } from '@subql/network-clients';
@@ -71,7 +70,7 @@ export class ProjectService {
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
-    this.ipfsClient = new IPFSClient(IPFS_URLS.project);
+    this.ipfsClient = new IPFSClient(IPFS_URL);
     void this.restoreProjects();
   }
 
@@ -159,7 +158,7 @@ export class ProjectService {
   }
 
   /// add project
-  async getProjectDetailsFromNetwork(id: string): Promise<ProjectInfo> {
+  async getProjectInfoFromNetwork(id: string): Promise<ProjectInfo> {
     const networkClient = this.client.networkClient;
     const result = await networkClient.query({
       // @ts-ignore
@@ -189,6 +188,7 @@ export class ProjectService {
       updatedTimestamp: deployment.createdTimestamp,
       networkProjectId: project.id,
       owner: project.owner,
+      projectType: ProjectType[project.type as keyof typeof ProjectType],
       ...projectMetadata,
       ...deploymentMetadata,
     };
@@ -199,11 +199,11 @@ export class ProjectService {
     if (project) return project;
     // const indexer = await this.account.getIndexer();
     // const { status } = await this.contract.deploymentStatusByIndexer(id, indexer);
-    const details = await this.getProjectDetailsFromNetwork(id);
-    const infos = await this.contract
+    const networkInfo = await this.getProjectInfoFromNetwork(id);
+    const contractInfo = await this.contract
       .getSdk()
-      .projectRegistry.projectInfos(details.networkProjectId);
-    const projectType = infos.projectType as ProjectType;
+      .projectRegistry.projectInfos(networkInfo.networkProjectId);
+    const projectType = contractInfo.projectType as ProjectType;
     const manifest = await getProjectManifest(id);
     const chainType = '';
     const projectEntity = this.projectRepo.create({
@@ -211,7 +211,7 @@ export class ProjectService {
       status: DesiredStatus.STOPPED,
       chainType,
       projectType,
-      details,
+      details: networkInfo,
       manifest,
     });
 
@@ -221,6 +221,19 @@ export class ProjectService {
     return this.projectRepo.save(projectEntity);
   }
 
+  async getProjectType(id: string): Promise<ProjectType> {
+    const project = await this.getProject(id);
+    if (project) return project.projectType;
+
+    const details = await this.getProjectInfoFromNetwork(id);
+    // return details.projectType;
+    const infos = await this.contract
+      .getSdk()
+      .projectRegistry.projectInfos(details.networkProjectId);
+    const projectType = infos.projectType as ProjectType;
+    return projectType;
+  }
+
   async updateProjectStatus(id: string, status: DesiredStatus): Promise<Project> {
     const project = await this.projectRepo.findOneBy({ id });
     project.status = status;
@@ -228,11 +241,16 @@ export class ProjectService {
   }
 
   // project management
-  async startSubqueryProject(id: string, projectConfig: IProjectConfig): Promise<Project> {
+  async startSubqueryProject(
+    id: string,
+    projectConfig: IProjectConfig,
+    rateLimit: number
+  ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
       project = await this.addProject(id);
     }
+    project.rateLimit = rateLimit;
 
     this.setDefaultConfigValue(projectConfig);
 
@@ -406,14 +424,15 @@ export class ProjectService {
 
   async getManifest<T>(id: string): Promise<T> {
     const project = await this.getProject(id);
-    if (!project) {
-      return;
+    if (project && project.manifest && Object.keys(project.manifest).length > 0) {
+      return project.manifest as T;
     }
-    if (!project.manifest || Object.keys(project.manifest).length === 0) {
+    const manifest = await getProjectManifest(id);
+    if (project) {
       project.manifest = await getProjectManifest(id);
       await this.projectRepo.save(project);
     }
-    return project.manifest as T;
+    return manifest as T;
   }
 
   async logs(container: string): Promise<LogType> {

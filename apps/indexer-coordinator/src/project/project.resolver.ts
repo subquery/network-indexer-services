@@ -17,6 +17,7 @@ import {
   ProjectDetails,
   ProjectConfig,
   ValidationResponse,
+  ProjectInfo,
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
@@ -38,8 +39,14 @@ export class ProjectResolver {
   }
 
   @Query(() => MetadataType)
-  async serviceMetadata(@Args('id') id: string, @Args('projectType') projectType: ProjectType) {
+  async serviceMetadata(
+    @Args('id') id: string,
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
+  ) {
     let project: Project;
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(id);
+    }
     switch (projectType) {
       case ProjectType.SUBQUERY:
         project = await this.projectService.getProject(id);
@@ -110,9 +117,12 @@ export class ProjectResolver {
   @Query(() => AggregatedManifest)
   async getManifest(
     @Args('projectId') projectId: string,
-    @Args('projectType') projectType: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
   ): Promise<AggregatedManifest> {
     const manifest = new AggregatedManifest();
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(projectId);
+    }
     switch (projectType) {
       case ProjectType.SUBQUERY:
         manifest.subqueryManifest = await this.projectService.getManifest(projectId);
@@ -124,6 +134,11 @@ export class ProjectResolver {
         throw new Error(`Unknown project type ${projectType}`);
     }
     return manifest;
+  }
+
+  @Query(() => ProjectInfo)
+  async getProjectInfo(@Args('projectId') projectId: string): Promise<ProjectInfo> {
+    return this.projectService.getProjectInfoFromNetwork(projectId);
   }
 
   @Query(() => LogType)
@@ -163,8 +178,11 @@ export class ProjectResolver {
   @Mutation(() => [Project])
   async removeProject(
     @Args('id') id: string,
-    @Args('projectType') projectType: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
   ): Promise<Project[]> {
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(id);
+    }
     switch (projectType) {
       case ProjectType.SUBQUERY:
         return this.projectService.removeSubqueryProject(id);
@@ -179,14 +197,18 @@ export class ProjectResolver {
   @Mutation(() => Project)
   async startProject(
     @Args('id') id: string,
-    @Args('projectType') projectType: ProjectType,
-    @Args('projectConfig') projectConfig: ProjectConfig
+    @Args('projectConfig') projectConfig: ProjectConfig,
+    @Args('rateLimit', { nullable: true }) rateLimit?: number,
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
   ): Promise<Project> {
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(id);
+    }
     switch (projectType) {
       case ProjectType.SUBQUERY:
-        return this.projectService.startSubqueryProject(id, projectConfig);
+        return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.RPC:
-        return this.projectRpcService.startRpcProject(id, projectConfig);
+        return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -195,8 +217,11 @@ export class ProjectResolver {
   @Mutation(() => Project)
   async stopProject(
     @Args('id') id: string,
-    @Args('projectType') projectType: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
   ): Promise<Project> {
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(id);
+    }
     switch (projectType) {
       case ProjectType.SUBQUERY:
         return this.projectService.stopSubqueryProject(id);
