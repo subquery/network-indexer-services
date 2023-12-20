@@ -11,6 +11,8 @@ import styled from 'styled-components';
 import Avatar from 'components/avatar';
 import { Separator } from 'components/primary';
 import { TagItem } from 'components/tagItem';
+import UnsafeWarn from 'components/UnsafeWarn';
+import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import { statusText } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
 import { serviceStatusCode } from 'utils/project';
@@ -36,6 +38,7 @@ const ProjectDetailsHeader: FC<Props> = ({
   onRemoveProject,
 }) => {
   const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
+  const { isUnsafe } = useGetIfUnsafeDeployment(id);
 
   useEffect(() => {
     if (project.projectType === ProjectType.Rpc) {
@@ -63,6 +66,7 @@ const ProjectDetailsHeader: FC<Props> = ({
               ) : (
                 <Spinner />
               )}
+              {isUnsafe && <UnsafeWarn />}
             </Typography>
 
             <div>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useMemo, useState } from 'react';
+import { WarningOutlined } from '@ant-design/icons';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { openNotification, Steps, Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
@@ -16,6 +17,7 @@ import { IndexingForm } from 'components/forms/restartIndexing';
 import { LoadingSpinner } from 'components/loading';
 import { Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
+import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import RpcSetting from 'pages/project-details/components/rpcSetting';
 import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
@@ -48,15 +50,17 @@ const Projects = () => {
     defaultOptions: { fetchPolicy: 'network-only' },
     fetchPolicy: 'network-only',
   });
+
+  const { getIfUnsafe, isUnsafe } = useGetIfUnsafeDeployment();
   const [addProject] = useMutation(ADD_PROJECT);
   const [validateManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
   const [getProjectName, projectName] = useLazyQuery<{ getProjectInfo: { name: string } }>(
     GET_PROJECT_NAME
   );
   const isIndexer = useIsIndexer();
+
   const [form] = useForm();
   const processingId = Form.useWatch('deploymentId', { form, preserve: true });
-
   const [visible, setVisible] = useState(false);
   const [addProjectLoading, setAddProjectLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -143,9 +147,11 @@ const Projects = () => {
         return Promise.reject(new Error("Can't found the manifest information"));
       }
 
+      await getIfUnsafe(value);
+
       return Promise.resolve();
     }, 1000);
-  }, [validateManifest, getProjectName]);
+  }, [validateManifest, getProjectName, getIfUnsafe]);
 
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
@@ -286,6 +292,35 @@ const Projects = () => {
                       </SubqlCollapse>
                     </Form.Item>
                   )}
+
+                  {isUnsafe && (
+                    <WarnStyle>
+                      <WarningOutlined
+                        style={{ color: 'var(--sq-warning)', fontSize: 18, marginTop: 2 }}
+                      />
+                      <div>
+                        <Typography variant="medium">
+                          This project is not completely safe
+                        </Typography>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                          <Typography variant="medium" type="secondary">
+                            SubQuery can’t guarantee that this project is deterministic, which means
+                            it is not entirely safe.
+                          </Typography>
+                          <Typography variant="medium" type="secondary">
+                            This means that two indexers are not guaranteed to index exactly the
+                            same data when indexing this project. In most cases, Indexers will still
+                            run this project, however they might be reluctant to do so.
+                          </Typography>
+                          <Typography variant="medium" type="secondary">
+                            By proceeding, you acknowledge the potential risks associated with
+                            deploying an &apos;unsafe&apos; project. Learn more about unsafe
+                            project.
+                          </Typography>
+                        </div>
+                      </div>
+                    </WarnStyle>
+                  )}
                 </Form>
               </div>
               <div style={{ flex: 1 }} />
@@ -349,6 +384,16 @@ const SubqlCollapse = styled.div`
       }
     }
   }
+`;
+
+const WarnStyle = styled.div`
+  display: flex;
+  align-items: flex-start;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 124, 79, 0.5);
+  background: rgba(248, 124, 79, 0.08);
+  gap: 6px;
 `;
 
 export default Projects;

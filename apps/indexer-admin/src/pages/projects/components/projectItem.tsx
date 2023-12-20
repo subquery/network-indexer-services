@@ -8,8 +8,10 @@ import { indexingProgress } from '@subql/network-clients';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
+import UnsafeWarn from 'components/UnsafeWarn';
 import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
+import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import {
   ProjectDetails,
   ProjectType,
@@ -36,6 +38,7 @@ const ProjectItem: FC<Props> = (props) => {
     deploymentId: id,
     indexer: account || '',
   });
+  const { isUnsafe } = useGetIfUnsafeDeployment(id);
   const progress = useMemo(() => {
     if (!metadata) return 0;
 
@@ -55,7 +58,10 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={13}>
         <Avatar address={cidToBytes32(id)} size={50} />
         <ProfileContainer>
-          <Typography>{details.name}</Typography>
+          <Typography style={{ display: 'inline-flex', gap: 8 }}>
+            {details.name}
+            {isUnsafe && <UnsafeWarn />}
+          </Typography>
           <Typography
             style={{ width: '100%', marginTop: 8, minWidth: 360 }}
             type="secondary"
