@@ -307,7 +307,12 @@ const Projects = () => {
             </div>
           )}
           {currentStep === 1 && processingProject.projectType === ProjectType.SubQuery && (
-            <IndexingForm id={processingId} />
+            <IndexingForm
+              id={processingId}
+              setVisible={(val) => {
+                setVisible(val);
+              }}
+            />
           )}
           {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
             <RpcSetting

@@ -13,9 +13,10 @@ type Props = {
   project: ProjectDetails;
   metadata?: TQueryMetadata;
   projectStatus: ProjectStatus;
+  refresh: () => void;
 };
 
-const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) => {
+const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, refresh }) => {
   const [showRpcDrawer, setShowRpcDrawer] = useState(false);
   const rpcButtons = useMemo(() => {
     const btns = [];
@@ -99,14 +100,18 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
           );
         })}
 
-        <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+        {project.projectConfig.serviceEndpoints.length ? (
+          <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+        ) : (
+          ''
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Typography type="secondary">Rate Limits</Typography>
           </div>
           <Typography style={{ marginTop: 8 }} variant="medium">
-            {project.rateLimit} rps
+            {project.rateLimit || '∞'} rps
           </Typography>
         </div>
       </div>
@@ -126,6 +131,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus }) 
             setShowRpcDrawer(false);
           }}
           onSubmit={() => {
+            refresh();
             setShowRpcDrawer(false);
           }}
         />

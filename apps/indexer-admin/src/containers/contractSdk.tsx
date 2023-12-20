@@ -2,37 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React from 'react';
-import { ContractDeployment, ContractSDK, SdkOptions } from '@subql/contract-sdk';
-import keplerDeployment from '@subql/contract-sdk/publish/kepler.json';
-import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
-import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
+import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
+import { SQNetworks } from '@subql/network-config';
 import { intToHex } from 'ethereumjs-util';
 
 import { useIsMetaMask, useWeb3 } from 'hooks/web3Hook';
 import Logger from 'utils/logger';
-import { ChainID, isSupportNetwork, SubqueryNetwork } from 'utils/web3';
+import { ChainID, isSupportNetwork } from 'utils/web3';
 
 import { createContainer } from './unstated';
 
-// testnet and kepler has different contract deployment
-const deployments: Record<SubqueryNetwork, ContractDeployment> = {
-  testnet: testnetDeployment,
-  // @ts-ignore
-  kepler: keplerDeployment,
-  // @ts-ignore
-  mainnet: mainnetDeployment,
-};
-
-function createContractOptions(network: SubqueryNetwork): SdkOptions {
+function createContractOptions(network: SQNetworks): SdkOptions {
   return {
-    deploymentDetails: deployments[network] as ContractDeployment,
     network,
   };
 }
 
 const options = {
-  [ChainID.testnet]: createContractOptions('testnet'),
-  [ChainID.kepler]: createContractOptions('kepler'),
+  [ChainID.testnet]: createContractOptions(SQNetworks.TESTNET),
+  [ChainID.mainnet]: createContractOptions(SQNetworks.MAINNET),
 };
 
 export type SDK = ContractSDK | undefined;
@@ -46,7 +34,7 @@ function useContractsImpl(logger: Logger): SDK {
     if (!chainId || !isSupportNetwork(intToHex(chainId) as ChainID)) return;
 
     const sdkOption = options[intToHex(chainId) as ChainID];
-    if (!sdkOption || !sdkOption.network || !sdkOption.deploymentDetails) {
+    if (!sdkOption || !sdkOption.network) {
       throw new Error(
         'Invalid sdk options, contracts provider requires network and deploymentDetails'
       );

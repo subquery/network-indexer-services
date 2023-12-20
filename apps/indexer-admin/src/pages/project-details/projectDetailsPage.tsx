@@ -178,7 +178,7 @@ const ProjectDetailsPage = () => {
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
 
-    if (projectQuery.data?.project.projectConfig.serviceEndpoints.length) {
+    if (projectQuery.data?.project.projectConfig?.serviceEndpoints?.length) {
       if (projectQuery.data?.project.projectConfig.serviceEndpoints.every((i) => i.valid)) {
         return ProjectStatus.Ready;
       }
@@ -342,6 +342,9 @@ const ProjectDetailsPage = () => {
                 project={project}
                 metadata={metadata}
                 projectStatus={projectStatus}
+                refresh={() => {
+                  projectQuery.refetch();
+                }}
               />
             )}
             <ProjectStatusView percent={progress} metadata={metadata} />

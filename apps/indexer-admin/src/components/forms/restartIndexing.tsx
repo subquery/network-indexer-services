@@ -171,7 +171,6 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
     }
 
     try {
-      console.warn(values);
       await startProjectRequest({
         variables: {
           ...values,
@@ -179,12 +178,11 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
           timeout,
           workers: values.worker,
           networkDictionary: values.networkDictionary ?? '',
-          id,
+          id: mineId,
           projectType: projectQuery.data?.project.projectType,
           serviceEndpoints: [],
         },
       });
-      form.resetFields();
 
       dispatchNotification({
         type: 'success' as NOTIFICATION_TYPE,

@@ -3,11 +3,11 @@
 
 import { SQNetworks } from '@subql/network-config';
 
-export const network = (import.meta.env.VITE_APP_NETWORK ?? window.env.NETWORK) as SubqueryNetwork;
+export const network = (import.meta.env.VITE_APP_NETWORK ?? window.env.NETWORK) as SQNetworks;
 
 export const SUPPORTED_NETWORK = (network ?? 'testnet') as SQNetworks;
 
-export const PRODUCTION_NETWORK = 'kepler';
+export const PRODUCTION_NETWORK = SQNetworks.MAINNET;
 
 export const tokenSymbols = {
   testnet: 'SQT',
@@ -19,18 +19,16 @@ export const TOKEN_SYMBOL = tokenSymbols[network as keyof typeof tokenSymbols];
 
 export enum ChainID {
   testnet = '0x13881',
-  kepler = '0x89',
   mainnet = '0x89',
+  local = '0x13881',
 }
 
-export type SubqueryNetwork = 'mainnet' | 'kepler' | 'testnet';
+export const ChainIDs = [ChainID.testnet, ChainID.mainnet];
 
-export const ChainIDs = [ChainID.testnet, ChainID.kepler];
-
-export const NetworkToChainID: Record<SubqueryNetwork, ChainID> = {
+export const NetworkToChainID: Record<SQNetworks, ChainID> = {
   testnet: ChainID.testnet,
-  kepler: ChainID.kepler,
   mainnet: ChainID.mainnet,
+  local: ChainID.local,
 };
 
 export const isSupportNetwork = (chaiId: ChainID) => ChainIDs.includes(chaiId);

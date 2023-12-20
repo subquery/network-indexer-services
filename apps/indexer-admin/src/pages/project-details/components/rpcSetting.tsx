@@ -69,7 +69,7 @@ const RpcSetting: FC<IProps> = (props) => {
       }
 
       return Promise.reject(new Error('xxxx'));
-    }, 3000);
+    }, 1000);
   }, [validate, mineId]);
 
   if (!projectQuery.data) return <Spinner />;

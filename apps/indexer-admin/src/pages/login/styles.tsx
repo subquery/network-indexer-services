@@ -11,5 +11,5 @@ export const Container = styled.div`
   min-height: 400px;
   align-items: center;
   justify-content: center;
-  background-color: #f6f9fc;
+  background-color: #fff;
 `;
