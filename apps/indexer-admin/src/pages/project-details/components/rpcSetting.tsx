@@ -213,7 +213,7 @@ const RpcSetting: FC<IProps> = (props) => {
   );
 };
 
-const HorizeFormItem = styled.div`
+export const HorizeFormItem = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
@@ -222,6 +222,10 @@ const HorizeFormItem = styled.div`
     align-items: center;
     .ant-col {
       width: auto;
+    }
+
+    .ant-form-item-label {
+      padding: 0;
     }
   }
 `;

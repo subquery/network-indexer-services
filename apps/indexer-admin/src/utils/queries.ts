@@ -144,6 +144,14 @@ export const GET_PROJECT = gql`
   }
 `;
 
+export const GET_PROJECT_NAME = gql`
+  query Project($id: String!) {
+    getProjectInfo(projectId: $id) {
+      name
+    }
+  }
+`;
+
 export const GET_PROJECTS = gql`
   query {
     getProjects: getProjectsSimple {
@@ -373,11 +381,11 @@ export interface ManiFest {
       client?: { name: string; version: string };
     };
     subqueryManifest?: {
-      dataSources: { kind: string }[];
-      schema: { file: string };
-      network: { chainId: string };
+      dataSources?: { kind: string }[];
+      schema?: { file: string };
+      network?: { chainId: string };
       specVersion: string;
-      runner: {
+      runner?: {
         node: {
           name?: string;
           version?: string;

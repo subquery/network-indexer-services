@@ -13,7 +13,19 @@ import {
 import { useMutation } from '@apollo/client';
 import { Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
-import { Button, Col, Collapse, Form, Input, Row, Select, Slider, Switch, Tooltip } from 'antd';
+import {
+  Button,
+  Col,
+  Collapse,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Slider,
+  Switch,
+  Tooltip,
+} from 'antd';
 import Link from 'antd/es/typography/Link';
 import { cloneDeep } from 'lodash';
 import styled from 'styled-components';
@@ -22,6 +34,7 @@ import { LoadingSpinner } from 'components/loading';
 import { ButtonContainer } from 'components/primary';
 import { useNotification } from 'containers/notificationContext';
 import { useNodeVersions, useProjectDetails, useQueryVersions } from 'hooks/projectHook';
+import { HorizeFormItem } from 'pages/project-details/components/rpcSetting';
 import { defaultAdvancedConfig, ProjectFormKey, StartIndexingSchema } from 'types/schemas';
 import { START_PROJECT } from 'utils/queries';
 
@@ -158,6 +171,7 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
     }
 
     try {
+      console.warn(values);
       await startProjectRequest({
         variables: {
           ...values,
@@ -214,7 +228,7 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
             name="form"
             layout="vertical"
             onFinish={handleSubmit(setVisible)}
-            initialValues={{ ...projectConfig, networkEndpoints }}
+            initialValues={{ ...projectConfig, networkEndpoints, rateLimit: project.rateLimit }}
           >
             <Typography variant="medium" style={{ marginBottom: 24 }}>
               <InfoCircleOutlined
@@ -273,7 +287,16 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
                 </>
               )}
             </Form.List>
-
+            <HorizeFormItem>
+              <Form.Item
+                label="Rate Limit"
+                tooltip="This feature allows you to manage and set rate limits for your agreement service and Flex Plan, helping you optimize service stability and performance"
+                name="rateLimit"
+              >
+                <InputNumber />
+              </Form.Item>
+              <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
+            </HorizeFormItem>
             <HorizonReverse>
               <Form.Item label="Override Dictionary" valuePropName="checked">
                 <Switch onChange={onSwitchChange} checked={showInput} />

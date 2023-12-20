@@ -1,7 +1,8 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+import { useLazyQuery } from '@apollo/client';
 import { Spinner, Tag, Typography } from '@subql/components';
 import { Button } from 'antd';
 import { isUndefined } from 'lodash';
@@ -13,6 +14,7 @@ import { TagItem } from 'components/tagItem';
 import { statusText } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
 import { serviceStatusCode } from 'utils/project';
+import { GET_MANIFEST, ManiFest } from 'utils/queries';
 
 import { ProjectDetails, ProjectType, ServiceStatus } from '../types';
 
@@ -33,6 +35,17 @@ const ProjectDetailsHeader: FC<Props> = ({
   announceStop,
   onRemoveProject,
 }) => {
+  const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
+
+  useEffect(() => {
+    if (project.projectType === ProjectType.Rpc) {
+      getManifest({
+        variables: {
+          projectId: project.id,
+        },
+      });
+    }
+  }, [project, getManifest]);
   return (
     <Container>
       <LeftContainer>
@@ -100,7 +113,10 @@ const ProjectDetailsHeader: FC<Props> = ({
           <VersionContainer style={{ justifyContent: 'flex-start' }}>
             {project.projectType === ProjectType.SubQuery && (
               <>
-                <TagItem versionType="Indexed Network" value={project.metadata?.chain} />
+                <TagItem
+                  versionType="Indexed Network"
+                  value={project.metadata?.chain || 'Unknown'}
+                />
                 <Separator height={30} mr={36} ml={36} />
               </>
             )}
@@ -109,11 +125,28 @@ const ProjectDetailsHeader: FC<Props> = ({
               value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
             />
             <Separator height={30} mr={36} ml={36} />
-            {/* <TagItem
-              versionType="Node Type"
-              value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
-            />
-            <Separator height={30} mr={36} ml={36} /> */}
+
+            {project.projectType === ProjectType.Rpc && (
+              <>
+                <TagItem
+                  versionType="Network"
+                  value={manifest.data?.getManifest.rpcManifest?.rpcFamily.join(' ')}
+                />
+                <Separator height={30} mr={36} ml={36} />
+
+                <TagItem
+                  versionType="Node Type"
+                  value={manifest.data?.getManifest.rpcManifest?.nodeType}
+                />
+                <Separator height={30} mr={36} ml={36} />
+
+                <TagItem
+                  versionType="Node Type"
+                  value={manifest.data?.getManifest.rpcManifest?.client?.name || 'Unkonwn'}
+                />
+                <Separator height={30} mr={36} ml={36} />
+              </>
+            )}
 
             <TagItem versionType="Deployment ID" value={project.id} />
           </VersionContainer>

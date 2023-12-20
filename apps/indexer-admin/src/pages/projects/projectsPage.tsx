@@ -23,6 +23,7 @@ import { parseError } from 'utils/error';
 import {
   ADD_PROJECT,
   GET_MANIFEST,
+  GET_PROJECT_NAME,
   GET_PROJECTS,
   GET_PROJECTS_METADATA,
   ManiFest,
@@ -49,6 +50,9 @@ const Projects = () => {
   });
   const [addProject] = useMutation(ADD_PROJECT);
   const [validateManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
+  const [getProjectName, projectName] = useLazyQuery<{ getProjectInfo: { name: string } }>(
+    GET_PROJECT_NAME
+  );
   const isIndexer = useIsIndexer();
   const [form] = useForm();
   const processingId = Form.useWatch('deploymentId', { form, preserve: true });
@@ -124,6 +128,11 @@ const Projects = () => {
 
   const debouncedValidator = useMemo(() => {
     return debounce(async (_: any, value: string) => {
+      await getProjectName({
+        variables: {
+          id: value,
+        },
+      });
       const res = await validateManifest({
         variables: {
           projectId: value,
@@ -136,7 +145,7 @@ const Projects = () => {
 
       return Promise.resolve();
     }, 1000);
-  }, [validateManifest]);
+  }, [validateManifest, getProjectName]);
 
   return renderAsync(projectsQuery, {
     loading: () => <LoadingSpinner />,
@@ -210,9 +219,7 @@ const Projects = () => {
                                   <Avatar address={'0x000' || processingId} size={50} />
 
                                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Typography>
-                                      {manifest.data?.getManifest.rpcManifest?.name}
-                                    </Typography>
+                                    <Typography>{projectName.data?.getProjectInfo.name}</Typography>
                                     <Typography variant="small" type="secondary">
                                       {manifest.data?.getManifest.rpcManifest
                                         ? 'RPC Endpoint'
@@ -228,34 +235,49 @@ const Projects = () => {
                                       Chain ID:
                                     </Typography>
                                     <Typography variant="medium">
-                                      {manifest.data?.getManifest.rpcManifest?.chain.chainId}
-                                    </Typography>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Typography type="secondary" variant="medium">
-                                      Family:
-                                    </Typography>
-                                    <Typography variant="medium">
-                                      {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(' ')}
-                                    </Typography>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Typography type="secondary" variant="medium">
-                                      Client:
-                                    </Typography>
-                                    <Typography variant="medium">
-                                      {manifest.data?.getManifest.rpcManifest?.client?.name ||
+                                      {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
+                                        manifest.data.getManifest.subqueryManifest?.network
+                                          ?.chainId ||
                                         'Unknown'}
                                     </Typography>
                                   </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Typography type="secondary" variant="medium">
-                                      Node type:
-                                    </Typography>
-                                    <Typography variant="medium">
-                                      {manifest.data?.getManifest.rpcManifest?.nodeType}
-                                    </Typography>
-                                  </div>
+                                  {manifest.data?.getManifest.rpcManifest && (
+                                    <>
+                                      <div
+                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                      >
+                                        <Typography type="secondary" variant="medium">
+                                          Family:
+                                        </Typography>
+                                        <Typography variant="medium">
+                                          {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(
+                                            ' '
+                                          )}
+                                        </Typography>
+                                      </div>
+                                      <div
+                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                      >
+                                        <Typography type="secondary" variant="medium">
+                                          Client:
+                                        </Typography>
+                                        <Typography variant="medium">
+                                          {manifest.data?.getManifest.rpcManifest?.client?.name ||
+                                            'Unknown'}
+                                        </Typography>
+                                      </div>
+                                      <div
+                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                      >
+                                        <Typography type="secondary" variant="medium">
+                                          Node type:
+                                        </Typography>
+                                        <Typography variant="medium">
+                                          {manifest.data?.getManifest.rpcManifest?.nodeType}
+                                        </Typography>
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
                               ),
                             },
@@ -271,7 +293,7 @@ const Projects = () => {
                 <Button
                   shape="round"
                   type="primary"
-                  loading={addProjectLoading}
+                  loading={addProjectLoading || manifest.loading || projectName.loading}
                   onClick={async () => {
                     await form.validateFields();
                     await addProjectFunc({

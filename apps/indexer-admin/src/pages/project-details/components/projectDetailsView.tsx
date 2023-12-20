@@ -1,41 +1,35 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 import { GithubOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useLazyQuery } from '@apollo/client';
 import { Markdown, SubqlCard, Typography } from '@subql/components';
 import styled from 'styled-components';
 
-import { Text } from 'components/primary';
+import { GET_MANIFEST, ManiFest } from 'utils/queries';
 
-import { ProjectDetails } from '../types';
-
-type InfoProps = {
-  title: string;
-  desc: string;
-  ml?: number;
-  mt?: number;
-};
-
-const InfoView: FC<InfoProps> = ({ title, desc, ml, mt }) => (
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  <InfoContainer ml={ml} mt={mt}>
-    <Text size={18}>{title}</Text>
-    <Text mt={15} size={16} color="gray">
-      {desc}
-    </Text>
-  </InfoContainer>
-);
+import { ProjectDetails, ProjectType } from '../types';
 
 type Props = {
   id: string;
   project: ProjectDetails;
 };
 
-const formatDate = (date: string) => new Date(date).toLocaleDateString();
-
 const ProjectDetailsView: FC<Props> = ({ project }) => {
   const { description, websiteUrl, codeUrl } = project.details;
+  const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
+
+  useEffect(() => {
+    if (project.projectType === ProjectType.Rpc) {
+      getManifest({
+        variables: {
+          projectId: project.id,
+        },
+      });
+    }
+  }, [project, getManifest]);
+
   return (
     <Container>
       <Left>
@@ -64,6 +58,47 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
             <Typography variant="medium">{codeUrl}</Typography>
           </div>
         </div>
+
+        {project.projectType === ProjectType.Rpc && (
+          <>
+            <SplitLine />
+            <Typography>RPC Endpoint Details</Typography>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Chain ID:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.rpcManifest?.chain.chainId}
+                </Typography>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Family:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(' ')}
+                </Typography>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Client:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.rpcManifest?.client?.name || 'Unknown'}
+                </Typography>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Node type:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.rpcManifest?.nodeType}
+                </Typography>
+              </div>
+            </div>
+          </>
+        )}
       </Left>
       <Right>
         <SubqlCard title="Totoal Rewards">
@@ -75,6 +110,13 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
 };
 
 export default ProjectDetailsView;
+
+const SplitLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background: var(--sq-gray300);
+  margin: 16px 0;
+`;
 
 const Left = styled.div`
   display: flex;
@@ -94,11 +136,4 @@ const Container = styled.div`
   min-height: 350px;
   margin-top: 20px;
   gap: 48px;
-`;
-
-const InfoContainer = styled.div<{ mt?: number; ml?: number }>`
-  display: flex;
-  flex-direction: column;
-  margin-left: ${({ ml }) => ml ?? 0}px;
-  margin-top: ${({ mt }) => mt ?? 0}px;
 `;
