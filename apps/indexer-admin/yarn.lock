@@ -3482,10 +3482,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@subql/components@1.0.3-23":
-  version "1.0.3-23"
-  resolved "https://registry.npmjs.org/@subql/components/-/components-1.0.3-23.tgz#a7b699fbeac6e69e2cc66cbbb3d7d0dd36f2a84f"
-  integrity sha512-K3LRGu2aGZzhrMX8ajhI2Xw2MqXJKfcVu6M43+xB1icRGRM4T6wMjlJyam+CHJK/ByDc1t7f5AEP1+rUeFU4pA==
+"@subql/components@1.0.3-24":
+  version "1.0.3-24"
+  resolved "https://registry.npmjs.org/@subql/components/-/components-1.0.3-24.tgz#1712a9ebef02bde45bf43d9267ff58c35d8d18a5"
+  integrity sha512-Ws5eOwUtNwlnaBdt6zzBAZmCrwlPuLWYLlg7wD9JUb8iJE2Hcmm8cy0tre3TKxhlzckYi66qHcaSQ4PlgD1KZg==
   dependencies:
     "@graphiql/plugin-explorer" "^0.3.4"
     "@graphiql/toolkit" "^0.9.1"
@@ -3496,6 +3496,7 @@
     graphql "^16.7.0"
     graphql-ws "^5.13.1"
     jdenticon "^3.2.0"
+    lodash-es "^4.17.21"
     ra-data-graphql "^4.11.3"
     react-icons "^4.8.0"
     react-jazzicon "^0.1.3"
@@ -3513,7 +3514,7 @@
     "@maticnetwork/maticjs" "^3.6.7"
     "@maticnetwork/maticjs-ethers" "^1.0.3"
 
-"@subql/network-clients@0.112.0":
+"@subql/network-clients@0.112.1-0":
   version "0.112.1-0"
   resolved "https://registry.npmjs.org/@subql/network-clients/-/network-clients-0.112.1-0.tgz#5a88c4174a7e118deeb03136bcde869daac10a2a"
   integrity sha512-JD/rQ3spEJbFnIKEXNdQFl3XDsSEgEM2+T2Ep4rlGsLLmVFtgEO9m0w/0nnyQoWhj55FZIoY3/r7Gej0od27Bg==
@@ -3533,7 +3534,7 @@
   resolved "https://registry.npmjs.org/@subql/network-config/-/network-config-0.112.0.tgz#e31435acdc1e2df77bd56868ecc213b8eb2b5680"
   integrity sha512-Xv/6R5Ni/7KVQWtj7ajLJqzT8EM49DZuJkls40y2ZbsYc2JGh0q95rrno1J/5mYH0ILanJZEvkRnPDQ7uBMy1g==
 
-"@subql/network-query@0.112.0", "@subql/network-query@0.112.1-0":
+"@subql/network-query@0.112.0":
   version "0.112.0"
   resolved "https://registry.npmjs.org/@subql/network-query/-/network-query-0.112.0.tgz#44a2446db79cbeb8252ab160adcc747359a9f4a6"
   integrity sha512-6+IdTccu7pwO6KKmVCSptuAdlTTYeMZkqN2vVbTpB+wx37M9hPTenenTfnPGF8vC4zafo2GOtk6W0+TsILuL0A==
