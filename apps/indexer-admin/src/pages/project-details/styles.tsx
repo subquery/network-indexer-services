@@ -29,9 +29,9 @@ export const ContentContainer = styled.div`
 export const CardContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  min-width: 1355px;
+  min-width: 1280px;
   border-radius: 8px;
-  margin-top: 20px;
+  margin-top: 32px;
   padding: 32px;
   border: 1px solid var(--sq-gray300);
   background-color: #fff;

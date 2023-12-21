@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useCallback, useState } from 'react';
-import { Tabs } from '@subql/components';
+import { BsBookmarkDash } from 'react-icons/bs';
+import { AppstoreOutlined, LineChartOutlined } from '@ant-design/icons';
+import { SubqlTabs } from '@subql/components';
 
-import { projectId } from 'utils/project';
-
-import ProjectLogView from '../../../components/logView';
 import { ProjectPAYG } from '../payg/projectPayg';
 import { ProjectDetails, ProjectServiceMetadata } from '../types';
 import ProjectDetailsView from './projectDetailsView';
+import ProjectInsights from './projectInsights';
 
 enum TabbarItem {
-  ProjectDetails,
-  NodeLog,
-  PAYG,
+  ProjectDetails = 'projectDetail',
+  PAYG = 'payg',
+  ProjectInsights = 'insight',
 }
 
 type Props = {
@@ -25,13 +25,31 @@ type Props = {
 
 const tabItems = [
   {
-    label: 'Project Details',
+    key: TabbarItem.ProjectDetails,
+    label: (
+      <>
+        <AppstoreOutlined style={{ transform: 'rotate(45deg) translateX(2px)', fontSize: 16 }} />
+        Project Details
+      </>
+    ),
   },
   {
-    label: 'Service Log',
+    key: TabbarItem.PAYG,
+    label: (
+      <>
+        <BsBookmarkDash style={{ marginRight: 12 }} />
+        Flex Plan
+      </>
+    ),
   },
   {
-    label: 'Flex Plan',
+    key: TabbarItem.ProjectInsights,
+    label: (
+      <>
+        <LineChartOutlined />
+        Project Insight
+      </>
+    ),
   },
 ];
 
@@ -45,12 +63,12 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
   // SUGGESTION: Use mapping instead of switch case
   const renderContent = useCallback(() => {
     switch (value) {
-      case TabbarItem.NodeLog:
-        return <ProjectLogView container={`node_${projectId(id)}`} height={650} />;
       case TabbarItem.ProjectDetails:
         return <ProjectDetailsView id={id} project={project} />;
       case TabbarItem.PAYG:
         return <ProjectPAYG id={id} config={config} />;
+      case TabbarItem.ProjectInsights:
+        return <ProjectInsights id={id} />;
       default:
         return <div />;
     }
@@ -58,7 +76,7 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
 
   return (
     <div style={{ marginTop: 30 }}>
-      <Tabs tabs={tabItems} onTabClick={handleChange} />
+      <SubqlTabs items={tabItems} onChange={(activeKey) => handleChange(activeKey as TabbarItem)} />
       {renderContent()}
     </div>
   );

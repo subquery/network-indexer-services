@@ -17,7 +17,7 @@ export function createTagColumn<T>(index: T, title: string, toolTip?: string) {
     dataIndex: index,
     title: <TableTitle tooltip={toolTip} title={title} />,
     render: ({ state, text }: { state: 'error' | 'success' | 'info'; text: string }) => (
-      <Tag state={state}>{text}</Tag>
+      <Tag color={state}>{text}</Tag>
     ),
   };
 }

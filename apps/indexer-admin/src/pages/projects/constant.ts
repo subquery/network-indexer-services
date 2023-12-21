@@ -5,13 +5,13 @@ import { FormSubmit, ProjectsAction, ServiceStatus } from 'pages/project-details
 import { initialProjectValues, ProjectFormKey, ProjectFormSchema } from 'types/schemas';
 
 export const statusColor = {
-  [ServiceStatus.TERMINATED]: 'rgba(214, 48, 48, 0.3)',
-  [ServiceStatus.READY]: 'rgba(70, 219, 103, 0.4)',
+  [ServiceStatus.TERMINATED]: 'var(--sq-gray200)',
+  [ServiceStatus.READY]: 'rgba(101, 205, 69, 0.08)',
 };
 
 export const statusText = {
-  [ServiceStatus.TERMINATED]: 'NOT INDEXING',
-  [ServiceStatus.READY]: 'READY',
+  [ServiceStatus.TERMINATED]: 'Offline',
+  [ServiceStatus.READY]: 'Online',
 };
 
 export enum OnlineStatus {

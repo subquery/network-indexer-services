@@ -3,21 +3,25 @@
 
 import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Spinner, Tag, Typography } from '@subql/components';
+import { Spinner, SubqlProgress, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
-import { Progress } from 'antd';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
-import { Text } from 'components/primary';
-import StatusLabel from 'components/statusLabel';
+import UnsafeWarn from 'components/UnsafeWarn';
 import { useAccount } from 'containers/account';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
-import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
+import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
+import {
+  ProjectDetails,
+  ProjectType,
+  ServiceStatus,
+  TQueryMetadata,
+} from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
 
-import { OnlineStatus, statusColor, statusText } from '../constant';
+import { OnlineStatus, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
 
 type Props = Omit<ProjectDetails, 'metadata'> & {
@@ -34,6 +38,7 @@ const ProjectItem: FC<Props> = (props) => {
     deploymentId: id,
     indexer: account || '',
   });
+  const { isUnsafe } = useGetIfUnsafeDeployment(id);
   const progress = useMemo(() => {
     if (!metadata) return 0;
 
@@ -50,36 +55,47 @@ const ProjectItem: FC<Props> = (props) => {
 
   return (
     <ProjectItemContainer onClick={pushDetailPage}>
-      <ItemContainer pl={15} flex={6.5}>
-        <Avatar address={cidToBytes32(id)} size={70} />
+      <ItemContainer flex={13}>
+        <Avatar address={cidToBytes32(id)} size={50} />
         <ProfileContainer>
-          <Text fw="600" size={18}>
+          <Typography style={{ display: 'inline-flex', gap: 8 }}>
             {details.name}
-          </Text>
-          <Text size={13} mt={5}>
-            {id}
-          </Text>
+            {isUnsafe && <UnsafeWarn />}
+          </Typography>
+          <Typography
+            style={{ width: '100%', marginTop: 8, minWidth: 360 }}
+            type="secondary"
+            variant="small"
+          >
+            <span style={{ overflowWrap: 'anywhere' }}>{id}</span>
+          </Typography>
         </ProfileContainer>
       </ItemContainer>
-      <ItemContainer flex={8}>
-        <Progress percent={formatValueToFixed(progress * 100)} />
-      </ItemContainer>
+
       <ItemContainer flex={5}>
+        <Typography variant="small" type="secondary">
+          {projectType === ProjectType.SubQuery ? 'DATA INDEXER' : 'RPC ENDPOINT'}
+        </Typography>
+      </ItemContainer>
+      <ItemContainer flex={4}>
+        <SubqlProgress percent={formatValueToFixed(progress * 100)} />
+      </ItemContainer>
+      <ItemContainer flex={1} />
+      <ItemContainer flex={3}>
         <Tag
-          state={onlineStatus ? 'success' : 'error'}
+          color={onlineStatus ? 'success' : 'error'}
           style={{ height: '22px', lineHeight: '18px' }}
         >
           {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
         </Tag>
       </ItemContainer>
-      <ItemContainer flex={3}>
-        <Typography variant="medium">
-          {projectType === ProjectType.SubQuery ? 'SubQuery Project' : 'RPC Service'}
-        </Typography>
-      </ItemContainer>
+      <ItemContainer flex={1} />
+
       <ItemContainer flex={3}>
         {!isUndefined(status) ? (
-          <StatusLabel text={statusText[status]} color={statusColor[status]} />
+          <Tag color={status === ServiceStatus.READY ? 'success' : 'default'}>
+            {statusText[status]}
+          </Tag>
         ) : (
           <Spinner />
         )}

@@ -178,7 +178,7 @@ const ProjectDetailsPage = () => {
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
 
-    if (projectQuery.data?.project.projectConfig.serviceEndpoints.length) {
+    if (projectQuery.data?.project.projectConfig?.serviceEndpoints?.length) {
       if (projectQuery.data?.project.projectConfig.serviceEndpoints.every((i) => i.valid)) {
         return ProjectStatus.Ready;
       }
@@ -307,31 +307,11 @@ const ProjectDetailsPage = () => {
             <ProjectDetailsHeader
               id={id}
               project={project}
+              status={status}
               onRemoveProject={() => {
                 setActionType(ProjectAction.RemoveProject);
                 setVisible(true);
               }}
-            />
-            {project.projectType === ProjectType.SubQuery && (
-              <ProjectServiceCard
-                id={id}
-                actionItems={serviceActionItems}
-                data={metadata}
-                type={project.projectType}
-                projectStatus={projectStatus}
-              />
-            )}
-            {project.projectType === ProjectType.Rpc && (
-              <ProjectRpcServiceCard
-                project={project}
-                metadata={metadata}
-                projectStatus={projectStatus}
-              />
-            )}
-            <ProjectStatusView
-              percent={progress}
-              status={status}
-              metadata={metadata}
               announceReady={() => {
                 setActionType(ProjectAction.AnnounceReady);
                 setVisible(true);
@@ -341,6 +321,33 @@ const ProjectDetailsPage = () => {
                 setVisible(true);
               }}
             />
+            {project.projectType === ProjectType.SubQuery && (
+              <ProjectServiceCard
+                id={id}
+                actionItems={serviceActionItems}
+                data={metadata}
+                projectStatus={projectStatus}
+                update={() => {
+                  setActionType(ProjectAction.RestartProject);
+                  setVisible(true);
+                }}
+                stop={() => {
+                  setActionType(ProjectAction.StopProject);
+                  setVisible(true);
+                }}
+              />
+            )}
+            {project.projectType === ProjectType.Rpc && (
+              <ProjectRpcServiceCard
+                project={project}
+                metadata={metadata}
+                projectStatus={projectStatus}
+                refresh={() => {
+                  projectQuery.refetch();
+                }}
+              />
+            )}
+            <ProjectStatusView percent={progress} metadata={metadata} />
             <ProjectUptime />
             {projectDetails && (
               <ProjectTabbarView id={id} project={project} config={projectDetails} />

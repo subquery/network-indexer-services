@@ -13,7 +13,7 @@ const Container = styled.div`
   width: 100%;
   height: 100%;
   z-index: 1000;
-  background-color: #f6f9fc;
+  background-color: white;
   justify-content: center;
   align-items: flex-start;
 `;

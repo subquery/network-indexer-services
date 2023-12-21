@@ -4,31 +4,35 @@
 import React, { FC, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
-import { Steps, Typography } from '@subql/components';
+import { Spinner, Steps, Typography } from '@subql/components';
 import { cidToBytes32 } from '@subql/network-clients';
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, InputNumber } from 'antd';
 import { Rule } from 'antd/es/form';
 import debounce from 'debounce-promise';
 import { merge } from 'lodash';
+import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
 import { useProjectDetails } from 'hooks/projectHook';
 import { GET_RPC_ENDPOINT_KEYS, START_PROJECT, VALID_RPC_ENDPOINT } from 'utils/queries';
 
 interface IProps {
-  onSubmit: () => void;
-  onCancel: () => void;
+  onSubmit?: () => void;
+  onCancel?: () => void;
+  id?: string;
 }
 
 const RpcSetting: FC<IProps> = (props) => {
-  const { onCancel, onSubmit } = props;
+  const { onCancel, onSubmit, id: propsId } = props;
+
   const { id } = useParams() as { id: string };
-  const projectQuery = useProjectDetails(id);
+  const mineId = useMemo(() => propsId || id, [propsId, id]);
+  const projectQuery = useProjectDetails(mineId);
   const [form] = Form.useForm();
 
   const keys = useQuery<{ getRpcEndpointKeys: string[] }>(GET_RPC_ENDPOINT_KEYS, {
     variables: {
-      projectId: id,
+      projectId: mineId,
     },
   });
 
@@ -44,7 +48,7 @@ const RpcSetting: FC<IProps> = (props) => {
       if (!value) return Promise.reject(new Error('Please input http endpoint'));
       const res = await validate({
         variables: {
-          projectId: id,
+          projectId: mineId,
           endpoint: value,
           // not sure if it's a development field or not.
           // when print it, the rule actrully is { field, fullField, type }
@@ -65,10 +69,10 @@ const RpcSetting: FC<IProps> = (props) => {
       }
 
       return Promise.reject(new Error('xxxx'));
-    }, 3000);
-  }, [validate, id]);
+    }, 1000);
+  }, [validate, mineId]);
 
-  if (!projectQuery.data) return null;
+  if (!projectQuery.data) return <Spinner />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -97,7 +101,10 @@ const RpcSetting: FC<IProps> = (props) => {
           gap: 12,
         }}
       >
-        <Avatar address={projectQuery.data?.project.details.image || cidToBytes32(id)} size={40} />
+        <Avatar
+          address={projectQuery.data?.project.details.image || cidToBytes32(mineId)}
+          size={40}
+        />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography>{projectQuery.data?.project.details.name}</Typography>
           <Typography variant="small" type="secondary">
@@ -113,7 +120,9 @@ const RpcSetting: FC<IProps> = (props) => {
           layout="vertical"
           form={form}
           initialValues={merge(
-            {},
+            {
+              rateLimit: projectQuery.data.project.rateLimit,
+            },
             ...projectQuery.data.project.projectConfig.serviceEndpoints.map((val) => {
               return {
                 [`${val.key}Endpoint`]: val.value,
@@ -140,6 +149,16 @@ const RpcSetting: FC<IProps> = (props) => {
               </Form.Item>
             );
           })}
+          <HorizeFormItem>
+            <Form.Item
+              label="Rate Limit"
+              tooltip="This feature allows you to manage and set rate limits for your agreement service and Flex Plan, helping you optimize service stability and performance"
+              name="rateLimit"
+            >
+              <InputNumber />
+            </Form.Item>
+            <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
+          </HorizeFormItem>
         </Form>
       </div>
       <div style={{ flex: 1 }} />
@@ -148,7 +167,7 @@ const RpcSetting: FC<IProps> = (props) => {
         <Button
           shape="round"
           onClick={() => {
-            onCancel();
+            onCancel?.();
           }}
         >
           Back
@@ -158,7 +177,7 @@ const RpcSetting: FC<IProps> = (props) => {
           type="primary"
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
           onClick={async () => {
-            await form.validateFields();
+            // await form.validateFields();
             const serviceEndpoints = keys.data?.getRpcEndpointKeys.map((key) => {
               return {
                 key,
@@ -167,6 +186,7 @@ const RpcSetting: FC<IProps> = (props) => {
             });
             await startProjectRequest({
               variables: {
+                rateLimit: form.getFieldValue('rateLimit'),
                 poiEnabled: false,
                 queryVersion: '',
                 nodeVersion: '',
@@ -178,12 +198,12 @@ const RpcSetting: FC<IProps> = (props) => {
                 cache: 1,
                 cpu: 1,
                 memory: 1,
-                id,
+                id: mineId,
                 projectType: projectQuery.data?.project.projectType,
                 serviceEndpoints,
               },
             });
-            onSubmit();
+            onSubmit?.();
           }}
         >
           Update
@@ -192,4 +212,22 @@ const RpcSetting: FC<IProps> = (props) => {
     </div>
   );
 };
+
+export const HorizeFormItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  .ant-row {
+    flex-direction: row;
+    align-items: center;
+    .ant-col {
+      width: auto;
+    }
+
+    .ant-form-item-label {
+      padding: 0;
+    }
+  }
+`;
+
 export default RpcSetting;

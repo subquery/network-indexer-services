@@ -20,7 +20,7 @@ export const STABLE_COIN_ADDRESS =
     ? '0x7E65A71046170A5b1AaB5C5cC64242EDF95CaBEA'
     : '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
-export const defaultChainId = parseInt(networks[SUPPORTED_NETWORK].chainId, 16);
+export const defaultChainId = parseInt(networks[SUPPORTED_NETWORK].child.chainId, 16);
 
 const injectedConntector = new InjectedConnector({
   supportedChainIds: [defaultChainId],

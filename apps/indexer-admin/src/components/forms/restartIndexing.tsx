@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { NOTIFICATION_TYPE } from 'react-notifications-component';
 import { useParams } from 'react-router-dom';
 import {
@@ -13,7 +13,19 @@ import {
 import { useMutation } from '@apollo/client';
 import { Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
-import { Button, Col, Collapse, Form, Input, Row, Select, Slider, Switch, Tooltip } from 'antd';
+import {
+  Button,
+  Col,
+  Collapse,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Slider,
+  Switch,
+  Tooltip,
+} from 'antd';
 import Link from 'antd/es/typography/Link';
 import { cloneDeep } from 'lodash';
 import styled from 'styled-components';
@@ -22,6 +34,7 @@ import { LoadingSpinner } from 'components/loading';
 import { ButtonContainer } from 'components/primary';
 import { useNotification } from 'containers/notificationContext';
 import { useNodeVersions, useProjectDetails, useQueryVersions } from 'hooks/projectHook';
+import { HorizeFormItem } from 'pages/project-details/components/rpcSetting';
 import { defaultAdvancedConfig, ProjectFormKey, StartIndexingSchema } from 'types/schemas';
 import { START_PROJECT } from 'utils/queries';
 
@@ -117,19 +130,22 @@ const NetworkEndpointsTooltip = () => (
 );
 
 type Props = {
-  setVisible: Dispatch<SetStateAction<boolean>>;
+  setVisible?: Dispatch<SetStateAction<boolean>>;
+  id?: string;
 };
 
-export const IndexingForm: FC<Props> = ({ setVisible }) => {
+export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
   const [form] = Form.useForm();
   const [showInput, setShowInput] = useState(false);
   const { dispatchNotification } = useNotification();
   const { id } = useParams() as { id: string };
 
-  const projectQuery = useProjectDetails(id);
+  const mineId = useMemo(() => propsId || id, [propsId, id]);
 
-  const nodeVersions = useNodeVersions(id);
-  const queryVersions = useQueryVersions(id);
+  const projectQuery = useProjectDetails(mineId);
+
+  const nodeVersions = useNodeVersions(mineId);
+  const queryVersions = useQueryVersions(mineId);
   const [startProjectRequest] = useMutation(START_PROJECT);
 
   const onSwitchChange = () => {
@@ -137,8 +153,8 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
     form.setFieldValue(ProjectFormKey.networkDictionary, '');
   };
 
-  const handleSubmit = (setVisible: Dispatch<SetStateAction<boolean>>) => async (values: any) => {
-    setVisible(false);
+  const handleSubmit = (setVisible?: Dispatch<SetStateAction<boolean>>) => async (values: any) => {
+    setVisible?.(false);
     dispatchNotification({
       type: 'default' as NOTIFICATION_TYPE,
       title: 'Indexing Request',
@@ -162,12 +178,11 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
           timeout,
           workers: values.worker,
           networkDictionary: values.networkDictionary ?? '',
-          id,
+          id: mineId,
           projectType: projectQuery.data?.project.projectType,
           serviceEndpoints: [],
         },
       });
-      form.resetFields();
 
       dispatchNotification({
         type: 'success' as NOTIFICATION_TYPE,
@@ -211,7 +226,7 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
             name="form"
             layout="vertical"
             onFinish={handleSubmit(setVisible)}
-            initialValues={{ ...projectConfig, networkEndpoints }}
+            initialValues={{ ...projectConfig, networkEndpoints, rateLimit: project.rateLimit }}
           >
             <Typography variant="medium" style={{ marginBottom: 24 }}>
               <InfoCircleOutlined
@@ -270,7 +285,16 @@ export const IndexingForm: FC<Props> = ({ setVisible }) => {
                 </>
               )}
             </Form.List>
-
+            <HorizeFormItem>
+              <Form.Item
+                label="Rate Limit"
+                tooltip="This feature allows you to manage and set rate limits for your agreement service and Flex Plan, helping you optimize service stability and performance"
+                name="rateLimit"
+              >
+                <InputNumber />
+              </Form.Item>
+              <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
+            </HorizeFormItem>
             <HorizonReverse>
               <Form.Item label="Override Dictionary" valuePropName="checked">
                 <Switch onChange={onSwitchChange} checked={showInput} />

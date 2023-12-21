@@ -64,8 +64,6 @@ const Header = () => {
   const controller = useController(account);
   const { tokenBalance } = useTokenBalance(account, pathname);
 
-  const dropdownStyle = { border: 'unset !important', padding: 15, width: 100 };
-
   const createItem = (key: string, label: string) => ({ key, label });
 
   const onSelected = (key: string) => {

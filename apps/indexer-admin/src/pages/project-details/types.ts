@@ -151,6 +151,7 @@ export type ProjectDetails = {
   nodeEndpoint: string;
   queryEndpoint: string;
   chainType: string;
+  rateLimit: number;
   details: {
     name: string;
     owner: string;
