@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { IPFSClient } from '@subql/network-clients';
+import { IPFSClient, IPFS_URLS } from '@subql/network-clients';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import { Project, ProjectAdvancedConfig, ProjectBaseConfig } from '../project/project.model';
@@ -37,7 +37,7 @@ export type PartialIpfsDeploymentManifest = {
 
 export type ChainType = 'near' | 'flare' | 'cosmos' | 'algorand' | 'substrate' | 'ethereum';
 
-export const IPFS_URL = argv['ipfs'] ?? 'https://authipfs.subquery.network/ipfs/api/v0';
+export const IPFS_URL = argv['ipfs'] ?? IPFS_URLS.metadata;
 const clientSDK = new IPFSClient(IPFS_URL);
 
 export function projectConfigChanged(
