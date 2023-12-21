@@ -10,59 +10,59 @@ import { argv } from '../yargs';
 
 @ObjectType('NodeClass')
 class NodeClass {
-  @Field()
+  @Field({ nullable: true })
   name: string;
-  @Field()
+  @Field({ nullable: true })
   version: string;
 }
 
 @ObjectType('QueryClass')
 class QueryClass {
-  @Field()
+  @Field({ nullable: true })
   name: string;
-  @Field()
+  @Field({ nullable: true })
   version: string;
 }
 
 // manifest types
 @ObjectType('Runner')
 class Runner {
-  @Field(() => NodeClass)
+  @Field(() => NodeClass, { nullable: true })
   node?: NodeClass;
-  @Field(() => QueryClass)
+  @Field(() => QueryClass, { nullable: true })
   query?: QueryClass;
 }
 
 @ObjectType('DataSources')
 class DataSources {
-  @Field()
+  @Field({ nullable: true })
   kind: string;
 }
 
 @ObjectType('SchemaClass')
 class SchemaClass {
-  @Field()
+  @Field({ nullable: true })
   file: string;
 }
 
 @ObjectType('NetworkClass')
 class NetworkClass {
-  @Field()
+  @Field({ nullable: true })
   chainId: string;
 }
 
 @ObjectType('PartialIpfsDeploymentManifest')
 export class PartialIpfsDeploymentManifest {
-  @Field(() => [DataSources])
+  @Field(() => [DataSources], { nullable: true })
   dataSources: DataSources[];
-  @Field(() => SchemaClass)
+  @Field(() => SchemaClass, { nullable: true })
   schema: SchemaClass;
-  @Field(() => NetworkClass)
+  @Field(() => NetworkClass, { nullable: true })
   network: NetworkClass;
-  @Field()
+  @Field({ nullable: true })
   specVersion: string;
-  @Field()
-  runner?: Runner;
+  @Field({ nullable: true })
+  runner: Runner;
 }
 
 export type ChainType =

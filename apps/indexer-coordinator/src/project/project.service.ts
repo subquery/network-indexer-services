@@ -250,7 +250,10 @@ export class ProjectService {
     if (!project) {
       project = await this.addProject(id);
     }
-    project.rateLimit = rateLimit;
+    if (project.rateLimit !== rateLimit) {
+      project.rateLimit = rateLimit;
+      await this.projectRepo.save(project);
+    }
 
     this.setDefaultConfigValue(projectConfig);
 
