@@ -26,6 +26,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -42,7 +43,7 @@ use crate::account::get_indexer;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{MetricsNetwork, MetricsQuery};
+use crate::metrics::{MetricsNetwork, MetricsQuery, get_owner_metrics};
 use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
 use crate::project::{
     get_project, project_metadata, project_poi, project_query_raw, project_status,
@@ -78,6 +79,7 @@ pub async fn start_server(host: &str, port: u16) {
         .route("/payg-state/:channel", get(payg_state))
         // `Get /metadata/Qm...955X` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
+        .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
         // `Get /poi/Qm...955X/123` goes to query the poi
@@ -318,6 +320,25 @@ async fn poi_latest_handler(Path(deployment): Path<String>) -> Result<Json<Value
 async fn healthy_handler() -> Result<Json<Value>, Error> {
     let indexer = get_indexer().await;
     Ok(Json(json!({ "indexer": indexer })))
+}
+
+async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
+    if token == COMMAND.metrics_token {
+        let body = get_owner_metrics().await;
+
+        build_response(
+            body,
+            vec![(
+                "Content-Type",
+                "application/openmetrics-text; version=1.0.0; charset=utf-8",
+            )],
+        )
+    } else {
+        Response::builder()
+            .status(StatusCode::FORBIDDEN)
+            .body("".to_owned())
+            .unwrap()
+    }
 }
 
 async fn status_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {

@@ -25,6 +25,11 @@ use std::time::Instant;
 use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{System, SystemExt};
 use tokio::sync::Mutex;
+use prometheus_client::{
+    encoding::{text::encode, EncodeLabelSet},
+    metrics::{counter::Counter, family::Family},
+    registry::Registry,
+};
 
 use crate::cli::COMMAND;
 use crate::primitives::METRICS_LOOP_TIME;
@@ -78,6 +83,22 @@ static CURRENT_HOUR: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()
 static OWNER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+
+static OWNER_SUCCESS: Lazy<Mutex<Family<Labels, Counter>>> =
+    Lazy::new(|| Mutex::new(Family::default()));
+static OWNER_FAILURE: Lazy<Mutex<Family<Labels, Counter>>> =
+    Lazy::new(|| Mutex::new(Family::default()));
+static OWNER_TIME: Lazy<Mutex<Family<Labels, Counter>>> =
+    Lazy::new(|| Mutex::new(Family::default()));
+const FIELD_NAME_SUCCESS: &str = "query_success";
+const FIELD_NAME_FAILURE: &str = "query_failure";
+const FIELD_NAME_TIME: &str = "query_time";
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+struct Labels {
+    pub deployment: String,
+}
+
 pub fn listen() {
     tokio::spawn(async {
         loop {
@@ -129,6 +150,10 @@ pub async fn update_metrics_projects(new_deployments: Vec<String>) {
     let mut timer = TIMER_COUNTER.lock().await;
     let mut owner = OWNER_COUNTER.lock().await;
 
+    let os_lock = OWNER_SUCCESS.lock().await;
+    let of_lock = OWNER_FAILURE.lock().await;
+    let ot_lock = OWNER_TIME.lock().await;
+
     for deployment in timer.keys() {
         old_deployments.push(deployment.clone());
     }
@@ -139,6 +164,13 @@ pub async fn update_metrics_projects(new_deployments: Vec<String>) {
         } else {
             timer.remove(o);
             owner.remove(o);
+
+            let label = Labels {
+                deployment: o.clone(),
+            };
+            os_lock.remove(&label);
+            of_lock.remove(&label);
+            ot_lock.remove(&label);
         }
     }
     for n in new_deployments {
@@ -147,11 +179,20 @@ pub async fn update_metrics_projects(new_deployments: Vec<String>) {
         } else {
             timer.insert(n.clone(), QueryCounter::default());
             owner.insert(n.clone(), QueryCounter::default());
+
+            let label = Labels { deployment: n };
+            let _ = os_lock.get_or_create(&label);
+            let _ = of_lock.get_or_create(&label);
+            let _ = ot_lock.get_or_create(&label);
         }
     }
 
     drop(timer);
     drop(owner);
+
+    drop(os_lock);
+    drop(of_lock);
+    drop(ot_lock);
 }
 
 pub async fn get_services_version() -> u64 {
@@ -246,6 +287,8 @@ pub fn add_metrics_query(
             (MetricsQuery::PAYG, MetricsNetwork::P2P)            => (0, 0, 0, 0, 0, 1),
         };
 
+        let label = Labels { deployment: deployment.clone() };
+
         // report not handle failure query
         let mut counter = TIMER_COUNTER.lock().await;
         counter
@@ -316,6 +359,10 @@ pub fn add_metrics_query(
                     payg_http: p0,
                     payg_p2p: p1,
                 });
+
+            let family = OWNER_SUCCESS.lock().await;
+            family.get_or_create(&label).inc();
+            drop(family);
         } else {
             owner
                 .entry(deployment.clone())
@@ -323,8 +370,36 @@ pub fn add_metrics_query(
                     f.failure += 1;
                 })
                 .or_insert(QueryCounter::default_failure());
+
+            let family = OWNER_FAILURE.lock().await;
+            family.get_or_create(&label).inc();
+            drop(family);
         }
 
         drop(owner);
+
+        let family = OWNER_TIME.lock().await;
+        family.get_or_create(&label).inc_by(time);
+        drop(family);
     });
+}
+
+pub async fn get_owner_metrics() -> String {
+    let mut registry = Registry::default();
+
+    let family = OWNER_SUCCESS.lock().await;
+    registry.register(FIELD_NAME_SUCCESS, "Count of success", (*family).clone());
+    drop(family);
+
+    let family = OWNER_FAILURE.lock().await;
+    registry.register(FIELD_NAME_FAILURE, "Count of failure", (*family).clone());
+    drop(family);
+
+    let family = OWNER_TIME.lock().await;
+    registry.register(FIELD_NAME_TIME, "Time of requests", (*family).clone());
+    drop(family);
+
+    let mut body = String::new();
+    let _ = encode(&mut body, &registry);
+    body
 }
