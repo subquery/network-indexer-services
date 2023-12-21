@@ -146,6 +146,7 @@ export class ProjectRpcService {
     project.serviceEndpoints = projectConfig.serviceEndpoints.filter((endpoint) => {
       return endpointKeys.includes(endpoint.key);
     });
+    projectConfig.serviceEndpoints = project.serviceEndpoints;
 
     return this.projectRepo.save(project);
   }
