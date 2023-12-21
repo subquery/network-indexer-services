@@ -10,7 +10,7 @@ export function balanceSufficient(balance: string): boolean {
 }
 
 export function openAccountExporer(account: string) {
-  const { blockExplorerUrls } = networks[SUPPORTED_NETWORK];
+  const { blockExplorerUrls } = networks[SUPPORTED_NETWORK].child;
   const blockExplorerUrl = blockExplorerUrls[0];
   const url = blockExplorerUrl.endsWith('/')
     ? `${blockExplorerUrl}address/${account}`
