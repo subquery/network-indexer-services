@@ -43,7 +43,7 @@ use crate::account::get_indexer;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{MetricsNetwork, MetricsQuery, get_owner_metrics};
+use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
 use crate::project::{
     get_project, project_metadata, project_poi, project_query_raw, project_status,

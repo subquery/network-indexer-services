@@ -18,6 +18,11 @@
 
 use chrono::prelude::*;
 use once_cell::sync::Lazy;
+use prometheus_client::{
+    encoding::{text::encode, EncodeLabelSet},
+    metrics::{counter::Counter, family::Family},
+    registry::Registry,
+};
 use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -25,11 +30,6 @@ use std::time::Instant;
 use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{System, SystemExt};
 use tokio::sync::Mutex;
-use prometheus_client::{
-    encoding::{text::encode, EncodeLabelSet},
-    metrics::{counter::Counter, family::Family},
-    registry::Registry,
-};
 
 use crate::cli::COMMAND;
 use crate::primitives::METRICS_LOOP_TIME;
@@ -82,7 +82,6 @@ static CURRENT_HOUR: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()
 /// project => (query_count_http, query_count_p2p, query_time)
 static OWNER_COUNTER: Lazy<Mutex<HashMap<String, QueryCounter>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
-
 
 static OWNER_SUCCESS: Lazy<Mutex<Family<Labels, Counter>>> =
     Lazy::new(|| Mutex::new(Family::default()));
@@ -287,7 +286,9 @@ pub fn add_metrics_query(
             (MetricsQuery::PAYG, MetricsNetwork::P2P)            => (0, 0, 0, 0, 0, 1),
         };
 
-        let label = Labels { deployment: deployment.clone() };
+        let label = Labels {
+            deployment: deployment.clone(),
+        };
 
         // report not handle failure query
         let mut counter = TIMER_COUNTER.lock().await;
