@@ -3,11 +3,21 @@
 
 import { FC, useEffect } from 'react';
 import { GithubOutlined, GlobalOutlined } from '@ant-design/icons';
-import { useLazyQuery } from '@apollo/client';
+import { useLazyQuery, useQuery } from '@apollo/client';
 import { Markdown, SubqlCard, Typography } from '@subql/components';
+import { TOKEN_SYMBOLS } from '@subql/network-config';
+import { formatSQT } from '@subql/react-hooks';
+import { Tooltip } from 'antd';
 import styled from 'styled-components';
 
-import { GET_MANIFEST, ManiFest } from 'utils/queries';
+import {
+  GET_MANIFEST,
+  GET_PROJECT_REWARDS_DETAILS,
+  GetProjectRewardsDetails,
+  ManiFest,
+} from 'utils/queries';
+import { formatNumber } from 'utils/units';
+import { SUPPORTED_NETWORK } from 'utils/web3';
 
 import { ProjectDetails, ProjectType } from '../types';
 
@@ -16,9 +26,59 @@ type Props = {
   project: ProjectDetails;
 };
 
+export const BalanceLayout = ({
+  mainBalance,
+  secondaryBalance,
+  secondaryTooltip = 'Estimated for next Era',
+  token = TOKEN_SYMBOLS[SUPPORTED_NETWORK],
+}: {
+  mainBalance: number | string;
+  secondaryBalance?: number | string;
+  secondaryTooltip?: React.ReactNode;
+  token?: string;
+}) => {
+  const secondaryRender = () => {
+    if (!secondaryBalance)
+      return (
+        <Typography variant="small" type="secondary" style={{ visibility: 'hidden' }}>
+          bigo
+        </Typography>
+      );
+    return secondaryTooltip ? (
+      <Tooltip title={secondaryTooltip} placement="topLeft">
+        <Typography variant="small" type="secondary">
+          {formatNumber(secondaryBalance)} {token}
+        </Typography>
+      </Tooltip>
+    ) : (
+      <Typography variant="small" type="secondary">
+        {formatNumber(secondaryBalance)} {token}
+      </Typography>
+    );
+  };
+
+  return (
+    <div className="col-flex">
+      <div style={{ display: 'flex', alignItems: 'baseline', fontSize: 16 }}>
+        <Typography
+          variant="h5"
+          weight={500}
+          style={{ color: 'var(--sq-blue600)', marginRight: 8 }}
+        >
+          {formatNumber(mainBalance)}
+        </Typography>
+        {token}
+      </div>
+      {secondaryRender()}
+    </div>
+  );
+};
+
 const ProjectDetailsView: FC<Props> = ({ project }) => {
   const { description, websiteUrl, codeUrl } = project.details;
   const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
+
+  const projectRewardsDetails = useQuery<GetProjectRewardsDetails>(GET_PROJECT_REWARDS_DETAILS);
 
   useEffect(() => {
     if (project.projectType === ProjectType.Rpc) {
@@ -101,8 +161,24 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
         )}
       </Left>
       <Right>
-        <SubqlCard title="Totoal Rewards">
-          <div>123</div>
+        <SubqlCard
+          title="Totoal Rewards"
+          titleExtra={BalanceLayout({
+            mainBalance: formatSQT(
+              projectRewardsDetails.data?.queryProjectDetailsFromNetwork.totalReward || '0'
+            ),
+          })}
+        >
+          <div>
+            <div className="flex" style={{ justifyContent: 'space-between' }}>
+              <Typography variant="small" type="secondary">
+                {project.projectType === ProjectType.Rpc ? 'Total RPC Providers' : 'Total Indexers'}
+              </Typography>
+              <Typography variant="small">
+                {projectRewardsDetails.data?.queryProjectDetailsFromNetwork.indexerCount || 0}
+              </Typography>
+            </div>
+          </div>
         </SubqlCard>
       </Right>
     </Container>

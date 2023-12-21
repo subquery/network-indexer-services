@@ -454,6 +454,22 @@ export const GET_PROJECTS_METADATA = gql`
   }
 `;
 
+export interface GetProjectRewardsDetails {
+  queryProjectDetailsFromNetwork: {
+    totalReward: string;
+    indexerCount: number;
+  };
+}
+
+export const GET_PROJECT_REWARDS_DETAILS = gql`
+  query getProjectRewardsDetails($id: String!) {
+    queryProjectDetailsFromNetwork(id: $id) {
+      totalReward
+      indexerCount
+    }
+  }
+`;
+
 // excellency gql
 
 export interface IGetIndexerStatus {
