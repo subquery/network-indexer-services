@@ -111,6 +111,10 @@ pub fn listen() {
             let hour = current_hour.to_string();
             drop(current_hour);
 
+            if hour.is_empty() {
+                continue;
+            }
+
             let mut data: HashMap<String, HashMap<String, QueryCounter>> = HashMap::new();
             data.insert(hour, current);
 
