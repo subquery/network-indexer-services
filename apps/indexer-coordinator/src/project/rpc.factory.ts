@@ -159,6 +159,9 @@ export class RpcFamilyEvm extends RpcFamily {
 
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily {
     this.actions.push(async () => {
+      if (!clientName && !clientVersion) {
+        return;
+      }
       const result = await jsonRpcRequest(this.endpoint, 'web3_clientVersion', []);
       if (result.data.error) {
         throw new Error(`Request web3_clientVersion failed: ${result.data.error.message}`);
@@ -166,10 +169,13 @@ export class RpcFamilyEvm extends RpcFamily {
       const resultSet = result.data.result.split('/');
       const clientNameFromRpc = resultSet[0];
       const clientVersionFromRpc = resultSet[1];
-      if (!_.eq(_.toLower(clientNameFromRpc), _.toLower(clientName))) {
+      if (!!clientName && !_.eq(_.toLower(clientNameFromRpc), _.toLower(clientName))) {
         throw new Error(`ClientName mismatch: ${clientNameFromRpc} != ${clientName}`);
       }
-      if (!semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)) {
+      if (
+        !!clientVersion &&
+        !semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)
+      ) {
         throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
       }
     });
