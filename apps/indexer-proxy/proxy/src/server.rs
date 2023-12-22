@@ -342,12 +342,6 @@ async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
     }
 }
 
-async fn status_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
-    project_status(&deployment, MetricsNetwork::HTTP)
-        .await
-        .map(Json)
-}
-
 fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> {
     let mut res = Response::builder();
     for (key, value) in headers {
