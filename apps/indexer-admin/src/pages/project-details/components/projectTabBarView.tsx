@@ -1,13 +1,17 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC, useCallback, useState } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { BsBookmarkDash } from 'react-icons/bs';
+import { PiFileCloudLight } from 'react-icons/pi';
 import { AppstoreOutlined, LineChartOutlined } from '@ant-design/icons';
 import { SubqlTabs } from '@subql/components';
 
+import { projectId } from 'utils/project';
+
+import ProjectLogView from '../../../components/logView';
 import { ProjectPAYG } from '../payg/projectPayg';
-import { ProjectDetails, ProjectServiceMetadata } from '../types';
+import { ProjectDetails, ProjectServiceMetadata, ProjectType } from '../types';
 import ProjectDetailsView from './projectDetailsView';
 import ProjectInsights from './projectInsights';
 
@@ -15,6 +19,7 @@ enum TabbarItem {
   ProjectDetails = 'projectDetail',
   PAYG = 'payg',
   ProjectInsights = 'insight',
+  ServiceLogs = 'serviceLogs',
 }
 
 type Props = {
@@ -28,8 +33,19 @@ const tabItems = [
     key: TabbarItem.ProjectDetails,
     label: (
       <>
-        <AppstoreOutlined style={{ transform: 'rotate(45deg) translateX(2px)', fontSize: 16 }} />
+        <AppstoreOutlined
+          style={{ transform: 'rotate(45deg) translateX(2px)', fontSize: 16, marginRight: 8 }}
+        />
         Project Details
+      </>
+    ),
+  },
+  {
+    key: TabbarItem.ServiceLogs,
+    label: (
+      <>
+        <PiFileCloudLight style={{ marginRight: 8 }} />
+        Service Logs
       </>
     ),
   },
@@ -37,7 +53,7 @@ const tabItems = [
     key: TabbarItem.PAYG,
     label: (
       <>
-        <BsBookmarkDash style={{ marginRight: 12 }} />
+        <BsBookmarkDash style={{ marginRight: 8 }} />
         Flex Plan
       </>
     ),
@@ -46,7 +62,7 @@ const tabItems = [
     key: TabbarItem.ProjectInsights,
     label: (
       <>
-        <LineChartOutlined />
+        <LineChartOutlined style={{ marginRight: 8 }} />
         Project Insight
       </>
     ),
@@ -65,6 +81,8 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
     switch (value) {
       case TabbarItem.ProjectDetails:
         return <ProjectDetailsView id={id} project={project} />;
+      case TabbarItem.ServiceLogs:
+        return <ProjectLogView container={`node_${projectId(id)}`} height={650} />;
       case TabbarItem.PAYG:
         return <ProjectPAYG id={id} config={config} />;
       case TabbarItem.ProjectInsights:
@@ -74,9 +92,19 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
     }
   }, [config, id, project, value]);
 
+  const renderTabs = useMemo(() => {
+    if (project.projectType === ProjectType.Rpc) {
+      return tabItems.filter((i) => i.key !== TabbarItem.ServiceLogs);
+    }
+    return tabItems;
+  }, [project.projectType]);
+
   return (
     <div style={{ marginTop: 30 }}>
-      <SubqlTabs items={tabItems} onChange={(activeKey) => handleChange(activeKey as TabbarItem)} />
+      <SubqlTabs
+        items={renderTabs}
+        onChange={(activeKey) => handleChange(activeKey as TabbarItem)}
+      />
       {renderContent()}
     </div>
   );
