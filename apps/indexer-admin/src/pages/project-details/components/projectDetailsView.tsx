@@ -93,31 +93,41 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
   return (
     <Container>
       <Left>
-        <Markdown.Preview>{description}</Markdown.Preview>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: 'var(--sq-blue600)',
-              gap: 8,
-            }}
-          >
-            <GlobalOutlined />
-            <Typography variant="medium">{websiteUrl}</Typography>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: 'var(--sq-blue600)',
-              gap: 8,
-            }}
-          >
-            <GithubOutlined />
-            <Typography variant="medium">{codeUrl}</Typography>
-          </div>
+          {websiteUrl && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: 'var(--sq-blue600)',
+                gap: 8,
+              }}
+            >
+              <GlobalOutlined />
+              <Typography variant="medium">{websiteUrl}</Typography>
+            </div>
+          )}
+          {codeUrl && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: 'var(--sq-blue600)',
+                gap: 8,
+              }}
+            >
+              <GithubOutlined />
+              <Typography variant="medium">{codeUrl}</Typography>
+            </div>
+          )}
         </div>
+        <div
+          style={{ background: 'var(--sq-gray300)', height: 1, width: '100%', margin: '16px 0' }}
+        />
+        <Typography weight={600} variant="medium">
+          Deployment Details
+        </Typography>
+        <Markdown.Preview>{description}</Markdown.Preview>
 
         {project.projectType === ProjectType.Rpc && (
           <>
