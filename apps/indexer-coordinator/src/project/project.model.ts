@@ -19,6 +19,8 @@ export class ProjectInfo {
   @Field({ nullable: true })
   image: string;
   @Field({ nullable: true })
+  projectDescription: string;
+  @Field({ nullable: true })
   description: string;
   @Field({ nullable: true })
   websiteUrl: string;
