@@ -18,6 +18,7 @@ const ProjectFields = `
     owner
     image
     description
+    projectDescription
     websiteUrl
     codeUrl
     version
