@@ -51,3 +51,27 @@ export function timeoutPromiseCatched(ms: number, defaultValue: any) {
     };
   };
 }
+
+export function timeoutPromiseHO(ms: number) {
+  return function (functionPromise: Promise<any>) {
+    return Promise.race([
+      functionPromise,
+      new Promise((resolve, reject) => setTimeout(() => reject(new Error(`timeout: ${ms}ms`)), ms)),
+    ]);
+  };
+}
+
+export function timeoutPromiseCatchedHO(ms: number, defaultValue: any) {
+  return function (functionPromise: Promise<any>) {
+    try {
+      return Promise.race([
+        functionPromise,
+        new Promise((resolve, reject) =>
+          setTimeout(() => reject(new Error(`timeout: ${ms}ms`)), ms)
+        ),
+      ]);
+    } catch (e) {
+      return defaultValue;
+    }
+  };
+}
