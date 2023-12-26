@@ -458,6 +458,8 @@ export interface GetProjectRewardsDetails {
   queryProjectDetailsFromNetwork: {
     totalReward: string;
     indexerCount: number;
+    totalAgreement: number;
+    totalOffer: number;
   };
 }
 
@@ -466,6 +468,8 @@ export const GET_PROJECT_REWARDS_DETAILS = gql`
     queryProjectDetailsFromNetwork(id: $id) {
       totalReward
       indexerCount
+      totalAgreement
+      totalOffer
     }
   }
 `;
