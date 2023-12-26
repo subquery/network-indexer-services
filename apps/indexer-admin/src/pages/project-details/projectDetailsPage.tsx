@@ -324,6 +324,7 @@ const ProjectDetailsPage = () => {
             {project.projectType === ProjectType.SubQuery && (
               <ProjectServiceCard
                 id={id}
+                project={project}
                 actionItems={serviceActionItems}
                 data={metadata}
                 projectStatus={projectStatus}

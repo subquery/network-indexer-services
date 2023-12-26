@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
+import { Typography } from '@subql/components';
 import styled from 'styled-components';
 
 import IntroductionView from 'components/introductionView';
@@ -22,9 +23,9 @@ type Props = {
 };
 
 const ExplorerLink = () => (
-  <a target="_blank" href={SUPPORTED_NETWORK_PROJECTS_EXPLORER} rel="noreferrer">
-    SubQuery Explorer
-  </a>
+  <Typography.Link href={SUPPORTED_NETWORK_PROJECTS_EXPLORER} rel="noreferrer" active>
+    here.
+  </Typography.Link>
 );
 
 const EmptyView: FC<Props> = ({ onClick }) => {
@@ -33,7 +34,7 @@ const EmptyView: FC<Props> = ({ onClick }) => {
       <IntroductionView
         item={{
           title: 'Start to index a Subquery project',
-          desc: 'To begin exploring query projects, go to the Subquery Explorer. Select the project that interests you and copy its deployment ID from the page. Next, click the "Add Project" button and paste in the deployment ID. This will add the project to your coordinator service, allowing you to manage it in the indexer app. ',
+          desc: 'To begin exploring query projects, go to the Subquery Explorer. Select the project that interests you and copy its deployment ID from the page. Next, click the "Add Project" button and paste in the deployment ID. This will add the project to your coordinator service, allowing you to manage it in the indexer app. Learn more about the indexer',
           buttonTitle: 'Add Project',
         }}
         onClick={() => {

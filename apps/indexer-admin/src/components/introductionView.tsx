@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
+import { Typography } from '@subql/components';
+import { Button } from 'antd';
 import styled from 'styled-components';
-
-import { Button, Text } from 'components/primary';
 
 export const Container = styled.div`
   display: flex;
@@ -42,23 +42,30 @@ const IntroductionView: FC<Props> = ({ item, onClick, loading, link }) => {
   return (
     <Container>
       <TextContainer>
-        <Text alignCenter size={35} fw="bold">
+        <Typography
+          variant="h4"
+          style={{ fontFamily: 'var(--sq-font-family-header)' }}
+          weight={500}
+        >
           {title}
-        </Text>
-        <Text alignCenter mt={35}>
+        </Typography>
+        <Typography type="secondary" style={{ textAlign: 'center', marginTop: 16 }}>
           {desc}
           {link}
-        </Text>
+        </Typography>
       </TextContainer>
       <Button
-        mt={80}
+        shape="round"
         type="primary"
-        title={buttonTitle}
         loading={loading}
         onClick={() => {
           onClick();
         }}
-      />
+        size="large"
+        style={{ marginTop: 32 }}
+      >
+        {buttonTitle}
+      </Button>
     </Container>
   );
 };

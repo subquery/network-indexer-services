@@ -157,6 +157,7 @@ export type ProjectDetails = {
     owner: string;
     image: string;
     description: string;
+    projectDescription: string;
     websiteUrl: string;
     codeUrl: string;
     version: string;

@@ -6,14 +6,13 @@ import { Tag, Typography } from '@subql/components';
 import { Button } from 'antd';
 import styled from 'styled-components';
 
-import { Text } from 'components/primary';
 import { useAccount } from 'containers/account';
 import { useGetIndexerMetadata } from 'hooks/projectHook';
 import { statusCode } from 'utils/project';
 
 import { ButtonItem } from '../config';
 import { CardContainer } from '../styles';
-import { ProjectStatus, TQueryMetadata } from '../types';
+import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -26,12 +25,27 @@ const ServiceContaineer = styled.div`
   flex-direction: column;
   justify-content: center;
   min-width: 200px;
-  margin-right: 30px;
+  margin-right: 16px;
+  position: relative;
+  & + & {
+    padding-left: 16px;
+    &::before {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      content: ' ';
+      height: 20px;
+      width: 1px;
+      background: var(--sq-gray400);
+    }
+  }
 `;
 
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
+  margin-bottom: 8px;
 `;
 
 type CardProps = {
@@ -43,14 +57,13 @@ type CardProps = {
 const ServiceView: FC<CardProps> = ({ title, subTitle, status }) => (
   <ServiceContaineer>
     <HeaderContainer>
-      <Text mr={20} fw="500">
+      <Typography variant="medium" type="secondary" style={{ marginRight: 8 }}>
         {title}
-      </Text>
+      </Typography>
+
       {!!status && <Tag color={statusCode(status)}>{status}</Tag>}
     </HeaderContainer>
-    <Text size={15} color="gray" mt={10}>
-      {subTitle}
-    </Text>
+    <Typography variant="medium">{subTitle}</Typography>
   </ServiceContaineer>
 );
 
@@ -59,11 +72,12 @@ type Props = {
   actionItems: ButtonItem[];
   data?: TQueryMetadata;
   projectStatus: ProjectStatus;
+  project: ProjectDetails;
   update: () => void;
   stop: () => void;
 };
 
-const ProjectServiceCard: FC<Props> = ({ id, data, projectStatus, update, stop }) => {
+const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, update, stop }) => {
   const { account } = useAccount();
   const indexMetadata = useGetIndexerMetadata(account || '');
 
@@ -132,7 +146,7 @@ const ProjectServiceCard: FC<Props> = ({ id, data, projectStatus, update, stop }
 
   return (
     <CardContainer>
-      <div>
+      <div style={{ width: '100%' }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <Typography variant="large" weight={600} style={{ marginBottom: 16 }}>
             Project Connection Settings
@@ -143,19 +157,15 @@ const ProjectServiceCard: FC<Props> = ({ id, data, projectStatus, update, stop }
         <ContentContainer>
           <ServiceView
             title="Indexer Service"
-            subTitle={`Image Version: ${imageVersion('indexer', data.indexerNodeVersion)}`}
+            subTitle={`${imageVersion('indexer', data.indexerNodeVersion)}`}
             status={data.indexerStatus}
           />
           <ServiceView
-            title="Query Service"
-            subTitle={`Image Version: ${imageVersion('query', data.queryNodeVersion)}`}
+            title="Query Endpoint"
+            subTitle={`${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`}
             status={data.queryStatus}
           />
-          <ServiceView
-            title="Proxy Service"
-            subTitle={`Url: ${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`}
-            status={data.queryStatus}
-          />
+          <ServiceView title="Rate Limit" subTitle={`${project.rateLimit || '∞'} rps`} />
         </ContentContainer>
       </div>
     </CardContainer>
