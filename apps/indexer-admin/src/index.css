@@ -37,3 +37,7 @@ code {
 .ant-btn-primary {
   background-color: var(--sq-blue600);
 }
+
+.ant-form-item-explain-error {
+  overflow-wrap: anywhere;
+}
