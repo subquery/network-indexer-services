@@ -7,6 +7,7 @@ import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import { IProjectConfig, Project } from '../project/project.model';
 import { argv } from '../yargs';
+import { timeoutPromiseHO } from './promise';
 
 @ObjectType('NodeClass')
 class NodeClass {
@@ -83,7 +84,7 @@ export function projectConfigChanged(project: Project, projectConfig: IProjectCo
 
 // TODO: migrate these logic to client sdk
 export async function getManifest(cid: string) {
-  const projectYaml = await clientSDK.cat(cid);
+  const projectYaml = await timeoutPromiseHO(30000)(clientSDK.cat(cid));
   const resultManifest = yaml.load(projectYaml) as PartialIpfsDeploymentManifest;
   return resultManifest;
 }

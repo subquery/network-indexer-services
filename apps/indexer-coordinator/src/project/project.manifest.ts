@@ -5,11 +5,12 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { IPFSClient } from '@subql/network-clients';
 import * as yaml from 'js-yaml';
 import { IPFS_URL, PartialIpfsDeploymentManifest } from 'src/utils/project';
+import { timeoutPromiseHO } from 'src/utils/promise';
 
 export const ipfsClient = new IPFSClient(IPFS_URL);
 
 export async function getProjectManifest(cid: string): Promise<any> {
-  const manifestStr = await ipfsClient.cat(cid);
+  const manifestStr = await timeoutPromiseHO(30000)(ipfsClient.cat(cid));
   return await yaml.load(manifestStr, { schema: yaml.FAILSAFE_SCHEMA });
 }
 

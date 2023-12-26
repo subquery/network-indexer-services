@@ -10,6 +10,7 @@ import {
   NETWORK_CONFIGS,
 } from '@subql/network-clients';
 import _ from 'lodash';
+import { timeoutPromiseHO } from 'src/utils/promise';
 import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 import { Config } from '../configure/configure.module';
@@ -178,8 +179,10 @@ export class ProjectService {
     if (_.startsWith(deployment.metadata, '0x')) {
       deployment.metadata = bytes32ToCid(deployment.metadata);
     }
-    const projectMetadataStr = await this.ipfsClient.cat(project.metadata);
-    const deploymentMetadataStr = await this.ipfsClient.cat(deployment.metadata);
+    const projectMetadataStr = await timeoutPromiseHO(30000)(this.ipfsClient.cat(project.metadata));
+    const deploymentMetadataStr = await timeoutPromiseHO(30000)(
+      this.ipfsClient.cat(deployment.metadata)
+    );
     const projectMetadata = JSON.parse(projectMetadataStr);
     const deploymentMetadata = JSON.parse(deploymentMetadataStr);
 

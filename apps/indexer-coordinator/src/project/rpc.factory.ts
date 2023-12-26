@@ -112,7 +112,7 @@ export class RpcFamilyEvm extends RpcFamily {
         throw new Error(`Request eth_chainId failed: ${result.data.error.message}`);
       }
       const chainIdFromRpc = result.data.result;
-      if (!BigNumber.from(chainIdFromRpc).eq(BigNumber.from(chainId))) {
+      if (!BigNumber.from(chainIdFromRpc).eq(BigNumber.from(chainId || 0))) {
         throw new Error(
           `ChainId mismatch: ${BigNumber.from(chainIdFromRpc).toString()} != ${BigNumber.from(
             chainId
@@ -130,7 +130,7 @@ export class RpcFamilyEvm extends RpcFamily {
         throw new Error(`Request eth_getBlockByNumber failed: ${result.data.error.message}`);
       }
       const genesisHashFromRpc = result.data.result.hash;
-      if (!BigNumber.from(genesisHashFromRpc).eq(BigNumber.from(genesisHash))) {
+      if (!BigNumber.from(genesisHashFromRpc).eq(BigNumber.from(genesisHash || 0))) {
         throw new Error(`GenesisHash mismatch: ${genesisHashFromRpc} != ${genesisHash}`);
       }
     });
