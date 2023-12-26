@@ -192,6 +192,7 @@ export class ProjectService {
       networkProjectId: project.id,
       owner: project.owner,
       projectType: ProjectType[project.type as keyof typeof ProjectType],
+      projectDescription: project.description,
       ...projectMetadata,
       ...deploymentMetadata,
     };
