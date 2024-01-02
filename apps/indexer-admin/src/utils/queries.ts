@@ -478,48 +478,44 @@ export const GET_PROJECT_REWARDS_DETAILS = gql`
 // excellency gql
 
 export interface IGetIndexerStatus {
-  getIndexerStatus: {
-    deploymentId: string;
-    nodeSuccess: boolean;
-    querySuccess: boolean;
-    errorMsg?: string;
-    timestamp: string;
+  getIndexerServiceStatus: {
+    endpointSuccess: boolean;
   } | null;
 }
 
 export const getIndexerStatus = (params: { deploymentId: string; indexer: string }) => {
   return excellencyQuery<IGetIndexerStatus>(`
     {
-      getIndexerStatus(deploymentId: "${params.deploymentId}", indexer: "${params.indexer}"){
-        deploymentId
-        nodeSuccess
-        querySuccess
-        errorMsg
-        timestamp
+      getIndexerServiceStatus(deploymentId: "${params.deploymentId}", indexer: "${params.indexer}"){
+        endpointSuccess
       }
     }
   `);
 };
 
-export interface IGetRequeestHistory {
-  getRequestHistory: {
-    records: {
-      nodeSuccess: boolean;
-      timestamp: string;
-      errorMsg?: string;
-    }[];
-  };
+export interface IGetRequestHistory {
+  getIndexerServiceRequestHistory: {
+    healthyRate: number;
+    latestSuccess: boolean;
+    latestErrorMsg: string;
+    total: number;
+    success: number;
+    failure: number;
+    day: string;
+  }[];
 }
 
 export const getRequestHistory = (params: { deploymentId: string; indexer: string }) => {
-  return excellencyQuery<IGetRequeestHistory>(`
+  return excellencyQuery<IGetRequestHistory>(`
     {
-      getRequestHistory(deploymentId: "${params.deploymentId}", indexer: "${params.indexer}") {
-        records {
-          nodeSuccess
-          timestamp
-          errorMsg
-        }
+      getIndexerServiceRequestHistory(deploymentId: "${params.deploymentId}", indexer: "${params.indexer}") {
+        healthyRate
+        latestSuccess
+        latestErrorMsg
+        total
+        success
+        failure
+        day
       }
     }
   `);

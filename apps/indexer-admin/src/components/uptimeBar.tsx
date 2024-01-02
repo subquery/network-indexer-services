@@ -5,14 +5,19 @@ import { FC, useMemo } from 'react';
 import { Typography } from '@subql/components';
 import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
-import { floor, groupBy } from 'lodash';
+import { floor } from 'lodash';
 import styled from 'styled-components';
 
-import { IGetRequeestHistory } from 'utils/queries';
+import { IGetRequestHistory } from 'utils/queries';
 
 interface IProps {
   header?: React.ReactNode;
-  uptimeData: IGetRequeestHistory['getRequestHistory']['records'];
+  uptimeData: IGetRequestHistory['getIndexerServiceRequestHistory'];
+}
+
+enum UPTIME_STATUS {
+  ONLINE,
+  OFFLINE,
 }
 
 // Design:
@@ -20,52 +25,42 @@ interface IProps {
 //     header (will receive from props)
 //     chart. render in component. {}[]
 
-type groupByUptime = IGetRequeestHistory['getRequestHistory']['records'][number] & {
-  healthyRate: number;
+const getUptimeStatus = (
+  uptime: IGetRequestHistory['getIndexerServiceRequestHistory'][number]
+): UPTIME_STATUS => {
+  if (uptime.day !== dayjs().format('YYYY-MM-DD')) {
+    if (uptime.healthyRate < 98) {
+      return UPTIME_STATUS.OFFLINE;
+    }
+
+    return UPTIME_STATUS.ONLINE;
+  }
+
+  return uptime.latestSuccess ? UPTIME_STATUS.ONLINE : UPTIME_STATUS.OFFLINE;
 };
 
-const filterTooltipMsg = (uptime: groupByUptime) => {
-  if (uptime.nodeSuccess) return 'You are online';
-  if (uptime.healthyRate)
-    return `You were offline for ${uptime.healthyRate} %of health checks during this day`;
-
-  return 'You were offline for this entire day';
+const filterTooltipMsg = (
+  uptime: IGetRequestHistory['getIndexerServiceRequestHistory'][number]
+) => {
+  const status = getUptimeStatus(uptime);
+  if (status === UPTIME_STATUS.ONLINE) return 'You are online';
+  if (!uptime.healthyRate) return 'You were offline for this entire day';
+  return `You were offline for ${100 - uptime.healthyRate}% of health checks during this day`;
 };
 
 const UptimeBar: FC<IProps> = (props) => {
   const { header, uptimeData } = props;
   const uptimeRate = useMemo(() => {
     if (!uptimeData.length) return 0;
-    const online = uptimeData.filter((i) => i.nodeSuccess);
+    const total = uptimeData.reduce((previous, current) => previous + current.total, 0);
+    const success = uptimeData.reduce((previous, current) => previous + current.success, 0);
 
-    return floor(online.length / uptimeData.length, 2) * 100;
-  }, [uptimeData]);
-
-  // TODO: maybe need backend group by.
-  const groupByUptime = useMemo(() => {
-    // need to group by date
-    const newUptimeData: groupByUptime[] = [];
-    const groupByDate = groupBy(uptimeData, (i) => dayjs(i.timestamp).format('YYYY-MM-DD'));
-    Object.keys(groupByDate).forEach((key) => {
-      const latest = groupByDate[key]
-        .sort((a, b) => +new Date(a.timestamp) - +new Date(b.timestamp))
-        .at(-1);
-      if (!latest) return;
-      // get the haalthyRate
-      const healthyCount = groupByDate[key].filter((i) => i.nodeSuccess);
-
-      newUptimeData.push({
-        ...latest,
-        healthyRate: Math.ceil((healthyCount.length / groupByDate[key].length) * 100),
-      });
-    });
-
-    return newUptimeData.slice(0, 90).reverse();
+    return floor(success / total, 2) * 100;
   }, [uptimeData]);
 
   const notEnoughUptimeChunks = useMemo(() => {
     const today = dayjs();
-    const groupedUptimeLength = groupByUptime.length;
+    const groupedUptimeLength = uptimeData.length;
     if (!groupedUptimeLength) {
       return {
         prefix: new Array(90).fill(0),
@@ -73,14 +68,14 @@ const UptimeBar: FC<IProps> = (props) => {
       };
     }
 
-    const lastRecordDay = groupByUptime.at(-1);
-    const suffix = new Array(today.diff(dayjs(lastRecordDay?.timestamp), 'day')).fill(0);
+    const lastRecordDay = uptimeData.at(-1);
+    const suffix = new Array(today.diff(dayjs(lastRecordDay?.day), 'day')).fill(0);
     const prefixLength = 90 - groupedUptimeLength - suffix.length;
     return {
       suffix,
       prefix: new Array(prefixLength < 0 ? 0 : prefixLength).fill(0),
     };
-  }, [groupByUptime]);
+  }, [uptimeData]);
 
   return (
     <div
@@ -99,10 +94,10 @@ const UptimeBar: FC<IProps> = (props) => {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          width: groupByUptime.length ? '1260px' : 'auto',
+          width: uptimeData.length ? '1260px' : 'auto',
         }}
       >
-        {groupByUptime.length ? (
+        {uptimeData.length ? (
           <div
             style={{
               display: 'flex',
@@ -112,7 +107,7 @@ const UptimeBar: FC<IProps> = (props) => {
             {notEnoughUptimeChunks.prefix.map((_, index) => (
               <StatusLine key={index} bg="var(--sq-gray300)" />
             ))}
-            {groupByUptime.map((uptime, index) => {
+            {uptimeData.map((uptime, index) => {
               return (
                 <Tooltip
                   key={index}
@@ -121,20 +116,27 @@ const UptimeBar: FC<IProps> = (props) => {
                   title={
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="medium" weight={900}>
-                        {dayjs(uptime.timestamp).format('DD MMM YYYY')}
+                        {dayjs(uptime.day).format('DD MMM YYYY')}
                       </Typography>
                       <Typography variant="medium" weight={900}>
                         {filterTooltipMsg(uptime)}
                       </Typography>
-                      {!uptime.nodeSuccess && uptime.errorMsg && (
-                        <Typography variant="medium" weight={900}>
-                          {uptime.errorMsg}
-                        </Typography>
-                      )}
+                      {getUptimeStatus(uptime) === UPTIME_STATUS.OFFLINE &&
+                        uptime.latestErrorMsg && (
+                          <Typography variant="medium" weight={900}>
+                            {uptime.latestErrorMsg}
+                          </Typography>
+                        )}
                     </div>
                   }
                 >
-                  <StatusLine bg={uptime.nodeSuccess ? 'var(--sq-success)' : 'var(--sq-warning)'} />
+                  <StatusLine
+                    bg={
+                      getUptimeStatus(uptime) === UPTIME_STATUS.ONLINE
+                        ? 'var(--sq-success)'
+                        : 'var(--sq-warning)'
+                    }
+                  />
                 </Tooltip>
               );
             })}
