@@ -9,12 +9,12 @@ import { useMount } from 'ahooks';
 
 import UptimeBar from 'components/uptimeBar';
 import { useAccount } from 'containers/account';
-import { getRequestHistory, IGetRequeestHistory } from 'utils/queries';
+import { getRequestHistory, IGetRequestHistory } from 'utils/queries';
 
 const ProjectUptime: FC = () => {
   const { id = '' } = useParams<{ id: string }>();
   const { account } = useAccount();
-  const [history, setHistory] = useState<IGetRequeestHistory['getRequestHistory']['records']>([]);
+  const [history, setHistory] = useState<IGetRequestHistory['getIndexerServiceRequestHistory']>([]);
 
   const getHistory = async (): Promise<void> => {
     if (!account) return;
@@ -22,9 +22,9 @@ const ProjectUptime: FC = () => {
       deploymentId: id,
       indexer: account,
     });
-
+    console.warn(res.data.getIndexerServiceRequestHistory);
     if (res.status === NetworkStatus.ready) {
-      setHistory(res.data.getRequestHistory.records);
+      setHistory(res.data.getIndexerServiceRequestHistory);
     }
   };
 

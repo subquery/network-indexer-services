@@ -221,10 +221,9 @@ export const useIsOnline = (props: {
     });
 
     if (res.status === NetworkStatus.ready) {
-      if (res.data.getIndexerStatus) {
-        const status =
-          res.data.getIndexerStatus.nodeSuccess && res.data.getIndexerStatus.querySuccess;
-        setOnline(status);
+      if (res.data.getIndexerServiceStatus) {
+        const status = res.data.getIndexerServiceStatus.endpointSuccess;
+        setOnline(res.data.getIndexerServiceStatus.endpointSuccess);
         return status;
       }
     }
