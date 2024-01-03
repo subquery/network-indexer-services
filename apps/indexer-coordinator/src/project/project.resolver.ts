@@ -52,7 +52,7 @@ export class ProjectResolver {
         project = await this.projectService.getProject(id);
         return this.queryService.getQueryMetaData(
           id,
-          project?.serviceEndpoints[SubqueryEndpointType.Query]
+          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);

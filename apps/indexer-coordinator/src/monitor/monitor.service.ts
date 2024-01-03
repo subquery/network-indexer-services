@@ -36,7 +36,11 @@ export class MonitorService {
       }
       try {
         const result = await axios.get(
-          `${project.serviceEndpoints[SubqueryEndpointType.Node]}/health`,
+          `${
+            project.serviceEndpoints.find((e) => {
+              e.key === SubqueryEndpointType.Node;
+            }).value
+          }/health`,
           {
             timeout: 5000,
           }

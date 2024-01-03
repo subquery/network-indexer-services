@@ -94,7 +94,7 @@ export class ProjectService {
     const payg = await this.paygRepo.findOneBy({ id });
     const metadata = await this.query.getQueryMetaData(
       id,
-      project.serviceEndpoints[SubqueryEndpointType.Query]
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
     );
 
     return { ...project, metadata, payg };
@@ -105,7 +105,10 @@ export class ProjectService {
     if (!project) {
       return;
     }
-    return this.query.getQueryMetaData(id, project.serviceEndpoints[SubqueryEndpointType.Query]);
+    return this.query.getQueryMetaData(
+      id,
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
+    );
   }
 
   /**
@@ -397,7 +400,9 @@ export class ProjectService {
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
-    const port = getServicePort(project.serviceEndpoints[SubqueryEndpointType.Query]);
+    const port = getServicePort(
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
+    );
     this.portService.removePort(port);
 
     return this.projectRepo.remove([project]);
