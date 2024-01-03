@@ -21,7 +21,7 @@ import {
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
-import { ProjectType } from './types';
+import { ProjectType, SubqueryEndpointType } from './types';
 
 @Resolver(() => Project)
 export class ProjectResolver {
@@ -50,7 +50,10 @@ export class ProjectResolver {
     switch (projectType) {
       case ProjectType.SUBQUERY:
         project = await this.projectService.getProject(id);
-        return this.queryService.getQueryMetaData(id, project?.queryEndpoint);
+        return this.queryService.getQueryMetaData(
+          id,
+          project?.serviceEndpoints[SubqueryEndpointType.Query]
+        );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
       default:
