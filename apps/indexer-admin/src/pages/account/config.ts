@@ -13,11 +13,13 @@ const buttonTitles = {
 
 export const createButtonItem = (
   actionType: AccountAction,
-  onClick: (type?: AccountAction) => void
+  onClick: (type?: AccountAction) => void,
+  loading?: boolean
 ): AccountButtonItem => {
   return {
     title: buttonTitles[actionType],
     type: actionType,
+    loading,
     onClick,
   };
 };

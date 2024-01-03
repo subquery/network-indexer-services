@@ -63,6 +63,7 @@ export const SubqlInput = styled.div`
       display: flex;
       margin: 6px;
       flex-shrink: 0;
+      align-items: center;
     }
   }
 `;

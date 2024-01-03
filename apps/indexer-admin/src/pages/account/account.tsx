@@ -47,7 +47,7 @@ const Account = () => {
   const { account } = useAccount();
   const isIndexer = useIsIndexer();
   const { indexer } = useCoordinatorIndexer();
-  const { metadata, fetchMetadata } = useIndexerMetadata();
+  const { metadata, fetchMetadata, loading } = useIndexerMetadata();
   const accountAction = useAccountAction();
   const isMetaMask = useIsMetaMask();
   const isController = useIsController(account);
@@ -96,7 +96,7 @@ const Account = () => {
   const indexerName = useMemo(() => metadata?.name ?? ' ', [metadata]);
 
   const indexerButtons = [
-    createButtonItem(AccountAction.updateMetaData, onButtonPress),
+    createButtonItem(AccountAction.updateMetaData, onButtonPress, loading),
     createButtonItem(AccountAction.unregister, onButtonPress),
   ];
 

@@ -97,6 +97,7 @@ const Projects = () => {
                   projectsMetadata.data?.getProjectsMetadata.find((i) => i.id === props.id)
                     ?.metadata
                 }
+                metadataLoading={projectsMetadata.loading}
               />
             );
           })}
