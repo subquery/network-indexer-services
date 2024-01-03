@@ -143,10 +143,11 @@ export const useIndexerMetadata = () => {
   const { account } = useAccount();
   const sdk = useContractSDK();
   const [metadata, setMetadata] = useState<IndexerMetadata>();
-
+  const [loading, setLoading] = useState(false);
   const fetchMetadata = useCallback(async () => {
     if (!account) return;
     try {
+      setLoading(true);
       const metadataHash = await sdk?.indexerRegistry.metadata(account);
       if (!metadataHash) return;
 
@@ -154,6 +155,8 @@ export const useIndexerMetadata = () => {
       setMetadata(metadata);
     } catch {
       console.error('Failed to get indexer metadata');
+    } finally {
+      setLoading(false);
     }
   }, [sdk, account]);
 
@@ -161,5 +164,5 @@ export const useIndexerMetadata = () => {
     fetchMetadata();
   }, [fetchMetadata]);
 
-  return { metadata, fetchMetadata };
+  return { loading, metadata, fetchMetadata };
 };

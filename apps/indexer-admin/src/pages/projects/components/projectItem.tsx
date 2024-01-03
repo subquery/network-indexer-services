@@ -26,10 +26,11 @@ import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles
 
 type Props = Omit<ProjectDetails, 'metadata'> & {
   metadata?: TQueryMetadata;
+  metadataLoading: boolean;
 };
 
 const ProjectItem: FC<Props> = (props) => {
-  const { id, details, metadata, projectType } = props;
+  const { id, details, metadata, projectType, metadataLoading } = props;
 
   const { account } = useAccount();
   const history = useHistory();
@@ -78,7 +79,11 @@ const ProjectItem: FC<Props> = (props) => {
         </Typography>
       </ItemContainer>
       <ItemContainer flex={4}>
-        <SubqlProgress percent={formatValueToFixed(progress * 100)} />
+        {metadataLoading ? (
+          <Spinner />
+        ) : (
+          <SubqlProgress percent={formatValueToFixed(progress * 100)} />
+        )}
       </ItemContainer>
       <ItemContainer flex={1} />
       <ItemContainer flex={3}>

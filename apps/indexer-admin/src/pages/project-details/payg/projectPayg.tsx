@@ -28,7 +28,7 @@ type TProjectPAYG = {
 };
 
 export function ProjectPAYG({ id }: TProjectPAYG) {
-  const { paygConfig, changePAYGCofnig } = usePAYGConfig(id);
+  const { paygConfig, changePAYGCofnig, loading } = usePAYGConfig(id);
   const sdk = useContractSDK();
   const [showModal, setShowModal] = useState(false);
   const innerConfig = useMemo(() => {
@@ -178,6 +178,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
 
           <SubqlInput>
             <Input
+              disabled={loading}
               value={paygConf.validity}
               onChange={(e) => {
                 setPaygConf({

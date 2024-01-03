@@ -22,7 +22,7 @@ const ProjectUptime: FC = () => {
       deploymentId: id,
       indexer: account,
     });
-    console.warn(res.data.getIndexerServiceRequestHistory);
+
     if (res.status === NetworkStatus.ready) {
       setHistory(res.data.getIndexerServiceRequestHistory);
     }
