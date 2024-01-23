@@ -4,7 +4,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApolloQueryResult, useMutation } from '@apollo/client';
 import { formatEther, formatUnits, parseEther, parseUnits } from '@ethersproject/units';
-import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { GraphqlQueryClient } from '@subql/network-clients';
+import { NETWORK_CONFIGS } from '@subql/network-config';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 

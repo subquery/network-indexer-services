@@ -1,7 +1,7 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { IPFS_URLS } from '@subql/network-clients';
+import { IPFS_URLS } from '@subql/network-config';
 import { utils } from 'ethers';
 import { create } from 'ipfs-http-client';
 

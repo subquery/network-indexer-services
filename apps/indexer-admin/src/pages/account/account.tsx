@@ -21,7 +21,6 @@ import {
 } from 'hooks/indexerHook';
 import { useTokenSymbol } from 'hooks/network';
 import { useAccountAction } from 'hooks/transactionHook';
-import { useIsMetaMask } from 'hooks/web3Hook';
 import { AccountAction } from 'pages/project-details/types';
 import { MetadataFormKey } from 'types/schemas';
 import { balanceSufficient } from 'utils/account';
@@ -49,7 +48,6 @@ const Account = () => {
   const { indexer } = useCoordinatorIndexer();
   const { metadata, fetchMetadata, loading } = useIndexerMetadata();
   const accountAction = useAccountAction();
-  const isMetaMask = useIsMetaMask();
   const isController = useIsController(account);
   const { controller } = useController();
   const controllerBalance = useBalance(controller);
@@ -139,7 +137,7 @@ const Account = () => {
 
   return (
     <Container>
-      {isMetaMask && isIndexer && (
+      {isIndexer && (
         <AccountCard
           title={indexerItem.title}
           name={indexerName}
