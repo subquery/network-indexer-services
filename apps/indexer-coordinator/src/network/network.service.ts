@@ -3,7 +3,8 @@
 
 import { gql } from '@apollo/client/core';
 import { Injectable } from '@nestjs/common';
-import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { GraphqlQueryClient } from '@subql/network-clients';
+import { NETWORK_CONFIGS } from '@subql/network-config';
 import {
   GetAllOpenOffersQuery,
   GetDeployment,

@@ -4,7 +4,8 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContractSDK } from '@subql/contract-sdk';
-import { GraphqlQueryClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { GraphqlQueryClient } from '@subql/network-clients';
+import { NETWORK_CONFIGS } from '@subql/network-config';
 import {
   GetIndexerUnfinalisedPlans,
   GetIndexerUnfinalisedPlansQuery,
@@ -72,7 +73,6 @@ export class NetworkService implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     void (async () => {
       await this.doNetworkActions();
-      await this.removeExpiredAgreements();
     })();
   }
 
@@ -99,26 +99,6 @@ export class NetworkService implements OnApplicationBootstrap {
   //       !isEmpty(queryEndpoint) && [DesiredStatus.RUNNING].includes(status)
   //   );
   // }
-
-  private async updateExpiredAgreements() {
-    logger.debug(`updateExpiredAgreements start`);
-    const indexer = await this.accountService.getIndexer();
-    const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(indexer);
-    for (let i = 0; i < agreementCount.toNumber(); i++) {
-      const agreementId = await this.sdk.serviceAgreementExtra.getServiceAgreementId(indexer, i);
-      const agreementExpired =
-        await this.sdk.serviceAgreementRegistry.closedServiceAgreementExpired(agreementId);
-
-      if (agreementExpired) {
-        this.expiredAgreements.add(agreementId.toString());
-      }
-    }
-    logger.debug(
-      `updateExpiredAgreements end. expiredAgreements: ${Array.from(this.expiredAgreements).join(
-        ','
-      )}`
-    );
-  }
 
   async syncContractConfig(): Promise<boolean> {
     try {
@@ -155,45 +135,6 @@ export class NetworkService implements OnApplicationBootstrap {
         throw e;
       }
     }
-  }
-
-  @Cron(CronExpression.EVERY_10_MINUTES)
-  async removeExpiredAgreements() {
-    logger.debug(`removeExpiredAgreements start`);
-    if (!(await this.checkControllerReady())) return;
-    try {
-      await this.updateExpiredAgreements();
-    } catch {
-      getLogger('network').error('failed to update expired service agreements');
-    }
-    if (this.expiredAgreements.size === 0) return;
-
-    try {
-      const indexer = await this.accountService.getIndexer();
-      const agreementCount = await this.sdk.serviceAgreementExtra.getServiceAgreementLength(
-        indexer
-      );
-      for (let i = 0; i < agreementCount.toNumber(); i++) {
-        const agreementId = await this.sdk.serviceAgreementExtra
-          .getServiceAgreementId(indexer, i)
-          .then((id) => id.toNumber());
-
-        if (this.expiredAgreements.has(agreementId.toString())) {
-          await this.sendTransaction(
-            'remove expired service agreement',
-            (overrides) =>
-              this.sdk.serviceAgreementExtra.clearEndedAgreement(indexer, i, overrides),
-            `service agreement: ${agreementId}`
-          );
-
-          this.expiredAgreements.delete(agreementId.toString());
-          break;
-        }
-      }
-    } catch {
-      getLogger('network').info('failed to remove expired service agreements');
-    }
-    logger.debug(`removeExpiredAgreements end`);
   }
 
   async hasPendingChanges(indexer: string) {

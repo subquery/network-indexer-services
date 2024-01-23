@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Controller, Get, Header } from '@nestjs/common';
-import { NETWORK_CONFIGS, SQNetworks } from '@subql/network-clients';
+import { NETWORK_CONFIGS, SQNetworks } from '@subql/network-config';
 import { argv } from './yargs';
 
 @Controller()

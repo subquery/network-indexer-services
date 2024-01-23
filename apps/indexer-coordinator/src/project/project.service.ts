@@ -3,12 +3,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  bytes32ToCid,
-  GraphqlQueryClient,
-  IPFSClient,
-  NETWORK_CONFIGS,
-} from '@subql/network-clients';
+import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
+import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { argv } from 'src/yargs';

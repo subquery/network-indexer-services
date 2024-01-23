@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import dns from 'dns';
-import { promisify } from 'util';
 import { isIP } from 'net';
+import { promisify } from 'util';
 import { isPrivate } from 'ip';
 
 const lookup = promisify(dns.lookup);
