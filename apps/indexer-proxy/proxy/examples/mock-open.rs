@@ -4,7 +4,7 @@ use ethers::{
 };
 use std::env::args;
 use std::sync::Arc;
-use subql_contracts::{plan_manager, service_agreement_registry, sqtoken, Network};
+use subql_contracts::{l2_sqtoken, plan_manager, service_agreement_registry, Network};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_string_to_sign, price_recover},
@@ -221,7 +221,7 @@ async fn main() -> Result<(), Error> {
                 println!("Plan contract: {:?}", contract.address());
 
                 if need_allowance {
-                    let sqtoken = sqtoken(client, network).unwrap();
+                    let sqtoken = l2_sqtoken(client, network).unwrap();
                     let amount: U256 = U256::from(100) * U256::from(1000000000000000000u64); // 18-decimal
                     let tx = sqtoken
                         .method::<_, ()>("increaseAllowance", (contract.address(), amount))
