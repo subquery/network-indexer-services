@@ -11,12 +11,6 @@
   box-shadow: 0px 10px 20px 0px rgba(67, 136, 221, 0.06);
 }
 
-.subtitle {
-  color: var(--gray700);
-  margin: 1rem 0;
-  text-align: center;
-}
-
 .connectBtn {
   &:hover {
     transform: scale(1.03);
