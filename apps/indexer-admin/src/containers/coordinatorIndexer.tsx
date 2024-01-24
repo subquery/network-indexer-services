@@ -18,13 +18,14 @@ type CoordinatorIndexerContext = {
 
 function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
   const [load, { data, loading, error }] = useLazyQuery(GET_COORDINATOR_INDEXER);
+
   const [addIndexer] = useMutation(ADD_INDEXER);
 
   const [indexer, setIndexer] = React.useState<string>();
 
   React.useEffect(() => {
     setIndexer(data?.accountMetadata?.indexer);
-  }, [data]);
+  }, [data?.accountMetadata?.indexer]);
 
   React.useEffect(() => {
     if (error) {

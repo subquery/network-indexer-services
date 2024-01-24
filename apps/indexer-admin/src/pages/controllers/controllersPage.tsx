@@ -6,9 +6,9 @@ import { useLazyQuery, useMutation } from '@apollo/client';
 import { cloneDeep, isEmpty, isUndefined } from 'lodash';
 
 import IntroductionView from 'components/introductionView';
+import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
 import { Button, Text } from 'components/primary';
-import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import { useController } from 'hooks/indexerHook';
 import { useAccountAction } from 'hooks/transactionHook';
@@ -42,7 +42,6 @@ const controllersPage = () => {
   const { dispatchNotification, removeNotification } = useNotification();
   const { controller: currentController, getController } = useController();
   const accountAction = useAccountAction();
-  const { setPageLoading } = useLoading();
 
   const [removeController] = useMutation(REMOVE_CONTROLLER);
   const [createController, { loading: createControllerRequesting }] = useMutation(ADD_CONTROLLER);
@@ -52,9 +51,8 @@ const controllersPage = () => {
   );
 
   useEffect(() => {
-    setPageLoading(isUndefined(controllerData));
     if (!controllerData) getControllers();
-  }, [controllerData, getControllers, setPageLoading]);
+  }, [controllerData, getControllers]);
 
   useEffect(() => {
     if (!controllerData || isEmpty(controllerData?.controllers)) return;
@@ -117,6 +115,8 @@ const controllersPage = () => {
   );
 
   const steps = { ...configControllerSteps, ...withdrawSteps, ...removeAccountSteps };
+
+  if (isUndefined(controllerData)) return <LoadingSpinner />;
 
   return (
     <Container>

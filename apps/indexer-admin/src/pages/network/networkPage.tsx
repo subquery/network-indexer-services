@@ -1,14 +1,14 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
+import { LoadingSpinner } from 'components/loading';
 import { Separator, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { useAccount } from 'containers/account';
-import { useLoading } from 'containers/loadingContext';
 import { useIndexerMetadata } from 'hooks/indexerHook';
 import { useIndexerEra } from 'hooks/network';
 
@@ -18,12 +18,7 @@ import { ContentContainer, Contrainer, LeftContainer, VersionContainer } from '.
 const NetworkPage = () => {
   const { account } = useAccount();
   const { metadata } = useIndexerMetadata();
-  const { setPageLoading } = useLoading();
   const indexerEra = useIndexerEra();
-
-  useEffect(() => {
-    setPageLoading(isUndefined(indexerEra));
-  }, [indexerEra, setPageLoading]);
 
   const eraItems = useMemo(
     () => (
@@ -37,6 +32,8 @@ const NetworkPage = () => {
     ),
     [indexerEra]
   );
+
+  if (isUndefined(indexerEra)) return <LoadingSpinner />;
 
   return (
     <Contrainer>

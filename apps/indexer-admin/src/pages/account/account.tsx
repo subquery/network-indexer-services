@@ -8,10 +8,10 @@ import { isUndefined } from 'lodash';
 import { useBalance } from 'wagmi';
 
 import AccountCard from 'components/accountCard';
+import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import {
   useController,
@@ -57,7 +57,6 @@ const Account = () => {
     address: account as `0x${string}`,
   });
   const { dispatchNotification } = useNotification();
-  const { setPageLoading } = useLoading();
   const history = useHistory();
   const tokenSymbol = useTokenSymbol();
 
@@ -66,10 +65,6 @@ const Account = () => {
   prompts.controller.desc = `Balance: ${controllerBalance?.formatted} ${tokenSymbol}`;
   const controllerItem = !controller ? prompts.emptyController : prompts.controller;
   const indexerItem = prompts.indexer;
-
-  useEffect(() => {
-    setPageLoading(isUndefined(account) || isUndefined(indexer));
-  }, [account, indexer, setPageLoading]);
 
   useEffect(() => {
     if (controllerBalance && !balanceSufficient(controllerBalance.formatted)) {
@@ -138,6 +133,8 @@ const Account = () => {
     () => ({ ...unregisterStep, ...updateMetadataStep }),
     [unregisterStep, updateMetadataStep]
   );
+
+  if (isUndefined(account) || isUndefined(indexer)) return <LoadingSpinner />;
 
   return (
     <Container>
