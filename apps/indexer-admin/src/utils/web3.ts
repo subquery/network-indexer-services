@@ -11,16 +11,16 @@ export const PRODUCTION_NETWORK = SQNetworks.MAINNET;
 
 export const tokenSymbols = {
   testnet: 'SQT',
-  kepler: 'kSQT',
+  local: 'SQT',
   mainnet: 'SQT',
 };
 
 export const TOKEN_SYMBOL = tokenSymbols[network as keyof typeof tokenSymbols];
 
 export enum ChainID {
-  testnet = '0x13881',
-  mainnet = '0x89',
-  local = '0x13881',
+  testnet = '0x14a34',
+  mainnet = '0x2105',
+  local = '0x14a34',
 }
 
 export const ChainIDs = [ChainID.testnet, ChainID.mainnet];
@@ -34,8 +34,8 @@ export const NetworkToChainID: Record<SQNetworks, ChainID> = {
 export const isSupportNetwork = (chaiId: ChainID) => ChainIDs.includes(chaiId);
 
 export const RPC_URLS: Record<number, string> = {
-  80001: 'https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78',
-  137: import.meta.env.VITE_APP_RPC_ENDPOINT ?? 'https://polygon-rpc.com/',
+  84532: 'https://sepolia.base.org',
+  8453: import.meta.env.VITE_APP_RPC_ENDPOINT ?? 'https://mainnet.base.org',
 };
 
 export function hexToInt(hex: string) {

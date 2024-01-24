@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "~5.1.4",
-    "@apollo/client": "^3.4.17",
+    "@apollo/client": "^3.8.8",
     "@emotion/react": "^11.8.2",
     "@emotion/styled": "^11.8.1",
     "@ethersproject/providers": "~5.7.2",
@@ -19,19 +19,16 @@
     "@mui/material": "^5.5.1",
     "@patternfly/react-log-viewer": "^4.43.19",
     "@subql/components": "1.0.3-24",
-    "@subql/contract-sdk": "0.112.0",
-    "@subql/network-clients": "0.112.1-0",
-    "@subql/network-config": "0.112.0",
+    "@subql/contract-sdk": "0.114.1",
+    "@subql/network-clients": "0.114.0",
+    "@subql/network-config": "0.114.0",
     "@subql/network-query": "0.112.0",
-    "@subql/react-hooks": "0.112.1-0",
+    "@subql/react-hooks": "0.114.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "@types/react-modal": "^3.16.0",
     "@vitejs/plugin-react": "~4.0.4",
-    "@web3-react/core": "^6.1.9",
-    "@web3-react/injected-connector": "^6.0.7",
-    "@web3-react/network-connector": "^6.1.9",
     "ahooks": "^3.7.7",
     "animate.css": "^4.1.1",
     "antd": "^5.3.2",
@@ -62,12 +59,13 @@
     "react-router": "5.3.4",
     "react-router-dom": "^5.3.0",
     "react-scripts": "4.0.3",
-    "serve": "^13.0.2",
     "styled-components": "^5.3.3",
     "typescript": "^5.3.2",
     "vite": "~4.4.7",
     "vite-plugin-environment": "~1.1.3",
-    "yup": "^0.32.11"
+    "yup": "^0.32.11",
+    "wagmi": "^1.4.6",
+    "@rainbow-me/rainbowkit": "^1.2.0"
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
@@ -129,5 +127,8 @@
   "files": [
     "/bin",
     "/build"
-  ]
+  ],
+  "resolutions": {
+    "listhen": "1.5.5"
+  }
 }

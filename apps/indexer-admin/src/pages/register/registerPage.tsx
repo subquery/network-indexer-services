@@ -14,7 +14,7 @@ import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import { useIsIndexer, useIsRegistedIndexer, useTokenBalance } from 'hooks/indexerHook';
 import { useInitialStep } from 'hooks/registerHook';
-import { useSigner } from 'hooks/web3Hook';
+import { useSignerOrProvider } from 'hooks/web3Hook';
 import { RegisterFormKey, TRegisterValues } from 'types/schemas';
 import { indexerRegistry, indexerRequestApprove } from 'utils/indexerActions';
 import { createIndexerMetadata } from 'utils/ipfs';
@@ -30,7 +30,8 @@ import { getStepIndex, getStepStatus, registerSteps } from './utils';
 
 // TODO: refactor
 const RegisterPage = () => {
-  const signer = useSigner();
+  const signer = useSignerOrProvider();
+
   const { account } = useAccount();
   const isRegistedIndexer = useIsRegistedIndexer();
   const isIndexer = useIsIndexer();

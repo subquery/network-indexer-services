@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNetwork } from 'wagmi';
+import { base, baseSepolia } from 'wagmi/chains';
 
 import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 
-import { useWeb3 } from './web3Hook';
-
 export const useTokenSymbol = () => {
-  const { chainId } = useWeb3();
+  const { chain } = useNetwork();
   const tokenSymbol = useMemo(() => {
-    if (chainId === 80001) {
-      return 'MATIC';
+    if (chain?.id === baseSepolia.id) {
+      return baseSepolia.nativeCurrency.symbol;
     }
-    if (chainId === 137) {
-      return 'MATIC';
+    if (chain?.id === base.id) {
+      return base.nativeCurrency.symbol;
     }
 
-    return 'MATIC';
-  }, [chainId]);
+    return base.nativeCurrency.symbol;
+  }, [chain]);
 
   return tokenSymbol;
 };

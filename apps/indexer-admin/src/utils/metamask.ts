@@ -20,7 +20,7 @@ const ethMethods = {
 
 export const NETWORK_CONFIGS = {
   [ChainID.testnet]: networks.testnet,
-  [ChainID.kepler]: networks.kepler,
+  [ChainID.mainnet]: networks.mainnet,
 };
 
 export async function connectWithMetaMask(activate: Function) {

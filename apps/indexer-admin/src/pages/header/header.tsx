@@ -1,15 +1,14 @@
 // Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// @ts-nocheck
 import { useCallback, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Address, Dropdown } from '@subql/components';
 import styled from 'styled-components';
+import { useAccount, useDisconnect } from 'wagmi';
 
 import { Separator } from 'components/primary';
 import { useController, useIsIndexer, useTokenBalance } from 'hooks/indexerHook';
-import { useIsMetaMask, useWeb3 } from 'hooks/web3Hook';
 import SubqueryIcon from 'resources/subquery.svg';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
@@ -57,18 +56,18 @@ const OverrideDropdown = styled.div`
 `;
 
 const Header = () => {
-  const { account, deactivate } = useWeb3();
+  const { address: account } = useAccount();
+  const { disconnect } = useDisconnect();
   const { pathname } = useLocation();
-  const isMetaMask = useIsMetaMask();
   const isIndexer = useIsIndexer();
-  const controller = useController(account);
+  const controller = useController();
   const { tokenBalance } = useTokenBalance(account, pathname);
 
   const createItem = (key: string, label: string) => ({ key, label });
 
   const onSelected = (key: string) => {
     if (key === 'disconnect') {
-      deactivate();
+      disconnect();
     }
   };
 
@@ -103,15 +102,17 @@ const Header = () => {
 
   const renderAddress = () =>
     isRootPage ? (
-      <Address address={account} size="large" />
+      <Address address={account || ''} size="large" />
     ) : (
       <OverrideDropdown>
         <Dropdown
           className="headerDropdown"
           menuitem={accountDetails}
-          onSelected={onSelected}
+          onMenuItemClick={(info) => {
+            onSelected(info.key);
+          }}
           label=" "
-          LeftLabelIcon={<Address address={account} size="large" />}
+          LeftLabelIcon={<Address address={account || ''} size="large" />}
         />
       </OverrideDropdown>
     );
@@ -122,12 +123,10 @@ const Header = () => {
         <img src={SubqueryIcon} alt="subquery" />
         {!isRootPage && isIndexer && renderTabbars()}
       </LeftContainer>
-      {isMetaMask && (
-        <RightContainer>
-          <Separator width={30} color="#f6f9fc" />
-          {account && renderAddress()}
-        </RightContainer>
-      )}
+      <RightContainer>
+        <Separator width={30} color="#f6f9fc" />
+        {account && renderAddress()}
+      </RightContainer>
     </Container>
   );
 };
