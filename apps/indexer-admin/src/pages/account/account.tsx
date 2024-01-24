@@ -8,10 +8,10 @@ import { isUndefined } from 'lodash';
 import { useBalance } from 'wagmi';
 
 import AccountCard from 'components/accountCard';
+import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
 import { useAccount } from 'containers/account';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import {
   useController,
@@ -50,14 +50,17 @@ const Account = () => {
   const accountAction = useAccountAction();
   const isController = useIsController(account);
   const { controller } = useController();
-  const { data: controllerBalance } = useBalance({
+  const {
+    data: controllerBalance,
+    isLoading,
+    isRefetching,
+  } = useBalance({
     address: controller as `0x${string}`,
   });
   const { data: indexerBalance } = useBalance({
     address: account as `0x${string}`,
   });
   const { dispatchNotification } = useNotification();
-  const { setPageLoading } = useLoading();
   const history = useHistory();
   const tokenSymbol = useTokenSymbol();
 
@@ -68,11 +71,12 @@ const Account = () => {
   const indexerItem = prompts.indexer;
 
   useEffect(() => {
-    setPageLoading(isUndefined(account) || isUndefined(indexer));
-  }, [account, indexer, setPageLoading]);
-
-  useEffect(() => {
-    if (controllerBalance && !balanceSufficient(controllerBalance.formatted)) {
+    if (
+      !isLoading &&
+      !isRefetching &&
+      controllerBalance &&
+      !balanceSufficient(controllerBalance.formatted)
+    ) {
       dispatchNotification(notifications.controller);
     }
 
@@ -138,6 +142,8 @@ const Account = () => {
     () => ({ ...unregisterStep, ...updateMetadataStep }),
     [unregisterStep, updateMetadataStep]
   );
+
+  if (isUndefined(account) || isUndefined(indexer)) return <LoadingSpinner />;
 
   return (
     <Container>

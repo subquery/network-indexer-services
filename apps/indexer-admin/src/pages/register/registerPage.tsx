@@ -7,15 +7,16 @@ import { FormikHelpers } from 'formik';
 import { isUndefined } from 'lodash';
 
 import IntroductionView from 'components/introductionView';
+import { LoadingSpinner } from 'components/loading';
 import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import { useIsIndexer, useIsRegistedIndexer, useTokenBalance } from 'hooks/indexerHook';
 import { useInitialStep } from 'hooks/registerHook';
 import { useSignerOrProvider } from 'hooks/web3Hook';
 import { RegisterFormKey, TRegisterValues } from 'types/schemas';
+import { parseError } from 'utils/error';
 import { indexerRegistry, indexerRequestApprove } from 'utils/indexerActions';
 import { createIndexerMetadata } from 'utils/ipfs';
 import { verifyProxyEndpoint } from 'utils/validateService';
@@ -40,19 +41,16 @@ const RegisterPage = () => {
   const history = useHistory();
   const initialStep = useInitialStep();
   const { updateIndexer } = useCoordinatorIndexer();
-  const { setPageLoading } = useLoading();
   const { dispatchNotification } = useNotification();
 
   const [currentStep, setStep] = useState<RegisterStep>();
   const [loading, setLoading] = useState<boolean>(false);
 
   const isRegisterStep = useCallback(() => currentStep === RegisterStep.register, [currentStep]);
-
   useEffect(() => {
-    setPageLoading(isUndefined(initialStep) || isUndefined(isRegistedIndexer));
     if (initialStep) setStep(initialStep);
     if (isRegistedIndexer) setStep(RegisterStep.sync);
-  }, [initialStep, isRegistedIndexer, setPageLoading]);
+  }, [initialStep, isRegistedIndexer]);
 
   useEffect(() => {
     if (!account) {
@@ -71,6 +69,14 @@ const RegisterPage = () => {
 
   const onTransactionFailed = (error: any) => {
     console.error('Send transaction failed:', error);
+    dispatchNotification({
+      type: 'danger',
+      title: 'Send transaction failed',
+      message: parseError(error),
+      dismiss: {
+        duration: 5000,
+      },
+    });
     setLoading(false);
   };
 
@@ -164,6 +170,8 @@ const RegisterPage = () => {
       </RegistrySteps>
     );
   };
+
+  if (isUndefined(initialStep) || isUndefined(isRegistedIndexer)) return <LoadingSpinner />;
 
   return (
     <Container>

@@ -2,25 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* eslint-disable */
-import { useEffect } from 'react';
 import { Redirect } from 'react-router';
 import { useIsIndexer } from 'hooks/indexerHook';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useLoading } from 'containers/loadingContext';
 import { isUndefined } from 'lodash';
 import { Container } from './styles';
 import { useAccount } from 'containers/account';
 import ErrorPlaceholder from 'components/errorPlaceholder';
+import { LoadingSpinner } from 'components/loading';
 
 const LoginPage = () => {
   const { account } = useAccount();
   const isIndexer = useIsIndexer();
-  const { setPageLoading } = useLoading();
   const { loading, error } = useCoordinatorIndexer();
-
-  useEffect(() => {
-    setPageLoading(loading || isUndefined(isIndexer));
-  }, [loading, isIndexer]);
 
   if (error || isUndefined(isIndexer)) {
     return (
@@ -32,8 +26,8 @@ const LoginPage = () => {
 
   return (
     <Container>
-      {loading ? (
-        <div />
+      {loading || isUndefined(isIndexer) ? (
+        <LoadingSpinner />
       ) : (
         <div>
           {account && !isIndexer && <Redirect to="/register" />}
