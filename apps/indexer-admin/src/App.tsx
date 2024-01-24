@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { loadDevMessages, loadErrorMessages } from '@apollo/client/dev';
 import { Footer } from '@subql/components';
+import { useMount } from 'ahooks';
 import { RainbowProvider } from 'conf/rainbowConf';
 import { useAccount } from 'wagmi';
 
@@ -13,7 +14,7 @@ import { ChainStatus, ConnectWallet } from 'components/ConnectWallet';
 import Loading from 'components/loading';
 import { AccountProvider } from 'containers/account';
 import { ContractSDKProvider } from 'containers/contractSdk';
-import { CoordinatorIndexerProvider } from 'containers/coordinatorIndexer';
+import { CoordinatorIndexerProvider, useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { LoadingProvider } from 'containers/loadingContext';
 import { ModalProvider } from 'containers/modalContext';
 import { NotificationProvider, Notifications } from 'containers/notificationContext';
@@ -33,6 +34,11 @@ loadErrorMessages();
 
 const AppContents = () => {
   const { address } = useAccount();
+  const { load } = useCoordinatorIndexer();
+
+  useMount(() => {
+    load();
+  });
 
   return (
     <Router>

@@ -16,11 +16,7 @@ const LoginPage = () => {
   const { account } = useAccount();
   const isIndexer = useIsIndexer();
   const { setPageLoading } = useLoading();
-  const { loading, load, error } = useCoordinatorIndexer();
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { loading, error } = useCoordinatorIndexer();
 
   useEffect(() => {
     setPageLoading(loading || isUndefined(isIndexer));

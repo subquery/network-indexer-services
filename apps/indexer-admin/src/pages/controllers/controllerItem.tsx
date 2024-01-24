@@ -4,11 +4,11 @@
 import { FC } from 'react';
 import { Tag } from '@subql/components';
 import { isUndefined } from 'lodash';
+import { useBalance } from 'wagmi';
 
 import { asyncRender } from 'components/asyncRender';
 import Avatar from 'components/avatar';
 import { Button, Text } from 'components/primary';
-import { useBalance } from 'hooks/indexerHook';
 import { openAccountExporer } from 'utils/account';
 
 import { useTokenSymbol } from '../../hooks/network';
@@ -43,8 +43,10 @@ const ControllerItem: FC<Props> = ({
   const { active, activeBtn, withdrawBtn, removeBtn } = prompts.controllerItem;
   const isActived = address === controller;
 
-  const balance = useBalance(address);
-  const emptyBalance = Number(balance) === 0;
+  const { data: balance } = useBalance({
+    address: address as `0x${string}`,
+  });
+  const emptyBalance = Number(balance?.formatted) === 0;
   const account = { id, address };
   const tokenSymbol = useTokenSymbol();
   return (
@@ -59,7 +61,9 @@ const ControllerItem: FC<Props> = ({
             {address}
           </Text>
         </AccountContainer>
-        <Balance>{asyncRender(!!balance, <Text>{`${balance} ${tokenSymbol}`}</Text>)}</Balance>
+        <Balance>
+          {asyncRender(!!balance, <Text>{`${balance?.formatted} ${tokenSymbol}`}</Text>)}
+        </Balance>
         <Status>{isActived && <Tag color="success">{active}</Tag>}</Status>
       </ItemContentContainer>
       {asyncRender(
