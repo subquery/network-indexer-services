@@ -50,7 +50,11 @@ const Account = () => {
   const accountAction = useAccountAction();
   const isController = useIsController(account);
   const { controller } = useController();
-  const { data: controllerBalance } = useBalance({
+  const {
+    data: controllerBalance,
+    isLoading,
+    isRefetching,
+  } = useBalance({
     address: controller as `0x${string}`,
   });
   const { data: indexerBalance } = useBalance({
@@ -67,7 +71,12 @@ const Account = () => {
   const indexerItem = prompts.indexer;
 
   useEffect(() => {
-    if (controllerBalance && !balanceSufficient(controllerBalance.formatted)) {
+    if (
+      !isLoading &&
+      !isRefetching &&
+      controllerBalance &&
+      !balanceSufficient(controllerBalance.formatted)
+    ) {
       dispatchNotification(notifications.controller);
     }
 
