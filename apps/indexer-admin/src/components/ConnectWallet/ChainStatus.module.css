@@ -15,7 +15,9 @@
   padding: 2rem 3rem;
   background: white;
   border-radius: 1rem;
-  min-height: 40%;
+  max-width: 725px;
+  height: 300px;
+  align-items: center;
 }
 
 .title {
@@ -35,4 +37,5 @@
 
 .description {
   font-size: 18px;
+  text-align: center;
 }

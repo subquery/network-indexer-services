@@ -28,7 +28,10 @@ export const ConnectWallet: React.FC<Props> = ({ title, subTitle, className }) =
       <Typography variant="h4" className={styles.title} weight={600}>
         {title || 'Connect your wallet'}
       </Typography>
-      <Typography variant="text" className={styles.subtitle}>
+      <Typography
+        variant="text"
+        style={{ color: 'var(--gray700)', margin: '1rem 0', textAlign: 'center' }}
+      >
         {subTitle ||
           "To continue, please connect your wallet to the SubQuery Network. If you don't have a wallet, you can select a provider and create one now."}
       </Typography>
