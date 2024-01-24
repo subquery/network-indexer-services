@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApolloQueryResult, useMutation } from '@apollo/client';
 import { formatEther, formatUnits, parseEther, parseUnits } from '@ethersproject/units';
 import { GraphqlQueryClient } from '@subql/network-clients';
-import { NETWORK_CONFIGS } from '@subql/network-config';
+import { NETWORK_CONFIGS, STABLE_COIN_DECIMAL } from '@subql/network-config';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 
@@ -39,10 +39,7 @@ export function usePAYGConfig(deploymentId: string) {
       paygPrice:
         payg.token === sdk?.sqToken.address
           ? formatEther(BigNumber.from(payg.price).mul(1000))
-          : formatUnits(
-              BigNumber.from(payg.price).mul(1000),
-              +import.meta.env.VITE_STABLE_TOKEN_DECIMAL
-            ),
+          : formatUnits(BigNumber.from(payg.price).mul(1000), +STABLE_COIN_DECIMAL),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
       token: payg.token,
     };
