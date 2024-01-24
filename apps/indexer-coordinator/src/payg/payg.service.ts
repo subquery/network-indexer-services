@@ -3,7 +3,8 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StateChannel as StateChannelOnChain, bytes32ToCid } from '@subql/network-clients';
+import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
+import { bytes32ToCid } from '@subql/network-clients';
 import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 import lodash from 'lodash';
@@ -41,8 +42,9 @@ export class PaygService {
   }
 
   async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
-    // FIXME return this.network.getSdk().stateChannel.channelPrice(id);
-    return BigNumber.from('0');
+    // FIXME
+    return this.network.getSdk().stateChannel.channelPrice(id);
+    // return BigNumber.from('0');
   }
 
   async channelConsumerFromContract(id: BigNumber): Promise<string> {

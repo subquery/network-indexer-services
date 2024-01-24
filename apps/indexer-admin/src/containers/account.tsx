@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState } from 'react';
+import { useAccount as useAccountWagmi } from 'wagmi';
 
 import { createContainer } from './unstated';
 
@@ -10,16 +11,14 @@ type TAccountContext = {
   updateIsRegisterIndexer: (isIndexer: boolean) => void;
 
   account: string | undefined;
-  updateAccount: (account: string) => void;
 };
 
 function useAccountImpl(): TAccountContext {
-  const [account, updateAccount] = useState<string>();
+  const { address: account } = useAccountWagmi();
   const [isRegisterIndexer, updateIsRegisterIndexer] = useState<boolean>();
 
   return {
     account,
-    updateAccount,
     isRegisterIndexer,
     updateIsRegisterIndexer,
   };

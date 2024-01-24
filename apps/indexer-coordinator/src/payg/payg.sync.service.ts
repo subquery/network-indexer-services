@@ -4,7 +4,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { StateChannel as StateChannelOnChain } from '@subql/network-clients';
+import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
 import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 
@@ -133,10 +133,11 @@ export class PaygSyncService implements OnApplicationBootstrap {
         const hostIndexer = await this.account.getIndexer();
         if (indexer !== hostIndexer) return;
 
-        let [agent, consumer] = ['', _consumer];
+        // let [agent, consumer] = ['', _consumer];
+        let consumer = _consumer;
         try {
           consumer = utils.defaultAbiCoder.decode(['address'], callback)[0] as string;
-          agent = _consumer;
+          // agent = _consumer;
         } catch {
           logger.debug(`Channel created by user: ${consumer}`);
         }

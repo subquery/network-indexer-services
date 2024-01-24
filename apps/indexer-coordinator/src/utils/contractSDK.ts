@@ -14,12 +14,18 @@ import { Signer, providers } from 'ethers';
 // };
 
 export enum ChainID {
-  testnet = '0x13881',
+  testnet = '0x14a34',
+  'testnet-mumbai' = '0x13881',
   local = '0x7A69',
-  mainnet = '0x89',
+  mainnet = '0x2105',
 }
 
-export const ChainIDs = [ChainID.testnet, ChainID.local, ChainID.mainnet];
+export const ChainIDs = [
+  ChainID.testnet,
+  ChainID.local,
+  ChainID.mainnet,
+  ChainID['testnet-mumbai'],
+];
 
 function createContractOptions(network: SubqueryNetwork): SdkOptions {
   return {
@@ -30,6 +36,7 @@ function createContractOptions(network: SubqueryNetwork): SdkOptions {
 
 export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
   testnet: ChainID.testnet,
+  'testnet-mumbai': ChainID['testnet-mumbai'],
   local: ChainID.local,
   mainnet: ChainID.mainnet,
 };

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ObjectType } from '@nestjs/graphql';
-import { IPFSClient, IPFS_URLS } from '@subql/network-clients';
+import { IPFSClient } from '@subql/network-clients';
+import { IPFS_URLS } from '@subql/network-config';
 import yaml from 'js-yaml';
 import { isEqual } from 'lodash';
 import { IProjectConfig, Project } from '../project/project.model';

@@ -19,7 +19,7 @@ import {
 } from 'utils/indexerActions';
 import { handleTransaction } from 'utils/transactions';
 
-import { useSigner } from './web3Hook';
+import { useSignerOrProvider } from './web3Hook';
 
 type Callback = (e?: any) => any | Promise<any> | undefined;
 type AccountTxType = AccountAction | ControllerAction.configController;
@@ -29,7 +29,7 @@ const ActionNames = {
 };
 
 export const useAccountAction = () => {
-  const signer = useSigner();
+  const signer = useSignerOrProvider();
   const sdk = useContractSDK();
   const notificationContext = useNotification();
 
@@ -59,7 +59,8 @@ export const useAccountAction = () => {
 };
 
 export const useIndexingAction = (id: string) => {
-  const signer = useSigner();
+  const signer = useSignerOrProvider();
+
   const sdk = useContractSDK();
   const notificationContext = useNotification();
 
@@ -88,7 +89,8 @@ export const useIndexingAction = (id: string) => {
 };
 
 export const useGetIndexerMetadataCid = (indexer: string) => {
-  const signer = useSigner();
+  const signer = useSignerOrProvider();
+
   const sdk = useContractSDK();
   const [metadataCid, setMetadataCid] = useState<string>();
 

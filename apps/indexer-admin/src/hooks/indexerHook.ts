@@ -8,7 +8,7 @@ import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { notificationMsg } from 'containers/notificationContext';
-import { useWeb3 } from 'hooks/web3Hook';
+import { useSignerOrProvider } from 'hooks/web3Hook';
 import { Account, IndexerMetadata } from 'pages/account/types';
 import { HookDependency } from 'types/types';
 import { emptyControllerAccount } from 'utils/indexerActions';
@@ -119,18 +119,18 @@ export const useTokenBalance = (account: Account, deps?: HookDependency) => {
 
 export const useBalance = (account: Account) => {
   const [balance, setBalance] = useState<string>();
-  const { library } = useWeb3();
+  const signerOrProvider = useSignerOrProvider();
 
   const getBalance = useCallback(async () => {
-    if (!account || !library) return;
+    if (!account || !signerOrProvider) return;
     try {
-      const value = await library?.getBalance(account);
+      const value = await signerOrProvider?.getBalance(account);
       const fixedValue = Number(formatUnits(value, 18)).toFixed(4);
       setBalance(fixedValue);
     } catch (e) {
       console.error('Get balance failed for:', account);
     }
-  }, [account, library]);
+  }, [account, signerOrProvider]);
 
   useEffect(() => {
     getBalance();

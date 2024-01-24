@@ -5,10 +5,11 @@ import React from 'react';
 import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import { SQNetworks } from '@subql/network-config';
 import { intToHex } from 'ethereumjs-util';
+import { useNetwork } from 'wagmi';
 
-import { useIsMetaMask, useWeb3 } from 'hooks/web3Hook';
+import { useSignerOrProvider } from 'hooks/web3Hook';
 import Logger from 'utils/logger';
-import { ChainID, isSupportNetwork } from 'utils/web3';
+import { ChainID } from 'utils/web3';
 
 import { createContainer } from './unstated';
 
@@ -27,23 +28,23 @@ export type SDK = ContractSDK | undefined;
 
 function useContractsImpl(logger: Logger): SDK {
   const [sdk, setSdk] = React.useState<ContractSDK>();
-  const { library, chainId } = useWeb3();
-  const isMetaMask = useIsMetaMask();
+  const { chain } = useNetwork();
+  const signerOrProvider = useSignerOrProvider();
 
   React.useEffect(() => {
-    if (!chainId || !isSupportNetwork(intToHex(chainId) as ChainID)) return;
+    if (!chain?.id || chain.unsupported) return;
 
-    const sdkOption = options[intToHex(chainId) as ChainID];
+    const sdkOption = options[intToHex(chain.id) as ChainID];
     if (!sdkOption || !sdkOption.network) {
       throw new Error(
         'Invalid sdk options, contracts provider requires network and deploymentDetails'
       );
     }
 
-    if (library && isMetaMask) {
-      setSdk(ContractSDK.create(library, sdkOption));
+    if (signerOrProvider) {
+      setSdk(ContractSDK.create(signerOrProvider, sdkOption));
     }
-  }, [logger, library, chainId, isMetaMask]);
+  }, [logger, signerOrProvider, chain]);
 
   return sdk;
 }

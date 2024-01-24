@@ -5,16 +5,13 @@ import { useLocation } from 'react-router-dom';
 
 import Icon from 'components/Icon';
 import { Text } from 'components/primary';
-import { useIsMetaMask } from 'hooks/web3Hook';
 
 import { linkConfigs } from './config';
 import { Container, ContentContainer, IconsContainer } from './styles';
 
 const Header = () => {
   const location = useLocation();
-  const isMetamask = useIsMetaMask();
 
-  if (isMetamask) return null;
   if (['/project/', '/account'].includes(location.pathname)) return null;
 
   return (
@@ -30,7 +27,7 @@ const Header = () => {
         </IconsContainer>
       </ContentContainer>
       <Text ml={80} mt={5} color="white" fw="400" size={10}>
-        SubQuery © 2021
+        SubQuery © 2024
       </Text>
     </Container>
   );

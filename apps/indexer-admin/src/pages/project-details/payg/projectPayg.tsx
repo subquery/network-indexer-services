@@ -8,10 +8,10 @@ import { STABLE_COIN_SYMBOLS, TOKEN_SYMBOLS } from '@subql/network-config';
 import { useStableCoin } from '@subql/react-hooks';
 import { Input, Select } from 'antd';
 import BigNumber from 'bignumber.js';
+import { STABLE_COIN_ADDRESS } from 'conf/stableCoin';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
-import { STABLE_COIN_ADDRESS } from 'containers/web3';
 import { usePAYGConfig } from 'hooks/paygHook';
 import { SUPPORTED_NETWORK, TOKEN_SYMBOL } from 'utils/web3';
 
