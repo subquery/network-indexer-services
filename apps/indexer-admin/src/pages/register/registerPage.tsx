@@ -16,6 +16,7 @@ import { useIsIndexer, useIsRegistedIndexer, useTokenBalance } from 'hooks/index
 import { useInitialStep } from 'hooks/registerHook';
 import { useSignerOrProvider } from 'hooks/web3Hook';
 import { RegisterFormKey, TRegisterValues } from 'types/schemas';
+import { parseError } from 'utils/error';
 import { indexerRegistry, indexerRequestApprove } from 'utils/indexerActions';
 import { createIndexerMetadata } from 'utils/ipfs';
 import { verifyProxyEndpoint } from 'utils/validateService';
@@ -68,6 +69,14 @@ const RegisterPage = () => {
 
   const onTransactionFailed = (error: any) => {
     console.error('Send transaction failed:', error);
+    dispatchNotification({
+      type: 'danger',
+      title: 'Send transaction failed',
+      message: parseError(error),
+      dismiss: {
+        duration: 5000,
+      },
+    });
     setLoading(false);
   };
 
