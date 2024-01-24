@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router';
 import { useMutation } from '@apollo/client';
 import { isUndefined } from 'lodash';
+import { useBalance } from 'wagmi';
 
 import AccountCard from 'components/accountCard';
 import { PopupView } from 'components/popupView';
@@ -13,7 +14,6 @@ import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useLoading } from 'containers/loadingContext';
 import { useNotification } from 'containers/notificationContext';
 import {
-  useBalance,
   useController,
   useIndexerMetadata,
   useIsController,
@@ -50,8 +50,12 @@ const Account = () => {
   const accountAction = useAccountAction();
   const isController = useIsController(account);
   const { controller } = useController();
-  const controllerBalance = useBalance(controller);
-  const indexerBalance = useBalance(account);
+  const { data: controllerBalance } = useBalance({
+    address: controller as `0x${string}`,
+  });
+  const { data: indexerBalance } = useBalance({
+    address: account as `0x${string}`,
+  });
   const { dispatchNotification } = useNotification();
   const { setPageLoading } = useLoading();
   const history = useHistory();
@@ -59,7 +63,7 @@ const Account = () => {
 
   const [removeAccounts] = useMutation(REMOVE_ACCOUNTS);
 
-  prompts.controller.desc = `Balance: ${controllerBalance} ${tokenSymbol}`;
+  prompts.controller.desc = `Balance: ${controllerBalance?.formatted} ${tokenSymbol}`;
   const controllerItem = !controller ? prompts.emptyController : prompts.controller;
   const indexerItem = prompts.indexer;
 
@@ -68,7 +72,7 @@ const Account = () => {
   }, [account, indexer, setPageLoading]);
 
   useEffect(() => {
-    if (controllerBalance && !balanceSufficient(controllerBalance)) {
+    if (controllerBalance && !balanceSufficient(controllerBalance.formatted)) {
       dispatchNotification(notifications.controller);
     }
 
@@ -143,7 +147,7 @@ const Account = () => {
           name={indexerName}
           buttons={indexerButtons}
           account={account ?? ''}
-          desc={`Balance: ${indexerBalance} ${tokenSymbol}`}
+          desc={`Balance: ${indexerBalance?.formatted} ${tokenSymbol}`}
         />
       )}
       {(isIndexer || isController) && (
