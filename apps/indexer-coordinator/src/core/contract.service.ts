@@ -92,7 +92,12 @@ export class ContractService {
       const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
       const balance = await this.provider.getBalance(wallet.address);
       const value = balance.sub(tokenTransferGas);
-      const txToken = await wallet.sendTransaction({ to: indexer, value, gasPrice });
+      const txToken = await wallet.sendTransaction({
+        to: indexer,
+        value,
+        gasPrice,
+        gasLimit: 21000,
+      });
       await txToken.wait(5);
 
       logger.info(`Transfer all funds from controller to indexer successfully`);
