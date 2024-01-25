@@ -152,7 +152,7 @@ const RpcSetting: FC<IProps> = (props) => {
           <HorizeFormItem>
             <Form.Item
               label="Rate Limit"
-              tooltip="This feature allows you to manage and set rate limits for your agreement service and Flex Plan, helping you optimize service stability and performance"
+              tooltip="This feature allows you to manage and set rate limits for your Flex Plan, helping you optimize service stability and performance"
               name="rateLimit"
             >
               <InputNumber />
