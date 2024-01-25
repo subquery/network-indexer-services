@@ -24,7 +24,7 @@ function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
   const [indexer, setIndexer] = React.useState<string>();
 
   React.useEffect(() => {
-    setIndexer(data?.accountMetadata?.indexer);
+    setIndexer(data?.accountMetadata?.indexer || undefined);
   }, [data?.accountMetadata?.indexer]);
 
   React.useEffect(() => {
