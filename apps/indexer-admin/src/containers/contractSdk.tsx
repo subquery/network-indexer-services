@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React from 'react';
+import { openNotification } from '@subql/components';
 import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import { SQNetworks } from '@subql/network-config';
 import { tipsChainIds } from 'conf/rainbowConf';
@@ -37,6 +38,11 @@ function useContractsImpl(logger: Logger): SDK {
 
     const sdkOption = options[intToHex(chain.id) as ChainID];
     if (!sdkOption || !sdkOption.network) {
+      openNotification({
+        type: 'error',
+        description:
+          'Invalid sdk options, please upgrade to latest version or let us know in discord.',
+      });
       throw new Error(
         'Invalid sdk options, contracts provider requires network and deploymentDetails'
       );
