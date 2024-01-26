@@ -50,8 +50,7 @@ const IntroductionView: FC<Props> = ({ item, onClick, loading, link }) => {
           {title}
         </Typography>
         <Typography type="secondary" style={{ textAlign: 'center', marginTop: 16 }}>
-          {desc}
-          {link}
+          {desc} {link}
         </Typography>
       </TextContainer>
       <Button

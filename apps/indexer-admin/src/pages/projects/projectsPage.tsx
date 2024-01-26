@@ -161,7 +161,7 @@ const Projects = () => {
         onClick={() => {
           openNotification({
             type: 'error',
-            description: `There are errors, please contract developer or upgrade to latest version. ${error.message}`,
+            description: `There are errors, please refetch the page or upgrade to latest version. ${error.message}`,
           });
         }}
       />
@@ -241,7 +241,10 @@ const Projects = () => {
                                     <Typography type="secondary" variant="medium">
                                       Chain ID:
                                     </Typography>
-                                    <Typography variant="medium">
+                                    <Typography
+                                      variant="medium"
+                                      style={{ overflowWrap: 'anywhere' }}
+                                    >
                                       {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
                                         manifest.data.getManifest.subqueryManifest?.network
                                           ?.chainId ||
