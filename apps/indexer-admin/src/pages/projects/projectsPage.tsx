@@ -161,7 +161,7 @@ const Projects = () => {
         onClick={() => {
           openNotification({
             type: 'error',
-            description: `There have errors, please contract developer or upgrade to latest version. ${error.message}`,
+            description: `There are errors, please contract developer or upgrade to latest version. ${error.message}`,
           });
         }}
       />
