@@ -4,6 +4,7 @@
 import React from 'react';
 import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
 import { SQNetworks } from '@subql/network-config';
+import { tipsChainIds } from 'conf/rainbowConf';
 import { intToHex } from 'ethereumjs-util';
 import { useNetwork } from 'wagmi';
 
@@ -32,7 +33,7 @@ function useContractsImpl(logger: Logger): SDK {
   const signerOrProvider = useSignerOrProvider();
 
   React.useEffect(() => {
-    if (!chain?.id || chain.unsupported) return;
+    if (!chain?.id || !tipsChainIds.includes(chain.id)) return;
 
     const sdkOption = options[intToHex(chain.id) as ChainID];
     if (!sdkOption || !sdkOption.network) {
