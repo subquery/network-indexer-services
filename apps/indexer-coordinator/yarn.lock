@@ -1658,10 +1658,15 @@
     ethers "^5.6.8"
     graphql "^16.5.0"
 
-"@subql/network-config@0.114.0", "@subql/network-config@^0.114.0":
+"@subql/network-config@0.114.0":
   version "0.114.0"
   resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.114.0.tgz#b951ee9e43c5fd89e99d7dd96b94bc5b6627ed54"
   integrity sha512-SnMXGhxzew8sTO6MMHc6EKDNBndFMQT18nXbITmPO+FvCSg5K2bXLOB57f8eLspzPUQA53YuY8eviTNxHK5RZA==
+
+"@subql/network-config@0.114.1-1":
+  version "0.114.1-1"
+  resolved "https://registry.yarnpkg.com/@subql/network-config/-/network-config-0.114.1-1.tgz#ab0c080383488120365fd943543429c44f15dad5"
+  integrity sha512-YsI/fcbBMI+YKMnbEDKsMfveGOyNuGCYpKIJnWUn1bOHw2qEDQvxgWUGgIkvW0f4ak3iyhpRe9rsKroadWYdgg==
 
 "@subql/network-query@0.112.0":
   version "0.112.0"
