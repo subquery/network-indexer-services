@@ -24,8 +24,8 @@ use ethers::{
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use subql_contracts::{
-    consumer_host, consumer_host_parse, consumer_registry, plan_manager,
-    service_agreement_registry, sqtoken_parse,
+    consumer_host, consumer_host_parse, consumer_registry, l2_sqtoken_parse, plan_manager,
+    service_agreement_registry,
 };
 use subql_indexer_utils::{error::Error, price_oracle::convert_price};
 use tdn::prelude::PeerId;
@@ -233,7 +233,7 @@ pub async fn check_convert_price(
     );
     let network = COMMAND.network();
 
-    let (_, sqt) = sqtoken_parse(network).map_err(|_| Error::ServiceException(1023))?;
+    let (_, sqt) = l2_sqtoken_parse(network).map_err(|_| Error::ServiceException(1023))?;
     let check_amount = convert_price(asset_from, sqt, amount_from, client, network).await?;
 
     Ok(amount_to >= check_amount)

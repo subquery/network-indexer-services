@@ -4,11 +4,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
 import { Modal, Tooltip, Typography } from '@subql/components';
-import { STABLE_COIN_SYMBOLS, TOKEN_SYMBOLS } from '@subql/network-config';
-import { useStableCoin } from '@subql/react-hooks';
+import { TOKEN_SYMBOLS } from '@subql/network-config';
 import { Input, Select } from 'antd';
-import BigNumber from 'bignumber.js';
-import { STABLE_COIN_ADDRESS } from 'conf/stableCoin';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
@@ -39,7 +36,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
     return innerConfig.paygExpiration && innerConfig.paygPrice;
   }, [innerConfig]);
 
-  const { rates, fetchedTime } = useStableCoin(sdk, SUPPORTED_NETWORK);
+  // const { rates, fetchedTime } = useStableCoin(sdk, SUPPORTED_NETWORK);
 
   const [paygConf, setPaygConf] = useState({
     token: '',
@@ -74,14 +71,14 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
               </Typography>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="medium">
+                {/* <Typography variant="medium">
                   {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
                   <br />
                 </Typography>
                 <Typography variant="medium" type="secondary">
                   = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
                   {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
-                </Typography>
+                </Typography> */}
               </div>
             )
           }
@@ -97,7 +94,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
         open={showModal}
         okText="Enable"
         title="Enable Flex Plan"
-        onOk={async () => {
+        onSubmit={async () => {
           await changePAYGCofnig(paygConf);
           setShowModal(false);
         }}
@@ -124,6 +121,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                   });
                 }}
                 type="number"
+                disabled={loading}
                 addonAfter={
                   <Select
                     value={paygConf.token}
@@ -134,19 +132,19 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                       });
                     }}
                     options={[
-                      {
-                        value: STABLE_COIN_ADDRESS,
-                        label: (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <img
-                              style={{ width: 24, height: 24, marginRight: 8 }}
-                              src="/images/usdc.png"
-                              alt=""
-                            />
-                            <Typography>USDC</Typography>
-                          </div>
-                        ),
-                      },
+                      // {
+                      //   value: STABLE_COIN_ADDRESS,
+                      //   label: (
+                      //     <div style={{ display: 'flex', alignItems: 'center' }}>
+                      //       <img
+                      //         style={{ width: 24, height: 24, marginRight: 8 }}
+                      //         src="/images/usdc.png"
+                      //         alt=""
+                      //       />
+                      //       <Typography>USDC</Typography>
+                      //     </div>
+                      //   ),
+                      // },
                       {
                         value: sdk.sqToken.address,
                         label: (

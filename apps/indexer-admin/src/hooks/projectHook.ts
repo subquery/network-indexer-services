@@ -49,16 +49,10 @@ const metadataInitValue = {
 const coordinatorClient = createApolloClient(coordinatorServiceUrl);
 
 export const useProjectDetails = (deploymentId: string) => {
-  const { notification } = useNotification();
-  // TODO add type
   const projectQuery = useQuery<{ project: ProjectDetails }>(GET_PROJECT, {
     fetchPolicy: 'network-only',
     variables: { id: deploymentId },
   });
-
-  useEffect(() => {
-    projectQuery.refetch();
-  }, [projectQuery, notification?.type]);
 
   return projectQuery;
 };
