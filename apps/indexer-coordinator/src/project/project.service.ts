@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { GraphqlQueryClient, IPFS_URLS, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
+import { GraphqlQueryClient, IPFSClient, NETWORK_CONFIGS } from '@subql/network-clients';
 import { argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 
@@ -64,7 +64,7 @@ export class ProjectService {
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
-    this.ipfsClient = new IPFSClient(IPFS_URLS.project);
+    this.ipfsClient = new IPFSClient(IPFS_URL);
     void this.restoreProjects();
   }
 
