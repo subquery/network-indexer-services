@@ -152,8 +152,33 @@ export class ContractService {
       );
       return status as IndexerDeploymentStatus;
     } catch (e) {
-      getLogger('contract').error(e, `failed to get indexing status for project: ${id}`);
+      logger.error(e, `failed to get indexing status for project: ${id}`);
       return IndexerDeploymentStatus.TERMINATED;
+    }
+  }
+
+  async getAllocationRewards(deploymentId: string, runner: string): Promise<BigNumber> {
+    try {
+      const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
+        deploymentId,
+        runner
+      );
+      logger.debug(
+        `allocation rewards for deployment: ${deploymentId} is ${rewards}, burnt: ${burnt}`
+      );
+      return rewards;
+    } catch (e) {
+      logger.warn(e, `Fail to get allocation rewards for deployment: ${deploymentId}`);
+      return BigNumber.from(0);
+    }
+  }
+
+  async claimAllocationRewards(deploymentId: string, runner: string): Promise<void> {
+    try {
+      const tx = await this.sdk.rewardsBooster.collectAllocationReward(deploymentId, runner);
+      await tx.wait(5);
+    } catch (e) {
+      logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
     }
   }
 }

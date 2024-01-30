@@ -151,4 +151,11 @@ export class NetworkService {
     }
     return result?.data?.offers as GetAllOpenOffersQuery['offers'];
   }
+
+  async getDeploymentsWithAllocation(): Promise<{ id: string }[]> {
+    await new Promise(() => {
+      //
+    });
+    return [];
+  }
 }
