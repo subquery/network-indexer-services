@@ -91,7 +91,8 @@ export class ContractService {
       const gasPrice = await this.provider.getGasPrice();
       const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
       const balance = await this.provider.getBalance(wallet.address);
-      const value = balance.sub(tokenTransferGas);
+      const l1DataFee = 4000 * 60 * 1000000000;
+      const value = balance.sub(tokenTransferGas).sub(l1DataFee);
       const txToken = await wallet.sendTransaction({
         to: indexer,
         value,
