@@ -18,7 +18,7 @@
 
 use ethers::{
     signers::{LocalWallet, Signer},
-    types::Address,
+    types::{Address, H160},
 };
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
@@ -30,9 +30,25 @@ use crate::cli::COMMAND;
 use crate::metrics::{get_services_version, get_status};
 use crate::p2p::{start_network, stop_network};
 
+// sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
+const EMPTY_CONTROLLER: H160 = H160([
+    126, 95, 69, 82, 9, 26, 105, 18, 93, 93, 252, 183, 184, 194, 101, 144, 41, 57, 91, 223,
+]);
+
 pub struct Account {
     pub indexer: Address,
     pub controller: LocalWallet,
+}
+
+impl Account {
+    pub fn controller_address(&self) -> Address {
+        let address = self.controller.address();
+        if address == EMPTY_CONTROLLER {
+            Address::default()
+        } else {
+            address
+        }
+    }
 }
 
 impl Default for Account {
@@ -117,7 +133,7 @@ pub async fn get_indexer() -> String {
 
 pub async fn indexer_healthy() -> Value {
     let lock = ACCOUNT.read().await;
-    let controller = lock.controller.clone();
+    let controller = lock.controller_address();
     let indexer = lock.indexer.clone();
     drop(lock);
 
@@ -133,7 +149,7 @@ pub async fn indexer_healthy() -> Value {
 
     json!({
         "indexer": format!("{:?}", indexer),
-        "controller": format!("{:?}", controller.address()),
+        "controller": format!("{:?}", controller),
         "uptime": uptime,
         "proxyVersion": proxy_version,
         "coordinatorVersion": coordinator_version,
