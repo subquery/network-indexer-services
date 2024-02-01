@@ -56,7 +56,7 @@ services:
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
       - --coordinator-endpoint=http://indexer_coordinator:8000
-      - --network-endpoint=https://rpc.ankr.com/polygon_mumbai
+      - --network-endpoint=https://sepolia.base.org
       - --redis-endpoint=redis://indexer_cache
     healthcheck:
       test: ['CMD-SHELL', 'curl http://localhost:8001/healthy >/dev/null 2>&1 || exit 1']
@@ -80,7 +80,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --network=testnet
-      - --network-endpoint=https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78
+      - --network-endpoint=https://sepolia.base.org
       - --postgres-host=postgres
       - --postgres-password=pos_z8X
       - --postgres-port=5432

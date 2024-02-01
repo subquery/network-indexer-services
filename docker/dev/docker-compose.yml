@@ -40,7 +40,7 @@ services:
       - 8080:8080
 
   proxy:
-    image: subquerynetwork/indexer-proxy:latest
+    image: subquerynetwork/indexer-proxy:v2.0.0-beta.14
     container_name: indexer_proxy
     ports:
       - 7370:7370/udp
@@ -56,7 +56,7 @@ services:
       - --token-duration=8 # query auth token validity [hours]
       - --network=testnet
       - --coordinator-endpoint=http://host.docker.internal:8000
-      - --network-endpoint=https://rpc.ankr.com/polygon_mumbai
+      - --network-endpoint=https://sepolia.base.org
       - --redis-endpoint=redis://indexer_cache
     healthcheck:
       test: ['CMD-SHELL', 'curl http://localhost:8001/healthy >/dev/null 2>&1 || exit 1']
