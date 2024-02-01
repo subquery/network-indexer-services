@@ -76,6 +76,19 @@ export class NetworkService implements OnApplicationBootstrap {
     })();
   }
 
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async doNetworkActions() {
+    if (!(await this.checkControllerReady())) return;
+
+    try {
+      for (const action of this.networkActions()) {
+        await action();
+      }
+    } catch (e) {
+      debugLogger('network', `failed to update network: ${String(e)}`);
+    }
+  }
+
   getSdk() {
     return this.sdk;
   }
@@ -322,16 +335,29 @@ export class NetworkService implements OnApplicationBootstrap {
     return true;
   }
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
-  async doNetworkActions() {
-    if (!(await this.checkControllerReady())) return;
-
+  async getAllocationRewards(deploymentId: string, runner: string): Promise<BigNumber> {
     try {
-      for (const action of this.networkActions()) {
-        await action();
-      }
+      const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
+        deploymentId,
+        runner
+      );
+      logger.debug(
+        `allocation rewards for deployment: ${deploymentId} is ${rewards}, burnt: ${burnt}`
+      );
+      return rewards;
     } catch (e) {
-      debugLogger('network', `failed to update network: ${String(e)}`);
+      logger.warn(e, `Fail to get allocation rewards for deployment: ${deploymentId}`);
+      return BigNumber.from(0);
+    }
+  }
+
+  async claimAllocationRewards(deploymentId: string, runner: string): Promise<void> {
+    try {
+      await this.sendTransaction('claim allocation rewards', async (overrides) =>
+        this.sdk.rewardsBooster.collectAllocationReward(deploymentId, runner, overrides)
+      );
+    } catch (e) {
+      logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
     }
   }
 }

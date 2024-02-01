@@ -5,14 +5,14 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { NetworkService } from 'src/network/network.service';
 import { AccountService } from './account.service';
-import { ContractService } from './contract.service';
+import { NetworkService as OnChainService } from './network.service';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
   constructor(
-    private contractService: ContractService,
     private accountService: AccountService,
-    private networkService: NetworkService
+    private networkService: NetworkService,
+    private onChainService: OnChainService
   ) {}
 
   onModuleInit() {
@@ -27,14 +27,14 @@ export class RewardService implements OnModuleInit {
       indexerId
     );
     for (const allocation of deploymentAllocations) {
-      const rewards = await this.contractService.getAllocationRewards(
+      const rewards = await this.onChainService.getAllocationRewards(
         allocation.deploymentId,
         indexerId
       );
       if (rewards.eq(0)) {
         continue;
       }
-      await this.contractService.claimAllocationRewards(allocation.id, indexerId);
+      await this.onChainService.claimAllocationRewards(allocation.id, indexerId);
     }
   }
 }
