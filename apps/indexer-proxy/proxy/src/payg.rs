@@ -197,6 +197,7 @@ pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
     let account = ACCOUNT.read().await;
     let indexer = account.indexer.clone();
     let controller = account.controller.clone();
+    let controller_address = account.controller_address();
     drop(account);
     let mut values = vec![];
     if let Some(pid) = project_id {
@@ -220,7 +221,7 @@ pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
 
     Ok(json!({
         "indexer": format!("{:?}", indexer),
-        "controller": format!("{:?}", controller.address()),
+        "controller": format!("{:?}", controller_address),
         "deployments": values,
     }))
 }
@@ -244,7 +245,7 @@ pub async fn open_state(body: &Value) -> Result<Value> {
                 state.price_sign,
             )?;
             let account = ACCOUNT.read().await;
-            let controller_account = account.controller.address();
+            let controller_account = account.controller_address();
             drop(account);
             if signer != controller_account {
                 return Err(Error::InvalidProjectPrice(1048));
