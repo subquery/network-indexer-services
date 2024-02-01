@@ -51,5 +51,5 @@ export class AccountMetaDataType {
   network: string;
 
   @Field()
-  wsEndpoint: string;
+  networkEndpoint: string;
 }

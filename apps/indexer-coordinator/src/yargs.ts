@@ -29,9 +29,9 @@ function getYargsOption() {
       default: 'kepler',
       group: Groups.coordinator,
     },
-    'ws-endpoint': {
+    'network-endpoint': {
       type: 'string',
-      describe: 'Specify wss endpoint for this network',
+      describe: 'Specify rpc endpoint for this network',
       demandOption: true,
       default: 'https://polygon-rpc.com',
       group: Groups.coordinator,

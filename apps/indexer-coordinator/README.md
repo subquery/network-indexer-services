@@ -53,7 +53,7 @@ indexer-coordinator -help
 Indexer Coordinator
   --network      Network type for the service
             [string] [choices: "local", "testnet", "mainnet"] [default: "local"]
-  --ws-endpoint  Specify wss endpoint for this network       [string] [required]
+  --network-endpoint  Specify wss endpoint for this network       [string] [required]
   --port         Port the service will listen on        [number] [default: 8000]
 
 Postgres
@@ -73,7 +73,7 @@ Options:
 
 ```sh
 indexer-coordinator --network testnet \
-    --ws-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' \
+    --network-endpoint 'https://moonbeam-alpha.api.onfinality.io/public' \
     --postgres-host localhost \
     --postgres-database coordinator \
     --postgres-port 5432 \

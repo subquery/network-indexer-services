@@ -34,7 +34,7 @@ services:
     command:
       - --network=testnet # Change to the network you want to index [testnet | kepler | mainnet]
       - --postgres-host=postgres
-      - --ws-endpoint=https://sepolia.base.org
+      - --network-endpoint=https://sepolia.base.org
       - --postgres-password=<replace with you own password> # Change to your postgres password
       - --postgres-port=5432
       - --port=8000
