@@ -336,6 +336,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async getAllocationRewards(deploymentId: string, runner: string): Promise<BigNumber> {
+    if (!(await this.checkControllerReady())) return BigNumber.from(0);
     try {
       const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
         deploymentId,
@@ -352,6 +353,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async claimAllocationRewards(deploymentId: string, runner: string): Promise<void> {
+    if (!(await this.checkControllerReady())) return;
     try {
       await this.sendTransaction('claim allocation rewards', async (overrides) =>
         this.sdk.rewardsBooster.collectAllocationReward(deploymentId, runner, overrides)
