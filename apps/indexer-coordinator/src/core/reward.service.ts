@@ -22,14 +22,19 @@ export class RewardService implements OnModuleInit {
 
   @Cron('0 0 1 * * *')
   async autoClaimAllocationRewards() {
-    const deployments = await this.networkService.getDeploymentsWithAllocation();
     const indexerId = await this.accountService.getIndexer();
-    for (const deployment of deployments) {
-      const rewards = await this.contractService.getAllocationRewards(deployment.id, indexerId);
+    const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
+      indexerId
+    );
+    for (const allocation of deploymentAllocations) {
+      const rewards = await this.contractService.getAllocationRewards(
+        allocation.deploymentId,
+        indexerId
+      );
       if (rewards.eq(0)) {
         continue;
       }
-      await this.contractService.claimAllocationRewards(deployment.id, indexerId);
+      await this.contractService.claimAllocationRewards(allocation.id, indexerId);
     }
   }
 }

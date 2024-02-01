@@ -16,3 +16,15 @@ export class ProjectDetailsFromNetwork {
   @Field({ nullable: true })
   totalOffer: number;
 }
+
+export class IndexerAllocationSummary {
+  id?: string;
+  proejctId?: string;
+  deploymentId?: string;
+  indexerId?: string;
+  totalAdded?: bigint;
+  totalRemoved?: bigint;
+  totalAmount?: bigint;
+  createAt?: Date;
+  updateAt?: Date;
+}
