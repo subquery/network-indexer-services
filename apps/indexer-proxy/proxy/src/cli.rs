@@ -103,6 +103,9 @@ pub struct CommandLineArgs {
     /// The auth bearer for prometheus fetch metrics
     #[structopt(long = "metrics-token", default_value = "thisismyAuthtoken")]
     pub metrics_token: String,
+    /// The max overflow when unit greater than overflow configure.
+    #[structopt(long = "max-unit-overflow", default_value = "10")]
+    pub max_unit_overflow: u32,
 }
 
 impl CommandLineArgs {

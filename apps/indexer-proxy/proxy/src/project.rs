@@ -43,7 +43,7 @@ use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
-use crate::cli::redis;
+use crate::cli::{redis, COMMAND};
 use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -54,8 +54,52 @@ pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
 #[derive(Clone)]
 pub enum ProjectType {
     Subquery,
-    RpcEvm,
-    RpcSubstrate,
+    RpcEvm(RpcMainfest),
+    RpcSubstrate(RpcMainfest),
+}
+
+#[derive(Clone, Default)]
+enum NodeType {
+    #[default]
+    Full,
+    Archive,
+}
+
+//impl Default for NodeType
+
+#[derive(Clone)]
+struct ComputeUnit {
+    value: u32,
+    overflow: u32,
+}
+
+#[derive(Clone, Default)]
+pub struct RpcMainfest {
+    node_type: NodeType,
+    feature_flags: Vec<String>,
+    rpc_allow_list: Vec<String>,
+    rpc_deny_list: Vec<String>,
+    compute_unit: HashMap<String, ComputeUnit>,
+}
+
+impl RpcMainfest {
+    fn parse() -> Self {
+        let _ = COMMAND.max_unit_overflow;
+        //payg_overflow;
+
+        // compute unit overflow times
+
+        Self::default()
+    }
+
+    // correct times & reasonable overflow times
+    pub fn unit_times(&self, method: &str) -> (u32, u32) {
+        if let Some(cu) = self.compute_unit.get(method) {
+            (cu.value, cu.overflow)
+        } else {
+            (1, 1)
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -82,8 +126,8 @@ impl Project {
     pub async fn metadata(&self, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
         let mut metadata = match self.ptype {
             ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
-            ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
-            ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, block, network).await?,
+            ProjectType::RpcEvm(_) => rpc_evm_metadata(&self, block, network).await?,
+            ProjectType::RpcSubstrate(_) => rpc_substrate_metadata(&self, block, network).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -157,11 +201,11 @@ impl Project {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm => {
+            ProjectType::RpcEvm(_) => {
                 // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
-            ProjectType::RpcSubstrate => {
+            ProjectType::RpcSubstrate(_) => {
                 // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
@@ -383,9 +427,10 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let payg_overflow = item.payg_overflow.into();
         let payg_expiration = item.payg_expiration;
 
+        let rpc_mainfest = RpcMainfest::parse();
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
-            1 => ProjectType::RpcEvm,
+            1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
             _ => {
                 error!("Invalid project type");
                 return Ok(());
@@ -396,13 +441,13 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         for endpoint in item.project_endpoints {
             match endpoint.key.as_str() {
                 "evmHttp" => {
-                    ptype = ProjectType::RpcEvm;
+                    ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
                 }
                 "substrateHttp" => {
-                    ptype = ProjectType::RpcSubstrate;
+                    ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
