@@ -93,7 +93,8 @@ export class ContractService {
       const tokenTransferGas = gasPrice.mul(gasLimit);
       const balance = await this.provider.getBalance(wallet.address);
       let value = balance.sub(tokenTransferGas);
-      // const l1DataFee = 4000 * 60 * 1000000000;
+      // l1DataFee is arround 4000 * [20 ~ 60] * 1000000000 and it keeps changing
+      // we use overshot here to make a more accurate estimate
       const l1DataFee = await this.tryTranserOrGetOvershot(wallet, {
         to: indexer,
         value,
