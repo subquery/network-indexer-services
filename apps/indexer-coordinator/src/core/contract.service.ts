@@ -103,6 +103,7 @@ export class ContractService {
       if (l1DataFee.eq(0)) {
         return true;
       }
+      // add 1% to avoid insufficient funds
       value = value.sub(l1DataFee.mul(101).div(100));
       const txToken = await this.walletTransfer(wallet, {
         to: indexer,
