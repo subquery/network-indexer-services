@@ -69,8 +69,8 @@ enum NodeType {
 
 #[derive(Clone)]
 struct ComputeUnit {
-    value: u32,
-    overflow: u32,
+    value: u64,
+    overflow: u64,
 }
 
 #[derive(Clone, Default)]
@@ -83,21 +83,31 @@ pub struct RpcMainfest {
 }
 
 impl RpcMainfest {
-    fn parse() -> Self {
-        let _ = COMMAND.max_unit_overflow;
-        //payg_overflow;
+    fn parse(payg_overflow: u64) -> Self {
+        // TODO
 
         // compute unit overflow times
+        let unit_value = 100; // mock
+        let allowed_times = payg_overflow / unit_value;
+        let overflow = if allowed_times < COMMAND.max_unit_overflow {
+            if payg_overflow > COMMAND.max_unit_overflow {
+                payg_overflow / COMMAND.max_unit_overflow
+            } else {
+                1
+            }
+        } else {
+            payg_overflow
+        };
 
         Self::default()
     }
 
     // correct times & reasonable overflow times
-    pub fn unit_times(&self, method: &str) -> (u32, u32) {
+    pub fn unit_times(&self, method: &str) -> Result<(u64, u64)> {
         if let Some(cu) = self.compute_unit.get(method) {
-            (cu.value, cu.overflow)
+            Ok((cu.value, cu.overflow))
         } else {
-            (1, 1)
+            Ok((1, 1))
         }
     }
 }
@@ -111,10 +121,21 @@ pub struct Project {
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
-    pub payg_overflow: U256,
+    pub payg_overflow: u64,
 }
 
 impl Project {
+    pub fn compute_query_method(&self, _query: &str) -> Result<(u64, u64)> {
+        // TODO parse the method from query
+
+        // compute unit times
+        let method = "";
+        match &self.ptype {
+            ProjectType::Subquery => Ok((1, 1)),
+            ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => m.unit_times(method),
+        }
+    }
+
     pub fn endpoint<'a>(&'a self) -> &'a str {
         &self.endpoints[0].1
     }
@@ -427,7 +448,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let payg_overflow = item.payg_overflow.into();
         let payg_expiration = item.payg_expiration;
 
-        let rpc_mainfest = RpcMainfest::parse();
+        let rpc_mainfest = RpcMainfest::parse(payg_overflow);
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),

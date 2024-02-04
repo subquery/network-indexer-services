@@ -303,7 +303,8 @@ async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
         "total": state.total.to_string(),
         "spent": state.spent.to_string(),
         "remote": state.remote.to_string(),
-        "conflict": state.conflict,
+        "conflict_start": state.conflict_start,
+        "conflict_times": state.conflict_times
     })))
 }
 

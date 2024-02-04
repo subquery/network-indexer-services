@@ -105,7 +105,7 @@ pub struct CommandLineArgs {
     pub metrics_token: String,
     /// The max overflow when unit greater than overflow configure.
     #[structopt(long = "max-unit-overflow", default_value = "10")]
-    pub max_unit_overflow: u32,
+    pub max_unit_overflow: u64,
 }
 
 impl CommandLineArgs {
