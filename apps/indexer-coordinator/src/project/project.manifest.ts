@@ -33,6 +33,14 @@ class ClientClass {
   version: string;
 }
 
+@ObjectType('ComputeUnitClass')
+class ComputeUnitClass {
+  @Field(() => String, { nullable: true })
+  name: string;
+  @Field(() => String, { nullable: true })
+  value: string;
+}
+
 @ObjectType('RpcManifest')
 export class RpcManifest {
   @Field(() => String, { nullable: true })
@@ -53,6 +61,12 @@ export class RpcManifest {
   client?: ClientClass;
   @Field(() => [String], { nullable: true })
   featureFlags?: string[];
+  @Field(() => [String], { nullable: true })
+  rpcAllowList?: string[];
+  @Field(() => [String], { nullable: true })
+  rpcDenyList?: string[];
+  @Field(() => [ComputeUnitClass], { nullable: true })
+  computeUnit?: ComputeUnitClass[];
 }
 
 @ObjectType('AggregatedManifest')

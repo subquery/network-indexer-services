@@ -29,7 +29,7 @@ export class ContractService {
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
     this.existentialBalance = parseEther('0.05');
-    this.provider = initProvider(config.wsEndpoint, this.chainID);
+    this.provider = initProvider(config.networkEndpoint, this.chainID);
     this.sdk = initContractSDK(this.provider, this.chainID);
   }
 
@@ -89,14 +89,28 @@ export class ContractService {
 
       // send Chain Token
       const gasPrice = await this.provider.getGasPrice();
-      const tokenTransferGas = BigNumber.from(21000).mul(gasPrice);
+      const gasLimit = BigNumber.from(21000);
+      const tokenTransferGas = gasPrice.mul(gasLimit);
       const balance = await this.provider.getBalance(wallet.address);
-      const value = balance.sub(tokenTransferGas);
-      const txToken = await wallet.sendTransaction({
+      let value = balance.sub(tokenTransferGas);
+      // l1DataFee is arround 4000 * [20 ~ 60] * 1000000000 and it keeps changing
+      // we use overshot here to make a more accurate estimate
+      const l1DataFee = await this.tryTranserOrGetOvershot(wallet, {
         to: indexer,
         value,
         gasPrice,
-        gasLimit: 21000,
+        gasLimit: gasLimit,
+      });
+      if (l1DataFee.eq(0)) {
+        return true;
+      }
+      // add 1% to avoid insufficient funds
+      value = value.sub(l1DataFee.mul(101).div(100));
+      const txToken = await this.walletTransfer(wallet, {
+        to: indexer,
+        value,
+        gasPrice,
+        gasLimit: gasLimit,
       });
       await txToken.wait(5);
 
@@ -106,6 +120,34 @@ export class ContractService {
     } catch (e) {
       logger.warn(e, `Fail to transfer all funds from controller to indexer`);
       return false;
+    }
+  }
+
+  async walletTransfer(
+    wallet: Wallet,
+    request: providers.TransactionRequest
+  ): Promise<providers.TransactionResponse> {
+    return wallet.sendTransaction(request);
+  }
+
+  async tryTranserOrGetOvershot(
+    wallet: Wallet,
+    request: providers.TransactionRequest
+  ): Promise<BigNumber> {
+    try {
+      const tx = await this.walletTransfer(wallet, request);
+      await tx.wait(5);
+      return BigNumber.from(0);
+    } catch (e: any) {
+      if (!e.message.includes('insufficient funds')) {
+        throw e;
+      }
+      const match = e.message.match(/overshot (\d+)/);
+      let overshot = match && match[1];
+      if (isNaN(overshot)) {
+        overshot = 0;
+      }
+      return BigNumber.from(overshot);
     }
   }
 
@@ -152,7 +194,7 @@ export class ContractService {
       );
       return status as IndexerDeploymentStatus;
     } catch (e) {
-      getLogger('contract').error(e, `failed to get indexing status for project: ${id}`);
+      logger.error(e, `failed to get indexing status for project: ${id}`);
       return IndexerDeploymentStatus.TERMINATED;
     }
   }

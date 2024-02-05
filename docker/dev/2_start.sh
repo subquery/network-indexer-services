@@ -35,7 +35,7 @@ yarn start:docker \
   --postgres-username $POSTGRES_USERNAME \
   --postgres-password $POSTGRES_PASSWORD \
   --network $NETWORK \
-  --ws-endpoint $WS_ENDPOINT \
+  --network-endpoint $NETWORK_ENDPOINT \
   --use-prerelease \
   --debug \
   --dev \

@@ -14,7 +14,7 @@ export class AdminController {
       NETWORK: argv.network, //  mainnet| kepler | testnet
       COORDINATOR_SERVICE_PORT: argv.port,
       IPFS_GATEWAY: argv.ipfs,
-      RPC_ENDPOINT: argv['ws-endpoint'],
+      RPC_ENDPOINT: argv['network-endpoint'],
       REGISTRY_PROJECT: NETWORK_CONFIGS[argv.network as SQNetworks].gql.network,
     };
 

@@ -43,6 +43,7 @@ export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
 
 export const sdkOptions = {
   [ChainID.testnet]: createContractOptions('testnet'),
+  [ChainID['testnet-mumbai']]: createContractOptions('testnet-mumbai'),
   [ChainID.local]: createContractOptions('local'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
