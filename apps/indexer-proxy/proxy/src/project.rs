@@ -58,7 +58,7 @@ pub enum ProjectType {
     RpcSubstrate(RpcMainfest),
 }
 
-#[derive(Clone, Default)]
+#[derive(Serialize, Clone, Default)]
 enum NodeType {
     #[default]
     Full,
@@ -83,27 +83,58 @@ pub struct RpcMainfest {
 }
 
 impl RpcMainfest {
+    fn json_values(&self) -> Value {
+        json!({
+            "nodeType": self.node_type,
+            "featureFlags": self.feature_flags,
+            "rpcAllowList": self.rpc_allow_list,
+            "rpcDenyList": self.rpc_deny_list,
+            "computeUnit": self.compute_unit.iter().map(|(m, c)| (m, c.value)).collect::<HashMap<&String, u64>>(),
+        })
+    }
+
     fn parse(payg_overflow: u64) -> Self {
         // TODO
+        let node_type = NodeType::Full;
+        let feature_flags = vec![];
+        let rpc_allow_list = vec![];
+        let rpc_deny_list = vec![];
+        let mut compute_unit = HashMap::new();
 
         // compute unit overflow times
-        let unit_value = 100; // mock
-        let allowed_times = payg_overflow / unit_value;
-        let overflow = if allowed_times < COMMAND.max_unit_overflow {
-            if payg_overflow > COMMAND.max_unit_overflow {
-                payg_overflow / COMMAND.max_unit_overflow
+        {
+            let method = "TODO".to_owned();
+            let value = 100; // mock
+            let allowed_times = payg_overflow / value;
+            let overflow = if allowed_times < COMMAND.max_unit_overflow {
+                if payg_overflow > COMMAND.max_unit_overflow {
+                    payg_overflow / COMMAND.max_unit_overflow
+                } else {
+                    1
+                }
             } else {
-                1
-            }
-        } else {
-            payg_overflow
-        };
+                payg_overflow
+            };
+            compute_unit.insert(method, ComputeUnit { value, overflow });
+        }
 
-        Self::default()
+        Self {
+            node_type,
+            feature_flags,
+            rpc_allow_list,
+            rpc_deny_list,
+            compute_unit,
+        }
     }
 
     // correct times & reasonable overflow times
-    pub fn unit_times(&self, method: &str) -> Result<(u64, u64)> {
+    pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
+        if (!self.rpc_allow_list.is_empty() && !self.rpc_allow_list.contains(method))
+            || self.rpc_deny_list.contains(method)
+        {
+            return Err(Error::InvalidRequest(1049));
+        }
+
         if let Some(cu) = self.compute_unit.get(method) {
             Ok((cu.value, cu.overflow))
         } else {
@@ -124,15 +155,22 @@ pub struct Project {
     pub payg_overflow: u64,
 }
 
-impl Project {
-    pub fn compute_query_method(&self, _query: &str) -> Result<(u64, u64)> {
-        // TODO parse the method from query
+#[derive(Deserialize)]
+struct SimpleJsonrpc {
+    method: String,
+}
 
+impl Project {
+    pub fn compute_query_method(&self, query: &str) -> Result<(u64, u64)> {
         // compute unit times
-        let method = "";
         match &self.ptype {
             ProjectType::Subquery => Ok((1, 1)),
-            ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => m.unit_times(method),
+            ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
+                // parse the jsonrpc method
+                let s: SimpleJsonrpc =
+                    serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+                m.unit_times(&s.method)
+            }
         }
     }
 
@@ -145,10 +183,18 @@ impl Project {
     }
 
     pub async fn metadata(&self, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
-        let mut metadata = match self.ptype {
+        let mut metadata = match &self.ptype {
             ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
-            ProjectType::RpcEvm(_) => rpc_evm_metadata(&self, block, network).await?,
-            ProjectType::RpcSubstrate(_) => rpc_substrate_metadata(&self, block, network).await?,
+            ProjectType::RpcEvm(m) => {
+                let mut data = rpc_evm_metadata(&self, block, network).await?;
+                merge_json(&mut data, &m.json_values());
+                data
+            }
+            ProjectType::RpcSubstrate(m) => {
+                let mut data = rpc_substrate_metadata(&self, block, network).await?;
+                merge_json(&mut data, &m.json_values());
+                data
+            }
         };
 
         let timestamp: u64 = SystemTime::now()
