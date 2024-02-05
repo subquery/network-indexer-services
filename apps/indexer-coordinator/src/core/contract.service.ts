@@ -7,15 +7,16 @@ import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides, Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
-
+import { mutexPromise } from 'src/utils/promise';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
-import { debugLogger, getLogger } from '../utils/logger';
+import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 import { Controller } from './account.model';
 import { AccountService } from './account.service';
-import { IndexerDeploymentStatus } from './types';
+import { IndexerDeploymentStatus, TxFun } from './types';
 
+const MAX_RETRY = 3;
 const logger = getLogger('contract');
 
 @Injectable()
@@ -39,7 +40,8 @@ export class ContractService {
 
   async getOverrides(): Promise<Overrides> {
     const gasPrice = await this.provider.getGasPrice();
-    return { gasPrice };
+    const gasLimit = BigNumber.from(1000000);
+    return { gasPrice, gasLimit };
   }
 
   async getBlockTime() {
@@ -196,6 +198,33 @@ export class ContractService {
     } catch (e) {
       logger.error(e, `failed to get indexing status for project: ${id}`);
       return IndexerDeploymentStatus.TERMINATED;
+    }
+  }
+
+  @mutexPromise()
+  async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
+    await this._sendTransaction(actionName, txFun, desc);
+  }
+
+  private async _sendTransaction(actionName: string, txFun: TxFun, desc = '', retries = 0) {
+    try {
+      logger.info(`${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
+
+      const overrides = await this.getOverrides();
+      const tx = await txFun(overrides);
+      await tx.wait(10);
+
+      logger.info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
+
+      return;
+    } catch (e) {
+      if (retries < MAX_RETRY) {
+        logger.warn(`${colorText(actionName)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
+        await this._sendTransaction(actionName, txFun, desc, retries + 1);
+      } else {
+        logger.warn(e, `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)}`);
+        throw e;
+      }
     }
   }
 }

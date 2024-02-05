@@ -1639,10 +1639,10 @@
   resolved "https://registry.yarnpkg.com/@sqltools/formatter/-/formatter-1.2.5.tgz#3abc203c79b8c3e90fd6c156a0c62d5403520e12"
   integrity sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==
 
-"@subql/contract-sdk@0.115.1-0":
-  version "0.115.1-0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.115.1-0.tgz#15dc6dce09ea902b82dedb4acca52d44046f363f"
-  integrity sha512-B30C7Q/c9XUwB7Qa3tcVMyzlfgxx7/6Bzu92KGe9ZpWg1SGFQ+H0lNHQ6fk8IFwG+QOK/76K3l8oppjWyLhIgg==
+"@subql/contract-sdk@0.116.0":
+  version "0.116.0"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-0.116.0.tgz#16ed56ac440ed4d17259ed3becce7ddbca6b0c9a"
+  integrity sha512-9e6551K3xy9lu6XH8pVjq5G3lczkkjWkQnKgwws3XXy4LDAzCzu/07UbYZ9ZXzlQX8yjLsHWCQtEvd7aqnpPaA==
 
 "@subql/network-clients@0.114.0":
   version "0.114.0"

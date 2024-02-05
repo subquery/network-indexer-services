@@ -4,29 +4,14 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ContractSDK } from '@subql/contract-sdk';
-import { GraphqlQueryClient } from '@subql/network-clients';
-import { NETWORK_CONFIGS } from '@subql/network-config';
-import {
-  GetIndexerUnfinalisedPlans,
-  GetIndexerUnfinalisedPlansQuery,
-  GetIndexerUnfinalisedPlansQueryVariables,
-} from '@subql/network-query';
+import { cidToBytes32 } from '@subql/network-clients';
 import { BigNumber } from 'ethers';
 import { isEmpty } from 'lodash';
-import { Connection, Repository } from 'typeorm';
-
-import { Config } from '../configure/configure.module';
+import { NetworkService } from 'src/network/network.service';
 import { ChannelStatus } from '../payg/payg.model';
-import { ProjectEntity } from '../project/project.model';
-import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
-
-import { mutexPromise } from '../utils/promise';
+import { debugLogger, getLogger } from '../utils/logger';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
-import { QueryService } from './query.service';
-import { TxFun } from './types';
-
-const MAX_RETRY = 3;
 
 const logger = getLogger('transaction');
 
@@ -50,25 +35,16 @@ function wrapAndIgnoreError<T>(
 }
 
 @Injectable()
-export class NetworkService implements OnApplicationBootstrap {
+export class OnChainService implements OnApplicationBootstrap {
   private sdk: ContractSDK;
-  private client: GraphqlQueryClient;
-  private expiredAgreements: Set<string> = new Set();
 
   private batchSize = 20;
 
-  private projectRepo: Repository<ProjectEntity>;
-
   constructor(
-    private connection: Connection,
     private contractService: ContractService,
     private accountService: AccountService,
-    private queryService: QueryService,
-    private readonly config: Config
-  ) {
-    this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
-    this.projectRepo = connection.getRepository(ProjectEntity);
-  }
+    private networkService: NetworkService
+  ) {}
 
   onApplicationBootstrap() {
     void (async () => {
@@ -87,10 +63,6 @@ export class NetworkService implements OnApplicationBootstrap {
     } catch (e) {
       debugLogger('network', `failed to update network: ${String(e)}`);
     }
-  }
-
-  getSdk() {
-    return this.sdk;
   }
 
   // async getIndexingProjects() {
@@ -120,33 +92,6 @@ export class NetworkService implements OnApplicationBootstrap {
     } catch (e) {
       logger.error(e, 'syncContractConfig');
       return false;
-    }
-  }
-
-  @mutexPromise()
-  async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
-    await this._sendTransaction(actionName, txFun, desc);
-  }
-
-  private async _sendTransaction(actionName: string, txFun: TxFun, desc = '', retries = 0) {
-    try {
-      logger.info(`${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
-
-      const overrides = await this.contractService.getOverrides();
-      const tx = await txFun(overrides);
-      await tx.wait(10);
-
-      logger.info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
-
-      return;
-    } catch (e) {
-      if (retries < MAX_RETRY) {
-        logger.warn(`${colorText(actionName)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
-        await this._sendTransaction(actionName, txFun, desc, retries + 1);
-      } else {
-        logger.warn(e, `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)}`);
-        throw e;
-      }
     }
   }
 
@@ -180,7 +125,7 @@ export class NetworkService implements OnApplicationBootstrap {
   }
 
   async collectAndDistributeReward(indexer: string) {
-    await this.sendTransaction('collect and distribute rewards', (overrides) =>
+    await this.contractService.sendTransaction('collect and distribute rewards', (overrides) =>
       this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides)
     );
   }
@@ -192,28 +137,16 @@ export class NetworkService implements OnApplicationBootstrap {
   ) {
     const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
     for (let i = 0; i < count; i++) {
-      await this.sendTransaction('batch collect and distribute rewards', (overrides) =>
-        this.sdk.rewardsHelper.batchCollectAndDistributeRewards(indexer, this.batchSize, overrides)
+      await this.contractService.sendTransaction(
+        'batch collect and distribute rewards',
+        (overrides) =>
+          this.sdk.rewardsHelper.batchCollectAndDistributeRewards(
+            indexer,
+            this.batchSize,
+            overrides
+          )
       );
     }
-  }
-
-  async getExpiredStateChannels(): Promise<
-    GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']
-  > {
-    const apolloClient = this.client.networkClient;
-    const now = new Date();
-    const indexer = await this.accountService.getIndexer();
-    const result = await apolloClient.query<
-      GetIndexerUnfinalisedPlansQuery,
-      GetIndexerUnfinalisedPlansQueryVariables
-    >({
-      // @ts-ignore
-      query: GetIndexerUnfinalisedPlans,
-      variables: { indexer, now },
-    });
-
-    return result.data.stateChannels.nodes;
   }
 
   collectAndDistributeRewardsAction() {
@@ -246,7 +179,7 @@ export class NetworkService implements OnApplicationBootstrap {
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers.join(',')}`);
-      await this.sendTransaction('apply stake changes', async (overrides) =>
+      await this.contractService.sendTransaction('apply stake changes', async (overrides) =>
         this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides)
       );
     };
@@ -259,7 +192,7 @@ export class NetworkService implements OnApplicationBootstrap {
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
-        await this.sendTransaction('apply ICR changes', async (overrides) =>
+        await this.contractService.sendTransaction('apply ICR changes', async (overrides) =>
           this.sdk.rewardsStaking.applyICRChange(indexer, overrides)
         );
       }
@@ -274,7 +207,7 @@ export class NetworkService implements OnApplicationBootstrap {
 
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        await this.sendTransaction('update era number', async (overrides) =>
+        await this.contractService.sendTransaction('update era number', async (overrides) =>
           this.sdk.eraManager.safeUpdateAndGetEra(overrides)
         );
       }
@@ -283,7 +216,9 @@ export class NetworkService implements OnApplicationBootstrap {
 
   closeExpiredStateChannelsAction() {
     return async () => {
-      const unfinalisedPlans = await this.getExpiredStateChannels();
+      const unfinalisedPlans = await this.networkService.getExpiredStateChannels(
+        await this.accountService.getIndexer()
+      );
 
       for (const node of unfinalisedPlans) {
         const channel = await this.sdk.stateChannel.channel(node.id);
@@ -295,7 +230,7 @@ export class NetworkService implements OnApplicationBootstrap {
           status === ChannelStatus.TERMINATING && terminatedAt.lt(now);
         if (!isOpenChannelClaimable && !isTerminateChannelClaimable) continue;
 
-        await this.sendTransaction(
+        await this.contractService.sendTransaction(
           `claim unfinalized plan for ${node.consumer}`,
           async (overrides) => this.sdk.stateChannel.claim(node.id, overrides)
         );
@@ -339,7 +274,7 @@ export class NetworkService implements OnApplicationBootstrap {
     if (!(await this.checkControllerReady())) return BigNumber.from(0);
     try {
       const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
-        deploymentId,
+        cidToBytes32(deploymentId),
         runner
       );
       logger.debug(
@@ -355,8 +290,12 @@ export class NetworkService implements OnApplicationBootstrap {
   async claimAllocationRewards(deploymentId: string, runner: string): Promise<void> {
     if (!(await this.checkControllerReady())) return;
     try {
-      await this.sendTransaction('claim allocation rewards', async (overrides) =>
-        this.sdk.rewardsBooster.collectAllocationReward(deploymentId, runner, overrides)
+      await this.contractService.sendTransaction('claim allocation rewards', async (overrides) =>
+        this.sdk.rewardsBooster.collectAllocationReward(
+          cidToBytes32(deploymentId),
+          runner,
+          overrides
+        )
       );
     } catch (e) {
       logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);

@@ -45,7 +45,7 @@
     "@nestjs/schedule": "^2.2.2",
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "8.1.4",
-    "@subql/contract-sdk": "0.115.1-0",
+    "@subql/contract-sdk": "0.116.0",
     "@subql/network-clients": "0.114.0",
     "@subql/network-config": "0.114.1-1",
     "@subql/network-query": "0.112.0",
