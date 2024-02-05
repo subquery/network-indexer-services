@@ -10,6 +10,8 @@ import {
   GetDeployment,
   GetDeploymentIndexers,
   GetDeploymentIndexersQuery,
+  GetIndexerUnfinalisedPlansQuery,
+  GetIndexerUnfinalisedPlansQueryVariables,
   GetProject,
   GetProjectOngoingServiceAgreements,
   GetProjectOngoingServiceAgreementsQuery,
@@ -151,6 +153,23 @@ export class NetworkService {
       });
     }
     return result?.data?.offers as GetAllOpenOffersQuery['offers'];
+  }
+
+  async getExpiredStateChannels(
+    indexer: string
+  ): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+    const apolloClient = this.client.networkClient;
+    const now = new Date();
+    const result = await apolloClient.query<
+      GetIndexerUnfinalisedPlansQuery,
+      GetIndexerUnfinalisedPlansQueryVariables
+    >({
+      // @ts-ignore
+      query: GetIndexerUnfinalisedPlans,
+      variables: { indexer, now },
+    });
+
+    return result.data.stateChannels.nodes;
   }
 
   async getIndexerAllocationSummaries(indexerId: string): Promise<IndexerAllocationSummary[]> {

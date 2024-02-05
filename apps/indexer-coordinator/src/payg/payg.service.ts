@@ -11,7 +11,7 @@ import lodash from 'lodash';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 
-import { NetworkService } from '../core/network.service';
+import { OnChainService } from '../core/onchain.service';
 import { PaygEntity } from '../project/project.model';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { getLogger } from '../utils/logger';
@@ -32,24 +32,24 @@ export class PaygService {
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     private paygQueryService: PaygQueryService,
     private pubSub: SubscriptionService,
-    private network: NetworkService,
+    private onChain: OnChainService,
     private account: AccountService
   ) {}
 
   async channelFromContract(id: BigNumber): Promise<ChannelState> {
-    const channel = await this.network.getSdk().stateChannel.channel(id);
+    const channel = await this.onChain.getSdk().stateChannel.channel(id);
     return channel?.indexer !== ZERO_ADDRESS ? channel : undefined;
   }
 
   async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
     // FIXME
-    return this.network.getSdk().stateChannel.channelPrice(id);
+    return this.onChain.getSdk().stateChannel.channelPrice(id);
     // return BigNumber.from('0');
   }
 
   async channelConsumerFromContract(id: BigNumber): Promise<string> {
     try {
-      return this.network.getSdk().consumerHost.channelConsumer(id);
+      return this.onChain.getSdk().consumerHost.channelConsumer(id);
     } catch (e) {
       console.debug(`Failed to get consumer of channel ${id}: ${e}`);
       return undefined;
@@ -228,7 +228,7 @@ export class PaygService {
     altPrice?: BigNumber,
     altChannelData?: StateChannelOnNetwork
   ): Promise<Channel | undefined> {
-    if (!this.network.getSdk()) {
+    if (!this.onChain.getSdk()) {
       return;
     }
 
@@ -364,8 +364,8 @@ export class PaygService {
     }
 
     // checkpoint
-    await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
-      this.network.getSdk().stateChannel.checkpoint(
+    await this.onChain.sendTransaction('state channel checkpoint', async (overrides) =>
+      this.onChain.getSdk().stateChannel.checkpoint(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,
@@ -395,8 +395,8 @@ export class PaygService {
     }
 
     // terminate
-    await this.network.sendTransaction('state channel terminate', async (overrides) =>
-      this.network.getSdk().stateChannel.terminate(
+    await this.onChain.sendTransaction('state channel terminate', async (overrides) =>
+      this.onChain.getSdk().stateChannel.terminate(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,
@@ -428,8 +428,8 @@ export class PaygService {
     }
 
     // respond to chain
-    await this.network.sendTransaction('state channel respond', async (overrides) =>
-      this.network.getSdk().stateChannel.respond(
+    await this.onChain.sendTransaction('state channel respond', async (overrides) =>
+      this.onChain.getSdk().stateChannel.respond(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,

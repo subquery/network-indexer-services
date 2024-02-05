@@ -5,7 +5,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { NetworkService } from 'src/network/network.service';
 import { AccountService } from './account.service';
-import { NetworkService as OnChainService } from './network.service';
+import { OnChainService } from './onchain.service';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
