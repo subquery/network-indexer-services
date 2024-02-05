@@ -10,6 +10,7 @@ import {
   GetDeployment,
   GetDeploymentIndexers,
   GetDeploymentIndexersQuery,
+  GetIndexerUnfinalisedPlans,
   GetIndexerUnfinalisedPlansQuery,
   GetIndexerUnfinalisedPlansQueryVariables,
   GetProject,
