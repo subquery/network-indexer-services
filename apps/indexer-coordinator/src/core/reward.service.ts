@@ -34,7 +34,7 @@ export class RewardService implements OnModuleInit {
       if (rewards.eq(0)) {
         continue;
       }
-      await this.onChainService.claimAllocationRewards(allocation.id, indexerId);
+      await this.onChainService.claimAllocationRewards(allocation.deploymentId, indexerId);
     }
   }
 }

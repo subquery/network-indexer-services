@@ -40,7 +40,8 @@ export class ContractService {
 
   async getOverrides(): Promise<Overrides> {
     const gasPrice = await this.provider.getGasPrice();
-    return { gasPrice };
+    const gasLimit = BigNumber.from(1000000);
+    return { gasPrice, gasLimit };
   }
 
   async getBlockTime() {
