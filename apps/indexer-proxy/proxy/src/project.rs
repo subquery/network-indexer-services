@@ -96,14 +96,14 @@ impl RpcMainfest {
     fn parse(payg_overflow: u64) -> Self {
         // TODO
         let node_type = NodeType::Full;
-        let feature_flags = vec![];
-        let rpc_allow_list = vec![];
-        let rpc_deny_list = vec![];
+        let feature_flags = vec!["debugrpc".to_owned(), "tracerpc".to_owned()];
+        let rpc_allow_list = vec!["web3".to_owned(), "eth".to_owned(), "net".to_owned()];
+        let rpc_deny_list = vec!["admin".to_owned()];
         let mut compute_unit = HashMap::new();
 
         // compute unit overflow times
         {
-            let method = "TODO".to_owned();
+            let method = "eth_getLogs".to_owned();
             let value = 100; // mock
             let allowed_times = payg_overflow / value;
             let overflow = if allowed_times < COMMAND.max_unit_overflow {
@@ -129,9 +129,20 @@ impl RpcMainfest {
 
     // correct times & reasonable overflow times
     pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
-        if (!self.rpc_allow_list.is_empty() && !self.rpc_allow_list.contains(method))
-            || self.rpc_deny_list.contains(method)
-        {
+        for rd in &self.rpc_deny_list {
+            if method.starts_with(rd) {
+                return Err(Error::InvalidRequest(1049));
+            }
+        }
+
+        let mut not_allowed = true;
+        for ra in &self.rpc_allow_list {
+            if method.starts_with(ra) {
+                not_allowed = true;
+                break;
+            }
+        }
+        if not_allowed {
             return Err(Error::InvalidRequest(1049));
         }
 
@@ -238,6 +249,19 @@ impl Project {
 
         merge_json(&mut metadata, &common);
         Ok(metadata)
+    }
+
+    pub async fn check_query(
+        &self,
+        body: String,
+        ep_name: Option<String>,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+        is_limit: bool,
+    ) -> Result<(Vec<u8>, String)> {
+        let _ = self.compute_query_method(&body)?;
+
+        self.query(body, ep_name, payment, network, is_limit).await
     }
 
     pub async fn query(

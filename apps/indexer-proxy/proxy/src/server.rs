@@ -182,7 +182,7 @@ async fn query_handler(
 
     let (data, signature) = get_project(&deployment)
         .await?
-        .query(
+        .check_query(
             body,
             ep_name.0.ep_name,
             MetricsQuery::CloseAgreement,

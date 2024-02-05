@@ -786,7 +786,7 @@ async fn handle_close_agreement_query(
 
     let (data, _signature) = get_project(project)
         .await?
-        .query(
+        .check_query(
             query,
             ep_name,
             MetricsQuery::CloseAgreement,
