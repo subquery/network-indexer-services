@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Controller, Get, Param } from '@nestjs/common';
-import { OnChainService } from './core/onchain.service';
+import { ContractService } from './core/contract.service';
 
 @Controller('agreements')
 export class AgreementController {
-  constructor(private onChain: OnChainService) {}
+  constructor(private contract: ContractService) {}
 
   @Get(':id')
   async index(@Param('id') id: string) {
-    const argeement = await this.onChain
+    const argeement = await this.contract
       .getSdk()
       .serviceAgreementRegistry.getClosedServiceAgreement(id);
     return argeement;
