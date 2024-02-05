@@ -93,6 +93,7 @@ impl Project {
 
         let lock = ACCOUNT.read().await;
         let controller = lock.controller.clone();
+        let controller_address = lock.controller_address();
         let indexer = lock.indexer.clone();
         drop(lock);
 
@@ -118,7 +119,7 @@ impl Project {
 
         let common = json!({
             "indexer": format!("{:?}", indexer),
-            "controller": format!("{:?}", controller.address()),
+            "controller": format!("{:?}", controller_address),
             "deploymentId": self.id,
             "timestamp": timestamp,
             "signature": sign.to_string(),
