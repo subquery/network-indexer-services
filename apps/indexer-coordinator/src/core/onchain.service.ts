@@ -287,7 +287,7 @@ export class OnChainService implements OnApplicationBootstrap {
     }
   }
 
-  async claimAllocationRewards(deploymentId: string, runner: string): Promise<void> {
+  async collectAllocationReward(deploymentId: string, runner: string): Promise<void> {
     if (!(await this.checkControllerReady())) return;
     try {
       await this.contractService.sendTransaction('claim allocation rewards', async (overrides) =>
