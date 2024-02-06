@@ -11,7 +11,7 @@ import { OnChainService } from './onchain.service';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
-  private readonly rewardThreshold = BigNumber.from(1000 * 10 ** 18);
+  private readonly rewardThreshold = BigNumber.from('1000000000000000000000');
   private readonly allocationBypassTimesLimit = 3;
   private readonly allocationBypassTimes: Map<string, number> = new Map();
 
