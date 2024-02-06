@@ -23,7 +23,6 @@ import { ServiceResolver } from './service.resolver';
     SubscriptionModule,
     TypeOrmModule.forFeature([Controller, Indexer]),
     ScheduleModule.forRoot(),
-    NetworkService,
   ],
   providers: [
     ContractService,
