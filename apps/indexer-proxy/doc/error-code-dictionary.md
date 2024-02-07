@@ -89,4 +89,5 @@
 - `1140` - Serialize: subquery's query is invalid.
 - `1141` - Serialize: cannot parse rpc query method.
 - `1200` - Service exception: EVM RPC invalid
-- `1201` - Service exception: EVM RPC last block
+- `1201` - Service exception: EVM RPC last bloc
+- `1202` - Service exception: Coordinator RPC mainfest is invalid

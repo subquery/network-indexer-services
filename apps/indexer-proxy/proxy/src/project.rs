@@ -44,6 +44,7 @@ use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
+use crate::graphql::project_mainfest;
 use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -65,6 +66,15 @@ enum NodeType {
     Archive,
 }
 
+impl NodeType {
+    fn from_str(s: &str) -> NodeType {
+        match s {
+            "archive" => NodeType::Archive,
+            _ => NodeType::Full,
+        }
+    }
+}
+
 //impl Default for NodeType
 
 #[derive(Clone)]
@@ -82,6 +92,26 @@ pub struct RpcMainfest {
     compute_unit: HashMap<String, ComputeUnit>,
 }
 
+#[derive(Deserialize)]
+struct ComputeUnitItem {
+    name: String,
+    value: u64,
+}
+
+#[derive(Deserialize)]
+struct RpcMainfestItem {
+    #[serde(rename = "nodeType")]
+    node_type: String,
+    #[serde(rename = "featureFlags")]
+    feature_flags: Option<Vec<String>>,
+    #[serde(rename = "rpcDenyList")]
+    rpc_deny_list: Option<Vec<String>>,
+    #[serde(rename = "rpcAllowList")]
+    rpc_allow_list: Option<Vec<String>>,
+    #[serde(rename = "computeUnit")]
+    compute_units: Option<Vec<ComputeUnitItem>>,
+}
+
 impl RpcMainfest {
     fn json_values(&self) -> Value {
         json!({
@@ -93,18 +123,31 @@ impl RpcMainfest {
         })
     }
 
-    fn parse(payg_overflow: u64) -> Self {
-        // TODO
-        let node_type = NodeType::Full;
-        let feature_flags = vec!["debugrpc".to_owned(), "tracerpc".to_owned()];
-        let rpc_allow_list = vec!["web3".to_owned(), "eth".to_owned(), "net".to_owned()];
-        let rpc_deny_list = vec!["admin".to_owned()];
-        let mut compute_unit = HashMap::new();
+    async fn fetch(
+        url: &str,
+        project_type: i64,
+        project_id: &str,
+        payg_overflow: u64,
+    ) -> Result<Self> {
+        // fetch mainfest
+        let query = GraphQLQuery::query(&project_mainfest(project_type, project_id));
+        let value = graphql_request(url, &query).await?;
+        let item: RpcMainfestItem = if let Some(v) = value.pointer("/data/getManifest/rpcManifest")
+        {
+            if v.is_null() {
+                return Ok(Default::default());
+            }
+            serde_json::from_value(v.clone()).map_err(|_| Error::ServiceException(1202))?
+        } else {
+            return Ok(Default::default());
+        };
+
+        let node_type = NodeType::from_str(&item.node_type);
 
         // compute unit overflow times
-        {
-            let method = "eth_getLogs".to_owned();
-            let value = 100; // mock
+        let mut compute_unit = HashMap::new();
+        for cu in item.compute_units.unwrap_or(vec![]) {
+            let value = cu.value;
             let allowed_times = payg_overflow / value;
             let overflow = if allowed_times < COMMAND.max_unit_overflow {
                 if payg_overflow > COMMAND.max_unit_overflow {
@@ -115,16 +158,16 @@ impl RpcMainfest {
             } else {
                 payg_overflow
             };
-            compute_unit.insert(method, ComputeUnit { value, overflow });
+            compute_unit.insert(cu.name, ComputeUnit { value, overflow });
         }
 
-        Self {
+        Ok(Self {
             node_type,
-            feature_flags,
-            rpc_allow_list,
-            rpc_deny_list,
+            feature_flags: item.feature_flags.unwrap_or(vec![]),
+            rpc_allow_list: item.rpc_allow_list.unwrap_or(vec![]),
+            rpc_deny_list: item.rpc_deny_list.unwrap_or(vec![]),
             compute_unit,
-        }
+        })
     }
 
     // correct times & reasonable overflow times
@@ -499,6 +542,7 @@ pub struct ProjectItem {
 }
 
 pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
+    let url = COMMAND.graphql_url();
     let mut project_ids = vec![];
     let mut new_projects = vec![];
     for item in projects {
@@ -518,7 +562,8 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let payg_overflow = item.payg_overflow.into();
         let payg_expiration = item.payg_expiration;
 
-        let rpc_mainfest = RpcMainfest::parse(payg_overflow);
+        let rpc_mainfest =
+            RpcMainfest::fetch(&url, item.project_type, &item.id, payg_overflow).await?;
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
