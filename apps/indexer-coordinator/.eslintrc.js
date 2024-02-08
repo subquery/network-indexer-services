@@ -57,7 +57,7 @@ module.exports = {
     "header/header": [2, "line", [
       {
         "pattern": " Copyright \\d{4}(-\\d{4})? SubQuery Pte Ltd authors & contributors",
-        "template": " Copyright 2020-2023 SubQuery Pte Ltd authors & contributors"
+        "template": " Copyright 2020-2024 SubQuery Pte Ltd authors & contributors"
       },
       " SPDX-License-Identifier: Apache-2.0"
     ], 2]
