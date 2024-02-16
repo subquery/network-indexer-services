@@ -57,3 +57,25 @@ pub fn poi_with_block(block: u64) -> String {
         block
     )
 }
+
+pub fn project_mainfest(project_type: i64, project_id: &str) -> String {
+    format!(
+        r#"query {{
+  getManifest(projectType: {}, projectId: "{}") {{
+    rpcManifest {{
+      name
+      nodeType
+      featureFlags
+      rpcFamily
+      rpcDenyList
+      rpcAllowList
+      computeUnit {{ name value }}
+    }}
+    subqueryManifest {{
+      specVersion
+    }}
+  }}
+}}"#,
+        project_type, project_id
+    )
+}

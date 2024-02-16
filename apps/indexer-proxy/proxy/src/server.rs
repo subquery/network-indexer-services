@@ -182,7 +182,7 @@ async fn query_handler(
 
     let (data, signature) = get_project(&deployment)
         .await?
-        .query(
+        .check_query(
             body,
             ep_name.0.ep_name,
             MetricsQuery::CloseAgreement,
@@ -303,7 +303,8 @@ async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
         "total": state.total.to_string(),
         "spent": state.spent.to_string(),
         "remote": state.remote.to_string(),
-        "conflict": state.conflict,
+        "conflict_start": state.conflict_start,
+        "conflict_times": state.conflict_times
     })))
 }
 

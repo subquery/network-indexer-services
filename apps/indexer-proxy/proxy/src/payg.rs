@@ -26,7 +26,7 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, U256},
 };
 use redis::{AsyncCommands, RedisResult};
@@ -54,14 +54,15 @@ pub struct StateCache {
     pub total: U256,
     pub spent: U256,
     pub remote: U256,
-    coordi: U256,
-    pub conflict: i64,
+    pub coordi: U256,
+    pub conflict_start: i64,
+    pub conflict_times: u64,
     signer: ConsumerType,
 }
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes.len() < 168 {
+        if bytes.len() < 176 {
             return Err(Error::Serialize(1136));
         }
 
@@ -70,10 +71,16 @@ impl StateCache {
         let spent = U256::from_little_endian(&bytes[64..96]);
         let remote = U256::from_little_endian(&bytes[96..128]);
         let coordi = U256::from_little_endian(&bytes[128..160]);
-        let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[160..168]);
-        let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[168..])?;
+
+        let mut conflict_start_bytes = [0u8; 8];
+        conflict_start_bytes.copy_from_slice(&bytes[160..168]);
+        let conflict_start = i64::from_le_bytes(conflict_start_bytes);
+
+        let mut conflict_times_bytes = [0u8; 8];
+        conflict_times_bytes.copy_from_slice(&bytes[168..176]);
+        let conflict_times = u64::from_le_bytes(conflict_times_bytes);
+
+        let signer = ConsumerType::from_bytes(&bytes[176..])?;
 
         Ok(StateCache {
             price,
@@ -81,7 +88,8 @@ impl StateCache {
             spent,
             remote,
             coordi,
-            conflict,
+            conflict_start,
+            conflict_times,
             signer,
         })
     }
@@ -99,7 +107,8 @@ impl StateCache {
         bytes.extend(u256_bytes);
         self.coordi.to_little_endian(&mut u256_bytes);
         bytes.extend(u256_bytes);
-        bytes.extend(&self.conflict.to_le_bytes());
+        bytes.extend(&self.conflict_start.to_le_bytes());
+        bytes.extend(&self.conflict_times.to_le_bytes());
         bytes.extend(&self.signer.to_bytes());
         bytes
     }
@@ -317,33 +326,44 @@ pub async fn query_state(
     let local_prev = state_cache.spent;
     let remote_prev = state_cache.remote;
     let remote_next = state.spent;
-    let conflict = project.payg_overflow;
 
-    if remote_prev < remote_next && remote_prev + price > remote_next {
+    // compute unit count times
+    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
+    let used_amount = price * unit_times;
+
+    if remote_prev < remote_next && remote_prev + used_amount > remote_next {
         // price invalid
         return Err(Error::InvalidProjectPrice(1034));
     }
 
-    if remote_next >= total + price {
+    if remote_next >= total + used_amount {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    if local_prev > remote_prev + price {
-        // mark conflict is happend
-        let times = ((local_prev - remote_prev) / price).as_u32() as i32;
+    if local_prev > remote_prev + used_amount {
         let now = Utc::now().timestamp();
-        if times <= 1 {
-            state_cache.conflict = now;
+        // mark conflict is happend
+        if state_cache.conflict_times <= 1 {
+            state_cache.conflict_start = now;
         }
+        state_cache.conflict_times += uint_overflow;
+
         let channel = format!("{:#x}", state.channel_id);
-        report_conflict(&project.id, &channel, times, state_cache.conflict, now).await;
+        report_conflict(
+            &project.id,
+            &channel,
+            state_cache.conflict_times,
+            state_cache.conflict_start,
+            now,
+        )
+        .await;
     }
 
-    if local_prev > remote_prev + price * conflict {
+    if local_prev > remote_prev + price * state_cache.conflict_times {
         warn!(
             "CONFLICT: local_prev: {}, remote_prev: {}, price: {}, conflict: {}",
-            local_prev, remote_prev, price, conflict
+            local_prev, remote_prev, price, state_cache.conflict_times
         );
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
@@ -493,7 +513,8 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 remote,
                 signer,
                 coordi: spent,
-                conflict: now,
+                conflict_start: now,
+                conflict_times: 0,
             }
         };
 
