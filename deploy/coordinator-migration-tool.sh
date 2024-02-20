@@ -156,15 +156,15 @@ modify_network_endpoint() {
   new_line
 }
 
-modify_database_name() {
-  echo "Modifying database name..."
-  database_name=$(ask_for_input "Enter the database name (It SHOULD be different with your current one. If you never changed the previous default db name, you could leave it empty)" "coordinator_db")
-  if $(check_text_exists $docker_compose_file "postgres-database"); then
-    replace_text $docker_compose_file "postgres-database=[^[:space:]]*" "postgres-database=$database_name"
+modify_database_schema() {
+  echo "Modifying database schema..."
+  database_schema=$(ask_for_input "Enter the database schema (It SHOULD be different with the current one. If you never changed the previous default schema name, you could leave it empty)" "coordinator_db")
+  if $(check_text_exists $docker_compose_file "postgres-schema"); then
+    replace_text $docker_compose_file "postgres-schema=[^[:space:]]*" "postgres-schema=$database_schema"
   else
-    replace_text $docker_compose_file "\(.*\)- --postgres-host=[^\n]*" "&\n\1- --postgres-database=$database_name"
+    replace_text $docker_compose_file "\(.*\)- --postgres-host=[^\n]*" "&\n\1- --postgres-schema=$database_schema"
   fi
-  echo "Database name updated."
+  echo "Database schema updated."
   new_line
 }
 
@@ -177,6 +177,6 @@ modify_network_type
 modify_coordinator_version
 modify_proxy_version
 modify_network_endpoint
-modify_database_name
+modify_database_schema
 
 echo "Migration completed. Please restart the coordinator services to apply the changes."
