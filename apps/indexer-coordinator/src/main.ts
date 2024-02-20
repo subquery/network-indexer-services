@@ -3,12 +3,16 @@
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { createDBSchema } from './data-source';
 import { getLogger, LogCategory, NestLogger } from './utils/logger';
 import { argv } from './yargs';
 
 async function bootstrap() {
   try {
     const port = argv.port;
+
+    await createDBSchema();
+
     const app = await NestFactory.create(AppModule, { logger: new NestLogger() });
 
     app.enableCors({

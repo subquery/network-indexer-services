@@ -16,6 +16,7 @@ export const dbOption: PostgresConnectionOptions = {
   username: process.env['DB_USER'] ?? argv[PostgresKeys.username] ?? 'postgres',
   password: process.env['DB_PASSWORD'] ?? argv[PostgresKeys.password] ?? 'postgres',
   database: process.env['DB_NAME'] ?? argv[PostgresKeys.database] ?? 'postgres',
+  schema: process.env['DB_SCHEMA'] ?? argv[PostgresKeys.schema] ?? 'public',
   synchronize: false,
   logging: isLocal,
   entities: [isLocal ? 'src/**/*.model.ts' : 'dist/**/*.model.js'],
@@ -24,4 +25,18 @@ export const dbOption: PostgresConnectionOptions = {
   // namingStrategy: new SnakeNamingStrategy(),
 };
 
-export const AppDataSource = new DataSource(dbOption);
+// export const AppDataSource = new DataSource(dbOption);
+
+export async function createDBSchema() {
+  const dataSource = new DataSource({
+    ...dbOption,
+    synchronize: false,
+    migrationsRun: false,
+    entities: [],
+    migrations: [],
+  });
+
+  await dataSource.initialize();
+
+  return dataSource.query(`CREATE SCHEMA IF NOT EXISTS ${dbOption.schema}`);
+}

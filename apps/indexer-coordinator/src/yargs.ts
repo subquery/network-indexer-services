@@ -17,6 +17,7 @@ export enum PostgresKeys {
   username = 'postgres-username',
   password = 'postgres-password',
   database = 'postgres-database',
+  schema = 'postgres-schema',
 }
 
 function getYargsOption() {
@@ -120,6 +121,13 @@ function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       default: 'postgres',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.schema]: {
+      type: 'string',
+      describe: 'Postgres schema name',
+      demandOption: true,
+      default: 'public',
       group: Groups.postgres,
     },
   });
