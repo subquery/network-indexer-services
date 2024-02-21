@@ -44,5 +44,5 @@ export function hexToInt(hex: string) {
 
 export const SUPPORTED_NETWORK_PROJECTS_EXPLORER =
   network === PRODUCTION_NETWORK
-    ? 'https://kepler.subquery.network/'
-    : 'https://kepler.thechaindata.com/';
+    ? 'https://app.subquery.network/'
+    : 'https://dev.thechaindata.com/';
