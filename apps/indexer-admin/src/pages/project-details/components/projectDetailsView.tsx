@@ -75,10 +75,7 @@ export const BalanceLayout = ({
 };
 
 const ProjectDetailsView: FC<Props> = ({ project }) => {
-  // const { description, websiteUrl, codeUrl } = project.details;
-  const websiteUrl = new Array(100).fill('https://www.baidu.com').join('');
-  const codeUrl = new Array(100).fill('https://www.baidu.com').join('');
-  const description = new Array(100).fill('https://www.baidu.com').join('');
+  const { description, websiteUrl, codeUrl } = project.details;
 
   const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
 
