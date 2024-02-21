@@ -1,8 +1,8 @@
 #!/bin/bash
 
 docker_compose_file="docker-compose.yml"
-coordinator_version_default="v2.0.0-58"
-proxy_version_default="v2.0.0-beta.16"
+coordinator_version_default="v2.0.0"
+proxy_version_default="v2.0.0"
 
 prompt_question() {
   prompt=$1
