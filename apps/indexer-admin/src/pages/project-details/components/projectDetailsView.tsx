@@ -75,10 +75,18 @@ export const BalanceLayout = ({
 };
 
 const ProjectDetailsView: FC<Props> = ({ project }) => {
-  const { description, websiteUrl, codeUrl } = project.details;
+  // const { description, websiteUrl, codeUrl } = project.details;
+  const websiteUrl = new Array(100).fill('https://www.baidu.com').join('');
+  const codeUrl = new Array(100).fill('https://www.baidu.com').join('');
+  const description = new Array(100).fill('https://www.baidu.com').join('');
+
   const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
 
-  const projectRewardsDetails = useQuery<GetProjectRewardsDetails>(GET_PROJECT_REWARDS_DETAILS);
+  const projectRewardsDetails = useQuery<GetProjectRewardsDetails>(GET_PROJECT_REWARDS_DETAILS, {
+    variables: {
+      id: project.id,
+    },
+  });
 
   useEffect(() => {
     if (project.projectType === ProjectType.Rpc) {
@@ -104,7 +112,9 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
               }}
             >
               <GlobalOutlined />
-              <Typography variant="medium">{websiteUrl}</Typography>
+              <Typography variant="medium" className="overflowEllipsis" style={{ maxWidth: 500 }}>
+                {websiteUrl}
+              </Typography>
             </div>
           )}
           {codeUrl && (
@@ -117,18 +127,12 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
               }}
             >
               <GithubOutlined />
-              <Typography variant="medium">{codeUrl}</Typography>
+              <Typography variant="medium" className="overflowEllipsis" style={{ maxWidth: 500 }}>
+                {codeUrl}
+              </Typography>
             </div>
           )}
         </div>
-        <div
-          style={{ background: 'var(--sq-gray300)', height: 1, width: '100%', margin: '16px 0' }}
-        />
-        <Typography weight={600} variant="medium">
-          Deployment Details
-        </Typography>
-        <Markdown.Preview>{description}</Markdown.Preview>
-
         {project.projectType === ProjectType.Rpc && (
           <>
             <SplitLine />
@@ -169,6 +173,15 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
             </div>
           </>
         )}
+        <div
+          style={{ background: 'var(--sq-gray300)', height: 1, width: '100%', margin: '16px 0' }}
+        />
+        <Typography weight={600} variant="medium">
+          Deployment Details
+        </Typography>
+        <LineBreak>
+          <Markdown.Preview>{description}</Markdown.Preview>
+        </LineBreak>
       </Left>
       <Right>
         <SubqlCard
@@ -212,6 +225,11 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
 };
 
 export default ProjectDetailsView;
+
+const LineBreak = styled.div`
+  word-break: break-all;
+  overflow-wrap: anywhere;
+`;
 
 const SplitLine = styled.div`
   width: 100%;
