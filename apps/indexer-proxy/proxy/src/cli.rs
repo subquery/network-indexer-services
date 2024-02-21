@@ -27,7 +27,7 @@ use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
 use subql_indexer_utils::{
-    constants::{BOOTSTRAP, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
+    constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };
 use tdn::prelude::PeerId;
