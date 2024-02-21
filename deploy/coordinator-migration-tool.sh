@@ -126,11 +126,11 @@ escape_url() {
 
 backup_database_schema() {
   echo "Backing up database schema..."
-  db_user=$(read_text $docker_compose_file "postgres-username=\([^[:space:]]*\)" "\1")
+  db_user=$(read_text $docker_compose_file ".*--postgres-username=\([^[:space:]]*\).*" "\1")
   db_user=${db_user:-postgres}
-  db_name=$(read_text $docker_compose_file "postgres-database=\([^[:space:]]*\)" "\1")
+  db_name=$(read_text $docker_compose_file ".*--postgres-database=\([^[:space:]]*\).*" "\1")
   db_name=${db_name:-postgres}
-  mount_path=$(read_text $docker_compose_file "- \([^:]*\):\/var\/lib\/postgresql\/data" "\1")
+  mount_path=$(read_text $docker_compose_file ".*- \([^:]*\):\/var\/lib\/postgresql\/data.*" "\1")
   mount_path=${mount_path:-.data/postgres}
 
   timestamp=$(date +%Y%m%d%H%M%S)
@@ -150,7 +150,7 @@ backup_database_schema() {
 
 truncate_database_schema_tables() {
   echo "Truncating database schema tables..."
-  db_user=$(read_text $docker_compose_file "postgres-username=\([^[:space:]]*\)" "\1")
+  db_user=$(read_text $docker_compose_file ".*--postgres-username=\([^[:space:]]*\).*" "\1")
   db_user=${db_user:-postgres}
   docker-compose exec postgres psql -U $db_user -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
   echo "Database schema tables truncated."
