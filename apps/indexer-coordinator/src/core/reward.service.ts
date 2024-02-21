@@ -31,6 +31,9 @@ export class RewardService implements OnModuleInit {
   @Cron('0 0 1 * * *')
   async autoCollectAllocationRewards() {
     const indexerId = await this.accountService.getIndexer();
+    if (!indexerId) {
+      return;
+    }
     const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
       indexerId
     );
