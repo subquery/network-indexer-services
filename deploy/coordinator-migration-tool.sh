@@ -140,6 +140,7 @@ backup_database_schema() {
 
   if [ ! -f "$mount_path/$backup_filename" ]; then
     echo "Database schema backup failed. Operation cancelled."
+    echo "This script requires the database to be running in a container, and both docker and docker-compose need to be installed."
     exit 1
   fi
 
