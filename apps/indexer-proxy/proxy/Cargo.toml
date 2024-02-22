@@ -1,11 +1,11 @@
 [package]
 name = "subql-indexer-proxy"
-version = "2.0.0-beta.17"
+version = "2.0.0"
 edition = "2021"
 
 [dependencies]
 subql-indexer-utils = { version = "2", path = "../utils" }
-subql-contracts = { git = "https://github.com/subquery/network-contracts", branch = "develop" }
+subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.0.0" }
 aes-gcm = "0.10"
 axum = "0.6"
 axum-auth = "0.4"
