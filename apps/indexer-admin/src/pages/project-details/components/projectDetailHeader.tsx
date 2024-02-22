@@ -60,7 +60,7 @@ const ProjectDetailsHeader: FC<Props> = ({
               weight={600}
               style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
-              {project.details.name}
+              <span className="overflowEllipsis2">{project.details.name}</span>
               {!isUndefined(status) ? (
                 <Tag color={serviceStatusCode(status)}>{statusText[status]}</Tag>
               ) : (

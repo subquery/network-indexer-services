@@ -27,7 +27,7 @@ use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
 use subql_indexer_utils::{
-    constants::{BOOTSTRAP, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
+    constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };
 use tdn::prelude::PeerId;
@@ -189,7 +189,11 @@ impl CommandLineArgs {
     pub fn telemetries(&self) -> Vec<PeerId> {
         if self.telemetry {
             match self.network() {
-                Network::Kepler | Network::Mainnet => TELEMETRIES_MAINNET
+                Network::Mainnet => TELEMETRIES_MAINNET
+                    .iter()
+                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .collect(),
+                Network::Kepler => TELEMETRIES_KEPLER
                     .iter()
                     .filter_map(|p| PeerId::from_hex(p.trim()).ok())
                     .collect(),
