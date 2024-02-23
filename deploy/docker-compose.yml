@@ -18,7 +18,7 @@ services:
       retries: 5
 
   coordinator:
-    image: subquerynetwork/indexer-coordinator:v1.3.13
+    image: subquerynetwork/indexer-coordinator:v2.0.0
     container_name: indexer_coordinator
     restart: always
     ports:
@@ -32,9 +32,9 @@ services:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --network=kepler # Change to the network you want to index [testnet | kepler | mainnet]
+      - --network=mainnet # Change to the network you want to index [testnet | kepler | mainnet]
       - --postgres-host=postgres
-      - --network-endpoint=https://polygon-rpc.com
+      - --network-endpoint=https://mainnet.base.org
       - --postgres-password=<replace with you own password> # Change to your postgres password
       - --postgres-port=5432
       - --port=8000
@@ -69,7 +69,7 @@ services:
       test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
 
   proxy:
-    image: subquerynetwork/indexer-proxy:v1.2.6
+    image: subquerynetwork/indexer-proxy:v2.0.0
     container_name: indexer_proxy
     restart: always
     ports:
@@ -81,11 +81,11 @@ services:
     command:
       - --port=80
       - --auth
-      - --network=kepler # network type, need to be same with coordinator
+      - --network=mainnet # network type, need to be same with coordinator
       - --jwt-secret=<a random str> # change to any random string value
       - --secret-key=<a random str> # keep same with coordinator secret key
       - --coordinator-endpoint=http://indexer_coordinator:8000
-      - --network-endpoint=https://polygon-rpc.com # network endpoint, can choose your own endpoint
+      - --network-endpoint=https://mainnet.base.org # network endpoint, can choose your own endpoint
       - --token-duration=24 # query auth token validity [hours]
       - --redis-endpoint=redis://indexer_cache
       - --metrics-token=thisismyAuthtoken # change to any random string value

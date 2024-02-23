@@ -26,14 +26,14 @@ function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['testnet', 'kepler', 'mainnet'],
-      default: 'kepler',
+      default: 'mainnet',
       group: Groups.coordinator,
     },
     'network-endpoint': {
       type: 'string',
       describe: 'Specify rpc endpoint for this network',
       demandOption: true,
-      default: 'https://polygon-rpc.com',
+      default: 'https://mainnet.base.org',
       group: Groups.coordinator,
     },
     ipfs: {
