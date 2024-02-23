@@ -120,6 +120,19 @@ read_text() {
   echo $(sed -n -e "s/$text_to_search/$text_to_return/p" "$file")
 }
 
+remove_text() {
+  file=$1
+  text_to_search=$2
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i "" "/$text_to_search/d" "$file"
+  else
+    # Linux
+    sed -i "/$text_to_search/d" "$file"
+  fi
+}
+
 escape_url() {
   echo "$1" | sed -e 's/[\/&]/\\&/g'
 }
@@ -165,6 +178,20 @@ modify_coordinator_ws_endpoint() {
   new_line
 }
 
+modify_proxy_host() {
+  echo "Removing proxy host..."
+  remove_text $docker_compose_file "--host="
+  echo "Proxy host removed."
+  new_line
+}
+
+modify_proxy_service_url() {
+  echo "Modifying proxy service url..."
+  replace_text $docker_compose_file "--service-url=" "--coordinator-endpoint="
+  echo "Proxy service url updated."
+  new_line
+}
+
 modify_network_type() {
   echo "Modifying network type..."
   replace_text $docker_compose_file "--network=[^[:space:]]*" "--network=mainnet"
@@ -205,6 +232,8 @@ create_backup $docker_compose_file
 backup_database_schema
 truncate_database_schema_tables
 modify_coordinator_ws_endpoint
+modify_proxy_host
+modify_proxy_service_url
 modify_network_type
 modify_coordinator_version
 modify_proxy_version
