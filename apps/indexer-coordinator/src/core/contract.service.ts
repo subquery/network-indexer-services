@@ -29,7 +29,7 @@ export class ContractService {
 
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
-    this.existentialBalance = parseEther('0.05');
+    this.existentialBalance = parseEther('0.0001');
     this.provider = initProvider(config.networkEndpoint, this.chainID);
     this.sdk = initContractSDK(this.provider, this.chainID);
   }
