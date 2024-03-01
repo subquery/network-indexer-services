@@ -81,7 +81,7 @@ export class ProjectService {
         project.details = projectInfo;
         await this.projectRepo.save(project);
       } catch (e) {
-        getLogger('project').error(`Failed to update project info: ${project.id}`);
+        getLogger('project').warn(`Failed to update project info: ${project.id}`);
       }
     }
   }
