@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
@@ -69,6 +70,20 @@ export class ProjectService {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
     this.ipfsClient = new IPFSClient(IPFS_URL);
     void this.restoreProjects();
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async autoUpdateProjectInfo() {
+    const projects = await this.projectRepo.find();
+    for (const project of projects) {
+      try {
+        const projectInfo = await this.getProjectInfoFromNetwork(project.id);
+        project.details = projectInfo;
+        await this.projectRepo.save(project);
+      } catch (e) {
+        getLogger('project').warn(`Failed to update project info: ${project.id}`);
+      }
+    }
   }
 
   getProject(id: string): Promise<Project> {
