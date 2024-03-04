@@ -26,7 +26,7 @@ use axum::{
 use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
-    signers::{LocalWallet, Signer},
+    signers::LocalWallet,
     types::{Address, U256},
 };
 use redis::{AsyncCommands, RedisResult};
