@@ -4,7 +4,7 @@ version = "2.0.0"
 edition = "2021"
 
 [dependencies]
-subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.0.0" }
+subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.0.1" }
 axum = "0.6"
 bincode = "1.3"
 blake3="1.3"

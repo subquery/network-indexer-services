@@ -141,7 +141,7 @@ async fn generate_token(
                 // fixed plan just for try and dispute usecase. 1/second
                 if let Some(consumer) = &payload.consumer {
                     if signer == consumer.to_lowercase() {
-                        (true, COMMAND.free_limit, 1, Some(addr))
+                        (true, COMMAND.free_limit(), 1, Some(addr))
                     } else {
                         (false, 0, 0, None)
                     }

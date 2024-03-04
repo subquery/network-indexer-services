@@ -94,9 +94,6 @@ pub struct CommandLineArgs {
     /// Bootstrap seeds for p2p network with MultiAddr style
     #[structopt(long = "bootstrap")]
     pub bootstrap: Vec<String>,
-    /// Free query for consumer limit everyday
-    #[structopt(long = "free-plan", default_value = "60")]
-    pub free_limit: u64,
     /// Open telemetry for SubQuery
     #[structopt(long = "telemetry", parse(try_from_str), default_value = "true")]
     pub telemetry: bool,
@@ -106,6 +103,10 @@ pub struct CommandLineArgs {
 }
 
 impl CommandLineArgs {
+    pub fn free_limit(&self) -> u64 {
+        1440 // 1 times/min
+    }
+
     pub fn port(&self) -> u16 {
         self.port
     }
