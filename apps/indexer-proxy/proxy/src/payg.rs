@@ -27,7 +27,7 @@ use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
     signers::LocalWallet,
-    types::{Address, U256},
+    types::{Address, H256, U256},
 };
 use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
@@ -39,7 +39,7 @@ use subql_indexer_utils::{
         price_sign, OpenState, QueryState,
     },
     request::{graphql_request, GraphQLQuery},
-    tools::deployment_cid,
+    tools::{cid_deployment, deployment_cid},
     types::Result,
 };
 
@@ -57,6 +57,7 @@ const CACHE_VERSION: u8 = 1;
 pub struct StateCache {
     pub expiration: i64,
     pub consumer: Address,
+    pub deployment: H256,
     pub price: U256,
     pub total: U256,
     pub spent: U256,
@@ -72,7 +73,7 @@ impl StateCache {
             return Err(Error::Serialize(1136));
         }
 
-        if bytes.len() < 197 {
+        if bytes.len() < 229 {
             return Err(Error::Serialize(1136));
         }
 
@@ -80,20 +81,22 @@ impl StateCache {
         expiration_bytes.copy_from_slice(&bytes[1..9]);
         let expiration = i64::from_le_bytes(expiration_bytes);
         let consumer = Address::from_slice(&bytes[9..29]);
+        let deployment = H256::from_slice(&bytes[29..61]);
 
-        let price = U256::from_little_endian(&bytes[29..61]);
-        let total = U256::from_little_endian(&bytes[61..93]);
-        let spent = U256::from_little_endian(&bytes[93..125]);
-        let remote = U256::from_little_endian(&bytes[125..157]);
-        let coordi = U256::from_little_endian(&bytes[157..179]);
+        let price = U256::from_little_endian(&bytes[61..93]);
+        let total = U256::from_little_endian(&bytes[93..125]);
+        let spent = U256::from_little_endian(&bytes[125..157]);
+        let remote = U256::from_little_endian(&bytes[157..189]);
+        let coordi = U256::from_little_endian(&bytes[189..221]);
         let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[179..197]);
+        conflict_bytes.copy_from_slice(&bytes[221..229]);
         let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[197..])?;
+        let signer = ConsumerType::from_bytes(&bytes[229..])?;
 
         Ok(StateCache {
             expiration,
             consumer,
+            deployment,
             price,
             total,
             spent,
@@ -108,6 +111,7 @@ impl StateCache {
         let mut bytes = vec![];
         bytes.extend(&self.expiration.to_le_bytes());
         bytes.extend(self.consumer.as_fixed_bytes());
+        bytes.extend(self.deployment.as_fixed_bytes());
 
         let mut u256_bytes = [0u8; 32];
         self.price.to_little_endian(&mut u256_bytes);
@@ -433,7 +437,12 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
 
     let (state_cache, _keyname) = fetch_channel_cache(channel_id).await?;
 
-    // TODO check price
+    // check price
+    let project_id = deployment_cid(&state_cache.deployment);
+    let project = get_project(&project_id).await?;
+    if project.payg_price > state_cache.price {
+        return Err(Error::InvalidProjectPrice(1049));
+    }
 
     let account = ACCOUNT.read().await;
     let indexer = account.indexer;
@@ -490,6 +499,8 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
 pub struct ChannelItem {
     pub id: String,
     pub consumer: String,
+    #[serde(rename = "deploymentId")]
+    pub deployment: String,
     pub agent: String,
     pub total: String,
     pub spent: String,
@@ -516,6 +527,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         .consumer
         .parse()
         .map_err(|_e| Error::Serialize(1121))?;
+    let deployment: H256 = cid_deployment(&channel.deployment);
     let agent: Address = channel.agent.parse().unwrap_or(Address::zero());
     let total = U256::from_dec_str(&channel.total).map_err(|_e| Error::Serialize(1122))?;
     let spent = U256::from_dec_str(&channel.spent).map_err(|_e| Error::Serialize(1123))?;
@@ -572,6 +584,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             StateCache {
                 expiration: channel.expired,
                 consumer,
+                deployment,
                 price,
                 total,
                 spent,
