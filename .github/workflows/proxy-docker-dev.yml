@@ -1,11 +1,7 @@
-name: "Proxy-Docker"
+name: "Proxy-Docker-Dev"
+
 on:
   workflow_dispatch:
-    inputs:
-      isLatest:
-        description: 'Add latest tag'
-        default: 'true'
-        required: true
 
 jobs:
   build-push-docker:
@@ -35,7 +31,6 @@ jobs:
           sh .github/workflows/scripts/proxyVersion.sh
 
       - name: Build and push
-        if: github.event.inputs.isLatest == 'false'
         uses: docker/build-push-action@v4
         with:
           push: true
@@ -43,19 +38,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: ./apps/indexer-proxy/proxy/Dockerfile
-          tags: subquerynetwork/indexer-proxy:v${{ steps.fetch-version.outputs.VERSION }}
-          build-args: RELEASE_VERSION=${{ steps.fetch-version.outputs.VERSION }}
-
-      - name: Build and push
-        if: github.event.inputs.isLatest == 'true'
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          platforms: amd64,arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          file: ./apps/indexer-proxy/proxy/Dockerfile
-          tags: subquerynetwork/indexer-proxy:v${{ steps.fetch-version.outputs.VERSION }},subquerynetwork/indexer-proxy:latest
+          tags: subquerynetwork/indexer-proxy-dev:v${{ steps.fetch-version.outputs.VERSION }}
           build-args: RELEASE_VERSION=${{ steps.fetch-version.outputs.VERSION }}
 
       - name: Image digest
