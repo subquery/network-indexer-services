@@ -355,6 +355,18 @@ export class PaygService {
     }
   }
 
+  async extend(id: string, expiration: number): Promise<Channel> {
+    const channel = await this.channel(id);
+    if (!channel) {
+      throw new Error(`channel not exist: ${id}`);
+    }
+    channel.expiredAt = expiration;
+
+    logger.debug(`Extend state channel ${id}`);
+
+    return this.saveAndPublish(channel, PaygEvent.State);
+  }
+
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {

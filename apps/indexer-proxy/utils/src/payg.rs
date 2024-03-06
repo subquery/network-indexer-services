@@ -396,6 +396,46 @@ pub async fn fund_sign(
         .map_err(|_| Error::InvalidSignature(1041))
 }
 
+pub fn extend_recover(
+    channel: U256,
+    indexer: Address,
+    consumer: Address,
+    preexpiration: U256,
+    expiration: U256,
+    sign: Signature,
+) -> Result<Address, Error> {
+    let payload = encode(&[
+        channel.into_token(),
+        indexer.into_token(),
+        consumer.into_token(),
+        preexpiration.into_token(),
+        expiration.into_token(),
+    ]);
+    let hash = keccak256(payload);
+    Ok(sign.recover(&hash[..])?)
+}
+
+pub async fn extend_sign(
+    channel: U256,
+    indexer: Address,
+    consumer: Address,
+    preexpiration: U256,
+    expiration: U256,
+    key: &impl Signer,
+) -> Result<Signature, Error> {
+    let payload = encode(&[
+        channel.into_token(),
+        indexer.into_token(),
+        consumer.into_token(),
+        preexpiration.into_token(),
+        expiration.into_token(),
+    ]);
+    let hash = keccak256(payload);
+    key.sign_message(hash)
+        .await
+        .map_err(|_| Error::InvalidSignature(1041))
+}
+
 pub fn default_sign() -> Signature {
     Signature {
         v: 0,

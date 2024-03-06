@@ -88,3 +88,4 @@
 - `1140` - Serialize: subquery's query is invalid.
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
+- `1202` - Service exception: indexer service exception.

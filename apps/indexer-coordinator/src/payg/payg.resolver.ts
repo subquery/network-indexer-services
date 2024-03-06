@@ -40,6 +40,14 @@ export class PaygResolver {
   }
 
   @Mutation(() => ChannelType)
+  channelExtend(
+    @Args('id') id: string,
+    @Args('expiration') expiration: number
+  ) {
+    return this.paygService.extend(id, expiration);
+  }
+
+  @Mutation(() => ChannelType)
   channelCheckpoint(@Args('id') id: string) {
     return this.paygService.checkpoint(id);
   }

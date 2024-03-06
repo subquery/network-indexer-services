@@ -43,7 +43,9 @@ use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
-use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
+use crate::payg::{
+    extend_channel, fetch_channel_cache, merket_price, open_state, query_state, AuthPayg,
+};
 use crate::project::get_project;
 
 #[derive(Serialize)]
@@ -72,6 +74,8 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
+        // `POST /payg/0x00...955X/extend` goes to extend channel expiration
+        .route("/payg/:channel/extend", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
@@ -286,6 +290,22 @@ async fn payg_query(
     headers.push(("Content-Type", "application/json"));
 
     Ok(build_response(body, headers))
+}
+
+#[derive(Deserialize)]
+struct ExtendParams {
+    expiration: i32,
+    signature: String,
+}
+
+async fn payg_extend(
+    Path(channel): Path<String>,
+    Json(payload): Json<ExtendParams>,
+) -> Result<Json<Value>, Error> {
+    let extend = extend_channel(channel, payload.expiration, payload.signature).await?;
+    Ok(Json(json!({
+        "signature": extend
+    })))
 }
 
 #[derive(Deserialize)]
