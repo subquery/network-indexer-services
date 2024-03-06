@@ -1,5 +1,8 @@
 name: "Proxy-Docker-Prod"
 
+on:
+  workflow_dispatch:
+
 jobs:
   build-push-docker:
     runs-on: ubuntu-latest
