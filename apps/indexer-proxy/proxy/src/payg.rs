@@ -364,7 +364,7 @@ pub async fn query_state(
     } else {
         // update, missing KEEPTTL, so use two operation.
         let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
-        let _: RedisResult<()> = redis::cmd("SET_EX")
+        let _: RedisResult<()> = redis::cmd("SETEX")
             .arg(&keyname)
             .arg(state_cache.to_bytes())
             .arg(exp.unwrap_or(86400))
@@ -501,7 +501,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
 
         let exp = (channel.expired - now) as usize;
 
-        let _: RedisResult<()> = redis::cmd("SET_EX")
+        let _: RedisResult<()> = redis::cmd("SETEX")
             .arg(&keyname)
             .arg(state_cache.to_bytes())
             .arg(exp)

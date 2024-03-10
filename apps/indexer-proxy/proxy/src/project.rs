@@ -153,7 +153,7 @@ impl Project {
                 return Err(Error::RateLimit(1057));
             }
 
-            let _: RedisResult<()> = redis::cmd("SET_EX")
+            let _: RedisResult<()> = redis::cmd("SETEX")
                 .arg(&used_key)
                 .arg(used + 1)
                 .arg(1)
