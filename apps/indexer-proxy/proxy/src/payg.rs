@@ -324,7 +324,7 @@ pub async fn query_state(
         return Err(Error::InvalidProjectPrice(1034));
     }
 
-    if remote_next >= total + price {
+    if remote_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
@@ -354,7 +354,7 @@ pub async fn query_state(
         .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
         .await?;
 
-    state_cache.spent = local_prev + remote_next - remote_prev;
+    state_cache.spent = local_prev + price;
     state_cache.remote = remote_next;
 
     let conn = redis();
@@ -466,7 +466,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         let state_cache = if let Some(mut state_cache) = state_cache_op {
             state_cache.total = total;
             if state_cache.remote != remote {
-                warn!(
+                debug!(
                     "Proxy remote: {}, coordinator remote: {}",
                     state_cache.remote, remote
                 );
