@@ -23,7 +23,7 @@ use axum::{
 };
 use chrono::prelude::*;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use subql_indexer_utils::{error::Error, types::Result};
@@ -211,11 +211,16 @@ async fn check_agreement_with_signer(signer: &str, agreement: &str) -> Result<()
     // check already has agreement
     let daily_limit_name = format!("{}-dlimit", agreement);
     let ca_consumer = format!("{}-{}", agreement, signer);
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let daily_limit: RedisResult<u64> = conn_lock.get(&daily_limit_name).await;
-    let ca_checked: RedisResult<bool> = conn_lock.get(&ca_consumer).await;
-    drop(conn_lock);
+    let mut conn = redis();
+
+    let daily_limit: RedisResult<u64> = redis::cmd("GET")
+        .arg(&daily_limit_name)
+        .query_async(&mut conn)
+        .await;
+    let ca_checked: RedisResult<bool> = redis::cmd("GET")
+        .arg(&ca_consumer)
+        .query_async(&mut conn)
+        .await;
 
     if daily_limit.is_err() {
         // init agreement
@@ -239,16 +244,30 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
     let limit_expired = (COMMAND.token_duration() as usize * 3600) * 2;
 
     // update the limit
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let _: RedisResult<()> = conn_lock.set_ex(&daily_limit, daily, limit_expired).await;
-    let _: RedisResult<()> = conn_lock.set_ex(&rate_limit, rate, limit_expired).await;
+    let mut conn = redis();
+
+    let _: RedisResult<()> = redis::cmd("SET_EX")
+        .arg(&daily_limit)
+        .arg(daily)
+        .arg(limit_expired)
+        .query_async(&mut conn)
+        .await;
+    let _: RedisResult<()> = redis::cmd("SET_EX")
+        .arg(&rate_limit)
+        .arg(rate)
+        .arg(limit_expired)
+        .query_async(&mut conn)
+        .await;
+
     if let Some(signer) = signer {
         let ca_consumer = format!("{}-{}", agreement, signer);
-        let _: RedisResult<()> = conn_lock.set_ex(&ca_consumer, true, limit_expired).await;
+        let _: RedisResult<()> = redis::cmd("SET_EX")
+            .arg(&ca_consumer)
+            .arg(true)
+            .arg(limit_expired)
+            .query_async(&mut conn)
+            .await;
     }
-
-    drop(conn_lock);
 }
 
 async fn check_agreement_limit(agreement: &str) -> Result<()> {
@@ -263,15 +282,25 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
         return Err(Error::RateLimit(1052));
     }
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
+
     let (date, second) = day_and_second();
     let daily_key = format!("{}-daily-{}", agreement, date);
     let rate_key = format!("{}-rate-{}", agreement, second);
 
-    let _: RedisResult<()> = conn_lock.set_ex(&daily_key, daily_times + 1, 86400).await;
-    let _: RedisResult<()> = conn_lock.set_ex(&rate_key, rate_times + 1, 1).await;
-    drop(conn_lock);
+    let _: RedisResult<()> = redis::cmd("SET_EX")
+        .arg(&daily_key)
+        .arg(daily_times + 1)
+        .arg(86400)
+        .query_async(&mut conn)
+        .await;
+
+    let _: RedisResult<()> = redis::cmd("SET_EX")
+        .arg(&rate_key)
+        .arg(rate_times + 1)
+        .arg(1)
+        .query_async(&mut conn)
+        .await;
 
     Ok(())
 }
@@ -284,17 +313,29 @@ async fn get_agreement_limit(agreement: &str) -> (u64, u64, u64, u64) {
     let daily_limit = format!("{}-dlimit", agreement);
     let rate_limit = format!("{}-rlimit", agreement);
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
 
-    let daily_limit: u64 = conn_lock.get(&daily_limit).await.unwrap_or(86400);
-    let rate_limit: u64 = conn_lock.get(&rate_limit).await.unwrap_or(1);
+    let daily_limit: u64 = redis::cmd("GET")
+        .arg(&daily_limit)
+        .query_async(&mut conn)
+        .await
+        .unwrap_or(86400);
+    let rate_limit: u64 = redis::cmd("GET")
+        .arg(&rate_limit)
+        .query_async(&mut conn)
+        .await
+        .unwrap_or(1);
 
-    let daily_times: RedisResult<u64> = conn_lock.get(&daily_key).await;
-    let rate_times: RedisResult<u64> = conn_lock.get(&rate_key).await;
-    drop(conn_lock);
-    let daily_times = daily_times.unwrap_or(0);
-    let rate_times = rate_times.unwrap_or(0);
+    let daily_times: u64 = redis::cmd("GET")
+        .arg(&daily_key)
+        .query_async(&mut conn)
+        .await
+        .unwrap_or(0);
+    let rate_times: u64 = redis::cmd("GET")
+        .arg(&rate_key)
+        .query_async(&mut conn)
+        .await
+        .unwrap_or(0);
 
     (daily_limit, daily_times, rate_limit, rate_times)
 }

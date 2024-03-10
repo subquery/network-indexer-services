@@ -22,7 +22,7 @@ use aes_gcm::{
 };
 use digest::{generic_array::GenericArray, Digest};
 use once_cell::sync::Lazy;
-use redis::aio::Connection;
+use redis::aio::MultiplexedConnection;
 use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
@@ -31,19 +31,20 @@ use subql_indexer_utils::{
     error::Error,
 };
 use tdn::prelude::PeerId;
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::OnceCell;
 
 const DEFAULT_P2P_ADDR: &str = "0.0.0.0:7370";
 
-pub static REDIS: OnceCell<Mutex<Connection>> = OnceCell::const_new();
+pub static REDIS: OnceCell<MultiplexedConnection> = OnceCell::const_new();
 
-pub fn redis<'a>() -> &'a Mutex<Connection> {
-    REDIS.get().expect("REDIS lost connections")
+pub fn redis() -> MultiplexedConnection {
+    REDIS.get().expect("REDIS lost connections").clone()
 }
 
 pub async fn init_redis() {
     let client = redis::Client::open(COMMAND.redis_endpoint()).unwrap();
-    let conn = Mutex::new(client.get_async_connection().await.unwrap());
+
+    let conn = client.get_multiplexed_tokio_connection().await.unwrap();
     REDIS
         .set(conn)
         .map_err(|_e| "redis connection failure")

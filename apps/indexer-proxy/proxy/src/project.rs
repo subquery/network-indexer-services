@@ -25,7 +25,7 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -139,17 +139,26 @@ impl Project {
     ) -> Result<(Vec<u8>, String)> {
         if let Some(limit) = self.rate_limit {
             // project rate limit
-            let conn = redis();
-            let mut conn_lock = conn.lock().await;
+            let mut conn = redis();
             let second = Utc::now().timestamp();
             let used_key = format!("{}-rate-{}", self.id, second);
 
-            let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
+            let used: i64 = redis::cmd("GET")
+                .arg(&used_key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(0);
+
             if is_limit && used + 1 > limit {
                 return Err(Error::RateLimit(1057));
             }
-            let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
-            drop(conn_lock);
+
+            let _: RedisResult<()> = redis::cmd("SET_EX")
+                .arg(&used_key)
+                .arg(used + 1)
+                .arg(1)
+                .query_async(&mut conn)
+                .await;
         }
 
         match self.ptype {
