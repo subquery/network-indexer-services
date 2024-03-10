@@ -550,7 +550,8 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
     let mut conn_lock = conn.lock().await;
     let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
     drop(conn_lock);
-    if cache_bytes.is_err() {
+    if let Err(err) = cache_bytes {
+        error!("{}", err);
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();
