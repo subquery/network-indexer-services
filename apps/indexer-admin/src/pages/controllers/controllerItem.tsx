@@ -10,6 +10,7 @@ import { asyncRender } from 'components/asyncRender';
 import Avatar from 'components/avatar';
 import { Button, Text } from 'components/primary';
 import { openAccountExporer } from 'utils/account';
+import { formatValueToFixed } from 'utils/units';
 
 import { useTokenSymbol } from '../../hooks/network';
 import { prompts } from './prompts';
@@ -62,7 +63,10 @@ const ControllerItem: FC<Props> = ({
           </Text>
         </AccountContainer>
         <Balance>
-          {asyncRender(!!balance, <Text>{`${balance?.formatted} ${tokenSymbol}`}</Text>)}
+          {asyncRender(
+            !!balance,
+            <Text>{`${formatValueToFixed(+(balance?.formatted || 0), 6)} ${tokenSymbol}`}</Text>
+          )}
         </Balance>
         <Status>{isActived && <Tag color="success">{active}</Tag>}</Status>
       </ItemContentContainer>

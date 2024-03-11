@@ -25,7 +25,7 @@ export function Introduction({ onEnablePayg }: Props) {
         {instruction.desc[1]}
       </Text>
       <Text mt={15} alignCenter size={16} color="#454F58">
-        {instruction.sub}
+        {instruction.sub}{' '}
         <a target="_blank" href={instruction.link} rel="noreferrer">
           here
         </a>
