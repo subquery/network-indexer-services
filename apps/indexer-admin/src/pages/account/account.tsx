@@ -27,6 +27,7 @@ import { balanceSufficient } from 'utils/account';
 import { parseError } from 'utils/error';
 import { createIndexerMetadata } from 'utils/ipfs';
 import { REMOVE_ACCOUNTS } from 'utils/queries';
+import { formatValueToFixed } from 'utils/units';
 
 import {
   AccountActionName,
@@ -66,7 +67,10 @@ const Account = () => {
 
   const [removeAccounts] = useMutation(REMOVE_ACCOUNTS);
 
-  prompts.controller.desc = `Balance: ${controllerBalance?.formatted} ${tokenSymbol}`;
+  prompts.controller.desc = `Balance: ${formatValueToFixed(
+    +(controllerBalance?.formatted || 0),
+    6
+  )} ${tokenSymbol}`;
   const controllerItem = !controller ? prompts.emptyController : prompts.controller;
   const indexerItem = prompts.indexer;
 
@@ -153,7 +157,10 @@ const Account = () => {
           name={indexerName}
           buttons={indexerButtons}
           account={account ?? ''}
-          desc={`Balance: ${indexerBalance?.formatted} ${tokenSymbol}`}
+          desc={`Balance: ${formatValueToFixed(
+            +(indexerBalance?.formatted || 0),
+            6
+          )} ${tokenSymbol}`}
         />
       )}
       {(isIndexer || isController) && (
