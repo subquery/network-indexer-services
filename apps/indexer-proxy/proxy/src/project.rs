@@ -25,7 +25,6 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
-use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -153,12 +152,13 @@ impl Project {
                 return Err(Error::RateLimit(1057));
             }
 
-            let _: RedisResult<()> = redis::cmd("SETEX")
+            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
                 .arg(&used_key)
                 .arg(used + 1)
                 .arg(1)
                 .query_async(&mut conn)
-                .await;
+                .await
+                .map_err(|err| error!("{}", err));
         }
 
         match self.ptype {

@@ -364,12 +364,13 @@ pub async fn query_state(
     } else {
         // update, missing KEEPTTL, so use two operation.
         let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
-        let _: RedisResult<()> = redis::cmd("SETEX")
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
             .arg(state_cache.to_bytes())
             .arg(exp.unwrap_or(86400))
             .query_async(&mut conn)
-            .await;
+            .await
+            .map_err(|err| error!("{}", err));
     }
 
     // async to coordiantor
@@ -501,12 +502,13 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
 
         let exp = (channel.expired - now) as usize;
 
-        let _: RedisResult<()> = redis::cmd("SETEX")
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
             .arg(state_cache.to_bytes())
             .arg(exp)
             .query_async(&mut conn)
-            .await;
+            .await
+            .map_err(|err| error!("{}", err));
     }
 
     Ok(())
