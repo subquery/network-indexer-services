@@ -29,7 +29,7 @@ use ethers::{
     signers::LocalWallet,
     types::{Address, H256, U256},
 };
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use subql_indexer_utils::{
@@ -52,7 +52,7 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
-const CACHE_VERSION: u8 = 1;
+const CURRENT_VERSION: u8 = 2;
 
 pub struct StateCache {
     pub expiration: i64,
@@ -69,7 +69,7 @@ pub struct StateCache {
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes[0] != CACHE_VERSION {
+        if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
 
@@ -108,7 +108,8 @@ impl StateCache {
     }
 
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = vec![];
+        let mut bytes = vec![CURRENT_VERSION];
+
         bytes.extend(&self.expiration.to_le_bytes());
         bytes.extend(self.consumer.as_fixed_bytes());
         bytes.extend(self.deployment.as_fixed_bytes());
@@ -139,6 +140,12 @@ pub enum ConsumerType {
 }
 
 impl ConsumerType {
+    fn is_empty(&self) -> bool {
+        match self {
+            ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.is_empty(),
+        }
+    }
+
     fn contains(&self, s: &Address) -> bool {
         match self {
             ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.contains(s),
@@ -345,11 +352,17 @@ pub async fn query_state(
     let conflict = project.payg_overflow;
 
     if remote_prev < remote_next && remote_prev + price > remote_next {
+        warn!(
+            "remote prev: {} remote next: {}, should: {}",
+            remote_prev,
+            remote_next,
+            remote_prev + price
+        );
         // price invalid
         return Err(Error::InvalidProjectPrice(1034));
     }
 
-    if remote_next >= total + price {
+    if remote_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
@@ -379,22 +392,24 @@ pub async fn query_state(
         .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
         .await?;
 
-    state_cache.spent = local_prev + remote_next - remote_prev;
+    state_cache.spent = local_prev + price;
     state_cache.remote = remote_next;
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
     if state.is_final {
         // close
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
         // update, missing KEEPTTL, so use two operation.
-        let exp: RedisResult<usize> = conn_lock.ttl(&keyname).await;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp.unwrap_or(86400))
-            .await;
+        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp.unwrap_or(86400))
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 1: {}", err));
     }
-    drop(conn_lock);
 
     // async to coordiantor
     let mdata = format!(
@@ -538,16 +553,17 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
 
     let now = Utc::now().timestamp();
 
     if channel.is_final || now > channel.expired {
         // delete from cache
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
-        let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
+        let cache_bytes: RedisResult<Vec<u8>> =
+            redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
         let cache_ok = cache_bytes
             .ok()
             .and_then(|v| if v.is_empty() { None } else { Some(v) });
@@ -561,7 +577,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             state_cache.expiration = channel.expired;
             state_cache.total = total;
             if state_cache.remote != remote {
-                warn!(
+                debug!(
                     "Proxy remote: {}, coordinator remote: {}",
                     state_cache.remote, remote
                 );
@@ -577,6 +593,10 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             // }
             state_cache.spent = std::cmp::max(state_cache.spent, spent);
             state_cache.coordi = spent;
+
+            if state_cache.signer.is_empty() {
+                state_cache.signer = check_state_channel_consumer(consumer, agent).await?;
+            }
 
             state_cache
         } else {
@@ -596,9 +616,14 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp)
-            .await;
+
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp)
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 2: {}", err));
     }
 
     Ok(())
@@ -644,11 +669,12 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
-    drop(conn_lock);
-    if cache_bytes.is_err() {
+    let mut conn = redis();
+    let cache_bytes: RedisResult<Vec<u8>> =
+        redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
+    if let Err(err) = cache_bytes {
+        error!("Redis 3: {}", err);
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();

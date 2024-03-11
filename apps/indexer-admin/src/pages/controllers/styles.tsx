@@ -46,7 +46,7 @@ export const ItemContainer = styled.div`
   min-height: 90px;
   margin: 10px 0px;
   padding: 10px 20px;
-  border-color: gray;
+  border: 1px solid var(--sq-gray300);
   border-radius: 10px;
   background-color: white;
   align-items: center;

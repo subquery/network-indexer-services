@@ -13,8 +13,10 @@ const getErrorMsg = (error: any) => {
 };
 
 export const mapContractError = (error: any) => {
-  const revertCode = Object.keys(contractErrorCodes).find((key) =>
-    getErrorMsg(error).toString().match(`reverted: ${key}`)
+  const revertCode = Object.keys(contractErrorCodes).find(
+    (key) =>
+      getErrorMsg(error).toString().match(`reverted: ${key}`) ||
+      getErrorMsg(error).toString().match(`revert: ${key}`)
   ) as keyof typeof contractErrorCodes;
 
   const getExtraExplain = (revertCode: 'IR004' | 'RS002') => {

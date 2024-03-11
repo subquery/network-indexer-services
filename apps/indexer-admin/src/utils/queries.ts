@@ -226,7 +226,13 @@ export const WITHDRAW_CONTROLLER = gql`
 
 export const REMOVE_ACCOUNTS = gql`
   mutation {
-    removeAccounts
+    removeAccounts {
+      indexer
+      controller
+      encryptedKey
+      network
+      networkEndpoint
+    }
   }
 `;
 
