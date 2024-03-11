@@ -158,7 +158,7 @@ impl Project {
                 .arg(1)
                 .query_async(&mut conn)
                 .await
-                .map_err(|err| error!("{}", err));
+                .map_err(|err| error!("Redis 1 {}", err));
         }
 
         match self.ptype {

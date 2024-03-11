@@ -370,7 +370,7 @@ pub async fn query_state(
             .arg(exp.unwrap_or(86400))
             .query_async(&mut conn)
             .await
-            .map_err(|err| error!("{}", err));
+            .map_err(|err| error!("Redis 1: {}", err));
     }
 
     // async to coordiantor
@@ -508,7 +508,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             .arg(exp)
             .query_async(&mut conn)
             .await
-            .map_err(|err| error!("{}", err));
+            .map_err(|err| error!("Redis 2: {}", err));
     }
 
     Ok(())
@@ -559,7 +559,7 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
         redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
 
     if let Err(err) = cache_bytes {
-        error!("{}", err);
+        error!("Redis 3: {}", err);
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();
