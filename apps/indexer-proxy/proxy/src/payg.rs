@@ -114,6 +114,12 @@ pub enum ConsumerType {
 }
 
 impl ConsumerType {
+    fn is_empty(&self) -> bool {
+        match self {
+            ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.is_empty(),
+        }
+    }
+
     fn contains(&self, s: &Address) -> bool {
         match self {
             ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.contains(s),
@@ -485,6 +491,10 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             // }
             state_cache.spent = std::cmp::max(state_cache.spent, spent);
             state_cache.coordi = spent;
+
+            if state_cache.signer.is_empty() {
+                state_cache.signer = check_state_channel_consumer(consumer, agent).await?;
+            }
 
             state_cache
         } else {
