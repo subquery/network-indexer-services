@@ -366,8 +366,8 @@ pub async fn query_state(
         let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
         let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
-            .arg(state_cache.to_bytes())
             .arg(exp.unwrap_or(86400))
+            .arg(state_cache.to_bytes())
             .query_async(&mut conn)
             .await
             .map_err(|err| error!("Redis 1: {}", err));
@@ -501,12 +501,11 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
-        error!("{} {} {}", channel.expired, now, exp);
 
         let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
-            .arg(state_cache.to_bytes())
             .arg(exp)
+            .arg(state_cache.to_bytes())
             .query_async(&mut conn)
             .await
             .map_err(|err| error!("Redis 2: {}", err));

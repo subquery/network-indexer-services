@@ -154,8 +154,8 @@ impl Project {
 
             let _: core::result::Result<(), ()> = redis::cmd("SETEX")
                 .arg(&used_key)
-                .arg(used + 1)
                 .arg(1)
+                .arg(used + 1)
                 .query_async(&mut conn)
                 .await
                 .map_err(|err| error!("Redis 1 {}", err));

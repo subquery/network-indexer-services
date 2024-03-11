@@ -248,15 +248,15 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
 
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_limit)
-        .arg(daily)
         .arg(limit_expired)
+        .arg(daily)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 1 {}", err));
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_limit)
-        .arg(rate)
         .arg(limit_expired)
+        .arg(rate)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 2 {}", err));
@@ -265,8 +265,8 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
         let ca_consumer = format!("{}-{}", agreement, signer);
         let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&ca_consumer)
-            .arg(true)
             .arg(limit_expired)
+            .arg(true)
             .query_async(&mut conn)
             .await
             .map_err(|err| error!("Redis 3 {}", err));
@@ -293,16 +293,16 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
 
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_key)
-        .arg(daily_times + 1)
         .arg(86400)
+        .arg(daily_times + 1)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 4 {}", err));
 
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_key)
-        .arg(rate_times + 1)
         .arg(1)
+        .arg(rate_times + 1)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 5 {}", err));
