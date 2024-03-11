@@ -326,6 +326,12 @@ pub async fn query_state(
     let conflict = project.payg_overflow;
 
     if remote_prev < remote_next && remote_prev + price > remote_next {
+        warn!(
+            "remote prev: {} remote next: {}, should: {}",
+            remote_prev,
+            remote_next,
+            remote_prev + price
+        );
         // price invalid
         return Err(Error::InvalidProjectPrice(1034));
     }
