@@ -29,7 +29,7 @@ use ethers::{
     signers::LocalWallet,
     types::{Address, U256},
 };
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use subql_indexer_utils::{
@@ -49,6 +49,8 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
+const CURRENT_VERSION: u8 = 1;
+
 pub struct StateCache {
     pub price: U256,
     pub total: U256,
@@ -61,19 +63,22 @@ pub struct StateCache {
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes.len() < 168 {
+        if bytes.len() < 169 {
+            return Err(Error::Serialize(1136));
+        }
+        if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
 
-        let price = U256::from_little_endian(&bytes[0..32]);
-        let total = U256::from_little_endian(&bytes[32..64]);
-        let spent = U256::from_little_endian(&bytes[64..96]);
-        let remote = U256::from_little_endian(&bytes[96..128]);
-        let coordi = U256::from_little_endian(&bytes[128..160]);
+        let price = U256::from_little_endian(&bytes[1..33]);
+        let total = U256::from_little_endian(&bytes[33..65]);
+        let spent = U256::from_little_endian(&bytes[65..97]);
+        let remote = U256::from_little_endian(&bytes[97..129]);
+        let coordi = U256::from_little_endian(&bytes[129..161]);
         let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[160..168]);
+        conflict_bytes.copy_from_slice(&bytes[161..169]);
         let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[168..])?;
+        let signer = ConsumerType::from_bytes(&bytes[169..])?;
 
         Ok(StateCache {
             price,
@@ -87,7 +92,8 @@ impl StateCache {
     }
 
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = vec![];
+        let mut bytes = vec![CURRENT_VERSION];
+
         let mut u256_bytes = [0u8; 32];
         self.price.to_little_endian(&mut u256_bytes);
         bytes.extend(u256_bytes);
@@ -114,6 +120,12 @@ pub enum ConsumerType {
 }
 
 impl ConsumerType {
+    fn is_empty(&self) -> bool {
+        match self {
+            ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.is_empty(),
+        }
+    }
+
     fn contains(&self, s: &Address) -> bool {
         match self {
             ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.contains(s),
@@ -320,6 +332,12 @@ pub async fn query_state(
     let conflict = project.payg_overflow;
 
     if remote_prev < remote_next && remote_prev + price > remote_next {
+        warn!(
+            "remote prev: {} remote next: {}, should: {}",
+            remote_prev,
+            remote_next,
+            remote_prev + price
+        );
         // price invalid
         return Err(Error::InvalidProjectPrice(1034));
     }
@@ -357,19 +375,21 @@ pub async fn query_state(
     state_cache.spent = local_prev + price;
     state_cache.remote = remote_next;
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
     if state.is_final {
         // close
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
         // update, missing KEEPTTL, so use two operation.
-        let exp: RedisResult<usize> = conn_lock.ttl(&keyname).await;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp.unwrap_or(86400))
-            .await;
+        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp.unwrap_or(86400))
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 1: {}", err));
     }
-    drop(conn_lock);
 
     // async to coordiantor
     let mdata = format!(
@@ -444,16 +464,17 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
 
     let now = Utc::now().timestamp();
 
     if channel.is_final || now > channel.expired {
         // delete from cache
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
-        let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
+        let cache_bytes: RedisResult<Vec<u8>> =
+            redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
         let cache_ok = cache_bytes
             .ok()
             .and_then(|v| if v.is_empty() { None } else { Some(v) });
@@ -483,6 +504,10 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             state_cache.spent = std::cmp::max(state_cache.spent, spent);
             state_cache.coordi = spent;
 
+            if state_cache.signer.is_empty() {
+                state_cache.signer = check_state_channel_consumer(consumer, agent).await?;
+            }
+
             state_cache
         } else {
             let signer = check_state_channel_consumer(consumer, agent).await?;
@@ -498,9 +523,14 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp)
-            .await;
+
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp)
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 2: {}", err));
     }
 
     Ok(())
@@ -546,12 +576,12 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
-    drop(conn_lock);
+    let mut conn = redis();
+    let cache_bytes: RedisResult<Vec<u8>> =
+        redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
     if let Err(err) = cache_bytes {
-        error!("{}", err);
+        error!("Redis 3: {}", err);
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();
