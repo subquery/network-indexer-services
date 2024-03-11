@@ -501,6 +501,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
+        error!("{} {} {}", channel.expired, now, exp);
 
         let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
