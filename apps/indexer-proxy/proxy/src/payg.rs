@@ -49,6 +49,8 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
+const CURRENT_VERSION: u8 = 1;
+
 pub struct StateCache {
     pub price: U256,
     pub total: U256,
@@ -61,19 +63,22 @@ pub struct StateCache {
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes.len() < 168 {
+        if bytes.len() < 169 {
+            return Err(Error::Serialize(1136));
+        }
+        if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
 
-        let price = U256::from_little_endian(&bytes[0..32]);
-        let total = U256::from_little_endian(&bytes[32..64]);
-        let spent = U256::from_little_endian(&bytes[64..96]);
-        let remote = U256::from_little_endian(&bytes[96..128]);
-        let coordi = U256::from_little_endian(&bytes[128..160]);
+        let price = U256::from_little_endian(&bytes[1..33]);
+        let total = U256::from_little_endian(&bytes[33..65]);
+        let spent = U256::from_little_endian(&bytes[65..97]);
+        let remote = U256::from_little_endian(&bytes[97..129]);
+        let coordi = U256::from_little_endian(&bytes[129..161]);
         let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[160..168]);
+        conflict_bytes.copy_from_slice(&bytes[161..169]);
         let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[168..])?;
+        let signer = ConsumerType::from_bytes(&bytes[169..])?;
 
         Ok(StateCache {
             price,
@@ -87,7 +92,8 @@ impl StateCache {
     }
 
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = vec![];
+        let mut bytes = vec![CURRENT_VERSION];
+
         let mut u256_bytes = [0u8; 32];
         self.price.to_little_endian(&mut u256_bytes);
         bytes.extend(u256_bytes);
