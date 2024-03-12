@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use base64::{engine::general_purpose, Engine as _};
+use chamomile_types::Peer as ChamomilePeer;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::Result;
@@ -750,13 +751,13 @@ async fn handle_group(
 
 async fn bootstrap(sender: &Sender<SendMessage>) {
     for seed in COMMAND.bootstrap() {
-        if let Ok(addr) = seed.parse() {
-            let peer = Peer::socket_transport(addr, "tcp");
-            sender
-                .send(SendMessage::Network(NetworkType::Connect(peer)))
-                .await
-                .expect("TDN channel closed");
-        }
+        let p2p = ChamomilePeer::from_multiaddr_string(&seed).unwrap();
+        let peer = Peer::from(p2p);
+
+        sender
+            .send(SendMessage::Network(NetworkType::Connect(peer)))
+            .await
+            .expect("TDN channel closed");
     }
 }
 
