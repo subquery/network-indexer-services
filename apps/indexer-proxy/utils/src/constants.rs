@@ -68,4 +68,4 @@ pub const TELEMETRIES_TESTNET: [&str; 3] = [
     "0x293a6d85DD0d7d290A719Fdeef43FaD10240bA77", // DEV
 ];
 
-pub const BOOTSTRAP: [&str; 2] = ["142.215.53.35:7370", "8.219.198.62:7370"];
+pub const BOOTSTRAP: [&str; 2] = ["142.215.53.35:7370", "8.219.198.62:7371"];
