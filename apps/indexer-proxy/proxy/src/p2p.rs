@@ -751,7 +751,7 @@ async fn handle_group(
 async fn bootstrap(sender: &Sender<SendMessage>) {
     for seed in COMMAND.bootstrap() {
         if let Ok(addr) = seed.parse() {
-            let peer = Peer::socket(addr);
+            let peer = Peer::socket_transport(addr, "tcp");
             sender
                 .send(SendMessage::Network(NetworkType::Connect(peer)))
                 .await
