@@ -444,7 +444,7 @@ pub async fn query_state(
     Ok((data, signature, state_string))
 }
 
-pub async fn extend_channel(channel: String, expiration: i32, signature: String) -> Result<String> {
+pub async fn extend_channel(channel: String, expired: i64, expiration: i32, signature: String) -> Result<String> {
     // check channel & signature
     let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
         .map_err(|_e| Error::Serialize(1120))?;
@@ -459,6 +459,15 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
         return Err(Error::InvalidProjectPrice(1049));
     }
 
+    let gap = if expired > state_cache.expiration {
+        expired - state_cache.expiration
+    } else {
+        state_cache.expiration - expired
+    };
+    if gap > 600 {
+        return Err(Error::InvalidProjectPrice(1049));
+    }
+
     let account = ACCOUNT.read().await;
     let indexer = account.indexer;
     drop(account);
@@ -467,7 +476,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
         channel_id,
         indexer,
         state_cache.agent,
-        U256::from(state_cache.expiration),
+        U256::from(expired),
         U256::from(expiration),
         sign,
     )?;
@@ -479,7 +488,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
     }
 
     // send to coordinator
-    let expired_at = state_cache.expiration + expiration as i64;
+    let expired_at = expired + expiration as i64;
     let mdata = format!(
         r#"mutation {{
              channelExtend(
@@ -501,7 +510,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
         channel_id,
         indexer,
         state_cache.agent,
-        U256::from(state_cache.expiration),
+        U256::from(expired),
         U256::from(expiration),
         &account.controller,
     )
