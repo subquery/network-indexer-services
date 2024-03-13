@@ -13,7 +13,7 @@ const isLocal = process.env.NODE_ENV === 'local';
 function getSSLOptions() {
   const dbSSLOptions: PostgresConnectionOptions['ssl'] = { rejectUnauthorized: false };
   if (!argv[PostgresKeys.certsPath]) {
-    return dbSSLOptions;
+    return undefined;
   }
   if (argv[PostgresKeys.ca]) {
     dbSSLOptions.ca = path.join(argv[PostgresKeys.certsPath], argv[PostgresKeys.ca]);
