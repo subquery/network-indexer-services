@@ -74,8 +74,8 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
-        // `POST /payg/0x00...955X/extend` goes to extend channel expiration
-        .route("/payg/:channel/extend", post(payg_extend))
+        // `POST /payg-extend/0x00...955X` goes to extend channel expiration
+        .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
