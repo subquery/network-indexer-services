@@ -474,7 +474,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
 
     // check signer
     if !state_cache.signer.contains(&signer) {
-        warn!("Extend: {:?} {} {:?} {:?} {} {} {}", signer, channel_id, indexer, state_cache.consumer, state_cache.expiration, expiration, convert_sign_to_string(&sign));
+        warn!("Extend: {:?} {} {:?} {:?} {} {} {}", signer, channel_id, indexer, state_cache.agent, state_cache.expiration, expiration, convert_sign_to_string(&sign));
         return Err(Error::InvalidSignature(1055));
     }
 
