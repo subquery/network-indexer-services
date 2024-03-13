@@ -17,6 +17,11 @@ export enum PostgresKeys {
   username = 'postgres-username',
   password = 'postgres-password',
   database = 'postgres-database',
+  hostCertsPath = 'postgres-host-certs-path',
+  certsPath = 'postgres-certs-path',
+  ca = 'postgres-ca',
+  key = 'postgres-key',
+  cert = 'postgres-cert',
 }
 
 function getYargsOption() {
@@ -120,6 +125,36 @@ function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       default: 'postgres',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.hostCertsPath]: {
+      type: 'string',
+      describe: 'Postgres certificates folder path in the host system',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.certsPath]: {
+      type: 'string',
+      describe: 'Postgres certificates folder path',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.ca]: {
+      type: 'string',
+      describe: 'Postgres ca file name',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.key]: {
+      type: 'string',
+      describe: 'Postgres key file name',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.cert]: {
+      type: 'string',
+      describe: 'Postgres cert file name',
+      default: '',
       group: Groups.postgres,
     },
   });

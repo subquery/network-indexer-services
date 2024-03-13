@@ -41,4 +41,9 @@ export type TemplateType = {
   memory: number;
   usePrimaryNetworkEndpoint?: boolean;
   primaryNetworkEndpoint?: string;
+  hostCertsPath?: string;
+  certsPath?: string;
+  pgCa?: string;
+  pgKey?: string;
+  pgCert?: string;
 };
