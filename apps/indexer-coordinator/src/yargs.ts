@@ -17,6 +17,7 @@ export enum PostgresKeys {
   username = 'postgres-username',
   password = 'postgres-password',
   database = 'postgres-database',
+  sslMode = 'postgres-ssl-mode',
   hostCertsPath = 'postgres-host-certs-path',
   certsPath = 'postgres-certs-path',
   ca = 'postgres-ca',
@@ -125,6 +126,13 @@ function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       default: 'postgres',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.sslMode]: {
+      type: 'string',
+      describe: 'Postgres ssl mode',
+      choices: ['enabled', 'disabled'],
+      default: 'disabled',
       group: Groups.postgres,
     },
     [PostgresKeys.hostCertsPath]: {
