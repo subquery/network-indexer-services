@@ -4,7 +4,7 @@ services:
   node_{{projectID}}:
     image: {{dockerRegistry}}:{{nodeVersion}}
     container_name: node_{{projectID}}
-    user: 1000
+    user: "1000"
     restart: always
     cpus: {{cpu}}
     expose:
@@ -65,7 +65,7 @@ services:
   query_{{projectID}}:
     image: onfinality/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
-    user: 1000
+    user: "1000"
     expose:
       - {{servicePort}}
     depends_on:
