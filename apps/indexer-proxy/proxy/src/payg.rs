@@ -56,7 +56,7 @@ const CURRENT_VERSION: u8 = 2;
 
 pub struct StateCache {
     pub expiration: i64,
-    pub consumer: Address,
+    pub agent: Address,
     pub deployment: H256,
     pub price: U256,
     pub total: U256,
@@ -80,7 +80,7 @@ impl StateCache {
         let mut expiration_bytes = [0u8; 8];
         expiration_bytes.copy_from_slice(&bytes[1..9]);
         let expiration = i64::from_le_bytes(expiration_bytes);
-        let consumer = Address::from_slice(&bytes[9..29]);
+        let agent = Address::from_slice(&bytes[9..29]);
         let deployment = H256::from_slice(&bytes[29..61]);
 
         let price = U256::from_little_endian(&bytes[61..93]);
@@ -95,7 +95,7 @@ impl StateCache {
 
         Ok(StateCache {
             expiration,
-            consumer,
+            agent,
             deployment,
             price,
             total,
@@ -111,7 +111,7 @@ impl StateCache {
         let mut bytes = vec![CURRENT_VERSION];
 
         bytes.extend(&self.expiration.to_le_bytes());
-        bytes.extend(self.consumer.as_fixed_bytes());
+        bytes.extend(self.agent.as_fixed_bytes());
         bytes.extend(self.deployment.as_fixed_bytes());
 
         let mut u256_bytes = [0u8; 32];
@@ -466,7 +466,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
     let signer = extend_recover(
         channel_id,
         indexer,
-        state_cache.consumer,
+        state_cache.agent,
         U256::from(state_cache.expiration),
         U256::from(expiration),
         sign,
@@ -474,7 +474,6 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
 
     // check signer
     if !state_cache.signer.contains(&signer) {
-        warn!("Extend: {:?} {} {:?} {:?} {} {} {}", signer, channel_id, indexer, state_cache.consumer, state_cache.expiration, expiration, convert_sign_to_string(&sign));
         return Err(Error::InvalidSignature(1055));
     }
 
@@ -500,7 +499,7 @@ pub async fn extend_channel(channel: String, expiration: i32, signature: String)
     let indexer_sign = extend_sign(
         channel_id,
         indexer,
-        state_cache.consumer,
+        state_cache.agent,
         U256::from(state_cache.expiration),
         U256::from(expiration),
         &account.controller,
@@ -604,7 +603,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             let signer = check_state_channel_consumer(consumer, agent).await?;
             StateCache {
                 expiration: channel.expired,
-                consumer,
+                agent,
                 deployment,
                 price,
                 total,
