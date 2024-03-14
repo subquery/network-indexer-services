@@ -327,6 +327,7 @@ pub async fn query_state(
     let total = state_cache.total;
     let price = state_cache.price;
     let local_prev = state_cache.spent;
+    let local_next = local_prev + price;
     let remote_prev = state_cache.remote;
     let remote_next = state.spent;
     let conflict = project.payg_overflow;
@@ -347,9 +348,9 @@ pub async fn query_state(
         return Err(Error::Overflow(1056));
     }
 
-    if local_prev > remote_prev + price {
+    if local_next > remote_next + price {
         // mark conflict is happend
-        let times = ((local_prev - remote_prev) / price).as_u32() as i32;
+        let times = ((local_next - remote_next) / price).as_u32() as i32;
         let now = Utc::now().timestamp();
         if times <= 1 {
             state_cache.conflict = now;
@@ -358,10 +359,10 @@ pub async fn query_state(
         report_conflict(&project.id, &channel, times, state_cache.conflict, now).await;
     }
 
-    if local_prev > remote_prev + price * conflict {
+    if local_next > remote_next + price * conflict {
         warn!(
-            "CONFLICT: local_prev: {}, remote_prev: {}, price: {}, conflict: {}",
-            local_prev, remote_prev, price, conflict
+            "CONFLICT: local_next: {}, remote_next: {}, price: {}, conflict: {}",
+            local_next, remote_next, price, conflict
         );
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
@@ -372,7 +373,7 @@ pub async fn query_state(
         .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
         .await?;
 
-    state_cache.spent = local_prev + price;
+    state_cache.spent = local_next;
     state_cache.remote = remote_next;
 
     let mut conn = redis();
