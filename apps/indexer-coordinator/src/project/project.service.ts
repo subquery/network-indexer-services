@@ -139,7 +139,12 @@ export class ProjectService {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return this.projectRepo.find();
+    return this.projectRepo.find({
+      order: {
+        projectType: 'DESC',
+        id: 'ASC',
+      },
+    });
   }
 
   async getAlivePaygs(): Promise<Payg[]> {
@@ -321,7 +326,6 @@ export class ProjectService {
     const containerCertsPath = '/usr/certs';
 
     this.setDefaultConfigValue(projectConfig);
-
 
     const item: TemplateType = {
       deploymentID: project.id,
