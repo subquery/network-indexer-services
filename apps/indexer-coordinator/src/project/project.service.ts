@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,7 +9,7 @@ import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-cli
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
 import { timeoutPromiseHO } from 'src/utils/promise';
-import { argv } from 'src/yargs';
+import { PostgresKeys, argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
 import { Config } from '../configure/configure.module';
 import { AccountService } from '../core/account.service';
@@ -317,8 +318,10 @@ export class ProjectService {
     const dockerNetwork = this.config.dockerNetwork;
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
+    const containerCertsPath = '/usr/certs';
 
     this.setDefaultConfigValue(projectConfig);
+
 
     const item: TemplateType = {
       deploymentID: project.id,
@@ -332,6 +335,11 @@ export class ProjectService {
       mmrPath,
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
+      hostCertsPath: argv[PostgresKeys.hostCertsPath],
+      certsPath: containerCertsPath,
+      pgCa: argv[PostgresKeys.ca] ? path.join(containerCertsPath, argv[PostgresKeys.ca]) : '',
+      pgKey: argv[PostgresKeys.key] ? path.join(containerCertsPath, argv[PostgresKeys.key]) : '',
+      pgCert: argv[PostgresKeys.cert] ? path.join(containerCertsPath, argv[PostgresKeys.cert]) : '',
     };
 
     return item;

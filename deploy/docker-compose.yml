@@ -31,12 +31,19 @@ services:
     volumes:
       - .projects:/usr/projects
       - /var/run/docker.sock:/var/run/docker.sock
+      - .data/certs:/usr/certs # Mount your host system certs folder path to coordinator container
     command:
       - --network=mainnet # Change to the network you want to index [testnet | kepler | mainnet]
       - --postgres-host=postgres
       - --network-endpoint=https://mainnet.base.org
       - --postgres-password=<replace with you own password> # Change to your postgres password
       - --postgres-port=5432
+      - --postgres-ssl-mode=disabled # Set to 'enabled' to activate SSL.
+      - --postgres-host-certs-path= # Change to your own postgres host system certs folder FULL path. Leave this field empty if two-way SSL is not required.
+      - --postgres-certs-path=/usr/certs
+      - --postgres-ca=server.pem # Change to your own postgres ca file name
+      - --postgres-key=server.key # Change to your own postgres key file name
+      - --postgres-cert=server.crt # Change to your own postgres cert file name
       - --port=8000
       - --start-port=3100 # The start port number for the indexer node, by default: 3001
       - --secret-key=<a random str> # Change to your own secret key to encrypt the controller privatekey which store in db
