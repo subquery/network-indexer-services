@@ -46,7 +46,7 @@ jobs:
       - uses: marceloprado/has-changed-path@v1
         id: changed-coordinator
         with:
-          paths: ./apps
+          paths: apps/indexer-coordinator apps/indexer-admin
 
       # Add remove-stable-version
       - name: Bump coordinator
