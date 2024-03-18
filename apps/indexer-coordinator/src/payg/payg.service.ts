@@ -116,6 +116,7 @@ export class PaygService {
         remote: '0',
         lastFinal: false,
         spent: spent.toString(),
+        expiredAt: 0,
       });
     }
 
@@ -174,6 +175,7 @@ export class PaygService {
         spent: '0',
         remote: '0',
         lastFinal: false,
+        expiredAt: 0,
       });
     }
 
