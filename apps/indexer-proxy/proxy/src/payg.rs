@@ -445,7 +445,12 @@ pub async fn query_state(
     Ok((data, signature, state_string))
 }
 
-pub async fn extend_channel(channel: String, expired: i64, expiration: i32, signature: String) -> Result<String> {
+pub async fn extend_channel(
+    channel: String,
+    expired: i64,
+    expiration: i32,
+    signature: String,
+) -> Result<String> {
     // check channel & signature
     let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
         .map_err(|_e| Error::Serialize(1120))?;
@@ -484,7 +489,16 @@ pub async fn extend_channel(channel: String, expired: i64, expiration: i32, sign
 
     // check signer
     if !state_cache.signer.contains(&signer) {
-        warn!("Extend: {:?} {} {:?} {:?} {} {} {}", signer, channel_id, indexer, state_cache.agent, state_cache.expiration, expiration, convert_sign_to_string(&sign));
+        warn!(
+            "Extend: {:?} {} {:?} {:?} {} {} {}",
+            signer,
+            channel_id,
+            indexer,
+            state_cache.agent,
+            state_cache.expiration,
+            expiration,
+            convert_sign_to_string(&sign)
+        );
         return Err(Error::InvalidSignature(1055));
     }
 

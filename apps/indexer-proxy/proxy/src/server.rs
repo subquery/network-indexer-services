@@ -303,7 +303,13 @@ async fn payg_extend(
     Path(channel): Path<String>,
     Json(payload): Json<ExtendParams>,
 ) -> Result<Json<Value>, Error> {
-    let extend = extend_channel(channel, payload.expired, payload.expiration, payload.signature).await?;
+    let extend = extend_channel(
+        channel,
+        payload.expired,
+        payload.expiration,
+        payload.signature,
+    )
+    .await?;
     Ok(Json(json!({
         "signature": extend
     })))

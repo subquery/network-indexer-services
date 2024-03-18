@@ -127,7 +127,10 @@ export class PaygService {
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
-    channelEntity.expiredAt = expiredAt.toNumber();
+    const newExpiredAt = expiredAt.toNumber();
+    if (channelEntity.expiredAt < newExpiredAt) {
+      channelEntity.expiredAt = newExpiredAt;
+    }
     channelEntity.terminatedAt = terminatedAt.toNumber();
     channelEntity.terminateByIndexer = terminateByIndexer;
 
@@ -203,7 +206,10 @@ export class PaygService {
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
-    channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
+    const newExpiredAt = new Date(expiredAt).getTime() / 1000;
+    if (channelEntity.expiredAt < newExpiredAt) {
+      channelEntity.expiredAt = newExpiredAt;
+    }
     channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
     channelEntity.terminateByIndexer = terminateByIndexer;
 
@@ -360,7 +366,10 @@ export class PaygService {
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
     }
-    channel.expiredAt = expiration;
+
+    if (channelEntity.expiredAt < expiration) {
+      channelEntity.expiredAt = expiration;
+    }
 
     logger.debug(`Extend state channel ${id}`);
 
