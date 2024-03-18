@@ -367,8 +367,8 @@ export class PaygService {
       throw new Error(`channel not exist: ${id}`);
     }
 
-    if (channelEntity.expiredAt < expiration) {
-      channelEntity.expiredAt = expiration;
+    if (channel.expiredAt < expiration) {
+      channel.expiredAt = expiration;
     }
 
     logger.debug(`Extend state channel ${id}`);
