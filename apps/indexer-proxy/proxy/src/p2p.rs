@@ -40,6 +40,7 @@ use tdn::{
     },
 };
 use tokio::sync::{mpsc::Sender, RwLock};
+use tokio::time::{sleep, Duration};
 
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -57,7 +58,9 @@ pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock
 pub async fn send(method: &str, params: Vec<RpcParam>, gid: GroupId) {
     let senders = P2P_SENDER.read().await;
     if !senders.is_empty() {
-        senders[0].send(rpc_request(0, method, params, gid)).await;
+        senders[0]
+            .send_timeout(rpc_request(0, method, params, gid), 100)
+            .await;
     }
 }
 
@@ -69,28 +72,37 @@ pub async fn stop_network() {
         debug!("RESTART NEW P2P NETWORK");
         senders[0].send(rpc_request(0, "p2p-stop", vec![], 0)).await;
         drop(senders);
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_RESTART_TIME)).await;
+        sleep(Duration::from_secs(P2P_RESTART_TIME)).await;
     }
 }
 
-pub async fn report_conflict(deployment: &str, channel: &str, conflict: i32, start: i64, end: i64) {
+pub async fn report_conflict(
+    deployment: String,
+    channel: String,
+    conflict: i32,
+    start: i64,
+    end: i64,
+) {
     let senders = P2P_SENDER.read().await;
     if senders.is_empty() {
         warn!("NONE NETWORK WHEN REPORT CONFLICT");
     } else {
         senders[0]
-            .send(rpc_request(
-                0,
-                "payg-report-conflict",
-                vec![
-                    deployment.into(),
-                    channel.into(),
-                    conflict.into(),
-                    start.into(),
-                    end.into(),
-                ],
-                0,
-            ))
+            .send_timeout(
+                rpc_request(
+                    0,
+                    "payg-report-conflict",
+                    vec![
+                        deployment.into(),
+                        channel.into(),
+                        conflict.into(),
+                        start.into(),
+                        end.into(),
+                    ],
+                    0,
+                ),
+                100,
+            )
             .await;
         drop(senders);
     }
@@ -98,7 +110,7 @@ pub async fn report_conflict(deployment: &str, channel: &str, conflict: i32, sta
 
 async fn check_stable() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_STABLE_TIME)).await;
+        sleep(Duration::from_secs(P2P_STABLE_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -106,7 +118,7 @@ async fn check_stable() {
         } else {
             debug!("Check stable connections");
             senders[0]
-                .send(rpc_request(0, "p2p-stable", vec![], 0))
+                .send_timeout(rpc_request(0, "p2p-stable", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -115,7 +127,7 @@ async fn check_stable() {
 
 async fn report_metrics() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_METRICS_TIME)).await;
+        sleep(Duration::from_secs(P2P_METRICS_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -132,7 +144,7 @@ async fn report_metrics() {
 
 async fn report_status() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_METRICS_STATUS_TIME)).await;
+        sleep(Duration::from_secs(P2P_METRICS_STATUS_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -140,7 +152,7 @@ async fn report_status() {
         } else {
             debug!("Report projects status");
             senders[0]
-                .send(rpc_request(0, "project-report-status", vec![], 0))
+                .send_timeout(rpc_request(0, "project-report-status", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -149,7 +161,7 @@ async fn report_status() {
 
 async fn broadcast_healthy() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
+        sleep(Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -157,7 +169,7 @@ async fn broadcast_healthy() {
         } else {
             debug!("Report projects healthy");
             senders[0]
-                .send(rpc_request(0, "project-broadcast-healthy", vec![], 0))
+                .send_timeout(rpc_request(0, "project-broadcast-healthy", vec![], 0), 100)
                 .await;
         }
         drop(senders);
