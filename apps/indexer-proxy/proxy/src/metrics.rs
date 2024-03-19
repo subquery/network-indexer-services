@@ -30,6 +30,7 @@ use std::time::Instant;
 use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{System, SystemExt};
 use tokio::sync::Mutex;
+use tokio::time::{sleep, Duration};
 
 use crate::cli::COMMAND;
 use crate::primitives::METRICS_LOOP_TIME;
@@ -101,7 +102,7 @@ struct Labels {
 pub fn listen() {
     tokio::spawn(async {
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(METRICS_LOOP_TIME)).await;
+            sleep(Duration::from_secs(METRICS_LOOP_TIME)).await;
 
             let lock = OWNER_COUNTER.lock().await;
             let current = lock.clone();
