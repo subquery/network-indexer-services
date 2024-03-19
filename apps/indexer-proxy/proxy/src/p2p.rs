@@ -73,7 +73,13 @@ pub async fn stop_network() {
     }
 }
 
-pub async fn report_conflict(deployment: String, channel: String, conflict: i32, start: i64, end: i64) {
+pub async fn report_conflict(
+    deployment: String,
+    channel: String,
+    conflict: i32,
+    start: i64,
+    end: i64,
+) {
     let senders = P2P_SENDER.read().await;
     if senders.is_empty() {
         warn!("NONE NETWORK WHEN REPORT CONFLICT");

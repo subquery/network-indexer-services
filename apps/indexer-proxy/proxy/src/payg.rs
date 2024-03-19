@@ -384,24 +384,21 @@ pub async fn query_state(
     state_cache.spent = local_next;
     state_cache.remote = remote_next;
 
-    let is_final = state.is_final;
-    tokio::spawn(async move {
-        let mut conn = redis();
-        if is_final {
-            // close
-            let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
-        } else {
-            // update, missing KEEPTTL, so use two operation.
-            let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
-            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
-                .arg(&keyname)
-                .arg(exp.unwrap_or(86400))
-                .arg(state_cache.to_bytes())
-                .query_async(&mut conn)
-                .await
-                .map_err(|err| error!("Redis 1: {}", err));
-        }
-    });
+    let mut conn = redis();
+    if state.is_final {
+        // close
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
+    } else {
+        // update, missing KEEPTTL, so use two operation.
+        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp.unwrap_or(86400))
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 1: {}", err));
+    }
 
     // async to coordiantor
     let mdata = format!(
