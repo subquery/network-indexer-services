@@ -58,7 +58,7 @@ pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock
 pub async fn send(method: &str, params: Vec<RpcParam>, gid: GroupId) {
     let senders = P2P_SENDER.read().await;
     if !senders.is_empty() {
-        senders[0].send(rpc_request(0, method, params, gid)).await;
+        senders[0].send_timeout(rpc_request(0, method, params, gid), 100).await;
     }
 }
 
@@ -116,7 +116,7 @@ async fn check_stable() {
         } else {
             debug!("Check stable connections");
             senders[0]
-                .send(rpc_request(0, "p2p-stable", vec![], 0))
+                .send_timeout(rpc_request(0, "p2p-stable", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -150,7 +150,7 @@ async fn report_status() {
         } else {
             debug!("Report projects status");
             senders[0]
-                .send(rpc_request(0, "project-report-status", vec![], 0))
+                .send_timeout(rpc_request(0, "project-report-status", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -167,7 +167,7 @@ async fn broadcast_healthy() {
         } else {
             debug!("Report projects healthy");
             senders[0]
-                .send(rpc_request(0, "project-broadcast-healthy", vec![], 0))
+                .send_timeout(rpc_request(0, "project-broadcast-healthy", vec![], 0), 100)
                 .await;
         }
         drop(senders);
