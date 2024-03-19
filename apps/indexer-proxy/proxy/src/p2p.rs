@@ -58,7 +58,9 @@ pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock
 pub async fn send(method: &str, params: Vec<RpcParam>, gid: GroupId) {
     let senders = P2P_SENDER.read().await;
     if !senders.is_empty() {
-        senders[0].send_timeout(rpc_request(0, method, params, gid), 100).await;
+        senders[0]
+            .send_timeout(rpc_request(0, method, params, gid), 100)
+            .await;
     }
 }
 
