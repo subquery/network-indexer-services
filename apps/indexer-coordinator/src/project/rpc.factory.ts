@@ -144,7 +144,7 @@ export class RpcFamilyEvm extends RpcFamily {
     this.actions.push(async () => {
       const result = await jsonRpcRequest(this.endpoint, 'eth_getBalance', [
         '0x0000000000000000000000000000000000000000',
-        'latest',
+        '0x1',
       ]);
       let nodeTypeFromRpc: string;
       if (result.data.error) {
