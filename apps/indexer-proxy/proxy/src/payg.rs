@@ -318,6 +318,7 @@ pub async fn query_state(
     state: &Value,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
+    debug!("Start handle query channel");
     let project = get_project(project_id).await?;
     let mut state = QueryState::from_json(state)?;
 
@@ -328,6 +329,7 @@ pub async fn query_state(
 
     // check channel state
     let (mut state_cache, keyname) = fetch_channel_cache(state.channel_id).await?;
+    debug!("Got channel cache");
 
     // check signer
     if !state_cache.signer.contains(&signer) {
@@ -371,12 +373,9 @@ pub async fn query_state(
     if local_next > remote_next + price {
         // mark conflict is happend
         let times = ((local_next - remote_next) / price).as_u32() as i32;
-        let now = Utc::now().timestamp();
         if times <= 1 {
-            state_cache.conflict = now;
+            state_cache.conflict = Utc::now().timestamp();
         }
-        let channel = format!("{:#x}", state.channel_id);
-        report_conflict(&project.id, &channel, times, state_cache.conflict, now).await;
     }
 
     if local_next > remote_next + price * conflict {
@@ -384,9 +383,18 @@ pub async fn query_state(
             "CONFLICT: local_next: {}, remote_next: {}, price: {}, conflict: {}",
             local_next, remote_next, price, conflict
         );
+
+        let project_id = project.id.clone();
+        let channel = format!("{:#x}", state.channel_id);
+        let times = conflict.as_u32() as i32;
+        let start = state_cache.conflict;
+        let end = Utc::now().timestamp();
+        tokio::spawn(report_conflict(project_id, channel, times, start, end));
+
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
     }
+    debug!("Verified channel, start query");
 
     // query the data.
     let (data, signature) = project
@@ -438,7 +446,7 @@ pub async fn query_state(
             .map_err(|e| error!("{:?}", e));
     });
 
-    state.remote = state_cache.spent;
+    state.remote = local_next;
     debug!("Handle query channel success");
     let state_bytes = serde_json::to_vec(&state.to_json()).unwrap_or(vec![]);
     let state_string = general_purpose::STANDARD.encode(&state_bytes);
