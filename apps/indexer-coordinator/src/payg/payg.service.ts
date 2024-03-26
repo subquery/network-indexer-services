@@ -364,6 +364,7 @@ export class PaygService {
   }
 
   async extend(id: string, expiration: number): Promise<Channel> {
+    logger.error(`DEBUG: Extend state channel ${id}: ${expiration}`);
     const channel = await this.channel(id);
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
@@ -374,6 +375,7 @@ export class PaygService {
     }
 
     logger.debug(`Extend state channel ${id}`);
+    logger.error(`DEBUG: Extend state channel ${channel.expiredAt}`);
 
     return this.saveAndPublish(channel, PaygEvent.State);
   }
