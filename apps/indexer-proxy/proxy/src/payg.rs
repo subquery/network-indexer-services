@@ -517,7 +517,8 @@ pub async fn extend_channel(
              channelExtend(
                id:"{:#X}",
                expiration:{},
-           {{ id, expiration }}
+             )
+           {{ id, expiredAt }}
         }}"#,
         channel_id, expired_at
     );
