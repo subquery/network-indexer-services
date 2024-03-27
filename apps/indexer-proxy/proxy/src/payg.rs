@@ -27,16 +27,19 @@ use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
     signers::LocalWallet,
-    types::{Address, U256},
+    types::{Address, H256, U256},
 };
 use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use subql_indexer_utils::{
     error::Error,
-    payg::{convert_sign_to_string, price_recover, price_sign, OpenState, QueryState},
+    payg::{
+        convert_sign_to_string, convert_string_to_sign, extend_recover, extend_sign, price_recover,
+        price_sign, OpenState, QueryState,
+    },
     request::{graphql_request, GraphQLQuery},
-    tools::deployment_cid,
+    tools::{cid_deployment, deployment_cid},
     types::Result,
 };
 
@@ -49,9 +52,12 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
-const CURRENT_VERSION: u8 = 1;
+const CURRENT_VERSION: u8 = 2;
 
 pub struct StateCache {
+    pub expiration: i64,
+    pub agent: Address,
+    pub deployment: H256,
     pub price: U256,
     pub total: U256,
     pub spent: U256,
@@ -63,24 +69,34 @@ pub struct StateCache {
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes.len() < 169 {
-            return Err(Error::Serialize(1136));
-        }
         if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
 
-        let price = U256::from_little_endian(&bytes[1..33]);
-        let total = U256::from_little_endian(&bytes[33..65]);
-        let spent = U256::from_little_endian(&bytes[65..97]);
-        let remote = U256::from_little_endian(&bytes[97..129]);
-        let coordi = U256::from_little_endian(&bytes[129..161]);
+        if bytes.len() < 229 {
+            return Err(Error::Serialize(1136));
+        }
+
+        let mut expiration_bytes = [0u8; 8];
+        expiration_bytes.copy_from_slice(&bytes[1..9]);
+        let expiration = i64::from_le_bytes(expiration_bytes);
+        let agent = Address::from_slice(&bytes[9..29]);
+        let deployment = H256::from_slice(&bytes[29..61]);
+
+        let price = U256::from_little_endian(&bytes[61..93]);
+        let total = U256::from_little_endian(&bytes[93..125]);
+        let spent = U256::from_little_endian(&bytes[125..157]);
+        let remote = U256::from_little_endian(&bytes[157..189]);
+        let coordi = U256::from_little_endian(&bytes[189..221]);
         let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[161..169]);
+        conflict_bytes.copy_from_slice(&bytes[221..229]);
         let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[169..])?;
+        let signer = ConsumerType::from_bytes(&bytes[229..])?;
 
         Ok(StateCache {
+            expiration,
+            agent,
+            deployment,
             price,
             total,
             spent,
@@ -93,6 +109,10 @@ impl StateCache {
 
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![CURRENT_VERSION];
+
+        bytes.extend(&self.expiration.to_le_bytes());
+        bytes.extend(self.agent.as_fixed_bytes());
+        bytes.extend(self.deployment.as_fixed_bytes());
 
         let mut u256_bytes = [0u8; 32];
         self.price.to_little_endian(&mut u256_bytes);
@@ -433,10 +453,103 @@ pub async fn query_state(
     Ok((data, signature, state_string))
 }
 
+pub async fn extend_channel(
+    channel: String,
+    expired: i64,
+    expiration: i32,
+    signature: String,
+) -> Result<String> {
+    // check channel & signature
+    let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
+        .map_err(|_e| Error::Serialize(1120))?;
+    let sign = convert_string_to_sign(&signature);
+
+    let (state_cache, _keyname) = fetch_channel_cache(channel_id).await?;
+
+    // check price
+    let project_id = deployment_cid(&state_cache.deployment);
+    let project = get_project(&project_id).await?;
+    if project.payg_price > state_cache.price {
+        return Err(Error::InvalidProjectPrice(1049));
+    }
+
+    let gap = if expired > state_cache.expiration {
+        expired - state_cache.expiration
+    } else {
+        state_cache.expiration - expired
+    };
+    if gap > 600 {
+        return Err(Error::InvalidProjectPrice(1049));
+    }
+
+    let account = ACCOUNT.read().await;
+    let indexer = account.indexer;
+    drop(account);
+
+    let signer = extend_recover(
+        channel_id,
+        indexer,
+        state_cache.agent,
+        U256::from(expired),
+        U256::from(expiration),
+        sign,
+    )?;
+
+    // check signer
+    if !state_cache.signer.contains(&signer) {
+        warn!(
+            "Extend: {:?} {} {:?} {:?} {} {} {}",
+            signer,
+            channel_id,
+            indexer,
+            state_cache.agent,
+            state_cache.expiration,
+            expiration,
+            convert_sign_to_string(&sign)
+        );
+        return Err(Error::InvalidSignature(1055));
+    }
+
+    // send to coordinator
+    let expired_at = expired + expiration as i64;
+    let mdata = format!(
+        r#"mutation {{
+             channelExtend(
+               id:"{:#X}",
+               expiration:{},
+             )
+           {{ id, expiredAt }}
+        }}"#,
+        channel_id, expired_at
+    );
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    graphql_request(&url, &query).await.map_err(|e| {
+        error!("{:?}", e);
+        Error::ServiceException(1202)
+    })?;
+
+    let account = ACCOUNT.read().await;
+    let indexer_sign = extend_sign(
+        channel_id,
+        indexer,
+        state_cache.agent,
+        U256::from(expired),
+        U256::from(expiration),
+        &account.controller,
+    )
+    .await?;
+    drop(account);
+
+    Ok(convert_sign_to_string(&indexer_sign))
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChannelItem {
     pub id: String,
     pub consumer: String,
+    #[serde(rename = "deploymentId")]
+    pub deployment: String,
     pub agent: String,
     pub total: String,
     pub spent: String,
@@ -463,6 +576,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         .consumer
         .parse()
         .map_err(|_e| Error::Serialize(1121))?;
+    let deployment: H256 = cid_deployment(&channel.deployment);
     let agent: Address = channel.agent.parse().unwrap_or(Address::zero());
     let total = U256::from_dec_str(&channel.total).map_err(|_e| Error::Serialize(1122))?;
     let spent = U256::from_dec_str(&channel.spent).map_err(|_e| Error::Serialize(1123))?;
@@ -494,6 +608,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             None
         };
         let state_cache = if let Some(mut state_cache) = state_cache_op {
+            state_cache.expiration = channel.expired;
             state_cache.total = total;
             if state_cache.remote != remote {
                 debug!(
@@ -521,6 +636,9 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         } else {
             let signer = check_state_channel_consumer(consumer, agent).await?;
             StateCache {
+                expiration: channel.expired,
+                agent,
+                deployment,
                 price,
                 total,
                 spent,
