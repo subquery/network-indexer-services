@@ -41,7 +41,7 @@ pub const PROJECT_QUERY: &str =
 pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration overflow } }";
 
 pub const CHANNEL_QUERY: &str =
-    "query { getAliveChannels { id consumer agent total spent remote price lastFinal expiredAt } }";
+    "query { getAliveChannels { id consumer deploymentId agent total spent remote price lastFinal expiredAt } }";
 
 pub fn poi_with_block(block: u64) -> String {
     format!(

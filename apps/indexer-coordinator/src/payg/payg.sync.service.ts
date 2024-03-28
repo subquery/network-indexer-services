@@ -216,7 +216,9 @@ export class PaygSyncService implements OnApplicationBootstrap {
     const channel = await this.paygService.channel(id);
     if (!channel) return;
 
-    channel.expiredAt = expiredAt;
+    if (channel.expiredAt < expiredAt) {
+      channel.expiredAt = expiredAt;
+    }
     channel.terminatedAt = expiredAt;
     await this.paygService.saveAndPublish(channel, PaygEvent.State);
   }

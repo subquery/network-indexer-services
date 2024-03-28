@@ -225,10 +225,11 @@ export class OnChainService implements OnApplicationBootstrap {
         const { status, expiredAt, terminatedAt } = channel;
         const now = Math.floor(Date.now() / 1000);
 
-        const isOpenChannelClaimable = status === ChannelStatus.OPEN && expiredAt.lt(now);
+        // TODO terminate
+        // const isOpenChannelClaimable = status === ChannelStatus.OPEN && expiredAt.lt(now);
         const isTerminateChannelClaimable =
           status === ChannelStatus.TERMINATING && terminatedAt.lt(now);
-        if (!isOpenChannelClaimable && !isTerminateChannelClaimable) continue;
+        if (!isTerminateChannelClaimable) continue;
 
         await this.contractService.sendTransaction(
           `claim unfinalized plan for ${node.consumer}`,

@@ -38,6 +38,7 @@
 - `1046` - Invalid request: payg query cannot fetch data from graphql.
 - `1047` - Invalid request: payg query missing project and query field.
 - `1048` - Invalid project price: price signer is not controller.
+- `1049` - Invalid project price: extend price lower.
 - `1050` - Payg conflict: local state > remote state + price * max_conflict_number.
 - `1051` - Daily limit: reach the max limit of agreement in 24h.
 - `1052` - Rate limit: reach the max limit of agreement in 1s.
@@ -88,3 +89,4 @@
 - `1140` - Serialize: subquery's query is invalid.
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
+- `1202` - Service exception: indexer service exception.
