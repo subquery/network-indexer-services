@@ -42,6 +42,12 @@ function getYargsOption() {
       default: 'https://mainnet.base.org',
       group: Groups.coordinator,
     },
+    'eth-endpoint': {
+      type: 'string',
+      describe: 'Specify eth rpc endpoint',
+      default: 'https://eth.llamarpc.com',
+      group: Groups.coordinator,
+    },
     ipfs: {
       type: 'string',
       describe: 'Specify ipfs endpoint for this network',
@@ -164,6 +170,12 @@ function getYargsOption() {
       describe: 'Postgres cert file name',
       default: '',
       group: Groups.postgres,
+    },
+    'redis-url': {
+      type: 'string',
+      describe: 'Redis connection url',
+      default: 'redis://indexer_cache:6379',
+      group: Groups.coordinator,
     },
   });
 }

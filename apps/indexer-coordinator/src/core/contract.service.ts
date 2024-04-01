@@ -230,4 +230,32 @@ export class ContractService {
       }
     }
   }
+
+  async checkBypass(task: string) {
+    // check gas limit and bypass if needed
+    // complete task if gas limit not exceeded
+    // remember start time for task in redis
+    // after 6 hours force complete task
+  }
+
+  async checkPostpone(task: string) {
+    // check gas limit and postpone if needed
+    // complete task if gas limit not exceeded
+    // register task in redis with start time
+  }
+
+  async checkPostponedTask(task: string) {
+    // don't do anything if task is not registered in redis
+    // check gas limit and postpone if needed
+    // complete task if gas limit not exceeded
+    // after 6 hours force complete task
+  }
+
+  async completeTask(task: string) {
+    // remove task from redis
+  }
+
+  async checkGasLimit() {
+    // get L1 gas fee < configured gas limit / 21000
+  }
 }

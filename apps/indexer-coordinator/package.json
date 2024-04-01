@@ -74,6 +74,7 @@
     "pino": "^7.3.0",
     "portfinder": "^1.0.32",
     "prom-client": "^14.2.0",
+    "redis": "^4.6.13",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
