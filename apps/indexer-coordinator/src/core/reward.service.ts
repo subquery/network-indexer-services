@@ -7,6 +7,7 @@ import { BigNumber } from 'ethers';
 import { NetworkService } from 'src/network/network.service';
 import { getLogger } from 'src/utils/logger';
 import { AccountService } from './account.service';
+import { ContractService } from './contract.service';
 import { OnChainService } from './onchain.service';
 
 @Injectable()
@@ -20,16 +21,32 @@ export class RewardService implements OnModuleInit {
   constructor(
     private accountService: AccountService,
     private networkService: NetworkService,
+    private contractService: ContractService,
     private onChainService: OnChainService
   ) {}
 
   onModuleInit() {
     // FIXME test only
-    this.autoCollectAllocationRewards();
+    // this.collectAllocationRewards();
   }
 
   @Cron('0 0 1 * * *')
   async autoCollectAllocationRewards() {
+    if (!(await this.contractService.checkPostpone(this.collectAllocationRewards.name))) {
+      return;
+    }
+    await this.collectAllocationRewards();
+  }
+
+  @Cron('0 */10 * * * *')
+  async checkCollectAllocationRewards() {
+    if (!(await this.contractService.checkPostponedTask(this.collectAllocationRewards.name))) {
+      return;
+    }
+    await this.collectAllocationRewards();
+  }
+
+  async collectAllocationRewards() {
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
       return;

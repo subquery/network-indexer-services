@@ -34,6 +34,10 @@ export async function redisGetObj<T>(key: string): Promise<T | null> {
   return value ? JSON.parse(value) : null;
 }
 
+export async function redisHas(key: string): Promise<boolean> {
+  return (await (await getRedisClient()).exists(key)) === 1;
+}
+
 export async function redisDel(key: string): Promise<number> {
   return (await getRedisClient()).del(key);
 }

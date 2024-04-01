@@ -125,6 +125,10 @@ export class OnChainService implements OnApplicationBootstrap {
   }
 
   async collectAndDistributeReward(indexer: string) {
+    if (!(await this.contractService.checkBypass(this.collectAndDistributeRewardsAction.name))) {
+      return;
+    }
+
     await this.contractService.sendTransaction('collect and distribute rewards', (overrides) =>
       this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides)
     );
@@ -135,6 +139,10 @@ export class OnChainService implements OnApplicationBootstrap {
     currentEra: BigNumber,
     lastClaimedEra: BigNumber
   ) {
+    if (!(await this.contractService.checkBypass(this.batchCollectAndDistributeRewards.name))) {
+      return;
+    }
+
     const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
     for (let i = 0; i < count; i++) {
       await this.contractService.sendTransaction(
@@ -172,6 +180,10 @@ export class OnChainService implements OnApplicationBootstrap {
 
   applyStakeChangesAction() {
     return async () => {
+      if (!(await this.contractService.checkBypass(this.applyStakeChangesAction.name))) {
+        return;
+      }
+
       const indexer = await this.accountService.getIndexer();
       const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
       const { lastClaimedEra, lastSettledEra } = await this.getEraConfig();
@@ -187,6 +199,10 @@ export class OnChainService implements OnApplicationBootstrap {
 
   applyICRChangeAction() {
     return async () => {
+      if (!(await this.contractService.checkBypass(this.applyICRChangeAction.name))) {
+        return;
+      }
+
       const indexer = await this.accountService.getIndexer();
       const { currentEra, lastClaimedEra, lastSettledEra } = await this.getEraConfig();
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
@@ -216,6 +232,10 @@ export class OnChainService implements OnApplicationBootstrap {
 
   closeExpiredStateChannelsAction() {
     return async () => {
+      if (!(await this.contractService.checkBypass(this.closeExpiredStateChannelsAction.name))) {
+        return;
+      }
+
       const unfinalisedPlans = await this.networkService.getExpiredStateChannels(
         await this.accountService.getIndexer()
       );
@@ -230,7 +250,6 @@ export class OnChainService implements OnApplicationBootstrap {
         const isTerminateChannelClaimable =
           status === ChannelStatus.TERMINATING && terminatedAt.lt(now);
         if (!isTerminateChannelClaimable) continue;
-
         await this.contractService.sendTransaction(
           `claim unfinalized plan for ${node.consumer}`,
           async (overrides) => this.sdk.stateChannel.claim(node.id, overrides)

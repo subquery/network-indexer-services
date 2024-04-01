@@ -7,7 +7,9 @@ import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides, Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
+import { getEthProvider } from 'src/utils/ethProvider';
 import { mutexPromise } from 'src/utils/promise';
+import { redisDel, redisGetObj, redisHas, redisSetObj } from 'src/utils/redis';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
@@ -18,6 +20,7 @@ import { IndexerDeploymentStatus, TxFun } from './types';
 
 const MAX_RETRY = 3;
 const logger = getLogger('contract');
+const bypassTime = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class ContractService {
@@ -231,17 +234,33 @@ export class ContractService {
     }
   }
 
-  async checkBypass(task: string) {
+  async checkBypass(task: string, timeout = bypassTime) {
     // check gas limit and bypass if needed
     // complete task if gas limit not exceeded
-    // remember start time for task in redis
+    // store start time for task in redis
     // after 6 hours force complete task
+    if (await this.checkGasLimit()) {
+      this.completeTask(task);
+      return true;
+    }
+    const cacheKey = `bypass:${task}`;
+    let cache = await redisGetObj<{ start: number }>(cacheKey);
+    if (!cache) {
+      cache = { start: Date.now() };
+    }
+    if (Date.now() - cache.start > timeout) {
+      this.completeTask(task);
+      return true;
+    }
+    await redisSetObj(cacheKey, cache, timeout / 1000);
+    return false;
   }
 
-  async checkPostpone(task: string) {
+  async checkPostpone(task: string, timeout = bypassTime) {
     // check gas limit and postpone if needed
     // complete task if gas limit not exceeded
     // register task in redis with start time
+    return this.checkBypass(task, timeout);
   }
 
   async checkPostponedTask(task: string) {
@@ -249,13 +268,40 @@ export class ContractService {
     // check gas limit and postpone if needed
     // complete task if gas limit not exceeded
     // after 6 hours force complete task
+    const cacheKey = `bypass:${task}`;
+    if (!(await redisHas(cacheKey))) {
+      return false;
+    }
+    return this.checkBypass(task);
   }
 
   async completeTask(task: string) {
     // remove task from redis
+    await redisDel(`bypass:${task}`);
   }
 
   async checkGasLimit() {
-    // get L1 gas fee < configured gas limit / 21000
+    // get L1+L2 gas price < configured gas fee limit / 21000
+    const cacheKey = `bypass:gasLimit`;
+    let cache = await redisGetObj<{ result: boolean }>(cacheKey);
+    if (!cache) {
+      try {
+        const ethProvider = getEthProvider();
+        const ethGasPrice = await ethProvider.getGasPrice();
+        const gasPrice = await this.provider.getGasPrice();
+        const gasLimit = BigNumber.from(21000);
+        const gasFeeLimit = BigNumber.from('1000000000000');
+        cache = {
+          result: gasPrice.add(ethGasPrice).mul(gasLimit).lt(gasFeeLimit),
+        };
+      } catch (e) {
+        logger.warn(e, 'Failed to check gas limit');
+        cache = {
+          result: false,
+        };
+      }
+      await redisSetObj(cacheKey, cache, 60);
+    }
+    return cache.result;
   }
 }
