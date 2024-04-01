@@ -177,6 +177,12 @@ function getYargsOption() {
       default: 'redis://indexer_cache:6379',
       group: Groups.coordinator,
     },
+    'gas-fee-limit': {
+      type: 'string',
+      describe: 'Gas fee limit for the transaction',
+      default: '0.00003',
+      group: Groups.coordinator,
+    },
   });
 }
 

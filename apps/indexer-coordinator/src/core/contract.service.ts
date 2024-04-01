@@ -10,6 +10,7 @@ import { parseEther } from 'ethers/lib/utils';
 import { getEthProvider } from 'src/utils/ethProvider';
 import { mutexPromise } from 'src/utils/promise';
 import { redisDel, redisGetObj, redisHas, redisSetObj } from 'src/utils/redis';
+import { argv } from 'src/yargs';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
@@ -237,7 +238,7 @@ export class ContractService {
   async checkBypass(task: string, timeout = bypassTime) {
     // check gas limit and bypass if needed
     // complete task if gas limit not exceeded
-    // store start time for task in redis
+    // register task in redis with start time
     // after 6 hours force complete task
     if (await this.checkGasLimit()) {
       this.completeTask(task);
@@ -276,23 +277,22 @@ export class ContractService {
   }
 
   async completeTask(task: string) {
-    // remove task from redis
     await redisDel(`bypass:${task}`);
   }
 
   async checkGasLimit() {
-    // get L1+L2 gas price < configured gas fee limit / 21000
     const cacheKey = `bypass:gasLimit`;
     let cache = await redisGetObj<{ result: boolean }>(cacheKey);
     if (!cache) {
       try {
         const ethProvider = getEthProvider();
         const ethGasPrice = await ethProvider.getGasPrice();
+        const ethGasLimit = BigNumber.from(2100);
         const gasPrice = await this.provider.getGasPrice();
         const gasLimit = BigNumber.from(21000);
-        const gasFeeLimit = BigNumber.from('1000000000000');
+        const gasFeeLimit = parseEther(argv['gas-fee-limit']);
         cache = {
-          result: gasPrice.add(ethGasPrice).mul(gasLimit).lt(gasFeeLimit),
+          result: ethGasPrice.mul(ethGasLimit).add(gasPrice.mul(gasLimit)).lt(gasFeeLimit),
         };
       } catch (e) {
         logger.warn(e, 'Failed to check gas limit');
