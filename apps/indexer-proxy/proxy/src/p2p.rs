@@ -26,6 +26,7 @@ use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
+    payg::QueryState,
 };
 use tdn::{
     prelude::{
@@ -48,7 +49,7 @@ use crate::{
     cli::COMMAND,
     contracts::get_consumer_host_peer,
     metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
-    payg::{merket_price, open_state, query_state},
+    payg::{merket_price, open_state, query_single_state},
     primitives::*,
     project::get_project,
 };
@@ -703,8 +704,9 @@ async fn handle_group(
                 }
                 Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
-                    let result =
-                        match query_state(&project, query, ep_name, &state, MetricsNetwork::P2P)
+                    if let Ok(state) = QueryState::from_json(&state) {
+                        let result =
+                            match query_single_state(&project, query, ep_name, state, MetricsNetwork::P2P)
                             .await
                         {
                             Ok((res_query, res_signature, res_state)) => {
@@ -717,9 +719,10 @@ async fn handle_group(
                             Err(err) => json!({ "error": format!("{:?}", err) }),
                         };
 
-                    let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
+                        let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
                 }
                 Event::CloseAgreementLimit(uid, agreement) => {
                     let res =

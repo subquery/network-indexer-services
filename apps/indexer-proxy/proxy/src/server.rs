@@ -34,6 +34,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
+    payg::{QueryState, MultipleQueryState},
     tools::{hex_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -44,7 +45,8 @@ use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{
-    extend_channel, fetch_channel_cache, merket_price, open_state, query_state, AuthPayg,
+    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel, query_single_state, query_multiple_state,
+    AuthPayg,
 };
 use crate::project::get_project;
 
@@ -78,6 +80,8 @@ pub async fn start_server(port: u16) {
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
+        // `GET /payg-pay` goes to pay to channel some spent
+        .route("/payg-pay", post(payg_pay))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
         .route("/metrics", get(metrics_handler))
@@ -241,7 +245,7 @@ async fn payg_generate(Json(payload): Json<Value>) -> Result<Json<Value>, Error>
 
 async fn payg_query(
     mut headers: HeaderMap,
-    AuthPayg(state): AuthPayg,
+    AuthPayg(auth): AuthPayg,
     Path(deployment): Path<String>,
     ep_name: Query<EpName>,
     body: String,
@@ -250,14 +254,35 @@ async fn payg_query(
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature, state_data) = query_state(
-        &deployment,
-        body,
-        ep_name.0.ep_name,
-        &state,
-        MetricsNetwork::HTTP,
-    )
-    .await?;
+    // single or multiple
+    let block = headers
+        .remove("X-Channel-Block")
+        .unwrap_or(HeaderValue::from_static("single"));
+
+    let (data, signature, state_data) = match block.to_str() {
+        Ok("multiple") => {
+            let state = MultipleQueryState::from_bs64(auth)?;
+            query_multiple_state(
+                &deployment,
+                body,
+                ep_name.0.ep_name,
+                state,
+                MetricsNetwork::HTTP,
+            )
+            .await?
+        }
+        _ => {
+            let state = QueryState::from_bs64(auth)?;
+            query_single_state(
+                &deployment,
+                body,
+                ep_name.0.ep_name,
+                state,
+                MetricsNetwork::HTTP,
+            )
+            .await?
+        }
+    };
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -290,6 +315,12 @@ async fn payg_query(
     headers.push(("Content-Type", "application/json"));
 
     Ok(build_response(body, headers))
+}
+
+async fn payg_pay(body: String) -> Result<Json<Value>, Error> {
+    let state = QueryState::from_bs64(body)?;
+    let new_state = pay_channel(state).await?;
+    Ok(Json(new_state))
 }
 
 #[derive(Deserialize)]
