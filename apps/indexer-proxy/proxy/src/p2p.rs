@@ -705,9 +705,14 @@ async fn handle_group(
                 Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
                     if let Ok(state) = QueryState::from_json(&state) {
-                        let result =
-                            match query_single_state(&project, query, ep_name, state, MetricsNetwork::P2P)
-                            .await
+                        let result = match query_single_state(
+                            &project,
+                            query,
+                            ep_name,
+                            state,
+                            MetricsNetwork::P2P,
+                        )
+                        .await
                         {
                             Ok((res_query, res_signature, res_state)) => {
                                 json!({

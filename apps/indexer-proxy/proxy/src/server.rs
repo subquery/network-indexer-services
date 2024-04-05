@@ -34,7 +34,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
-    payg::{QueryState, MultipleQueryState},
+    payg::{MultipleQueryState, QueryState},
     tools::{hex_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -45,8 +45,8 @@ use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
 use crate::payg::{
-    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel, query_single_state, query_multiple_state,
-    AuthPayg,
+    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel,
+    query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
 

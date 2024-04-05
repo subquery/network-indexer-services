@@ -36,8 +36,8 @@ use subql_indexer_utils::{
     error::Error,
     payg::{
         convert_sign_to_string, convert_string_to_sign, extend_recover, extend_sign, price_recover,
-        price_sign, MultipleQueryState, MultipleQueryStateActive, MULTIPLE_RANGE_MAX, OpenState,
-        QueryState,
+        price_sign, MultipleQueryState, MultipleQueryStateActive, OpenState, QueryState,
+        MULTIPLE_RANGE_MAX,
     },
     request::{graphql_request, GraphQLQuery},
     tools::{cid_deployment, deployment_cid},
@@ -684,7 +684,8 @@ pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
         Error::Serialize(1123)
     })?;
     if let Some(p) = data.pointer("/data/channel/spent") {
-        let paid = U256::from_dec_str(p.as_str().unwrap_or("")).map_err(|_e| Error::Serialize(1123))?;
+        let paid =
+            U256::from_dec_str(p.as_str().unwrap_or("")).map_err(|_e| Error::Serialize(1123))?;
         if remote_spent <= paid {
             return Err(Error::Overflow(1058));
         }
