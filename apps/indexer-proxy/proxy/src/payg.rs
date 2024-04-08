@@ -23,7 +23,6 @@ use axum::{
     extract::FromRequestParts,
     http::{header::AUTHORIZATION, request::Parts},
 };
-use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
     signers::LocalWallet,
@@ -450,11 +449,7 @@ pub async fn query_single_state(
 
     state.remote = local_next;
     debug!("Handle query channel success");
-
-    let json = state.to_json();
-    let state_bytes = serde_json::to_vec(&json).unwrap_or(vec![]);
-    let state_string = general_purpose::STANDARD.encode(&state_bytes);
-    Ok((data, signature, state_string))
+    Ok((data, signature, state.to_bs64()))
 }
 
 pub async fn query_multiple_state(

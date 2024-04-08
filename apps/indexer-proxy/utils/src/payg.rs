@@ -382,6 +382,11 @@ impl QueryState {
             serde_json::from_str::<Value>(&raw).map_err(|_| Error::InvalidAuthHeader(1031))?;
         QueryState::from_json(&value)
     }
+
+    pub fn to_bs64(&self) -> String {
+        let json_state = serde_json::to_vec(&self.to_json()).unwrap_or(vec![]);
+        general_purpose::STANDARD.encode(json_state)
+    }
 }
 
 pub async fn fund_sign(
