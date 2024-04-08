@@ -321,17 +321,17 @@ pub async fn query_single_state(
     debug!("Start handle query channel");
     let project = get_project(project_id).await?;
 
-    let account = ACCOUNT.read().await;
-    state.sign(&account.controller, false).await?;
-    drop(account);
-    let (_, signer) = state.recover()?;
-
     // check channel state
     let channel_id = state.channel_id;
     let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
     debug!("Got channel cache");
 
     // check signer
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, false).await?;
+    drop(account);
+    let (_, signer) = state.recover()?;
+
     if !state_cache.signer.contains(&signer) {
         // check if it is consumer controller
         match state_cache.signer {
@@ -634,14 +634,17 @@ pub async fn extend_channel(
 
 pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
     debug!("Start pay channel");
-    let (_, signer) = state.recover()?;
-
     // check channel state
     let channel_id = state.channel_id;
     let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
     debug!("Got channel cache");
 
     // check signer
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, false).await?;
+    drop(account);
+    let (_, signer) = state.recover()?;
+
     if !state_cache.signer.contains(&signer) {
         // check if it is consumer controller
         match state_cache.signer {
@@ -687,10 +690,6 @@ pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
     } else {
         return Err(Error::Serialize(1123));
     }
-
-    let account = ACCOUNT.read().await;
-    state.sign(&account.controller, false).await?;
-    drop(account);
 
     // update redis cache
     if state_cache.remote < remote_spent {
