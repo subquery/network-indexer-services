@@ -318,7 +318,7 @@ async fn payg_query(
 }
 
 async fn payg_pay(body: String) -> Result<Json<Value>, Error> {
-    let state = QueryState::from_bs64_old1(body)?;
+    let state = QueryState::from_bs64(body)?;
     let new_state = pay_channel(state).await?;
     Ok(Json(new_state))
 }
