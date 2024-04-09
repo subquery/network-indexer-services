@@ -499,7 +499,7 @@ pub async fn query_multiple_state(
         return Err(Error::Overflow(1059));
     }
 
-    let middle = range / 2;
+    let middle = state.start + range / 2;
     let mut mpqsa = if local_next < middle {
         MultipleQueryStateActive::Active
     } else if local_next > state.end {
@@ -632,7 +632,7 @@ pub async fn extend_channel(
     Ok(convert_sign_to_string(&indexer_sign))
 }
 
-pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
+pub async fn pay_channel(mut state: QueryState) -> Result<String> {
     debug!("Start pay channel");
     // check channel state
     let channel_id = state.channel_id;
@@ -663,6 +663,7 @@ pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
     let total = state_cache.total;
     let local_spent = state_cache.spent;
     let remote_spent = state.spent;
+    state.remote = local_spent;
 
     if remote_spent > total {
         return Err(Error::Overflow(1056));
@@ -685,7 +686,7 @@ pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
         let paid =
             U256::from_dec_str(p.as_str().unwrap_or("")).map_err(|_e| Error::Serialize(1123))?;
         if remote_spent <= paid {
-            return Err(Error::Overflow(1058));
+            return Ok(state.to_bs64());
         }
     } else {
         return Err(Error::Serialize(1123));
@@ -738,9 +739,8 @@ pub async fn pay_channel(mut state: QueryState) -> Result<Value> {
             .map_err(|e| error!("{:?}", e));
     });
 
-    state.remote = local_spent;
     debug!("Pay channel success");
-    Ok(state.to_json())
+    Ok(state.to_bs64())
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -317,10 +317,10 @@ async fn payg_query(
     Ok(build_response(body, headers))
 }
 
-async fn payg_pay(body: String) -> Result<Json<Value>, Error> {
+async fn payg_pay(body: String) -> Result<String, Error> {
     let state = QueryState::from_bs64(body)?;
     let new_state = pay_channel(state).await?;
-    Ok(Json(new_state))
+    Ok(new_state)
 }
 
 #[derive(Deserialize)]
