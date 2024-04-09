@@ -449,7 +449,7 @@ pub async fn query_single_state(
 
     state.remote = local_next;
     debug!("Handle query channel success");
-    Ok((data, signature, state.to_bs64()))
+    Ok((data, signature, state.to_bs64_old2()))
 }
 
 pub async fn query_multiple_state(

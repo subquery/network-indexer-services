@@ -373,7 +373,50 @@ impl QueryState {
         })
     }
 
-    pub fn from_bs64(auth: String) -> Result<Self, Error> {
+    pub fn from_bs64(params: String) -> Result<Self, Error> {
+        let raw = general_purpose::STANDARD
+            .decode(&params)
+            .map_err(|_e| Error::Serialize(1116))?;
+
+        if raw.len() != 267 {
+            return Err(Error::Serialize(1116));
+        }
+
+        let channel_id = U256::from_big_endian(&raw[0..32]);
+        let indexer = Address::from_slice(&raw[32..52]);
+        let consumer = Address::from_slice(&raw[52..72]);
+        let spent = U256::from_big_endian(&raw[72..104]);
+        let remote = U256::from_big_endian(&raw[104..136]);
+        let is_final = raw[136] != 0;
+        let indexer_sign = convert_bytes_to_sign(raw[137..202].to_vec());
+        let consumer_sign = convert_bytes_to_sign(raw[202..267].to_vec());
+
+        Ok(Self {
+            channel_id,
+            indexer,
+            consumer,
+            spent,
+            remote,
+            is_final,
+            indexer_sign,
+            consumer_sign,
+        })
+    }
+
+    pub fn to_bs64(&self) -> String {
+        let mut bytes = [0u8; 267];
+        self.channel_id.to_big_endian(&mut bytes[0..32]);
+        bytes[32..52].copy_from_slice(self.indexer.as_fixed_bytes());
+        bytes[52..72].copy_from_slice(self.consumer.as_fixed_bytes());
+        self.spent.to_big_endian(&mut bytes[72..104]);
+        self.remote.to_big_endian(&mut bytes[104..136]);
+        bytes[136] = self.is_final as u8;
+        bytes[137..202].copy_from_slice(&convert_sign_to_bytes(&self.indexer_sign));
+        bytes[202..267].copy_from_slice(&convert_sign_to_bytes(&self.consumer_sign));
+        general_purpose::STANDARD.encode(&bytes)
+    }
+
+    pub fn from_bs64_old1(auth: String) -> Result<Self, Error> {
         let raw = general_purpose::STANDARD
             .decode(&auth)
             .map(|v| String::from_utf8(v).unwrap_or(auth.clone()))
@@ -383,7 +426,19 @@ impl QueryState {
         QueryState::from_json(&value)
     }
 
-    pub fn to_bs64(&self) -> String {
+    pub fn to_bs64_old1(&self) -> String {
+        let s = serde_json::to_string(&self.to_json()).unwrap_or("".to_owned());
+        general_purpose::STANDARD.encode(s)
+    }
+
+    pub fn from_bs64_old2(auth: String) -> Result<Self, Error> {
+        let raw = general_purpose::STANDARD.decode(&auth).unwrap_or(vec![]);
+        let value =
+            serde_json::from_slice::<Value>(&raw).map_err(|_| Error::InvalidAuthHeader(1031))?;
+        QueryState::from_json(&value)
+    }
+
+    pub fn to_bs64_old2(&self) -> String {
         let json_state = serde_json::to_vec(&self.to_json()).unwrap_or(vec![]);
         general_purpose::STANDARD.encode(json_state)
     }
