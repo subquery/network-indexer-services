@@ -57,6 +57,16 @@ import { SubscriptionModule } from './subscription/subscription.module';
         ? resolve(process.env['INDEXER_ADMIN_ROOT'])
         : join(__dirname, 'indexer-admin'),
       exclude: ['/env.js', '/graphql*'],
+      serveStaticOptions: {
+        setHeaders(res) {
+          res.setHeader(
+            'Access-Control-Allow-Headers',
+            'X-Requested-With, content-type, Authorization'
+          );
+          res.setHeader('Access-Control-Allow-Methods', 'GET');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+        },
+      },
     }),
     MonitorModule,
     StatsModule,
