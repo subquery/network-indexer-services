@@ -85,8 +85,8 @@ export async function generateDockerComposeFile(data: TemplateType) {
   try {
     const config = await nodeConfigs(deploymentID);
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
-    const template = handlebars.compile(file);
-    fs.writeFileSync(getComposeFilePath(deploymentID), template({ ...data, ...config }));
+    const template = handlebars.compile(file, { noEscape: true })({ ...data, ...config });
+    fs.writeFileSync(getComposeFilePath(deploymentID), template);
     getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(
