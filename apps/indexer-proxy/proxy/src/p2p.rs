@@ -26,6 +26,7 @@ use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
+    payg::QueryState,
 };
 use tdn::{
     prelude::{
@@ -48,7 +49,7 @@ use crate::{
     cli::COMMAND,
     contracts::get_consumer_host_peer,
     metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
-    payg::{merket_price, open_state, query_state},
+    payg::{merket_price, open_state, query_single_state},
     primitives::*,
     project::get_project,
 };
@@ -443,7 +444,8 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let metrics = get_timer_metrics().await;
             if !metrics.is_empty() {
                 let indexer = get_indexer().await;
-                let event = Event::MetricsQueryCount(indexer.clone(), metrics).to_bytes();
+                let indexer_network = format!("{}:{}", indexer, COMMAND.network);
+                let event = Event::MetricsQueryCount(indexer_network, metrics).to_bytes();
                 let ledger = state.0.read().await;
                 let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
                 drop(ledger);
@@ -703,9 +705,15 @@ async fn handle_group(
                 }
                 Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
-                    let result =
-                        match query_state(&project, query, ep_name, &state, MetricsNetwork::P2P)
-                            .await
+                    if let Ok(state) = QueryState::from_json(&state) {
+                        let result = match query_single_state(
+                            &project,
+                            query,
+                            ep_name,
+                            state,
+                            MetricsNetwork::P2P,
+                        )
+                        .await
                         {
                             Ok((res_query, res_signature, res_state)) => {
                                 json!({
@@ -717,9 +725,10 @@ async fn handle_group(
                             Err(err) => json!({ "error": format!("{:?}", err) }),
                         };
 
-                    let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
+                        let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
                 }
                 Event::CloseAgreementLimit(uid, agreement) => {
                     let res =

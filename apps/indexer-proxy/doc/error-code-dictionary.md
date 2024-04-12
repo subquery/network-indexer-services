@@ -47,6 +47,8 @@
 - `1055` - Invalid signature: payg channel signer not include in redis cache.
 - `1056` - Overflow: payg channel query is overflow total limit.
 - `1057` - Rate limit: reach the max limit of project in 1s.
+- `1058` - Overflow: paid less that previous paid.
+- `1059` - Overflow: range size overflow.
 - `1100` - Serialize: hex convert failure.
 - `1101` - Serialize: rustc_hex convert failure.
 - `1102` - Serialize: uint convert failure.
