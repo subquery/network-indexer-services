@@ -11,7 +11,7 @@ import _ from 'lodash';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
-import { Config } from '../configure/configure.module';
+import { Config, Postgres } from '../configure/configure.module';
 import { AccountService } from '../core/account.service';
 import { ContractService } from '../core/contract.service';
 import { DockerService } from '../core/docker.service';
@@ -319,7 +319,7 @@ export class ProjectService {
     const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
 
-    const postgres = this.config.postgres;
+    const postgres = this.escapePostgresConfig(this.config.postgres);
     const dockerNetwork = this.config.dockerNetwork;
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
@@ -347,6 +347,14 @@ export class ProjectService {
     };
 
     return item;
+  }
+
+  escapePostgresConfig(config: Postgres) {
+    const escaped = JSON.parse(JSON.stringify(config)) as Postgres;
+    escaped.user = escaped.user.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    escaped.pass = escaped.pass.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    escaped.db = escaped.db.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return escaped;
   }
 
   async createAndStartSubqueryProject(id: string, projectConfig: IProjectConfig) {

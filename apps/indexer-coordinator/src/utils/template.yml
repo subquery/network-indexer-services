@@ -10,9 +10,9 @@ services:
     expose:
       - {{servicePort}}
     environment:
-      DB_USER: {{postgres.user}}
-      DB_PASS: {{postgres.pass}}
-      DB_DATABASE: {{postgres.db}}
+      DB_USER: "{{postgres.user}}"
+      DB_PASS: "{{postgres.pass}}"
+      DB_DATABASE: "{{postgres.db}}"
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
@@ -73,9 +73,9 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      DB_USER: {{postgres.user}}
-      DB_PASS: {{postgres.pass}}
-      DB_DATABASE: {{postgres.db}}
+      DB_USER: "{{postgres.user}}"
+      DB_PASS: "{{postgres.pass}}"
+      DB_DATABASE: "{{postgres.db}}"
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     command:
