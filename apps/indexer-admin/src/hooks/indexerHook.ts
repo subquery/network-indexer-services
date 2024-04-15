@@ -30,11 +30,9 @@ export const useIsRegistedIndexer = (): {
   const [loading, setLoading] = useState(true);
   const getIsIndexer = useCallback(async () => {
     if (!account || !sdk) return;
-
     try {
       setLoading(true);
       const status = await sdk.indexerRegistry.isIndexer(account);
-
       updateIsRegisterIndexer(status);
     } catch (e) {
       notificationMsg({
