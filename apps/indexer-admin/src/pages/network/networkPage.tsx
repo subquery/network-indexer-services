@@ -40,7 +40,7 @@ const NetworkPage = () => {
       <LeftContainer>
         <Avatar address={account ?? ''} size={100} />
         <ContentContainer>
-          <Text fw="600" size={30}>
+          <Text className="overflowEllipsis2" fw="600" size={30}>
             {metadata?.name}
           </Text>
           <Text fw="400" size={15}>

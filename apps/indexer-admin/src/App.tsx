@@ -77,19 +77,21 @@ const AppContents = () => {
         </div>
       );
 
-    if (loading || registedIndexerLoading) return <LoadingSpinner />;
-
     return (
       <ChainStatus>
-        <Switch>
-          <Route component={Pages.Projects} path="/projects" />
-          <Route exact component={Pages.ProjectDetail} path="/project/:id" />
-          <Route component={Pages.Account} path="/account" />
-          <Route component={Pages.ControllerManagement} path="/controller-management" />
-          <Route component={Pages.Network} path="/network" />
-          <Route component={Pages.Register} path="/register" />
-          <Route component={Pages.Login} path="/" />
-        </Switch>
+        {loading || registedIndexerLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <Switch>
+            <Route component={Pages.Projects} path="/projects" />
+            <Route exact component={Pages.ProjectDetail} path="/project/:id" />
+            <Route component={Pages.Account} path="/account" />
+            <Route component={Pages.ControllerManagement} path="/controller-management" />
+            <Route component={Pages.Network} path="/network" />
+            <Route component={Pages.Register} path="/register" />
+            <Route component={Pages.Login} path="/" />
+          </Switch>
+        )}
       </ChainStatus>
     );
   }, [loading, registedIndexerLoading, error, address]);
