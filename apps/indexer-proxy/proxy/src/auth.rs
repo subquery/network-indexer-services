@@ -31,6 +31,9 @@ use subql_indexer_utils::{error::Error, types::Result};
 use crate::cli::{redis, COMMAND};
 use crate::contracts::check_agreement_and_consumer;
 
+type AuthRejection = Error;
+type AuthResult<T> = std::result::Result<T, AuthRejection>;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Payload {
     /// indexer address
@@ -111,12 +114,9 @@ impl<S> FromRequestParts<S> for AuthQuery
 where
     S: Send + Sync,
 {
-    type Rejection = Error;
+    type Rejection = AuthRejection;
 
-    async fn from_request_parts(
-        req: &mut Parts,
-        _state: &S,
-    ) -> std::result::Result<Self, Self::Rejection> {
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
         let claims = check_jwt(req)?;
 
         if let Some(agreement) = claims.agreement {
@@ -135,12 +135,9 @@ impl<S> FromRequestParts<S> for AuthQueryLimit
 where
     S: Send + Sync,
 {
-    type Rejection = Error;
+    type Rejection = AuthRejection;
 
-    async fn from_request_parts(
-        req: &mut Parts,
-        _state: &S,
-    ) -> std::result::Result<Self, Self::Rejection> {
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
         let claims = check_jwt(req)?;
 
         if let Some(agreement) = claims.agreement {
@@ -351,4 +348,25 @@ fn day_and_second() -> (i32, i64) {
     let date = utc.date_naive().num_days_from_ce();
     let second = utc.timestamp();
     (date, second)
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct AuthWhitelistQuery(String);
+
+#[async_trait]
+impl<S> FromRequestParts<S> for AuthWhitelistQuery
+where
+    S: Send + Sync,
+{
+    type Rejection = AuthRejection;
+
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
+        let claims = check_jwt(req)?;
+
+        if let Some(agreement) = claims.agreement {
+            check_agreement_limit(&agreement).await?;
+        }
+
+        Ok(AuthWhitelistQuery(claims.deployment_id))
+    }
 }
