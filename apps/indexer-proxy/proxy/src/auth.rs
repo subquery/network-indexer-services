@@ -28,6 +28,12 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use subql_indexer_utils::{error::Error, types::Result};
 
+use ethers::prelude::*;
+use ethers::utils::keccak256;
+use serde_json;
+use std::result;
+use std::str::FromStr;
+
 use crate::cli::{redis, COMMAND};
 use crate::contracts::check_agreement_and_consumer;
 
@@ -243,14 +249,14 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
     // update the limit
     let mut conn = redis();
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_limit)
         .arg(limit_expired)
         .arg(daily)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 1 {}", err));
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_limit)
         .arg(limit_expired)
         .arg(rate)
@@ -260,7 +266,7 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
 
     if let Some(signer) = signer {
         let ca_consumer = format!("{}-{}", agreement, signer);
-        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+        let _: result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&ca_consumer)
             .arg(limit_expired)
             .arg(true)
@@ -288,7 +294,7 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
     let daily_key = format!("{}-daily-{}", agreement, date);
     let rate_key = format!("{}-rate-{}", agreement, second);
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_key)
         .arg(86400)
         .arg(daily_times + 1)
@@ -296,7 +302,7 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
         .await
         .map_err(|err| error!("Redis 4 {}", err));
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_key)
         .arg(1)
         .arg(rate_times + 1)
@@ -351,7 +357,58 @@ fn day_and_second() -> (i32, i64) {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct AuthWhitelistQuery(String);
+pub struct AuthWhitelistQuery(pub String);
+/// Struct to represent the payload used for whitelist authorization, extracted from a custom header.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthWhitelistPayload {
+    /// The deployment identifier to which the query is targeted.
+    #[serde(rename = "deploymentId")]
+    pub deployment_id: String,
+    /// Ethereum public address used to sign the payload.
+    pub account: String,
+    /// Unix timestamp indicating when the token expires.
+    pub expired: u64,
+    /// Signature to verify authenticity and integrity of the payload.
+    pub signature: String,
+}
+
+impl AuthWhitelistQuery {
+    fn verify_signature(payload: AuthWhitelistPayload) -> AuthResult<()> {
+        let AuthWhitelistPayload {
+            deployment_id,
+            account,
+            expired,
+            signature,
+        } = payload;
+
+        // Check expiration
+        if expired < chrono::Utc::now().timestamp_millis() as u64 {
+            return Err(Error::Permission(1020));
+        }
+
+        // Prepare message and hash it
+        let message = format!("{}{}", deployment_id, expired);
+        let message_hash = keccak256(message.as_bytes());
+
+        // Decode and verify signature
+        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1020))?;
+        let signature =
+            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1020))?;
+
+        // Verify public address from the signature
+        let address = Address::from_str(&account).map_err(|_| Error::Permission(1020))?;
+        let recovery_message = RecoveryMessage::from(message_hash);
+        let recovered_address = signature
+            .recover(recovery_message)
+            .map_err(|_| Error::Permission(1020))?;
+
+        if recovered_address != address {
+            return Err(Error::Permission(1020));
+        }
+
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthWhitelistQuery
@@ -361,12 +418,22 @@ where
     type Rejection = AuthRejection;
 
     async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
-        let claims = check_jwt(req)?;
+        let authorization = req
+            .headers
+            .get("X-Auth-Payload")
+            .ok_or(Error::Permission(1020))?
+            .to_str()
+            .map_err(|_| Error::Permission(1020))?;
 
-        if let Some(agreement) = claims.agreement {
-            check_agreement_limit(&agreement).await?;
-        }
+        // Deserialize the JSON string into the AuthPayload struct
+        let payload: AuthWhitelistPayload =
+            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1030))?;
 
-        Ok(AuthWhitelistQuery(claims.deployment_id))
+        let deployment_id = payload.deployment_id.clone();
+        // Use the verify_signature method to handle the signature verification
+        AuthWhitelistQuery::verify_signature(payload)?;
+
+        // Return the AuthWhitelistQuery with the validated deployment ID
+        Ok(AuthWhitelistQuery(deployment_id))
     }
 }

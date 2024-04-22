@@ -39,7 +39,6 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
@@ -49,6 +48,10 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::{
+    account::{get_indexer, indexer_healthy},
+    auth::AuthWhitelistQuery,
+};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -237,7 +240,7 @@ async fn query_limit_handler(
 
 async fn wl_query_handler(
     _: HeaderMap,
-    AuthQuery(deployment_id): AuthQuery,
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
     ep_name: Query<EpName>,
     body: String,
@@ -263,10 +266,9 @@ async fn wl_query_handler(
     }))
     .unwrap_or("".to_owned());
 
-    Ok(build_response(
-        body,
-        vec![("Content-Type", "application/json")],
-    ))
+    let header = vec![("Content-Type", "application/json")];
+
+    Ok(build_response(body, header))
 }
 
 async fn payg_price() -> Result<Json<Value>, Error> {
