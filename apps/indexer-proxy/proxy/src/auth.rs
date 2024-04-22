@@ -387,7 +387,7 @@ impl AuthWhitelistQuery {
         }
 
         // Prepare message and hash it
-        let message = format!("{}{}", deployment_id, expired);
+        let message = format!("{}{}{}", deployment_id, account, expired);
         let message_hash = keccak256(message.as_bytes());
 
         // Decode and verify signature
