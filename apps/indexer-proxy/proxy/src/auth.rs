@@ -34,7 +34,7 @@ use serde_json;
 use std::result;
 use std::str::FromStr;
 
-use crate::cli::{redis, COMMAND};
+use crate::{cli::{redis, COMMAND}, whitelist::WHITELIST};
 use crate::contracts::check_agreement_and_consumer;
 
 type AuthRejection = Error;
@@ -383,7 +383,7 @@ impl AuthWhitelistQuery {
 
         // Check expiration
         if expired < chrono::Utc::now().timestamp_millis() as u64 {
-            return Err(Error::Permission(1020));
+            return Err(Error::Permission(1302));
         }
 
         // Prepare message and hash it
@@ -391,19 +391,19 @@ impl AuthWhitelistQuery {
         let message_hash = keccak256(message.as_bytes());
 
         // Decode and verify signature
-        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1020))?;
+        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1303))?;
         let signature =
-            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1020))?;
+            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1303))?;
 
         // Verify public address from the signature
-        let address = Address::from_str(&account).map_err(|_| Error::Permission(1020))?;
+        let address = Address::from_str(&account).map_err(|_| Error::Permission(1303))?;
         let recovery_message = RecoveryMessage::from(message_hash);
         let recovered_address = signature
             .recover(recovery_message)
-            .map_err(|_| Error::Permission(1020))?;
+            .map_err(|_| Error::Permission(1303))?;
 
         if recovered_address != address {
-            return Err(Error::Permission(1020));
+            return Err(Error::Permission(1303));
         }
 
         Ok(())
@@ -420,22 +420,21 @@ where
     async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
         let authorization = req
             .headers
-            .get("X-Auth-Payload")
+            .get("X-Whitelist-Auth")
             .ok_or(Error::Permission(1020))?
             .to_str()
-            .map_err(|_| Error::Permission(1020))?;
+            .map_err(|_| Error::Permission(1030))?;
 
-        // Deserialize the JSON string into the AuthPayload struct
         let payload: AuthWhitelistPayload =
-            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1030))?;
+            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1300))?;
 
-        // TODO: verify whether account is whitelisted
+        if !WHITELIST.read().unwrap().is_whitelisted(&payload.account) {
+            return Err(Error::Permission(1301));
+        }
 
         let deployment_id = payload.deployment_id.clone();
-        // Use the verify_signature method to handle the signature verification
         AuthWhitelistQuery::verify_signature(payload)?;
 
-        // Return the AuthWhitelistQuery with the validated deployment ID
         Ok(AuthWhitelistQuery(deployment_id))
     }
 }

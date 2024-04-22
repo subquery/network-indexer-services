@@ -34,6 +34,7 @@ mod primitives;
 mod project;
 mod server;
 mod subscriber;
+mod whitelist;
 
 use cli::COMMAND;
 use tracing::Level;

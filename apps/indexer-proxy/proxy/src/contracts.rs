@@ -238,3 +238,21 @@ pub async fn check_convert_price(
 
     Ok(amount_to >= check_amount)
 }
+
+pub async fn check_whitelist_account(account: Address) -> Result<bool, Error> {
+    let client = Arc::new(
+        Provider::<Http>::try_from(COMMAND.network_endpoint())
+            .map_err(|_| Error::ServiceException(1022))?,
+    );
+
+    let consumer_registry = consumer_registry(client, COMMAND.network())
+        .map_err(|_| Error::ServiceException(1023))?;
+
+    let is_whitelisted: bool = consumer_registry.method::<_, bool>("whitelist", (account))
+        .map_err(|_| Error::ServiceException(1025))?
+        .call()
+        .await
+        .map_err(|_| Error::ServiceException(1025))?;
+
+    Ok(is_whitelisted)
+}

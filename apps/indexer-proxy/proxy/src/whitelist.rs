@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-// create a whitelist struct which is a hashmap
-
 use std::collections::HashMap;
+use std::sync::RwLock;
+use once_cell::sync::Lazy;
 
 pub struct Whitelist {
     accounts: HashMap<String, bool>,
@@ -43,3 +43,13 @@ impl Whitelist {
         self.accounts.get(account).copied().unwrap_or(false)
     }
 }
+
+impl Default for Whitelist {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub static WHITELIST: Lazy<RwLock<Whitelist>> = Lazy::new(|| {
+    RwLock::new(Whitelist::default())
+});
