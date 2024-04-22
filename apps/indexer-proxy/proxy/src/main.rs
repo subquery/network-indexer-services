@@ -53,6 +53,7 @@ async fn main() {
     monitor::listen();
     p2p::listen();
     metrics::listen();
+    whitelist::listen();
 
     server::start_server(port).await;
 }

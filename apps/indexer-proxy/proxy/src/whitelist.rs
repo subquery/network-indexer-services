@@ -19,6 +19,11 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
 use once_cell::sync::Lazy;
+use ethers::prelude::Address;
+use std::str::FromStr;
+use tokio::time::{sleep, Duration};
+
+use crate::{contracts::check_whitelist_account, primitives::WHITELIST_REFRESH_TIME};
 
 pub struct Whitelist {
     accounts: HashMap<String, bool>,
@@ -31,16 +36,20 @@ impl Whitelist {
         }
     }
 
-    pub fn add(&mut self, account: String) {
-        self.accounts.insert(account, true);
-    }
-
     pub fn remove(&mut self, account: &str) {
         self.accounts.remove(account);
     }
 
+    pub fn update_account(&mut self, account: &str, whitelisted: bool) {
+        self.accounts.insert(account.to_string(), whitelisted);
+    }
+
     pub fn is_whitelisted(&self, account: &str) -> bool {
-        self.accounts.get(account).copied().unwrap_or(false)
+        self.accounts.get(account).map_or(false, |v| *v)
+    }
+
+    pub fn get_all_accounts(&self) -> Vec<String> {
+        self.accounts.keys().cloned().collect()
     }
 }
 
@@ -53,3 +62,37 @@ impl Default for Whitelist {
 pub static WHITELIST: Lazy<RwLock<Whitelist>> = Lazy::new(|| {
     RwLock::new(Whitelist::default())
 });
+
+pub fn listen() {
+    tokio::spawn(async {
+        sleep(Duration::from_secs(WHITELIST_REFRESH_TIME)).await;
+        loop {
+            // TODO: get the list from subquery project
+            
+            let accounts = {
+                let whitelist = WHITELIST.read().unwrap();
+                whitelist.get_all_accounts()
+            };
+    
+            for account in accounts {
+                match Address::from_str(&account) {
+                    Ok(addr) => {
+                        match check_whitelist_account(addr).await {
+                            Ok(whitelisted) => {
+                                let mut whitelist = WHITELIST.write().unwrap();
+                                whitelist.update_account(&account, whitelisted);
+                                drop(whitelist);
+                            },
+                            Err(_) => ()
+                        }
+                    },
+                    Err(_) => {
+                        let mut whitelist = WHITELIST.write().unwrap();
+                        whitelist.remove(&account);
+                        drop(whitelist);
+                    }
+                }
+            }
+        }
+    });
+}

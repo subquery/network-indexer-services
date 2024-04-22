@@ -248,7 +248,7 @@ pub async fn check_whitelist_account(account: Address) -> Result<bool, Error> {
     let consumer_registry = consumer_registry(client, COMMAND.network())
         .map_err(|_| Error::ServiceException(1023))?;
 
-    let is_whitelisted: bool = consumer_registry.method::<_, bool>("whitelist", (account))
+    let is_whitelisted: bool = consumer_registry.method::<_, bool>("whitelist", account)
         .map_err(|_| Error::ServiceException(1025))?
         .call()
         .await

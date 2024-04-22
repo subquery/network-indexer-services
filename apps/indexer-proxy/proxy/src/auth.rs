@@ -428,8 +428,17 @@ where
         let payload: AuthWhitelistPayload =
             serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1300))?;
 
-        if !WHITELIST.read().unwrap().is_whitelisted(&payload.account) {
+        let is_whitelisted = {
+            let whitelist = WHITELIST.read().map_err(|_| Error::Permission(1301))?;
+            let account_whitelisted = whitelist.is_whitelisted(&payload.account);
+            drop(whitelist);
+
+            account_whitelisted
+        };
+
+        if !is_whitelisted {
             return Err(Error::Permission(1301));
+        
         }
 
         let deployment_id = payload.deployment_id.clone();
