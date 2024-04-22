@@ -80,7 +80,7 @@ impl Project {
 
     pub async fn metadata(&self, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
         let mut metadata = match self.ptype {
-            ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
+            ProjectType::Subquery => subquery_metadata(&self, network).await?,
             ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
             ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, block, network).await?,
         };
