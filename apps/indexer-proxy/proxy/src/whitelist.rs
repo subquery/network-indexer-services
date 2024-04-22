@@ -18,3 +18,28 @@
 
 // create a whitelist struct which is a hashmap
 
+use std::collections::HashMap;
+
+pub struct Whitelist {
+    accounts: HashMap<String, bool>,
+}
+
+impl Whitelist {
+    pub fn new() -> Self {
+        Whitelist {
+            accounts: HashMap::new(),
+        }
+    }
+
+    pub fn add(&mut self, account: String) {
+        self.accounts.insert(account, true);
+    }
+
+    pub fn remove(&mut self, account: &str) {
+        self.accounts.remove(account);
+    }
+
+    pub fn is_whitelisted(&self, account: &str) -> bool {
+        self.accounts.get(account).copied().unwrap_or(false)
+    }
+}

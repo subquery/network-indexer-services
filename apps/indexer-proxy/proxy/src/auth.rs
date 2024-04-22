@@ -429,6 +429,8 @@ where
         let payload: AuthWhitelistPayload =
             serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1030))?;
 
+        // TODO: verify whether account is whitelisted
+
         let deployment_id = payload.deployment_id.clone();
         // Use the verify_signature method to handle the signature verification
         AuthWhitelistQuery::verify_signature(payload)?;
