@@ -1,8 +1,8 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC, useMemo, useState } from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { FC, useMemo } from 'react';
+import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { loadDevMessages, loadErrorMessages } from '@apollo/client/dev';
 import { Footer } from '@subql/components';
@@ -13,13 +13,11 @@ import { useAccount } from 'wagmi';
 import { ChainStatus, ConnectWallet } from 'components/ConnectWallet';
 import ErrorPlaceholder from 'components/errorPlaceholder';
 import Loading, { LoadingSpinner } from 'components/loading';
-import { AccountProvider } from 'containers/account';
 import { ContractSDKProvider } from 'containers/contractSdk';
 import { CoordinatorIndexerProvider, useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { LoadingProvider } from 'containers/loadingContext';
 import { ModalProvider } from 'containers/modalContext';
 import { NotificationProvider, Notifications } from 'containers/notificationContext';
-import { useIsRegistedIndexer } from 'hooks/indexerHook';
 import { coordinatorServiceUrl, createApolloClient } from 'utils/apolloClient';
 
 import { GModalView } from './components/modalView';
@@ -35,26 +33,18 @@ import '@subql/components/dist/subquery-components.css';
 loadDevMessages();
 loadErrorMessages();
 
+// The whole flow follow this steps:
+//  1. Need a hook fetch If database have indexer address.
+//  2. Need a hook fetch the database indexer is register in the contract or not.
+//  3. Need a hook fetch current login account if is register in the contract.
+
 const AppContents = () => {
   const { address } = useAccount();
-  const { load, error } = useCoordinatorIndexer();
-  const { loading: registedIndexerLoading } = useIsRegistedIndexer();
-  const [loading, setLoading] = useState(true);
-
+  const { load, loading, error } = useCoordinatorIndexer();
   useMount(async () => {
-    try {
-      setLoading(true);
-      await load();
-    } finally {
-      // load only load from coordinator, the data actually change by useEffect.
-      // use setTimeout to make sure the this operation after useEffect.
-      // there have two load flow need to wait, better refactor this.
-      // loading && registedIndexerLoading
-      setTimeout(() => {
-        setLoading(false);
-      });
-    }
+    await load();
   });
+
   // load flow:
   //   if wallet disconnected, show connect wallet page // !address
   //      if rpc is wrong, show change rpc page // in ChainStatus.tsx
@@ -78,24 +68,24 @@ const AppContents = () => {
         </div>
       );
 
+    if (loading) return <LoadingSpinner />;
+
     return (
       <ChainStatus>
-        {loading || registedIndexerLoading ? (
-          <LoadingSpinner />
-        ) : (
-          <Switch>
-            <Route component={Pages.Projects} path="/projects" />
-            <Route exact component={Pages.ProjectDetail} path="/project/:id" />
-            <Route component={Pages.Account} path="/account" />
-            <Route component={Pages.ControllerManagement} path="/controller-management" />
-            <Route component={Pages.Network} path="/network" />
-            <Route component={Pages.Register} path="/register" />
-            <Route component={Pages.Login} path="/" />
-          </Switch>
-        )}
+        <Switch>
+          <Route component={Pages.Projects} path="/projects" />
+          <Route exact component={Pages.ProjectDetail} path="/project/:id" />
+          <Route component={Pages.Account} path="/account" />
+          <Route component={Pages.ControllerManagement} path="/controller-management" />
+          <Route component={Pages.Network} path="/network" />
+          <Route component={Pages.Register} path="/register" />
+          <Route exact path="/">
+            <Redirect to="/account" />
+          </Route>
+        </Switch>
       </ChainStatus>
     );
-  }, [loading, registedIndexerLoading, error, address]);
+  }, [loading, error, address]);
 
   return (
     <Router>
@@ -116,17 +106,15 @@ const App: FC = () => (
     <RainbowProvider>
       <ContractSDKProvider>
         <CoordinatorIndexerProvider>
-          <AccountProvider>
-            <LoadingProvider>
-              <ModalProvider>
-                <NotificationProvider>
-                  <div className="App">
-                    <AppContents />
-                  </div>
-                </NotificationProvider>
-              </ModalProvider>
-            </LoadingProvider>
-          </AccountProvider>
+          <LoadingProvider>
+            <ModalProvider>
+              <NotificationProvider>
+                <div className="App">
+                  <AppContents />
+                </div>
+              </NotificationProvider>
+            </ModalProvider>
+          </LoadingProvider>
         </CoordinatorIndexerProvider>
       </ContractSDKProvider>
     </RainbowProvider>

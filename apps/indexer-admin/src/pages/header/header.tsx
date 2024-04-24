@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import { useAccount, useDisconnect } from 'wagmi';
 
 import { Separator } from 'components/primary';
-import { useController, useIsIndexer, useTokenBalance } from 'hooks/indexerHook';
+import { useController, useTokenBalance } from 'hooks/indexerHook';
 import SubqueryIcon from 'resources/subquery.svg';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
@@ -59,7 +59,6 @@ const Header = () => {
   const { address: account } = useAccount();
   const { disconnect } = useDisconnect();
   const { pathname } = useLocation();
-  const isIndexer = useIsIndexer();
   const controller = useController();
   const { tokenBalance } = useTokenBalance(account, pathname);
 
@@ -121,7 +120,7 @@ const Header = () => {
     <Container>
       <LeftContainer>
         <img src={SubqueryIcon} alt="subquery" />
-        {!isRootPage && isIndexer && renderTabbars()}
+        {!isRootPage && renderTabbars()}
       </LeftContainer>
       <RightContainer>
         <Separator width={30} color="#f6f9fc" />

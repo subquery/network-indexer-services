@@ -9,7 +9,7 @@ import { isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
 import UnsafeWarn from 'components/UnsafeWarn';
-import { useAccount } from 'containers/account';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
 import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import {
@@ -32,7 +32,7 @@ type Props = Omit<ProjectDetails, 'metadata'> & {
 const ProjectItem: FC<Props> = (props) => {
   const { id, details, metadata, projectType, metadataLoading } = props;
 
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const history = useHistory();
   const status = useDeploymentStatus(id);
   const onlineStatus = useIsOnline({

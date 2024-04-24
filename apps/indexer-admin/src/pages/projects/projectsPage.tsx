@@ -57,7 +57,7 @@ const Projects = () => {
   const [getProjectName, projectName] = useLazyQuery<{ getProjectInfo: { name: string } }>(
     GET_PROJECT_NAME
   );
-  const isIndexer = useIsIndexer();
+  const { loading: isIndexerLoading, data: isIndexer } = useIsIndexer();
 
   const [form] = useForm();
   const processingId = Form.useWatch('deploymentId', { form, preserve: true });
@@ -154,220 +154,228 @@ const Projects = () => {
     }, 1000);
   }, [validateManifest, getProjectName, getIfUnsafe]);
 
-  return renderAsync(projectsQuery, {
-    loading: () => <LoadingSpinner />,
-    error: (error) => (
-      <EmptyView
-        onClick={() => {
-          openNotification({
-            type: 'error',
-            description: `There are errors, please refetch the page or upgrade to latest version. ${error.message}`,
-          });
-        }}
-      />
-    ),
-    data: () => (
-      <Container>
-        {isIndexer && renderProjects}
-
-        <Drawer
-          open={visible}
-          rootClassName="popupViewDrawer"
-          width="572px"
-          onClose={() => {
-            setVisible(false);
+  return renderAsync(
+    {
+      ...projectsQuery,
+      loading: isIndexerLoading || projectsQuery.loading,
+    },
+    {
+      loading: () => <LoadingSpinner />,
+      error: (error) => (
+        <EmptyView
+          onClick={() => {
+            openNotification({
+              type: 'error',
+              description: `There are errors, please refetch the page or upgrade to latest version. ${error.message}`,
+            });
           }}
-          title={<Typography> Add Project </Typography>}
-          footer={null}
-        >
-          {currentStep === 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                <Steps
-                  steps={[
-                    {
-                      title: 'Deployment ID',
-                    },
-                    {
-                      title: 'Deployment Settings',
-                    },
-                  ]}
-                  current={0}
-                />
-                <Typography>
-                  The Deployment ID can be found on project details pages in Explorer
-                </Typography>
+        />
+      ),
+      data: () => (
+        <Container>
+          {isIndexer && renderProjects}
 
-                <Form layout="vertical" form={form}>
-                  <Form.Item
-                    label="Deployment ID"
-                    name="deploymentId"
-                    hasFeedback
-                    rules={[
-                      { required: true },
-                      () => {
-                        return {
-                          validator: debouncedValidator,
-                        };
+          <Drawer
+            open={visible}
+            rootClassName="popupViewDrawer"
+            width="572px"
+            onClose={() => {
+              setVisible(false);
+            }}
+            title={<Typography> Add Project </Typography>}
+            footer={null}
+          >
+            {currentStep === 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <Steps
+                    steps={[
+                      {
+                        title: 'Deployment ID',
+                      },
+                      {
+                        title: 'Deployment Settings',
                       },
                     ]}
-                  >
-                    <Input />
-                  </Form.Item>
-                  {manifest.data && (
-                    <Form.Item label="Project Details">
-                      <SubqlCollapse>
-                        <Collapse
-                          items={[
-                            {
-                              key: 'detail',
-                              label: (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <Avatar address={'0x000' || processingId} size={50} />
+                    current={0}
+                  />
+                  <Typography>
+                    The Deployment ID can be found on project details pages in Explorer
+                  </Typography>
 
-                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Typography>{projectName.data?.getProjectInfo.name}</Typography>
-                                    <Typography variant="small" type="secondary">
-                                      {manifest.data?.getManifest.rpcManifest
-                                        ? 'RPC Endpoint'
-                                        : 'Data Indexer'}
-                                    </Typography>
-                                  </div>
-                                </div>
-                              ),
-                              children: (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Typography type="secondary" variant="medium">
-                                      Chain ID:
-                                    </Typography>
-                                    <Typography
-                                      variant="medium"
-                                      style={{ overflowWrap: 'anywhere' }}
-                                    >
-                                      {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
-                                        manifest.data.getManifest.subqueryManifest?.network
-                                          ?.chainId ||
-                                        'Unknown'}
-                                    </Typography>
-                                  </div>
-                                  {manifest.data?.getManifest.rpcManifest && (
-                                    <>
-                                      <div
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                                      >
-                                        <Typography type="secondary" variant="medium">
-                                          Family:
-                                        </Typography>
-                                        <Typography variant="medium">
-                                          {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(
-                                            ' '
-                                          )}
-                                        </Typography>
-                                      </div>
-                                      <div
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                                      >
-                                        <Typography type="secondary" variant="medium">
-                                          Client:
-                                        </Typography>
-                                        <Typography variant="medium">
-                                          {manifest.data?.getManifest.rpcManifest?.client?.name ||
-                                            'Unknown'}
-                                        </Typography>
-                                      </div>
-                                      <div
-                                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                                      >
-                                        <Typography type="secondary" variant="medium">
-                                          Node type:
-                                        </Typography>
-                                        <Typography variant="medium">
-                                          {manifest.data?.getManifest.rpcManifest?.nodeType}
-                                        </Typography>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              ),
-                            },
-                          ]}
-                        />
-                      </SubqlCollapse>
+                  <Form layout="vertical" form={form}>
+                    <Form.Item
+                      label="Deployment ID"
+                      name="deploymentId"
+                      hasFeedback
+                      rules={[
+                        { required: true },
+                        () => {
+                          return {
+                            validator: debouncedValidator,
+                          };
+                        },
+                      ]}
+                    >
+                      <Input />
                     </Form.Item>
-                  )}
+                    {manifest.data && (
+                      <Form.Item label="Project Details">
+                        <SubqlCollapse>
+                          <Collapse
+                            items={[
+                              {
+                                key: 'detail',
+                                label: (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <Avatar address={'0x000' || processingId} size={50} />
 
-                  {isUnsafe && (
-                    <WarnStyle>
-                      <WarningOutlined
-                        style={{ color: 'var(--sq-warning)', fontSize: 18, marginTop: 2 }}
-                      />
-                      <div>
-                        <Typography variant="medium">
-                          This project is not completely safe
-                        </Typography>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                          <Typography variant="medium" type="secondary">
-                            SubQuery can’t guarantee that this project is deterministic, which means
-                            it is not entirely safe.
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <Typography>
+                                        {projectName.data?.getProjectInfo.name}
+                                      </Typography>
+                                      <Typography variant="small" type="secondary">
+                                        {manifest.data?.getManifest.rpcManifest
+                                          ? 'RPC Endpoint'
+                                          : 'Data Indexer'}
+                                      </Typography>
+                                    </div>
+                                  </div>
+                                ),
+                                children: (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <Typography type="secondary" variant="medium">
+                                        Chain ID:
+                                      </Typography>
+                                      <Typography
+                                        variant="medium"
+                                        style={{ overflowWrap: 'anywhere' }}
+                                      >
+                                        {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
+                                          manifest.data.getManifest.subqueryManifest?.network
+                                            ?.chainId ||
+                                          'Unknown'}
+                                      </Typography>
+                                    </div>
+                                    {manifest.data?.getManifest.rpcManifest && (
+                                      <>
+                                        <div
+                                          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                        >
+                                          <Typography type="secondary" variant="medium">
+                                            Family:
+                                          </Typography>
+                                          <Typography variant="medium">
+                                            {manifest.data?.getManifest.rpcManifest?.rpcFamily.join(
+                                              ' '
+                                            )}
+                                          </Typography>
+                                        </div>
+                                        <div
+                                          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                        >
+                                          <Typography type="secondary" variant="medium">
+                                            Client:
+                                          </Typography>
+                                          <Typography variant="medium">
+                                            {manifest.data?.getManifest.rpcManifest?.client?.name ||
+                                              'Unknown'}
+                                          </Typography>
+                                        </div>
+                                        <div
+                                          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                                        >
+                                          <Typography type="secondary" variant="medium">
+                                            Node type:
+                                          </Typography>
+                                          <Typography variant="medium">
+                                            {manifest.data?.getManifest.rpcManifest?.nodeType}
+                                          </Typography>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                ),
+                              },
+                            ]}
+                          />
+                        </SubqlCollapse>
+                      </Form.Item>
+                    )}
+
+                    {isUnsafe && (
+                      <WarnStyle>
+                        <WarningOutlined
+                          style={{ color: 'var(--sq-warning)', fontSize: 18, marginTop: 2 }}
+                        />
+                        <div>
+                          <Typography variant="medium">
+                            This project is not completely safe
                           </Typography>
-                          <Typography variant="medium" type="secondary">
-                            This means that two indexers are not guaranteed to index exactly the
-                            same data when indexing this project. In most cases, Indexers will still
-                            run this project, however they might be reluctant to do so.
-                          </Typography>
-                          <Typography variant="medium" type="secondary">
-                            By proceeding, you acknowledge the potential risks associated with
-                            deploying an &apos;unsafe&apos; project. Learn more about unsafe
-                            project.
-                          </Typography>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                            <Typography variant="medium" type="secondary">
+                              SubQuery can’t guarantee that this project is deterministic, which
+                              means it is not entirely safe.
+                            </Typography>
+                            <Typography variant="medium" type="secondary">
+                              This means that two indexers are not guaranteed to index exactly the
+                              same data when indexing this project. In most cases, Indexers will
+                              still run this project, however they might be reluctant to do so.
+                            </Typography>
+                            <Typography variant="medium" type="secondary">
+                              By proceeding, you acknowledge the potential risks associated with
+                              deploying an &apos;unsafe&apos; project. Learn more about unsafe
+                              project.
+                            </Typography>
+                          </div>
                         </div>
-                      </div>
-                    </WarnStyle>
-                  )}
-                </Form>
+                      </WarnStyle>
+                    )}
+                  </Form>
+                </div>
+                <div style={{ flex: 1 }} />
+                <div style={{ textAlign: 'right' }}>
+                  <Button
+                    shape="round"
+                    type="primary"
+                    loading={addProjectLoading || manifest.loading || projectName.loading}
+                    onClick={async () => {
+                      await form.validateFields();
+                      await addProjectFunc({
+                        ...form.getFieldsValue(),
+                      });
+                    }}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-              <div style={{ flex: 1 }} />
-              <div style={{ textAlign: 'right' }}>
-                <Button
-                  shape="round"
-                  type="primary"
-                  loading={addProjectLoading || manifest.loading || projectName.loading}
-                  onClick={async () => {
-                    await form.validateFields();
-                    await addProjectFunc({
-                      ...form.getFieldsValue(),
-                    });
-                  }}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-          {currentStep === 1 && processingProject.projectType === ProjectType.SubQuery && (
-            <IndexingForm
-              id={processingId}
-              setVisible={(val) => {
-                setVisible(val);
-              }}
-            />
-          )}
-          {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
-            <RpcSetting
-              id={processingId}
-              onCancel={() => {
-                setCurrentStep(0);
-              }}
-              onSubmit={() => {
-                setVisible(false);
-              }}
-            />
-          )}
-        </Drawer>
-      </Container>
-    ),
-  });
+            )}
+            {currentStep === 1 && processingProject.projectType === ProjectType.SubQuery && (
+              <IndexingForm
+                id={processingId}
+                setVisible={(val) => {
+                  setVisible(val);
+                }}
+              />
+            )}
+            {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
+              <RpcSetting
+                id={processingId}
+                onCancel={() => {
+                  setCurrentStep(0);
+                }}
+                onSubmit={() => {
+                  setVisible(false);
+                }}
+              />
+            )}
+          </Drawer>
+        </Container>
+      ),
+    }
+  );
 };
 
 const SubqlCollapse = styled.div`

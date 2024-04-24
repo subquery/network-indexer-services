@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatUnits } from '@ethersproject/units';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { notificationMsg } from 'containers/notificationContext';
@@ -13,24 +12,18 @@ import { HookDependency } from 'types/types';
 import { emptyControllerAccount } from 'utils/indexerActions';
 import { bytes32ToCid, cat } from 'utils/ipfs';
 
-// indexer save inside coordinator service
-const useIsCoordinatorIndexer = (): boolean => {
-  const { indexer } = useCoordinatorIndexer();
-  const { account } = useAccount();
-
-  return useMemo(() => !!account && !!indexer && account === indexer, [account, indexer]);
-};
-
-export const useIsRegistedIndexer = (): {
+export const useIsRegistedIndexer = (
+  account: string
+): {
   loading: boolean;
   isRegisterIndexer: boolean | undefined;
 } => {
   const sdk = useContractSDK();
-  const { isRegisterIndexer, updateIsRegisterIndexer, account } = useAccount();
   const [loading, setLoading] = useState(true);
+  const [isRegisterIndexer, updateIsRegisterIndexer] = useState<boolean | undefined>(undefined);
   const getIsIndexer = useCallback(async () => {
-    if (!account || !sdk) return;
     try {
+      if (!account || !sdk) return;
       setLoading(true);
       const status = await sdk.indexerRegistry.isIndexer(account);
       updateIsRegisterIndexer(status);
@@ -60,45 +53,42 @@ export const useIsRegistedIndexer = (): {
 };
 
 export const useIsIndexer = () => {
-  const { isRegisterIndexer } = useIsRegistedIndexer();
-  const isCoordinatorIndexer = useIsCoordinatorIndexer();
-
-  return useMemo(
-    () => isCoordinatorIndexer && isRegisterIndexer,
-    [isCoordinatorIndexer, isRegisterIndexer]
+  const { indexer, loading } = useCoordinatorIndexer();
+  const { isRegisterIndexer, loading: isRegisterIndexerLoading } = useIsRegistedIndexer(
+    indexer || ''
   );
-};
 
-// TODO: refactor these hooks
-// 1. using `useMemo` | `useCallback` to replace custome useState
-// 2. using try catch | async await other than promise
-/* eslint-disable */
-export const useIsController = (account: Account) => {
-  const [isController, setIsController] = useState(false);
-  // TODO: get controller from subquery project
-  return isController;
+  return {
+    loading: loading || isRegisterIndexerLoading,
+    data: useMemo(() => indexer && isRegisterIndexer, [indexer, isRegisterIndexer]),
+  };
 };
-/* eslint-enable */
 
 export const useController = () => {
   const [controller, setController] = useState<string>();
-  const { account } = useAccount();
   const sdk = useContractSDK();
+  const { indexer, loading: coordinatorLoading } = useCoordinatorIndexer();
+  const [loading, setLoading] = useState(true);
 
   const getController = useCallback(async () => {
     try {
-      const controller = await sdk?.indexerRegistry.getController(account ?? '');
+      if (coordinatorLoading) return;
+      if (!indexer) return;
+      setLoading(true);
+      const controller = await sdk?.indexerRegistry.getController(indexer ?? '');
       setController(controller === emptyControllerAccount ? '' : controller);
     } catch {
       setController(undefined);
+    } finally {
+      setLoading(false);
     }
-  }, [account, sdk]);
+  }, [sdk, indexer, coordinatorLoading]);
 
   useEffect(() => {
     getController();
   }, [getController]);
 
-  return { controller, getController };
+  return { controller, getController, loading };
 };
 
 export const useTokenBalance = (account: Account, deps?: HookDependency) => {
@@ -123,8 +113,7 @@ export const useTokenBalance = (account: Account, deps?: HookDependency) => {
   return { tokenBalance, getTokenBalance };
 };
 
-export const useIndexerMetadata = () => {
-  const { account } = useAccount();
+export const useIndexerMetadata = (account: string) => {
   const sdk = useContractSDK();
   const [metadata, setMetadata] = useState<IndexerMetadata>();
   const [loading, setLoading] = useState(false);

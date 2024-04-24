@@ -6,7 +6,7 @@ import { Tag, Typography } from '@subql/components';
 import { Button } from 'antd';
 import styled from 'styled-components';
 
-import { useAccount } from 'containers/account';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useGetIndexerMetadata } from 'hooks/projectHook';
 import { statusCode } from 'utils/project';
 
@@ -78,7 +78,7 @@ type Props = {
 };
 
 const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, update, stop }) => {
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const indexMetadata = useGetIndexerMetadata(account || '');
 
   const connectionButtons = useMemo(() => {

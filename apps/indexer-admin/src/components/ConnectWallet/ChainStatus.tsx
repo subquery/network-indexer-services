@@ -10,7 +10,7 @@ import { isUndefined } from 'lodash';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useIsIndexer } from 'hooks/indexerHook';
+import { useHasController } from 'hooks/useHasController';
 
 import styles from './ChainStatus.module.css';
 
@@ -18,10 +18,10 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
   const { isConnected } = useAccount();
   const { chain } = useNetwork();
   const { chains, switchNetwork } = useSwitchNetwork();
-  const { address } = useAccount();
   const { indexer } = useCoordinatorIndexer();
-  const isIndexer = useIsIndexer();
   const location = useLocation();
+
+  const hasController = useHasController();
 
   if (isConnected && !tipsChainIds.includes(chain?.id || 0)) {
     return (
@@ -50,27 +50,19 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
     );
   }
 
-  if (isConnected && indexer !== address && !isUndefined(indexer)) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.content}>
-          <Typography variant="h5" weight={600}>
-            Incorrect Connected Account with Coordinator Service
-          </Typography>
-          <div className={styles.switchContainer}>
-            <Typography className={styles.description}>
-              Please switch the connected account to {indexer}.
-            </Typography>
-            <Button type="primary" size="large" shape="round">
-              Switching the account to use the Admin App manually
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+  // User have register in the coordinator service, but don't set the controller account
+  if (
+    isConnected &&
+    !hasController &&
+    // must have record, otherwises should redirect to register page.
+    !isUndefined(indexer) &&
+    location.pathname !== '/controller-management'
+  ) {
+    return <Redirect to="/controller-management" />;
   }
 
-  if (!isIndexer && location.pathname !== '/register') {
+  // database don't have indexer record so must register.
+  if (!indexer && location.pathname !== '/register') {
     return <Redirect to="/register" />;
   }
 

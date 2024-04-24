@@ -8,7 +8,7 @@ import Avatar from 'components/avatar';
 import { LoadingSpinner } from 'components/loading';
 import { Separator, Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
-import { useAccount } from 'containers/account';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useIndexerMetadata } from 'hooks/indexerHook';
 import { useIndexerEra } from 'hooks/network';
 
@@ -16,8 +16,8 @@ import NetworkTabbarView from './components/networkTabBarView';
 import { ContentContainer, Contrainer, LeftContainer, VersionContainer } from './styles';
 
 const NetworkPage = () => {
-  const { account } = useAccount();
-  const { metadata } = useIndexerMetadata();
+  const { indexer: account } = useCoordinatorIndexer();
+  const { metadata } = useIndexerMetadata(account || '');
   const indexerEra = useIndexerEra();
 
   const eraItems = useMemo(

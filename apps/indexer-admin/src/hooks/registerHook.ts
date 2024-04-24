@@ -3,14 +3,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isUndefined } from 'lodash';
+import { useAccount } from 'wagmi';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { RegisterStep } from 'pages/register/types';
 
 export const useIsApproved = () => {
   const [isApprove, setIsApprove] = useState<boolean>();
-  const { account } = useAccount();
+  const { address: account } = useAccount();
   const sdk = useContractSDK();
 
   const checkAllowance = useCallback(async () => {

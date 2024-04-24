@@ -8,12 +8,12 @@ import { Typography } from '@subql/components';
 import { useMount } from 'ahooks';
 
 import UptimeBar from 'components/uptimeBar';
-import { useAccount } from 'containers/account';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { getRequestHistory, IGetRequestHistory } from 'utils/queries';
 
 const ProjectUptime: FC = () => {
   const { id = '' } = useParams<{ id: string }>();
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const [history, setHistory] = useState<IGetRequestHistory['getIndexerServiceRequestHistory']>([]);
 
   const getHistory = async (): Promise<void> => {

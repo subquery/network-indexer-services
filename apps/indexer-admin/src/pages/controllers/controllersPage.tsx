@@ -116,6 +116,22 @@ const controllersPage = () => {
 
   const steps = { ...configControllerSteps, ...withdrawSteps, ...removeAccountSteps };
 
+  useEffect(() => {
+    if (
+      currentController &&
+      !isUndefined(controllerData?.controllers) &&
+      !controllerData?.controllers.find((i) => i.address === currentController)
+    ) {
+      dispatchNotification({
+        type: 'danger',
+        title: 'Lost Controller Account',
+        message:
+          'Detect the controller account from contract, but not found in the database. Please reconfigure the controller account.',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentController, controllerData?.controllers]);
+
   if (isUndefined(controllerData)) return <LoadingSpinner />;
 
   return (

@@ -9,8 +9,8 @@ import { NETWORK_CONFIGS, STABLE_COIN_DECIMAL } from '@subql/network-config';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { PAYG_PRICE } from 'utils/queries';
 import { network } from 'utils/web3';
 
@@ -114,7 +114,7 @@ export function usePAYGPlans(deploymentId: string) {
   const [data, setData] = useState<ApolloQueryResult<{ stateChannels: { nodes: Plan[] } }>>();
 
   const plans = useMemo((): Plan[] | undefined => data?.data.stateChannels.nodes, [data]);
-  const { account: indexer } = useAccount();
+  const { indexer } = useCoordinatorIndexer();
 
   const getPlans = useCallback(
     async (id: string, status: FlexPlanStatus) => {

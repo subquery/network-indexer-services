@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
 import { indexingProgress } from '@subql/network-clients';
 import { renderAsync } from '@subql/react-hooks';
@@ -16,12 +16,11 @@ import { PopupView } from 'components/popupView';
 import { useNotification } from 'containers/notificationContext';
 import {
   getQueryMetadata,
+  useDeploymentStatus,
   useNodeVersions,
   useProjectDetails,
   useQueryVersions,
-  useServiceStatus,
 } from 'hooks/projectHook';
-import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
@@ -52,7 +51,6 @@ import { Container, ContentContainer } from './styles';
 import {
   dockerContainerEnum,
   ProjectAction,
-  ProjectDetails,
   ProjectStatus,
   ProjectType,
   ServiceStatus,
@@ -61,14 +59,9 @@ import {
 
 const ProjectDetailsPage = () => {
   const { id } = useParams() as { id: string };
-  const {
-    state: { data: projectDetails } = { data: undefined },
-  }: { state: { data: ProjectDetails | undefined } } = useLocation();
-  const status = useServiceStatus(id);
+  const status = useDeploymentStatus(id);
   const projectQuery = useProjectDetails(id);
   const history = useHistory();
-  // a weird but awesome way to solve the hooks cannot be used in judge.
-  useRouter(!projectDetails);
 
   const indexingAction = useIndexingAction(id);
   const { dispatchNotification } = useNotification();
@@ -174,6 +167,10 @@ const ProjectDetailsPage = () => {
     () => startProjectLoading || stopProjectLoading || removeProjectLoading,
     [startProjectLoading, stopProjectLoading, removeProjectLoading]
   );
+
+  const projectDetails = useMemo(() => {
+    return projectQuery.data?.project;
+  }, [projectQuery]);
 
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
