@@ -21,7 +21,7 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
   const { indexer } = useCoordinatorIndexer();
   const location = useLocation();
 
-  const hasController = useHasController();
+  const { data: hasController } = useHasController();
 
   if (isConnected && !tipsChainIds.includes(chain?.id || 0)) {
     return (
@@ -49,7 +49,6 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
       </div>
     );
   }
-
   // User have register in the coordinator service, but don't set the controller account
   if (
     isConnected &&

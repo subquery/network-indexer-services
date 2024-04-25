@@ -34,7 +34,7 @@ const ProjectItem: FC<Props> = (props) => {
 
   const { indexer: account } = useCoordinatorIndexer();
   const history = useHistory();
-  const status = useDeploymentStatus(id);
+  const { status } = useDeploymentStatus(id);
   const onlineStatus = useIsOnline({
     deploymentId: id,
     indexer: account || '',

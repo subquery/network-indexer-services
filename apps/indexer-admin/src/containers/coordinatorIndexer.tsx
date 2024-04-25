@@ -14,6 +14,7 @@ type CoordinatorIndexerContext = {
   load: () => void;
   loading: boolean;
   error?: Error;
+  setIndexer: (indexer?: string) => void;
 };
 
 function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
@@ -62,6 +63,7 @@ function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
     load,
     loading,
     error,
+    setIndexer,
   };
 }
 

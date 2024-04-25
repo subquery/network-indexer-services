@@ -88,7 +88,10 @@ export const useDeploymentStatus = (deploymentId: string) => {
     getDeploymentStatus();
   }, [getDeploymentStatus]);
 
-  return status;
+  return {
+    status,
+    getDeploymentStatus,
+  };
 };
 
 export const getManifest = async (cid: string) => {

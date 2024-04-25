@@ -1,53 +1,53 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { useAccount } from 'wagmi';
 
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
+import { createContainer } from 'containers/unstated';
 import { GET_CONTROLLERS } from 'utils/queries';
 
 import { useController } from './indexerHook';
 
-export const useHasController = () => {
-  const { isConnected } = useAccount();
-  const { error, loading } = useCoordinatorIndexer();
-  const { controller, loading: controllerLoading } = useController();
-
-  const hasController = useQuery<{
+export const useHasControllerImpl = () => {
+  const [hasControllerLoading, setHasControllerLoading] = useState(true);
+  const { indexer } = useCoordinatorIndexer();
+  const { getController } = useController();
+  const [hasController, setHasController] = useState(false);
+  const controllerQuery = useQuery<{
     controllers: { address: string; id: string }[];
   }>(GET_CONTROLLERS, {
     fetchPolicy: 'network-only',
   });
 
-  useEffect(() => {
-    hasController.refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controller]);
-
-  return useMemo(() => {
-    if (isConnected) {
-      if (
-        !error &&
-        !loading &&
-        !controllerLoading &&
-        !hasController.loading &&
-        !hasController.error
-      ) {
-        if (!hasController.data?.controllers?.length) {
-          return false;
-        }
-
-        if (!controller) return false;
-
-        if (controller && !hasController.data?.controllers?.find((i) => i.address)) {
-          return false;
-        }
+  const refetch = async () => {
+    try {
+      setHasControllerLoading(true);
+      const controller = await getController(indexer);
+      const result = await controllerQuery.refetch();
+      if (result.data?.controllers?.find((i) => i.address === controller)) {
+        setHasController(true);
+      } else {
+        setHasController(false);
       }
+    } finally {
+      setTimeout(() => {
+        setHasControllerLoading(false);
+      });
     }
+  };
 
-    return true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, isConnected, error, hasController, controller, controllerLoading]);
+  return {
+    data: hasController,
+    loading: hasControllerLoading,
+    refetch,
+  };
 };
+
+export const { useContainer: useHasController, Provider: HasControllerProvider } = createContainer(
+  useHasControllerImpl,
+  {
+    displayName: 'Has Controller',
+  }
+);

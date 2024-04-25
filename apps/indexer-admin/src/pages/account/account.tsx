@@ -39,7 +39,7 @@ const Account = () => {
   const [actionType, setActionType] = useState<AccountAction>();
 
   const { loading: isIndexerLoading, data: isIndexer } = useIsIndexer();
-  const { indexer: account } = useCoordinatorIndexer();
+  const { indexer: account, setIndexer } = useCoordinatorIndexer();
   const { metadata, fetchMetadata, loading } = useIndexerMetadata(account || '');
   const accountAction = useAccountAction();
   const { controller } = useController();
@@ -127,6 +127,7 @@ const Account = () => {
 
   const unregisterCompleted = async () => {
     await removeAccounts();
+    setIndexer(undefined);
     history.replace('/register');
   };
 

@@ -12,6 +12,8 @@ import { Button, Text } from 'components/primary';
 import { useNotification } from 'containers/notificationContext';
 import { useController } from 'hooks/indexerHook';
 import { useAccountAction } from 'hooks/transactionHook';
+import { useHasController } from 'hooks/useHasController';
+import { parseError } from 'utils/error';
 import {
   ADD_CONTROLLER,
   GET_CONTROLLERS,
@@ -41,6 +43,7 @@ const controllersPage = () => {
 
   const { dispatchNotification, removeNotification } = useNotification();
   const { controller: currentController, getController } = useController();
+  const { refetch } = useHasController();
   const accountAction = useAccountAction();
 
   const [removeController] = useMutation(REMOVE_CONTROLLER);
@@ -82,7 +85,15 @@ const controllersPage = () => {
     setVisible(true);
   };
 
-  const onModalClose = () => setVisible(false);
+  const onModalClose = (error?: any) => {
+    if (error) {
+      parseError(error, {
+        alert: true,
+      });
+      return;
+    }
+    setVisible(false);
+  };
 
   const removeAccountSteps = createRemoveAccountSteps(async () => {
     await removeController({ variables: { id: account?.id } });
@@ -106,12 +117,10 @@ const controllersPage = () => {
   });
 
   const configControllerSteps = createConfigControllerSteps(() =>
-    accountAction(
-      ControllerAction.configController,
-      account?.address ?? '',
-      onModalClose,
-      getController
-    )
+    accountAction(ControllerAction.configController, account?.address ?? '', onModalClose, () => {
+      getController();
+      refetch();
+    })
   );
 
   const steps = { ...configControllerSteps, ...withdrawSteps, ...removeAccountSteps };
@@ -187,7 +196,7 @@ const controllersPage = () => {
         <PopupView
           setVisible={setVisible}
           visible={visible}
-          onClose={onModalClose}
+          onClose={() => onModalClose()}
           steps={steps[actionType]}
           type={actionType}
         />

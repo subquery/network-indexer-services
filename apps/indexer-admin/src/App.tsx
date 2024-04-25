@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { loadDevMessages, loadErrorMessages } from '@apollo/client/dev';
@@ -18,6 +18,7 @@ import { CoordinatorIndexerProvider, useCoordinatorIndexer } from 'containers/co
 import { LoadingProvider } from 'containers/loadingContext';
 import { ModalProvider } from 'containers/modalContext';
 import { NotificationProvider, Notifications } from 'containers/notificationContext';
+import { HasControllerProvider, useHasController } from 'hooks/useHasController';
 import { coordinatorServiceUrl, createApolloClient } from 'utils/apolloClient';
 
 import { GModalView } from './components/modalView';
@@ -33,25 +34,21 @@ import '@subql/components/dist/subquery-components.css';
 loadDevMessages();
 loadErrorMessages();
 
-// The whole flow follow this steps:
-//  1. Need a hook fetch If database have indexer address.
-//  2. Need a hook fetch the database indexer is register in the contract or not.
-//  3. Need a hook fetch current login account if is register in the contract.
-
 const AppContents = () => {
   const { address } = useAccount();
   const { load, loading, error } = useCoordinatorIndexer();
+  const { loading: hasControllerLoading, refetch } = useHasController();
+
+  // note this flow, after allow all wallet can be access, the coordinatorIndexer is a async fetch,
+  // all of other components dependent the result.
+  // and hasController also be dependent for otehr components.
   useMount(async () => {
     await load();
   });
-
-  // load flow:
-  //   if wallet disconnected, show connect wallet page // !address
-  //      if rpc is wrong, show change rpc page // in ChainStatus.tsx
-  //      wait for the coordinator load end.
-  //           if error: show error tips
-  //           if loading: show loading
-  //      others show the page content
+  useEffect(() => {
+    if (!loading) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const renderComs = useMemo(() => {
     if (!address)
@@ -68,7 +65,7 @@ const AppContents = () => {
         </div>
       );
 
-    if (loading) return <LoadingSpinner />;
+    if (loading || hasControllerLoading) return <LoadingSpinner />;
 
     return (
       <ChainStatus>
@@ -85,10 +82,10 @@ const AppContents = () => {
         </Switch>
       </ChainStatus>
     );
-  }, [loading, error, address]);
+  }, [hasControllerLoading, loading, error, address]);
 
   return (
-    <Router>
+    <>
       <Pages.Header />
       <div className="Main">
         {renderComs}
@@ -97,7 +94,7 @@ const AppContents = () => {
         <GModalView />
       </div>
       <Footer simple />
-    </Router>
+    </>
   );
 };
 
@@ -106,15 +103,19 @@ const App: FC = () => (
     <RainbowProvider>
       <ContractSDKProvider>
         <CoordinatorIndexerProvider>
-          <LoadingProvider>
-            <ModalProvider>
-              <NotificationProvider>
-                <div className="App">
-                  <AppContents />
-                </div>
-              </NotificationProvider>
-            </ModalProvider>
-          </LoadingProvider>
+          <HasControllerProvider>
+            <LoadingProvider>
+              <ModalProvider>
+                <NotificationProvider>
+                  <div className="App">
+                    <Router>
+                      <AppContents />
+                    </Router>
+                  </div>
+                </NotificationProvider>
+              </ModalProvider>
+            </LoadingProvider>
+          </HasControllerProvider>
         </CoordinatorIndexerProvider>
       </ContractSDKProvider>
     </RainbowProvider>

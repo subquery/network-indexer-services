@@ -145,7 +145,7 @@ const Projects = () => {
       });
 
       if (!res.data?.getManifest.rpcManifest && !res.data?.getManifest.subqueryManifest) {
-        return Promise.reject(new Error("Can't found the manifest information"));
+        return Promise.reject(new Error("Can't find the manifest information"));
       }
 
       await getIfUnsafe(value);

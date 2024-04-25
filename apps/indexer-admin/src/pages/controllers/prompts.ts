@@ -19,7 +19,7 @@ export const prompts = {
   action: {
     configController: {
       title: 'Activate Your Controller on Contract',
-      desc: 'Press the button to send the transaction to the network and update the new controller account on the contract. The transaction processing time may take around 10s, depending on the network status and gas fee. You will see the processing status on the top of the page once you confirm the transaction on MetaMask.',
+      desc: 'Press the button to send the transaction to the network and update the new controller account on the contract. The transaction processing time may take around 10s, depending on the network status and gas fee. You will see the processing status on the top of the page once you confirm the transaction on Wallet.',
       buttonTitle: 'Send Transaction',
     },
     removeAccount: {

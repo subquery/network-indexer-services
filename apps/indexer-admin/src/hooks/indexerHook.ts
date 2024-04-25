@@ -70,19 +70,27 @@ export const useController = () => {
   const { indexer, loading: coordinatorLoading } = useCoordinatorIndexer();
   const [loading, setLoading] = useState(true);
 
-  const getController = useCallback(async () => {
-    try {
-      if (coordinatorLoading) return;
-      if (!indexer) return;
-      setLoading(true);
-      const controller = await sdk?.indexerRegistry.getController(indexer ?? '');
-      setController(controller === emptyControllerAccount ? '' : controller);
-    } catch {
-      setController(undefined);
-    } finally {
-      setLoading(false);
-    }
-  }, [sdk, indexer, coordinatorLoading]);
+  const getController = useCallback(
+    async (address?: string) => {
+      try {
+        if (!address) {
+          if (coordinatorLoading) return undefined;
+          if (!indexer) return undefined;
+        }
+        setLoading(true);
+        const controller = await sdk?.indexerRegistry.getController(address ?? indexer ?? '');
+
+        setController(controller === emptyControllerAccount ? '' : controller);
+        return controller === emptyControllerAccount ? '' : controller;
+      } catch {
+        setController(undefined);
+        return undefined;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sdk, indexer, coordinatorLoading]
+  );
 
   useEffect(() => {
     getController();

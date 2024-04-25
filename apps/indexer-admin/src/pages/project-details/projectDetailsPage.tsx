@@ -59,7 +59,7 @@ import {
 
 const ProjectDetailsPage = () => {
   const { id } = useParams() as { id: string };
-  const status = useDeploymentStatus(id);
+  const { status, getDeploymentStatus } = useDeploymentStatus(id);
   const projectQuery = useProjectDetails(id);
   const history = useHistory();
 
@@ -244,10 +244,14 @@ const ProjectDetailsPage = () => {
     const stopProjectSteps = createStopProjectSteps(stopProject);
     const removeProjectSteps = createRemoveProjectSteps(removeProject);
     const announceReadySteps = createReadyIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceReady, onPopoverClose)
+      indexingAction(ProjectAction.AnnounceReady, onPopoverClose, () => {
+        getDeploymentStatus();
+      })
     );
     const announceNotIndexingSteps = createNotIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose)
+      indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose, () => {
+        getDeploymentStatus();
+      })
     );
 
     return {
@@ -267,6 +271,7 @@ const ProjectDetailsPage = () => {
     removeProject,
     indexingAction,
     onPopoverClose,
+    getDeploymentStatus,
   ]);
 
   const [modalTitle, modalSteps] = useMemo(() => {
