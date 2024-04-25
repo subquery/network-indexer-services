@@ -180,7 +180,7 @@ function getYargsOption() {
     'gas-fee-limit': {
       type: 'string',
       describe: 'Gas fee limit for the transaction',
-      default: '0.00003',
+      default: '0',
       group: Groups.coordinator,
     },
   });

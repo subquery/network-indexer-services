@@ -281,6 +281,11 @@ export class ContractService {
   }
 
   async checkGasLimit() {
+    const gasFeeLimit = parseEther(argv['gas-fee-limit']);
+    if (gasFeeLimit.lte(0)) {
+      return true;
+    }
+
     const cacheKey = `bypass:gasLimit`;
     let cache = await redisGetObj<{ result: boolean }>(cacheKey);
     if (!cache) {
@@ -290,7 +295,6 @@ export class ContractService {
         const ethGasLimit = BigNumber.from(2100);
         const gasPrice = await this.provider.getGasPrice();
         const gasLimit = BigNumber.from(21000);
-        const gasFeeLimit = parseEther(argv['gas-fee-limit']);
         cache = {
           result: ethGasPrice.mul(ethGasLimit).add(gasPrice.mul(gasLimit)).lt(gasFeeLimit),
         };
