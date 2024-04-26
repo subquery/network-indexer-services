@@ -79,7 +79,6 @@ export const useController = () => {
         }
         setLoading(true);
         const controller = await sdk?.indexerRegistry.getController(address ?? indexer ?? '');
-
         setController(controller === emptyControllerAccount ? '' : controller);
         return controller === emptyControllerAccount ? '' : controller;
       } catch {

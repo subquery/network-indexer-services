@@ -13,7 +13,7 @@ import { useAccount } from 'wagmi';
 import { ChainStatus, ConnectWallet } from 'components/ConnectWallet';
 import ErrorPlaceholder from 'components/errorPlaceholder';
 import Loading, { LoadingSpinner } from 'components/loading';
-import { ContractSDKProvider } from 'containers/contractSdk';
+import { ContractSDKProvider, useContractSDK } from 'containers/contractSdk';
 import { CoordinatorIndexerProvider, useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { LoadingProvider } from 'containers/loadingContext';
 import { ModalProvider } from 'containers/modalContext';
@@ -36,6 +36,8 @@ loadErrorMessages();
 
 const AppContents = () => {
   const { address } = useAccount();
+  const sdk = useContractSDK();
+
   const { load, loading, error } = useCoordinatorIndexer();
   const { loading: hasControllerLoading, refetch } = useHasController();
 
@@ -46,9 +48,11 @@ const AppContents = () => {
     await load();
   });
   useEffect(() => {
-    if (!loading) refetch();
+    if (!loading && address && sdk) {
+      refetch();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+  }, [loading, address, sdk]);
 
   const renderComs = useMemo(() => {
     if (!address)

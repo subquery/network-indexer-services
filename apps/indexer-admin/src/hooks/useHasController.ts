@@ -24,8 +24,10 @@ export const useHasControllerImpl = () => {
   const refetch = async () => {
     try {
       setHasControllerLoading(true);
+
       const controller = await getController(indexer);
       const result = await controllerQuery.refetch();
+
       if (result.data?.controllers?.find((i) => i.address === controller)) {
         setHasController(true);
       } else {
