@@ -9,6 +9,7 @@ import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { notificationMsg } from 'containers/notificationContext';
 import { Account, IndexerMetadata } from 'pages/account/types';
 import { HookDependency } from 'types/types';
+import { parseError } from 'utils/error';
 import { emptyControllerAccount } from 'utils/indexerActions';
 import { bytes32ToCid, cat } from 'utils/ipfs';
 
@@ -81,7 +82,10 @@ export const useController = () => {
         const controller = await sdk?.indexerRegistry.getController(address ?? indexer ?? '');
         setController(controller === emptyControllerAccount ? '' : controller);
         return controller === emptyControllerAccount ? '' : controller;
-      } catch {
+      } catch (e) {
+        parseError(e, {
+          alert: true,
+        });
         setController(undefined);
         return undefined;
       } finally {
@@ -109,6 +113,9 @@ export const useTokenBalance = (account: Account, deps?: HookDependency) => {
       const balance = Number(formatUnits(value, 18)).toFixed(2);
       setBalance(balance);
     } catch (e) {
+      parseError(e, {
+        alert: true,
+      });
       console.error('Get token balance failed for:', account);
     }
   }, [account, sdk]);
@@ -133,7 +140,10 @@ export const useIndexerMetadata = (account: string) => {
 
       const metadata = await cat(bytes32ToCid(metadataHash));
       setMetadata(metadata);
-    } catch {
+    } catch (e) {
+      parseError(e, {
+        alert: true,
+      });
       console.error('Failed to get indexer metadata');
     } finally {
       setLoading(false);
