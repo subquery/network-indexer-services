@@ -10,6 +10,7 @@ import { BigNumber } from 'ethers';
 import lodash from 'lodash';
 import { ContractService } from 'src/core/contract.service';
 import { OnChainService } from 'src/core/onchain.service';
+import { TxType } from 'src/core/types';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
 import { PaygEntity } from '../project/project.model';
@@ -17,7 +18,6 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { getLogger } from '../utils/logger';
 import { PaygEvent } from '../utils/subscription';
 import { AccountService } from './../core/account.service';
-
 import { Channel, ChannelStatus } from './payg.model';
 import { PaygQueryService } from './payg.query.service';
 
@@ -388,18 +388,32 @@ export class PaygService {
     }
 
     // checkpoint
-    await this.contract.sendTransaction('state channel checkpoint', async (overrides) =>
-      this.contract.getSdk().stateChannel.checkpoint(
-        {
-          channelId: channel.id,
-          isFinal: channel.lastFinal,
-          spent: channel.remote,
-          indexerSign: channel.lastIndexerSign,
-          consumerSign: channel.lastConsumerSign,
-        },
-        overrides
-      )
-    );
+    await this.contract.sendTransaction({
+      action: `state channel checkpoint ${id}`,
+      type: TxType.check,
+      txFun: (overrides) =>
+        this.contract.getSdk().stateChannel.checkpoint(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.remote,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+      gasFun: (overrides) =>
+        this.contract.getSdk().stateChannel.estimateGas.checkpoint(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.remote,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+    });
 
     channel.onchain = channel.remote;
     channel.spent = channel.remote;
@@ -419,18 +433,32 @@ export class PaygService {
     }
 
     // terminate
-    await this.contract.sendTransaction('state channel terminate', async (overrides) =>
-      this.contract.getSdk().stateChannel.terminate(
-        {
-          channelId: channel.id,
-          isFinal: channel.lastFinal,
-          spent: channel.remote,
-          indexerSign: channel.lastIndexerSign,
-          consumerSign: channel.lastConsumerSign,
-        },
-        overrides
-      )
-    );
+    await this.contract.sendTransaction({
+      action: `state channel terminate ${id}`,
+      type: TxType.check,
+      txFun: (overrides) =>
+        this.contract.getSdk().stateChannel.terminate(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.remote,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+      gasFun: (overrides) =>
+        this.contract.getSdk().stateChannel.estimateGas.terminate(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.remote,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+    });
 
     channel.status = ChannelStatus.TERMINATING;
     channel.onchain = channel.remote;
@@ -452,18 +480,32 @@ export class PaygService {
     }
 
     // respond to chain
-    await this.contract.sendTransaction('state channel respond', async (overrides) =>
-      this.contract.getSdk().stateChannel.respond(
-        {
-          channelId: channel.id,
-          isFinal: channel.lastFinal,
-          spent: channel.spent,
-          indexerSign: channel.lastIndexerSign,
-          consumerSign: channel.lastConsumerSign,
-        },
-        overrides
-      )
-    );
+    await this.contract.sendTransaction({
+      action: `state channel respond ${id}`,
+      type: TxType.check,
+      txFun: (overrides) =>
+        this.contract.getSdk().stateChannel.respond(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.spent,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+      gasFun: (overrides) =>
+        this.contract.getSdk().stateChannel.estimateGas.respond(
+          {
+            channelId: channel.id,
+            isFinal: channel.lastFinal,
+            spent: channel.spent,
+            indexerSign: channel.lastIndexerSign,
+            consumerSign: channel.lastConsumerSign,
+          },
+          overrides
+        ),
+    });
 
     channel.onchain = channel.spent;
     channel.spent = channel.remote;

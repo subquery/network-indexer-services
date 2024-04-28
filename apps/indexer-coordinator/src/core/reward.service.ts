@@ -9,6 +9,7 @@ import { getLogger } from 'src/utils/logger';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { OnChainService } from './onchain.service';
+import { TxType } from './types';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
@@ -32,21 +33,15 @@ export class RewardService implements OnModuleInit {
 
   @Cron('0 0 1 * * *')
   async autoCollectAllocationRewards() {
-    if (!(await this.contractService.checkPostpone(this.collectAllocationRewards.name))) {
-      return;
-    }
-    await this.collectAllocationRewards();
+    await this.collectAllocationRewards(TxType.check);
   }
 
   @Cron('0 */10 * * * *')
   async checkCollectAllocationRewards() {
-    if (!(await this.contractService.checkPostponedTask(this.collectAllocationRewards.name))) {
-      return;
-    }
-    await this.collectAllocationRewards();
+    await this.collectAllocationRewards(TxType.postponed);
   }
 
-  async collectAllocationRewards() {
+  async collectAllocationRewards(txType: TxType) {
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
       return;
@@ -72,7 +67,7 @@ export class RewardService implements OnModuleInit {
         );
         continue;
       }
-      await this.onChainService.collectAllocationReward(allocation.deploymentId, indexerId);
+      await this.onChainService.collectAllocationReward(allocation.deploymentId, indexerId, txType);
       this.allocationBypassTimes.delete(allocation.deploymentId);
       this.logger.debug(
         `Collected reward for deployment ${allocation.deploymentId} ${rewards.toString()}`

@@ -12,6 +12,7 @@ import { ChannelStatus } from '../payg/payg.model';
 import { debugLogger, getLogger } from '../utils/logger';
 import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
+import { TxType } from './types';
 
 const logger = getLogger('transaction');
 
@@ -125,13 +126,14 @@ export class OnChainService implements OnApplicationBootstrap {
   }
 
   async collectAndDistributeReward(indexer: string) {
-    if (!(await this.contractService.checkBypass(this.collectAndDistributeRewardsAction.name))) {
-      return;
-    }
-
-    await this.contractService.sendTransaction('collect and distribute rewards', (overrides) =>
-      this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides)
-    );
+    await this.contractService.sendTransaction({
+      action: `collect and distribute rewards for ${indexer}`,
+      type: TxType.check,
+      txFun: (overrides) =>
+        this.sdk.rewardsDistributor.collectAndDistributeRewards(indexer, overrides),
+      gasFun: (overrides) =>
+        this.sdk.rewardsDistributor.estimateGas.collectAndDistributeRewards(indexer, overrides),
+    });
   }
 
   async batchCollectAndDistributeRewards(
@@ -139,21 +141,24 @@ export class OnChainService implements OnApplicationBootstrap {
     currentEra: BigNumber,
     lastClaimedEra: BigNumber
   ) {
-    if (!(await this.contractService.checkBypass(this.batchCollectAndDistributeRewards.name))) {
-      return;
-    }
-
     const count = currentEra.sub(lastClaimedEra.add(1)).div(this.batchSize).toNumber() + 1;
     for (let i = 0; i < count; i++) {
-      await this.contractService.sendTransaction(
-        'batch collect and distribute rewards',
-        (overrides) =>
+      await this.contractService.sendTransaction({
+        action: `batch collect and distribute rewards for ${indexer}`,
+        type: TxType.check,
+        txFun: (overrides) =>
           this.sdk.rewardsHelper.batchCollectAndDistributeRewards(
             indexer,
             this.batchSize,
             overrides
-          )
-      );
+          ),
+        gasFun: (overrides) =>
+          this.sdk.rewardsHelper.estimateGas.batchCollectAndDistributeRewards(
+            indexer,
+            this.batchSize,
+            overrides
+          ),
+      });
     }
   }
 
@@ -180,10 +185,6 @@ export class OnChainService implements OnApplicationBootstrap {
 
   applyStakeChangesAction() {
     return async () => {
-      if (!(await this.contractService.checkBypass(this.applyStakeChangesAction.name))) {
-        return;
-      }
-
       const indexer = await this.accountService.getIndexer();
       const stakers = await this.sdk.rewardsHelper.getPendingStakers(indexer);
       const { lastClaimedEra, lastSettledEra } = await this.getEraConfig();
@@ -191,26 +192,31 @@ export class OnChainService implements OnApplicationBootstrap {
       if (stakers.length === 0 || lastSettledEra.gte(lastClaimedEra)) return;
 
       getLogger('network').info(`new stakers ${stakers.join(',')}`);
-      await this.contractService.sendTransaction('apply stake changes', async (overrides) =>
-        this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides)
-      );
+      await this.contractService.sendTransaction({
+        action: `apply stake changes for ${indexer}`,
+        type: TxType.check,
+        txFun: (overrides) =>
+          this.sdk.rewardsHelper.batchApplyStakeChange(indexer, stakers, overrides),
+        gasFun: (overrides) =>
+          this.sdk.rewardsHelper.estimateGas.batchApplyStakeChange(indexer, stakers, overrides),
+      });
     };
   }
 
   applyICRChangeAction() {
     return async () => {
-      if (!(await this.contractService.checkBypass(this.applyICRChangeAction.name))) {
-        return;
-      }
-
       const indexer = await this.accountService.getIndexer();
       const { currentEra, lastClaimedEra, lastSettledEra } = await this.getEraConfig();
       const icrChangEra = await this.sdk.rewardsStaking.getCommissionRateChangedEra(indexer);
 
       if (!icrChangEra.eq(0) && icrChangEra.lte(currentEra) && lastSettledEra.lt(lastClaimedEra)) {
-        await this.contractService.sendTransaction('apply ICR changes', async (overrides) =>
-          this.sdk.rewardsStaking.applyICRChange(indexer, overrides)
-        );
+        await this.contractService.sendTransaction({
+          action: `apply ICR change for ${indexer}`,
+          type: TxType.check,
+          txFun: (overrides) => this.sdk.rewardsStaking.applyICRChange(indexer, overrides),
+          gasFun: (overrides) =>
+            this.sdk.rewardsStaking.estimateGas.applyICRChange(indexer, overrides),
+        });
       }
     };
   }
@@ -223,26 +229,24 @@ export class OnChainService implements OnApplicationBootstrap {
 
       const canUpdateEra = blockTime - eraStartTime.toNumber() > eraPeriod.toNumber();
       if (canUpdateEra) {
-        await this.contractService.sendTransaction('update era number', async (overrides) =>
-          this.sdk.eraManager.safeUpdateAndGetEra(overrides)
-        );
+        await this.contractService.sendTransaction({
+          action: 'update era number',
+          type: TxType.go,
+          txFun: (overrides) => this.sdk.eraManager.safeUpdateAndGetEra(overrides),
+        });
       }
     };
   }
 
   closeExpiredStateChannelsAction() {
     return async () => {
-      if (!(await this.contractService.checkBypass(this.closeExpiredStateChannelsAction.name))) {
-        return;
-      }
-
       const unfinalisedPlans = await this.networkService.getExpiredStateChannels(
         await this.accountService.getIndexer()
       );
 
       for (const node of unfinalisedPlans) {
         const channel = await this.sdk.stateChannel.channel(node.id);
-        const { status, expiredAt, terminatedAt } = channel;
+        const { status, terminatedAt } = channel;
         const now = Math.floor(Date.now() / 1000);
 
         // TODO terminate
@@ -250,10 +254,12 @@ export class OnChainService implements OnApplicationBootstrap {
         const isTerminateChannelClaimable =
           status === ChannelStatus.TERMINATING && terminatedAt.lt(now);
         if (!isTerminateChannelClaimable) continue;
-        await this.contractService.sendTransaction(
-          `claim unfinalized plan for ${node.consumer}`,
-          async (overrides) => this.sdk.stateChannel.claim(node.id, overrides)
-        );
+        await this.contractService.sendTransaction({
+          action: `claim unfinalized plan for ${node.consumer} ${node.id}`,
+          type: TxType.check,
+          txFun: (overrides) => this.sdk.stateChannel.claim(node.id, overrides),
+          gasFun: (overrides) => this.sdk.stateChannel.estimateGas.claim(node.id, overrides),
+        });
       }
     };
   }
@@ -307,16 +313,29 @@ export class OnChainService implements OnApplicationBootstrap {
     }
   }
 
-  async collectAllocationReward(deploymentId: string, runner: string): Promise<void> {
+  async collectAllocationReward(
+    deploymentId: string,
+    runner: string,
+    txType: TxType
+  ): Promise<void> {
     if (!(await this.checkControllerReady())) return;
     try {
-      await this.contractService.sendTransaction('claim allocation rewards', async (overrides) =>
-        this.sdk.rewardsBooster.collectAllocationReward(
-          cidToBytes32(deploymentId),
-          runner,
-          overrides
-        )
-      );
+      await this.contractService.sendTransaction({
+        action: `collect allocation rewards for deployment: ${deploymentId}`,
+        type: txType,
+        txFun: (overrides) =>
+          this.sdk.rewardsBooster.collectAllocationReward(
+            cidToBytes32(deploymentId),
+            runner,
+            overrides
+          ),
+        gasFun: (overrides) =>
+          this.sdk.rewardsBooster.estimateGas.collectAllocationReward(
+            cidToBytes32(deploymentId),
+            runner,
+            overrides
+          ),
+      });
     } catch (e) {
       logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
     }
