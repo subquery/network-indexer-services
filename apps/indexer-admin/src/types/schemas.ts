@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import * as yup from 'yup';
@@ -32,7 +32,7 @@ export const RegisterFormSchema = yup.object({
   [RegisterFormKey.proxyEndpoint]: yup.string().defined(),
   [RegisterFormKey.amount]: yup
     .number()
-    .min(14000, `Staking token should large than 14,000 ${TOKEN_SYMBOL}`)
+    .min(200000, `Staking token should large than 200,000 ${TOKEN_SYMBOL}`)
     .defined(),
   [RegisterFormKey.rate]: yup
     .number()

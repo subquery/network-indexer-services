@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import axios from 'axios';
@@ -144,7 +144,7 @@ export class RpcFamilyEvm extends RpcFamily {
     this.actions.push(async () => {
       const result = await jsonRpcRequest(this.endpoint, 'eth_getBalance', [
         '0x0000000000000000000000000000000000000000',
-        'latest',
+        '0x1',
       ]);
       let nodeTypeFromRpc: string;
       if (result.data.error) {

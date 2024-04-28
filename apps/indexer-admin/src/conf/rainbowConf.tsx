@@ -6,6 +6,7 @@ import { connectorsForWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit
 import {
   metaMaskWallet,
   rainbowWallet,
+  safeWallet,
   talismanWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
@@ -38,6 +39,7 @@ const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
+      safeWallet({ chains }),
       metaMaskWallet({ projectId: 'c7ea561f79adc119587d163a68860570', chains }),
       walletConnectWallet({ projectId: 'c7ea561f79adc119587d163a68860570', chains }),
       talismanWalletConnector,

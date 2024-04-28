@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { gql } from '@apollo/client/core';
@@ -10,6 +10,9 @@ import {
   GetDeployment,
   GetDeploymentIndexers,
   GetDeploymentIndexersQuery,
+  GetIndexerUnfinalisedPlans,
+  GetIndexerUnfinalisedPlansQuery,
+  GetIndexerUnfinalisedPlansQueryVariables,
   GetProject,
   GetProjectOngoingServiceAgreements,
   GetProjectOngoingServiceAgreementsQuery,
@@ -17,6 +20,7 @@ import {
 } from '@subql/network-query';
 import LRUCache from 'lru-cache';
 import { Config } from '../configure/configure.module';
+import { IndexerAllocationSummary } from './network.type';
 
 @Injectable()
 export class NetworkService {
@@ -150,5 +154,51 @@ export class NetworkService {
       });
     }
     return result?.data?.offers as GetAllOpenOffersQuery['offers'];
+  }
+
+  async getExpiredStateChannels(
+    indexer: string
+  ): Promise<GetIndexerUnfinalisedPlansQuery['stateChannels']['nodes']> {
+    const apolloClient = this.client.networkClient;
+    const now = new Date();
+    const result = await apolloClient.query<
+      GetIndexerUnfinalisedPlansQuery,
+      GetIndexerUnfinalisedPlansQueryVariables
+    >({
+      // @ts-ignore
+      query: GetIndexerUnfinalisedPlans,
+      variables: { indexer, now },
+    });
+
+    return result.data.stateChannels.nodes;
+  }
+
+  async getIndexerAllocationSummaries(indexerId: string): Promise<IndexerAllocationSummary[]> {
+    const cacheKey = `${this.getIndexerAllocationSummaries.name}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    const result = await this.client.networkClient.query({
+      query: gql`
+        query GetIndexerAllocationSummaries($indexerId: String!) {
+          indexerAllocationSummaries(
+            filter: { indexerId: { equalTo: $indexerId }, totalAmount: { greaterThan: "0" } }
+          ) {
+            totalCount
+            nodes {
+              deploymentId
+            }
+          }
+        }
+      `,
+      variables: { indexerId },
+    });
+    if (result?.data?.deployments) {
+      this.cache.set(cacheKey, JSON.stringify(result.data.deployments), {
+        ttl: 30 * 60 * 1000,
+      });
+    }
+    return result?.data?.indexerAllocationSummaries?.nodes as IndexerAllocationSummary[];
   }
 }

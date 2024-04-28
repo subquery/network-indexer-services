@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Postgres } from '../configure/configure.module';
@@ -41,4 +41,9 @@ export type TemplateType = {
   memory: number;
   usePrimaryNetworkEndpoint?: boolean;
   primaryNetworkEndpoint?: string;
+  hostCertsPath?: string;
+  certsPath?: string;
+  pgCa?: string;
+  pgKey?: string;
+  pgCert?: string;
 };

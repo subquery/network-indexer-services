@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { SQNetworks } from '@subql/network-config';
@@ -44,5 +44,5 @@ export function hexToInt(hex: string) {
 
 export const SUPPORTED_NETWORK_PROJECTS_EXPLORER =
   network === PRODUCTION_NETWORK
-    ? 'https://kepler.subquery.network/'
-    : 'https://kepler.thechaindata.com/';
+    ? 'https://app.subquery.network/'
+    : 'https://dev.thechaindata.com/';

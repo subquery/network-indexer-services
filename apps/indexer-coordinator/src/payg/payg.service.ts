@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
@@ -8,10 +8,10 @@ import { bytes32ToCid } from '@subql/network-clients';
 import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 import lodash from 'lodash';
+import { ContractService } from 'src/core/contract.service';
+import { OnChainService } from 'src/core/onchain.service';
 import { ZERO_ADDRESS } from 'src/utils/project';
 import { MoreThan, Repository } from 'typeorm';
-
-import { NetworkService } from '../core/network.service';
 import { PaygEntity } from '../project/project.model';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { getLogger } from '../utils/logger';
@@ -32,24 +32,25 @@ export class PaygService {
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
     private paygQueryService: PaygQueryService,
     private pubSub: SubscriptionService,
-    private network: NetworkService,
+    private contract: ContractService,
+    private onChain: OnChainService,
     private account: AccountService
   ) {}
 
   async channelFromContract(id: BigNumber): Promise<ChannelState> {
-    const channel = await this.network.getSdk().stateChannel.channel(id);
+    const channel = await this.contract.getSdk().stateChannel.channel(id);
     return channel?.indexer !== ZERO_ADDRESS ? channel : undefined;
   }
 
   async channelPriceFromContract(id: BigNumber): Promise<BigNumber> {
     // FIXME
-    return this.network.getSdk().stateChannel.channelPrice(id);
+    return this.contract.getSdk().stateChannel.channelPrice(id);
     // return BigNumber.from('0');
   }
 
   async channelConsumerFromContract(id: BigNumber): Promise<string> {
     try {
-      return this.network.getSdk().consumerHost.channelConsumer(id);
+      return this.contract.getSdk().consumerHost.channelConsumer(id);
     } catch (e) {
       console.debug(`Failed to get consumer of channel ${id}: ${e}`);
       return undefined;
@@ -115,6 +116,7 @@ export class PaygService {
         remote: '0',
         lastFinal: false,
         spent: spent.toString(),
+        expiredAt: 0,
       });
     }
 
@@ -126,7 +128,10 @@ export class PaygService {
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
-    channelEntity.expiredAt = expiredAt.toNumber();
+    const newExpiredAt = expiredAt.toNumber();
+    if (channelEntity.expiredAt < newExpiredAt) {
+      channelEntity.expiredAt = newExpiredAt;
+    }
     channelEntity.terminatedAt = terminatedAt.toNumber();
     channelEntity.terminateByIndexer = terminateByIndexer;
 
@@ -170,6 +175,7 @@ export class PaygService {
         spent: '0',
         remote: '0',
         lastFinal: false,
+        expiredAt: 0,
       });
     }
 
@@ -202,7 +208,10 @@ export class PaygService {
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
-    channelEntity.expiredAt = new Date(expiredAt).getTime() / 1000;
+    const newExpiredAt = new Date(expiredAt).getTime() / 1000;
+    if (channelEntity.expiredAt < newExpiredAt) {
+      channelEntity.expiredAt = newExpiredAt;
+    }
     channelEntity.terminatedAt = new Date(terminatedAt).getTime() / 1000;
     channelEntity.terminateByIndexer = terminateByIndexer;
 
@@ -228,7 +237,7 @@ export class PaygService {
     altPrice?: BigNumber,
     altChannelData?: StateChannelOnNetwork
   ): Promise<Channel | undefined> {
-    if (!this.network.getSdk()) {
+    if (!this.contract.getSdk()) {
       return;
     }
 
@@ -317,7 +326,7 @@ export class PaygService {
       // add a price every time
       channel.spent = (prevSpent + price).toString();
 
-      logger.warn(`channel.spent: ${channel.spent}, spent: ${spent}, price: ${price}`);
+      logger.debug(`channel.spent: ${channel.spent}, spent: ${spent}, price: ${price}`);
 
       // if remote is less than own, just add spent
       if (prevRemote < currentRemote) {
@@ -354,6 +363,21 @@ export class PaygService {
     }
   }
 
+  async extend(id: string, expiration: number): Promise<Channel> {
+    const channel = await this.channel(id);
+    if (!channel) {
+      throw new Error(`channel not exist: ${id}`);
+    }
+
+    if (channel.expiredAt < expiration) {
+      channel.expiredAt = expiration;
+    }
+
+    logger.debug(`Extend state channel ${id}`);
+
+    return this.saveAndPublish(channel, PaygEvent.State);
+  }
+
   async checkpoint(id: string): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {
@@ -364,8 +388,8 @@ export class PaygService {
     }
 
     // checkpoint
-    await this.network.sendTransaction('state channel checkpoint', async (overrides) =>
-      this.network.getSdk().stateChannel.checkpoint(
+    await this.contract.sendTransaction('state channel checkpoint', async (overrides) =>
+      this.contract.getSdk().stateChannel.checkpoint(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,
@@ -395,8 +419,8 @@ export class PaygService {
     }
 
     // terminate
-    await this.network.sendTransaction('state channel terminate', async (overrides) =>
-      this.network.getSdk().stateChannel.terminate(
+    await this.contract.sendTransaction('state channel terminate', async (overrides) =>
+      this.contract.getSdk().stateChannel.terminate(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,
@@ -428,8 +452,8 @@ export class PaygService {
     }
 
     // respond to chain
-    await this.network.sendTransaction('state channel respond', async (overrides) =>
-      this.network.getSdk().stateChannel.respond(
+    await this.contract.sendTransaction('state channel respond', async (overrides) =>
+      this.contract.getSdk().stateChannel.respond(
         {
           channelId: channel.id,
           isFinal: channel.lastFinal,

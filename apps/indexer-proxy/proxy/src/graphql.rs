@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ pub const PROJECT_QUERY: &str =
 pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration overflow } }";
 
 pub const CHANNEL_QUERY: &str =
-    "query { getAliveChannels { id consumer agent total spent remote price lastFinal expiredAt } }";
+    "query { getAliveChannels { id consumer deploymentId agent total spent remote price lastFinal expiredAt } }";
 
 pub fn poi_with_block(block: u64) -> String {
     format!(

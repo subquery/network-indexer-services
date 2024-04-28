@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { networks } from '@subql/contract-sdk';
@@ -6,7 +6,7 @@ import { networks } from '@subql/contract-sdk';
 import { SUPPORTED_NETWORK } from './web3';
 
 export function balanceSufficient(balance: string): boolean {
-  return parseFloat(balance) > parseFloat('0.05');
+  return parseFloat(balance) > parseFloat('0.001');
 }
 
 export function openAccountExporer(account: string) {

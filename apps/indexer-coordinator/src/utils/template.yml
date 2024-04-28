@@ -4,18 +4,22 @@ services:
   node_{{projectID}}:
     image: {{dockerRegistry}}:{{nodeVersion}}
     container_name: node_{{projectID}}
+    user: "1000"
     restart: always
     cpus: {{cpu}}
     expose:
       - {{servicePort}}
     environment:
-      DB_USER: {{postgres.user}}
-      DB_PASS: {{postgres.pass}}
-      DB_DATABASE: {{postgres.db}}
+      DB_USER: "{{postgres.user}}"
+      DB_PASS: "{{postgres.pass}}"
+      DB_DATABASE: "{{postgres.db}}"
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     volumes:
       - {{mmrPath}}/poi/{{deploymentID}}:{{mmrPath}}/poi/{{deploymentID}}
+      {{#if hostCertsPath}}
+      - {{hostCertsPath}}:{{certsPath}}
+      {{/if}}
     command:
       - -f=ipfs://{{deploymentID}}
       - -d={{networkDictionary}}
@@ -41,6 +45,11 @@ services:
       {{#if (eq chainType "ethereum")}}
       - --block-confirmations=100
       {{/if}}
+      {{#if hostCertsPath}}
+      - --pg-ca={{pgCa}}
+      - --pg-key={{pgKey}}
+      - --pg-cert={{pgCert}}
+      {{/if}}
     healthcheck:
       test:
         [
@@ -56,6 +65,7 @@ services:
   query_{{projectID}}:
     image: onfinality/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
+    user: "1000"
     expose:
       - {{servicePort}}
     depends_on:
@@ -63,9 +73,9 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      DB_USER: {{postgres.user}}
-      DB_PASS: {{postgres.pass}}
-      DB_DATABASE: {{postgres.db}}
+      DB_USER: "{{postgres.user}}"
+      DB_PASS: "{{postgres.pass}}"
+      DB_DATABASE: "{{postgres.db}}"
       DB_HOST: {{postgres.host}}
       DB_PORT: {{postgres.port}}
     command:
@@ -74,6 +84,11 @@ services:
       - --indexer=http://node_{{projectID}}:{{servicePort}}
       - --port={{servicePort}}
       - --query-limit=2000
+      {{#if hostCertsPath}}
+      - --pg-ca={{pgCa}}
+      - --pg-key={{pgKey}}
+      - --pg-cert={{pgCert}}
+      {{/if}}
 
 networks:
   default:

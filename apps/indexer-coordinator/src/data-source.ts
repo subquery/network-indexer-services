@@ -1,13 +1,43 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import 'reflect-metadata';
+import path from 'path';
 import process from 'process';
-import { DataSource } from 'typeorm';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { getFileContent } from './utils/load';
 import { argv, PostgresKeys } from './yargs';
 
 const isLocal = process.env.NODE_ENV === 'local';
+
+function getSSLOptions() {
+  if (argv[PostgresKeys.sslMode] !== 'enabled') {
+    return undefined;
+  }
+  const dbSSLOptions: PostgresConnectionOptions['ssl'] = { rejectUnauthorized: false };
+  if (!argv[PostgresKeys.hostCertsPath] || !argv[PostgresKeys.certsPath]) {
+    return dbSSLOptions;
+  }
+  if (argv[PostgresKeys.ca]) {
+    dbSSLOptions.ca = getFileContent(
+      path.join(argv[PostgresKeys.certsPath], argv[PostgresKeys.ca]),
+      'postgres ca file'
+    );
+  }
+  if (argv[PostgresKeys.key]) {
+    dbSSLOptions.key = getFileContent(
+      path.join(argv[PostgresKeys.certsPath], argv[PostgresKeys.key]),
+      'postgres key file'
+    );
+  }
+  if (argv[PostgresKeys.cert]) {
+    dbSSLOptions.cert = getFileContent(
+      path.join(argv[PostgresKeys.certsPath], argv[PostgresKeys.cert]),
+      'postgres cert file'
+    );
+  }
+  return dbSSLOptions;
+}
 
 export const dbOption: PostgresConnectionOptions = {
   type: 'postgres',
@@ -22,6 +52,5 @@ export const dbOption: PostgresConnectionOptions = {
   migrations: [isLocal ? 'src/migration/*.ts' : 'dist/migration/*.js'],
   subscribers: [],
   // namingStrategy: new SnakeNamingStrategy(),
+  ssl: getSSLOptions(),
 };
-
-export const AppDataSource = new DataSource(dbOption);

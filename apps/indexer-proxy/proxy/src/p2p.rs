@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use base64::{engine::general_purpose, Engine as _};
+use chamomile_types::Peer as ChamomilePeer;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::io::Result;
@@ -25,6 +26,7 @@ use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
     p2p::{Event, JoinData, ROOT_GROUP_ID, ROOT_NAME},
+    payg::QueryState,
 };
 use tdn::{
     prelude::{
@@ -39,6 +41,7 @@ use tdn::{
     },
 };
 use tokio::sync::{mpsc::Sender, RwLock};
+use tokio::time::{sleep, Duration};
 
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -46,7 +49,7 @@ use crate::{
     cli::COMMAND,
     contracts::get_consumer_host_peer,
     metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
-    payg::{merket_price, open_state, query_state},
+    payg::{merket_price, open_state, query_single_state},
     primitives::*,
     project::get_project,
 };
@@ -56,7 +59,9 @@ pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock
 pub async fn send(method: &str, params: Vec<RpcParam>, gid: GroupId) {
     let senders = P2P_SENDER.read().await;
     if !senders.is_empty() {
-        senders[0].send(rpc_request(0, method, params, gid)).await;
+        senders[0]
+            .send_timeout(rpc_request(0, method, params, gid), 100)
+            .await;
     }
 }
 
@@ -68,28 +73,37 @@ pub async fn stop_network() {
         debug!("RESTART NEW P2P NETWORK");
         senders[0].send(rpc_request(0, "p2p-stop", vec![], 0)).await;
         drop(senders);
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_RESTART_TIME)).await;
+        sleep(Duration::from_secs(P2P_RESTART_TIME)).await;
     }
 }
 
-pub async fn report_conflict(deployment: &str, channel: &str, conflict: u64, start: i64, end: i64) {
+pub async fn report_conflict(
+    deployment: String,
+    channel: String,
+    conflict: u64,
+    start: i64,
+    end: i64,
+) {
     let senders = P2P_SENDER.read().await;
     if senders.is_empty() {
         warn!("NONE NETWORK WHEN REPORT CONFLICT");
     } else {
         senders[0]
-            .send(rpc_request(
-                0,
-                "payg-report-conflict",
-                vec![
-                    deployment.into(),
-                    channel.into(),
-                    conflict.into(),
-                    start.into(),
-                    end.into(),
-                ],
-                0,
-            ))
+            .send_timeout(
+                rpc_request(
+                    0,
+                    "payg-report-conflict",
+                    vec![
+                        deployment.into(),
+                        channel.into(),
+                        conflict.into(),
+                        start.into(),
+                        end.into(),
+                    ],
+                    0,
+                ),
+                100,
+            )
             .await;
         drop(senders);
     }
@@ -97,7 +111,7 @@ pub async fn report_conflict(deployment: &str, channel: &str, conflict: u64, sta
 
 async fn check_stable() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_STABLE_TIME)).await;
+        sleep(Duration::from_secs(P2P_STABLE_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -105,7 +119,7 @@ async fn check_stable() {
         } else {
             debug!("Check stable connections");
             senders[0]
-                .send(rpc_request(0, "p2p-stable", vec![], 0))
+                .send_timeout(rpc_request(0, "p2p-stable", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -114,7 +128,7 @@ async fn check_stable() {
 
 async fn report_metrics() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_METRICS_TIME)).await;
+        sleep(Duration::from_secs(P2P_METRICS_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -131,7 +145,7 @@ async fn report_metrics() {
 
 async fn report_status() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_METRICS_STATUS_TIME)).await;
+        sleep(Duration::from_secs(P2P_METRICS_STATUS_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -139,7 +153,7 @@ async fn report_status() {
         } else {
             debug!("Report projects status");
             senders[0]
-                .send(rpc_request(0, "project-report-status", vec![], 0))
+                .send_timeout(rpc_request(0, "project-report-status", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -148,7 +162,7 @@ async fn report_status() {
 
 async fn broadcast_healthy() {
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
+        sleep(Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME)).await;
         let senders = P2P_SENDER.read().await;
         if senders.is_empty() {
             drop(senders);
@@ -156,7 +170,7 @@ async fn broadcast_healthy() {
         } else {
             debug!("Report projects healthy");
             senders[0]
-                .send(rpc_request(0, "project-broadcast-healthy", vec![], 0))
+                .send_timeout(rpc_request(0, "project-broadcast-healthy", vec![], 0), 100)
                 .await;
         }
         drop(senders);
@@ -430,7 +444,8 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let metrics = get_timer_metrics().await;
             if !metrics.is_empty() {
                 let indexer = get_indexer().await;
-                let event = Event::MetricsQueryCount(indexer.clone(), metrics).to_bytes();
+                let indexer_network = format!("{}:{}", indexer, COMMAND.network);
+                let event = Event::MetricsQueryCount(indexer_network, metrics).to_bytes();
                 let ledger = state.0.read().await;
                 let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
                 drop(ledger);
@@ -690,9 +705,15 @@ async fn handle_group(
                 }
                 Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
-                    let result =
-                        match query_state(&project, query, ep_name, &state, MetricsNetwork::P2P)
-                            .await
+                    if let Ok(state) = QueryState::from_json(&state) {
+                        let result = match query_single_state(
+                            &project,
+                            query,
+                            ep_name,
+                            state,
+                            MetricsNetwork::P2P,
+                        )
+                        .await
                         {
                             Ok((res_query, res_signature, res_state)) => {
                                 json!({
@@ -704,9 +725,10 @@ async fn handle_group(
                             Err(err) => json!({ "error": format!("{:?}", err) }),
                         };
 
-                    let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
+                        let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
                 }
                 Event::CloseAgreementLimit(uid, agreement) => {
                     let res =
@@ -750,13 +772,13 @@ async fn handle_group(
 
 async fn bootstrap(sender: &Sender<SendMessage>) {
     for seed in COMMAND.bootstrap() {
-        if let Ok(addr) = seed.parse() {
-            let peer = Peer::socket(addr);
-            sender
-                .send(SendMessage::Network(NetworkType::Connect(peer)))
-                .await
-                .expect("TDN channel closed");
-        }
+        let p2p = ChamomilePeer::from_multiaddr_string(&seed).unwrap();
+        let peer = Peer::from(p2p);
+
+        sender
+            .send(SendMessage::Network(NetworkType::Connect(peer)))
+            .await
+            .expect("TDN channel closed");
     }
 }
 

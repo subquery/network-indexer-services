@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -23,20 +23,23 @@ use axum::{
     extract::FromRequestParts,
     http::{header::AUTHORIZATION, request::Parts},
 };
-use base64::{engine::general_purpose, Engine as _};
 use chrono::prelude::*;
 use ethers::{
     signers::LocalWallet,
-    types::{Address, U256},
+    types::{Address, H256, U256},
 };
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use subql_indexer_utils::{
     error::Error,
-    payg::{convert_sign_to_string, price_recover, price_sign, OpenState, QueryState},
+    payg::{
+        convert_sign_to_string, convert_string_to_sign, extend_recover, extend_sign, price_recover,
+        price_sign, MultipleQueryState, MultipleQueryStateActive, OpenState, QueryState,
+        MULTIPLE_RANGE_MAX,
+    },
     request::{graphql_request, GraphQLQuery},
-    tools::deployment_cid,
+    tools::{cid_deployment, deployment_cid},
     types::Result,
 };
 
@@ -49,7 +52,12 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
+const CURRENT_VERSION: u8 = 3;
+
 pub struct StateCache {
+    pub expiration: i64,
+    pub agent: Address,
+    pub deployment: H256,
     pub price: U256,
     pub total: U256,
     pub spent: U256,
@@ -62,27 +70,40 @@ pub struct StateCache {
 
 impl StateCache {
     fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
-        if bytes.len() < 176 {
+        if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
 
-        let price = U256::from_little_endian(&bytes[0..32]);
-        let total = U256::from_little_endian(&bytes[32..64]);
-        let spent = U256::from_little_endian(&bytes[64..96]);
-        let remote = U256::from_little_endian(&bytes[96..128]);
-        let coordi = U256::from_little_endian(&bytes[128..160]);
+        if bytes.len() < 237 {
+            return Err(Error::Serialize(1136));
+        }
+
+        let mut expiration_bytes = [0u8; 8];
+        expiration_bytes.copy_from_slice(&bytes[1..9]);
+        let expiration = i64::from_le_bytes(expiration_bytes);
+        let agent = Address::from_slice(&bytes[9..29]);
+        let deployment = H256::from_slice(&bytes[29..61]);
+
+        let price = U256::from_little_endian(&bytes[61..93]);
+        let total = U256::from_little_endian(&bytes[93..125]);
+        let spent = U256::from_little_endian(&bytes[125..157]);
+        let remote = U256::from_little_endian(&bytes[157..189]);
+        let coordi = U256::from_little_endian(&bytes[189..221]);
 
         let mut conflict_start_bytes = [0u8; 8];
-        conflict_start_bytes.copy_from_slice(&bytes[160..168]);
+        conflict_start_bytes.copy_from_slice(&bytes[221..229]);
         let conflict_start = i64::from_le_bytes(conflict_start_bytes);
 
         let mut conflict_times_bytes = [0u8; 8];
-        conflict_times_bytes.copy_from_slice(&bytes[168..176]);
+        conflict_times_bytes.copy_from_slice(&bytes[229..237]);
         let conflict_times = u64::from_le_bytes(conflict_times_bytes);
 
-        let signer = ConsumerType::from_bytes(&bytes[176..])?;
+        let signer = ConsumerType::from_bytes(&bytes[237..])?;
 
         Ok(StateCache {
+            expiration,
+            agent,
+            deployment,
             price,
             total,
             spent,
@@ -95,7 +116,12 @@ impl StateCache {
     }
 
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = vec![];
+        let mut bytes = vec![CURRENT_VERSION];
+
+        bytes.extend(&self.expiration.to_le_bytes());
+        bytes.extend(self.agent.as_fixed_bytes());
+        bytes.extend(self.deployment.as_fixed_bytes());
+
         let mut u256_bytes = [0u8; 32];
         self.price.to_little_endian(&mut u256_bytes);
         bytes.extend(u256_bytes);
@@ -123,6 +149,12 @@ pub enum ConsumerType {
 }
 
 impl ConsumerType {
+    fn is_empty(&self) -> bool {
+        match self {
+            ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.is_empty(),
+        }
+    }
+
     fn contains(&self, s: &Address) -> bool {
         match self {
             ConsumerType::Account(signers) | ConsumerType::Host(signers) => signers.contains(s),
@@ -288,23 +320,167 @@ pub async fn open_state(body: &Value) -> Result<Value> {
     Ok(state.to_json())
 }
 
-pub async fn query_state(
+pub async fn query_single_state(
     project_id: &str,
     query: String,
     ep_name: Option<String>,
-    state: &Value,
+    mut state: QueryState,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
+    debug!("Start handle query channel");
     let project = get_project(project_id).await?;
-    let mut state = QueryState::from_json(state)?;
 
+    // check channel state
+    let channel_id = state.channel_id;
+    let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
+    debug!("Got channel cache");
+
+    // check signer
     let account = ACCOUNT.read().await;
     state.sign(&account.controller, false).await?;
     drop(account);
     let (_, signer) = state.recover()?;
 
+    if !state_cache.signer.contains(&signer) {
+        // check if it is consumer controller
+        match state_cache.signer {
+            ConsumerType::Account(ref mut signers) => {
+                if check_consumer_controller(signers[0], signer).await? {
+                    signers.push(signer);
+                } else {
+                    return Err(Error::InvalidSignature(1055));
+                }
+            }
+            _ => return Err(Error::InvalidSignature(1055)),
+        }
+    }
+
+    let conflict = project.payg_overflow;
+    let total = state_cache.total;
+    let price = state_cache.price;
+    let local_prev = state_cache.spent;
+    let remote_prev = state_cache.remote;
+
+    // compute unit count times
+    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
+    let used_amount = price * unit_times;
+
+    let local_next = local_prev + used_amount;
+    let remote_next = state.spent;
+
+    // check spent & conflict
+    if remote_prev < remote_next && remote_prev + used_amount > remote_next {
+        warn!(
+            "remote prev: {} remote next: {}, should: {}",
+            remote_prev,
+            remote_next,
+            remote_prev + price
+        );
+        // price invalid
+        return Err(Error::InvalidProjectPrice(1034));
+    }
+
+    if remote_next > total {
+        // overflow the total
+        return Err(Error::Overflow(1056));
+    }
+
+    if local_next > remote_next + used_amount {
+        // mark conflict is happend
+        if state_cache.conflict_times <= 1 {
+            state_cache.conflict_start = Utc::now().timestamp();
+        }
+        state_cache.conflict_times += uint_overflow;
+    }
+
+    if state_cache.conflict_times > conflict {
+        warn!(
+            "CONFLICT: local_next: {}, remote_next: {}, price: {}, conflict: {}",
+            local_next, remote_next, price, state_cache.conflict_times
+        );
+
+        let project_id = project.id.clone();
+        let channel = format!("{:#x}", channel_id);
+        let times = state_cache.conflict_times;
+        let start = state_cache.conflict_start;
+        let end = Utc::now().timestamp();
+        tokio::spawn(report_conflict(project_id, channel, times, start, end));
+
+        // overflow the conflict
+        return Err(Error::PaygConflict(1050));
+    }
+    debug!("Verified channel, start query");
+
+    // query the data.
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .await?;
+
+    // update redis cache
+    state_cache.spent = local_next;
+    state_cache.remote = remote_next;
+    let mut conn = redis();
+    if state.is_final {
+        // close
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
+    } else {
+        // update, missing KEEPTTL, so use two operation.
+        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp.unwrap_or(86400))
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 1: {}", err));
+    }
+
+    // async to coordiantor
+    let mdata = format!(
+        r#"mutation {{
+             channelUpdate(
+               id:"{:#X}",
+               spent:"{}",
+               isFinal:{},
+               indexerSign:"0x{}",
+               consumerSign:"0x{}")
+           {{ id, spent }}
+        }}"#,
+        channel_id, // use default u256 hex style with other library
+        remote_next,
+        state.is_final,
+        convert_sign_to_string(&state.indexer_sign),
+        convert_sign_to_string(&state.consumer_sign),
+    );
+    tokio::spawn(async move {
+        // query the state.
+        let url = COMMAND.graphql_url();
+        let query = GraphQLQuery::query(&mdata);
+        let _ = graphql_request(&url, &query)
+            .await
+            .map_err(|e| error!("{:?}", e));
+    });
+
+    state.remote = local_next;
+    debug!("Handle query channel success");
+    Ok((data, signature, state.to_bs64_old2()))
+}
+
+pub async fn query_multiple_state(
+    project_id: &str,
+    query: String,
+    ep_name: Option<String>,
+    mut state: MultipleQueryState,
+    network_type: MetricsNetwork,
+) -> Result<(Vec<u8>, String, String)> {
+    debug!("Start handle query channel");
+    let signer = state.recover()?;
+    let project = get_project(project_id).await?;
+
     // check channel state
-    let (mut state_cache, keyname) = fetch_channel_cache(state.channel_id).await?;
+    let channel_id = state.channel_id;
+    let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
+    debug!("Got channel cache");
 
     // check signer
     if !state_cache.signer.contains(&signer) {
@@ -321,52 +497,41 @@ pub async fn query_state(
         }
     }
 
+    // check spent
     let total = state_cache.total;
     let price = state_cache.price;
-    let local_prev = state_cache.spent;
+    let local_next = state_cache.spent + price;
     let remote_prev = state_cache.remote;
-    let remote_next = state.spent;
 
-    // compute unit count times
-    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
-    let used_amount = price * unit_times;
-
-    if remote_prev < remote_next && remote_prev + used_amount > remote_next {
-        // price invalid
-        return Err(Error::InvalidProjectPrice(1034));
-    }
-
-    if remote_next >= total + used_amount {
+    if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    if local_prev > remote_prev + used_amount {
-        let now = Utc::now().timestamp();
-        // mark conflict is happend
-        if state_cache.conflict_times <= 1 {
-            state_cache.conflict_start = now;
-        }
-        state_cache.conflict_times += uint_overflow;
-
-        let channel = format!("{:#x}", state.channel_id);
-        report_conflict(
-            &project.id,
-            &channel,
-            state_cache.conflict_times,
-            state_cache.conflict_start,
-            now,
-        )
-        .await;
+    let range = state.end - state.start;
+    if range > MULTIPLE_RANGE_MAX {
+        return Err(Error::Overflow(1059));
     }
 
-    if local_prev > remote_prev + price * state_cache.conflict_times {
-        warn!(
-            "CONFLICT: local_prev: {}, remote_prev: {}, price: {}, conflict: {}",
-            local_prev, remote_prev, price, state_cache.conflict_times
-        );
-        // overflow the conflict
-        return Err(Error::PaygConflict(1050));
+    let middle = state.start + range / 2;
+    let mut mpqsa = if local_next < middle {
+        MultipleQueryStateActive::Active
+    } else if local_next > state.end {
+        MultipleQueryStateActive::Inactive2
+    } else {
+        MultipleQueryStateActive::Inactive1
+    };
+
+    if state.start > range && remote_prev < state.start - range {
+        mpqsa = MultipleQueryStateActive::Inactive2;
+    }
+
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, mpqsa).await?;
+    drop(account);
+
+    if mpqsa.is_inactive() {
+        return Ok((vec![], "".to_owned(), state.to_bs64()));
     }
 
     // query the data.
@@ -374,22 +539,193 @@ pub async fn query_state(
         .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
         .await?;
 
-    state_cache.spent = local_prev + remote_next - remote_prev;
-    state_cache.remote = remote_next;
+    // update redis cache
+    state_cache.spent = local_next;
+    let mut conn = redis();
+    let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+        .arg(&keyname)
+        .arg(exp.unwrap_or(86400))
+        .arg(state_cache.to_bytes())
+        .query_async(&mut conn)
+        .await
+        .map_err(|err| error!("Redis 1: {}", err));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    if state.is_final {
-        // close
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
-    } else {
-        // update, missing KEEPTTL, so use two operation.
-        let exp: RedisResult<usize> = conn_lock.ttl(&keyname).await;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp.unwrap_or(86400))
-            .await;
+    debug!("Handle query channel success");
+    Ok((data, signature, state.to_bs64()))
+}
+
+pub async fn extend_channel(
+    channel: String,
+    expired: i64,
+    expiration: i32,
+    signature: String,
+) -> Result<String> {
+    // check channel & signature
+    let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
+        .map_err(|_e| Error::Serialize(1120))?;
+    let sign = convert_string_to_sign(&signature);
+
+    let (state_cache, _keyname) = fetch_channel_cache(channel_id).await?;
+
+    // check price
+    let project_id = deployment_cid(&state_cache.deployment);
+    let project = get_project(&project_id).await?;
+    if project.payg_price > state_cache.price {
+        return Err(Error::InvalidProjectPrice(1049));
     }
-    drop(conn_lock);
+
+    let gap = if expired > state_cache.expiration {
+        expired - state_cache.expiration
+    } else {
+        state_cache.expiration - expired
+    };
+    if gap > 600 {
+        return Err(Error::InvalidProjectPrice(1049));
+    }
+
+    let account = ACCOUNT.read().await;
+    let indexer = account.indexer;
+    drop(account);
+
+    let signer = extend_recover(
+        channel_id,
+        indexer,
+        state_cache.agent,
+        U256::from(expired),
+        U256::from(expiration),
+        sign,
+    )?;
+
+    // check signer
+    if !state_cache.signer.contains(&signer) {
+        warn!(
+            "Extend: {:?} {} {:?} {:?} {} {} {}",
+            signer,
+            channel_id,
+            indexer,
+            state_cache.agent,
+            state_cache.expiration,
+            expiration,
+            convert_sign_to_string(&sign)
+        );
+        return Err(Error::InvalidSignature(1055));
+    }
+
+    // send to coordinator
+    let expired_at = expired + expiration as i64;
+    let mdata = format!(
+        r#"mutation {{
+             channelExtend(
+               id:"{:#X}",
+               expiration:{},
+             )
+           {{ id, expiredAt }}
+        }}"#,
+        channel_id, expired_at
+    );
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    graphql_request(&url, &query).await.map_err(|e| {
+        error!("{:?}", e);
+        Error::ServiceException(1202)
+    })?;
+
+    let account = ACCOUNT.read().await;
+    let indexer_sign = extend_sign(
+        channel_id,
+        indexer,
+        state_cache.agent,
+        U256::from(expired),
+        U256::from(expiration),
+        &account.controller,
+    )
+    .await?;
+    drop(account);
+
+    Ok(convert_sign_to_string(&indexer_sign))
+}
+
+pub async fn pay_channel(mut state: QueryState) -> Result<String> {
+    debug!("Start pay channel");
+    // check channel state
+    let channel_id = state.channel_id;
+    let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
+    debug!("Got channel cache");
+
+    // check signer
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, false).await?;
+    drop(account);
+    let (_, signer) = state.recover()?;
+
+    if !state_cache.signer.contains(&signer) {
+        // check if it is consumer controller
+        match state_cache.signer {
+            ConsumerType::Account(ref mut signers) => {
+                if check_consumer_controller(signers[0], signer).await? {
+                    signers.push(signer);
+                } else {
+                    return Err(Error::InvalidSignature(1055));
+                }
+            }
+            _ => return Err(Error::InvalidSignature(1055)),
+        }
+    }
+
+    // check spent is more than middle
+    let total = state_cache.total;
+    let local_spent = state_cache.spent;
+    let remote_spent = state.spent;
+    state.remote = local_spent;
+
+    if remote_spent > total {
+        return Err(Error::Overflow(1056));
+    }
+
+    // fetch current paid in coordinator
+    let mdata = format!(
+        r#"query {{ channel( id:"{:#X}") {{ spent }} }}"#,
+        channel_id, // use default u256 hex style with other library
+    );
+
+    // query the state.
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    let data = graphql_request(&url, &query).await.map_err(|e| {
+        error!("{:?}", e);
+        Error::Serialize(1123)
+    })?;
+    if let Some(p) = data.pointer("/data/channel/spent") {
+        let paid =
+            U256::from_dec_str(p.as_str().unwrap_or("")).map_err(|_e| Error::Serialize(1123))?;
+        if remote_spent <= paid {
+            return Ok(state.to_bs64());
+        }
+    } else {
+        return Err(Error::Serialize(1123));
+    }
+
+    // update redis cache
+    if state_cache.remote < remote_spent {
+        state_cache.remote = remote_spent;
+        let mut conn = redis();
+        if state.is_final {
+            // close
+            let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
+        } else {
+            // update, missing KEEPTTL, so use two operation.
+            let exp: RedisResult<usize> =
+                redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+                .arg(&keyname)
+                .arg(exp.unwrap_or(86400))
+                .arg(state_cache.to_bytes())
+                .query_async(&mut conn)
+                .await
+                .map_err(|err| error!("Redis 1: {}", err));
+        }
+    }
 
     // async to coordiantor
     let mdata = format!(
@@ -402,8 +738,8 @@ pub async fn query_state(
                consumerSign:"0x{}")
            {{ id, spent }}
         }}"#,
-        state.channel_id, // use default u256 hex style with other library
-        remote_next,
+        channel_id, // use default u256 hex style with other library
+        remote_spent,
         state.is_final,
         convert_sign_to_string(&state.indexer_sign),
         convert_sign_to_string(&state.consumer_sign),
@@ -417,17 +753,16 @@ pub async fn query_state(
             .map_err(|e| error!("{:?}", e));
     });
 
-    state.remote = state_cache.spent;
-    debug!("Handle query channel success");
-    let state_bytes = serde_json::to_vec(&state.to_json()).unwrap_or(vec![]);
-    let state_string = general_purpose::STANDARD.encode(&state_bytes);
-    Ok((data, signature, state_string))
+    debug!("Pay channel success");
+    Ok(state.to_bs64())
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChannelItem {
     pub id: String,
     pub consumer: String,
+    #[serde(rename = "deploymentId")]
+    pub deployment: String,
     pub agent: String,
     pub total: String,
     pub spent: String,
@@ -454,6 +789,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         .consumer
         .parse()
         .map_err(|_e| Error::Serialize(1121))?;
+    let deployment: H256 = cid_deployment(&channel.deployment);
     let agent: Address = channel.agent.parse().unwrap_or(Address::zero());
     let total = U256::from_dec_str(&channel.total).map_err(|_e| Error::Serialize(1122))?;
     let spent = U256::from_dec_str(&channel.spent).map_err(|_e| Error::Serialize(1123))?;
@@ -464,16 +800,17 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
+    let mut conn = redis();
 
     let now = Utc::now().timestamp();
 
     if channel.is_final || now > channel.expired {
         // delete from cache
-        let _: RedisResult<()> = conn_lock.del(&keyname).await;
+        let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
-        let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
+        let cache_bytes: RedisResult<Vec<u8>> =
+            redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
         let cache_ok = cache_bytes
             .ok()
             .and_then(|v| if v.is_empty() { None } else { Some(v) });
@@ -484,9 +821,10 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             None
         };
         let state_cache = if let Some(mut state_cache) = state_cache_op {
+            state_cache.expiration = channel.expired;
             state_cache.total = total;
             if state_cache.remote != remote {
-                warn!(
+                debug!(
                     "Proxy remote: {}, coordinator remote: {}",
                     state_cache.remote, remote
                 );
@@ -503,10 +841,17 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             state_cache.spent = std::cmp::max(state_cache.spent, spent);
             state_cache.coordi = spent;
 
+            if state_cache.signer.is_empty() {
+                state_cache.signer = check_state_channel_consumer(consumer, agent).await?;
+            }
+
             state_cache
         } else {
             let signer = check_state_channel_consumer(consumer, agent).await?;
             StateCache {
+                expiration: channel.expired,
+                agent,
+                deployment,
                 price,
                 total,
                 spent,
@@ -519,16 +864,21 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
-        let _: RedisResult<()> = conn_lock
-            .set_ex(&keyname, state_cache.to_bytes(), exp)
-            .await;
+
+        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+            .arg(&keyname)
+            .arg(exp)
+            .arg(state_cache.to_bytes())
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error!("Redis 2: {}", err));
     }
 
     Ok(())
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct AuthPayg(pub Value);
+pub struct AuthPayg(pub String);
 
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthPayg
@@ -550,15 +900,7 @@ where
             .map_err(|_| Error::Permission(1020))?
             .to_owned();
 
-        // check auth is base64 or json string
-        let raw = general_purpose::STANDARD
-            .decode(&authorisation)
-            .map(|v| String::from_utf8(v).unwrap_or(authorisation.clone()))
-            .unwrap_or(authorisation);
-
-        serde_json::from_str::<Value>(&raw)
-            .map(AuthPayg)
-            .map_err(|_| Error::InvalidAuthHeader(1031))
+        Ok(Self(authorisation))
     }
 }
 
@@ -567,11 +909,12 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
     channel_id.to_little_endian(&mut keybytes);
     let keyname = format!("{}-channel", hex::encode(keybytes));
 
-    let conn = redis();
-    let mut conn_lock = conn.lock().await;
-    let cache_bytes: RedisResult<Vec<u8>> = conn_lock.get(&keyname).await;
-    drop(conn_lock);
-    if cache_bytes.is_err() {
+    let mut conn = redis();
+    let cache_bytes: RedisResult<Vec<u8>> =
+        redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
+
+    if let Err(err) = cache_bytes {
+        error!("Redis 3: {}", err);
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();

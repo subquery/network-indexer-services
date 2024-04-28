@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from 'crypto';
@@ -29,7 +29,7 @@ export class AccountService {
     private config: Config
   ) {
     const chainID = networkToChainID[config.network];
-    const provider = initProvider(config.wsEndpoint, chainID);
+    const provider = initProvider(config.networkEndpoint, chainID);
     this.sdk = initContractSDK(provider, chainID);
   }
 
@@ -90,14 +90,14 @@ export class AccountService {
   }
 
   async getAccountMetadata(): Promise<AccountMetaDataType> {
-    const { network, wsEndpoint } = this.config;
+    const { network, networkEndpoint } = this.config;
     const controller = await this.getActiveController();
     return {
       indexer: this.indexer ?? '',
       controller: controller?.address ?? '',
       encryptedKey: controller?.encryptedKey ?? '',
       network,
-      wsEndpoint,
+      networkEndpoint,
     };
   }
 

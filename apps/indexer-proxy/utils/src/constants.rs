@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -54,9 +54,12 @@ pub static HEADERS: Lazy<[HeaderName; 5]> = Lazy::new(|| {
     ]
 });
 
-pub const TELEMETRIES_MAINNET: [&str; 2] = [
-    "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // MAINNET
-    "0x4521425FCB969FcdaA2A091AC37eB4F34A6ad6B1", // DEV
+pub const TELEMETRIES_MAINNET: [&str; 1] = [
+    "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // MAINNET
+];
+
+pub const TELEMETRIES_KEPLER: [&str; 1] = [
+    "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // KEPLER
 ];
 
 pub const TELEMETRIES_TESTNET: [&str; 3] = [
@@ -65,4 +68,8 @@ pub const TELEMETRIES_TESTNET: [&str; 3] = [
     "0x293a6d85DD0d7d290A719Fdeef43FaD10240bA77", // DEV
 ];
 
-pub const BOOTSTRAP: [&str; 2] = ["142.215.53.35:7370", "8.219.198.62:7370"];
+pub const BOOTSTRAP: [&str; 3] = [
+    "/ip4/142.215.53.35/tcp/7370",
+    "/ip4/8.219.198.62/tcp/7371",
+    "/ip4/8.219.198.62/quic/7370",
+];

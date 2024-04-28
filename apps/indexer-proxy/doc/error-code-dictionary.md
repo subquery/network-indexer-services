@@ -38,7 +38,7 @@
 - `1046` - Invalid request: payg query cannot fetch data from graphql.
 - `1047` - Invalid request: payg query missing project and query field.
 - `1048` - Invalid project price: price signer is not controller.
-- `1049` - Invalid request: query method is deny.
+- `1049` - Invalid project price: extend price lower.
 - `1050` - Payg conflict: local state > remote state + price * max_conflict_number.
 - `1051` - Daily limit: reach the max limit of agreement in 24h.
 - `1052` - Rate limit: reach the max limit of agreement in 1s.
@@ -47,6 +47,9 @@
 - `1055` - Invalid signature: payg channel signer not include in redis cache.
 - `1056` - Overflow: payg channel query is overflow total limit.
 - `1057` - Rate limit: reach the max limit of project in 1s.
+- `1058` - Overflow: paid less that previous paid.
+- `1059` - Overflow: range size overflow.
+- `1060` - Invalid request: query method is deny.
 - `1100` - Serialize: hex convert failure.
 - `1101` - Serialize: rustc_hex convert failure.
 - `1102` - Serialize: uint convert failure.
@@ -89,5 +92,6 @@
 - `1140` - Serialize: subquery's query is invalid.
 - `1141` - Serialize: cannot parse rpc query method.
 - `1200` - Service exception: EVM RPC invalid
-- `1201` - Service exception: EVM RPC last bloc
-- `1202` - Service exception: Coordinator RPC mainfest is invalid
+- `1201` - Service exception: EVM RPC last block
+- `1202` - Service exception: indexer service exception.
+- `1203` - Service exception: Coordinator RPC mainfest is invalid

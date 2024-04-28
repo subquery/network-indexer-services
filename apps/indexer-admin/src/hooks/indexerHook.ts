@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,16 +21,18 @@ const useIsCoordinatorIndexer = (): boolean => {
   return useMemo(() => !!account && !!indexer && account === indexer, [account, indexer]);
 };
 
-export const useIsRegistedIndexer = (): boolean | undefined => {
+export const useIsRegistedIndexer = (): {
+  loading: boolean;
+  isRegisterIndexer: boolean | undefined;
+} => {
   const sdk = useContractSDK();
   const { isRegisterIndexer, updateIsRegisterIndexer, account } = useAccount();
-
+  const [loading, setLoading] = useState(true);
   const getIsIndexer = useCallback(async () => {
     if (!account || !sdk) return;
-
     try {
+      setLoading(true);
       const status = await sdk.indexerRegistry.isIndexer(account);
-
       updateIsRegisterIndexer(status);
     } catch (e) {
       notificationMsg({
@@ -42,6 +44,8 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
         },
       });
       console.error('Failed to get isIndexer', e);
+    } finally {
+      setLoading(false);
     }
   }, [account, sdk, updateIsRegisterIndexer]);
 
@@ -49,16 +53,19 @@ export const useIsRegistedIndexer = (): boolean | undefined => {
     getIsIndexer();
   }, [getIsIndexer, account]);
 
-  return isRegisterIndexer;
+  return {
+    loading,
+    isRegisterIndexer,
+  };
 };
 
 export const useIsIndexer = () => {
-  const isRegisteredIndexer = useIsRegistedIndexer();
+  const { isRegisterIndexer } = useIsRegistedIndexer();
   const isCoordinatorIndexer = useIsCoordinatorIndexer();
 
   return useMemo(
-    () => isCoordinatorIndexer && isRegisteredIndexer,
-    [isCoordinatorIndexer, isRegisteredIndexer]
+    () => isCoordinatorIndexer && isRegisterIndexer,
+    [isCoordinatorIndexer, isRegisterIndexer]
   );
 };
 
@@ -115,30 +122,6 @@ export const useTokenBalance = (account: Account, deps?: HookDependency) => {
 
   return { tokenBalance, getTokenBalance };
 };
-
-// export const useBalance = (account: Account) => {
-//   const [balance, setBalance] = useState<string>();
-//   const signerOrProvider = useSignerOrProvider();
-
-//   const getBalance = useCallback(async () => {
-//     if (!account || !signerOrProvider) return;
-//     try {
-//       const value = await signerOrProvider?.getBalance(account);
-//       const fixedValue = Number(formatUnits(value, 18)).toFixed(4);
-//       console.warn(fixedValue);
-//       setBalance(fixedValue);
-//     } catch (e) {
-//       console.error(e);
-//       console.error('Get balance failed for:', account);
-//     }
-//   }, [account, signerOrProvider]);
-
-//   useEffect(() => {
-//     getBalance();
-//   }, [getBalance]);
-
-//   return balance;
-// };
 
 export const useIndexerMetadata = () => {
   const { account } = useAccount();

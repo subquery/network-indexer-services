@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import yargs from 'yargs';
@@ -17,6 +17,12 @@ export enum PostgresKeys {
   username = 'postgres-username',
   password = 'postgres-password',
   database = 'postgres-database',
+  sslMode = 'postgres-ssl-mode',
+  hostCertsPath = 'postgres-host-certs-path',
+  certsPath = 'postgres-certs-path',
+  ca = 'postgres-ca',
+  key = 'postgres-key',
+  cert = 'postgres-cert',
 }
 
 function getYargsOption() {
@@ -26,14 +32,14 @@ function getYargsOption() {
       describe: 'Network type for the service',
       type: 'string',
       choices: ['testnet', 'kepler', 'mainnet'],
-      default: 'kepler',
+      default: 'mainnet',
       group: Groups.coordinator,
     },
-    'ws-endpoint': {
+    'network-endpoint': {
       type: 'string',
-      describe: 'Specify wss endpoint for this network',
+      describe: 'Specify rpc endpoint for this network',
       demandOption: true,
-      default: 'https://polygon-rpc.com',
+      default: 'https://mainnet.base.org',
       group: Groups.coordinator,
     },
     ipfs: {
@@ -120,6 +126,43 @@ function getYargsOption() {
       describe: 'Postgres database name',
       demandOption: true,
       default: 'postgres',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.sslMode]: {
+      type: 'string',
+      describe: 'Postgres ssl mode',
+      choices: ['enabled', 'disabled'],
+      default: 'disabled',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.hostCertsPath]: {
+      type: 'string',
+      describe: 'Postgres certificates folder path in the host system',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.certsPath]: {
+      type: 'string',
+      describe: 'Postgres certificates folder path',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.ca]: {
+      type: 'string',
+      describe: 'Postgres ca file name',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.key]: {
+      type: 'string',
+      describe: 'Postgres key file name',
+      default: '',
+      group: Groups.postgres,
+    },
+    [PostgresKeys.cert]: {
+      type: 'string',
+      describe: 'Postgres cert file name',
+      default: '',
       group: Groups.postgres,
     },
   });

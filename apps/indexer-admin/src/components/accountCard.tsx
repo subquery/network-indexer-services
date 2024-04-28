@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo } from 'react';
@@ -49,7 +49,7 @@ const AccountCard: FC<Props> = ({ title, desc, buttons, name, account }) => {
           <ContentContainer>
             <Avatar address={account ?? ''} size={100} />
             <DescContainer ml={20}>
-              <Text>{name}</Text>
+              <Text className="overflowEllipsis2">{name}</Text>
               <Text mt={10}>{account}</Text>
               <Text mt={10}>{desc}</Text>
             </DescContainer>
@@ -111,4 +111,5 @@ const DescContainer = styled.div<{ ml?: number }>`
 const GroupButtonContainer = styled.div`
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 `;

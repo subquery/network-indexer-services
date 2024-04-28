@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
@@ -37,6 +37,14 @@ export class PaygResolver {
     @Args('consumerSign') consumerSign: string
   ) {
     return this.paygService.update(id, spent, isFinal, indexerSign, consumerSign);
+  }
+
+  @Mutation(() => ChannelType)
+  channelExtend(
+    @Args('id') id: string,
+    @Args('expiration') expiration: number
+  ) {
+    return this.paygService.extend(id, expiration);
   }
 
   @Mutation(() => ChannelType)

@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -22,28 +22,29 @@ use aes_gcm::{
 };
 use digest::{generic_array::GenericArray, Digest};
 use once_cell::sync::Lazy;
-use redis::aio::Connection;
+use redis::aio::MultiplexedConnection;
 use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
 use subql_indexer_utils::{
-    constants::{BOOTSTRAP, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
+    constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };
 use tdn::prelude::PeerId;
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::OnceCell;
 
 const DEFAULT_P2P_ADDR: &str = "0.0.0.0:7370";
 
-pub static REDIS: OnceCell<Mutex<Connection>> = OnceCell::const_new();
+pub static REDIS: OnceCell<MultiplexedConnection> = OnceCell::const_new();
 
-pub fn redis<'a>() -> &'a Mutex<Connection> {
-    REDIS.get().expect("REDIS lost connections")
+pub fn redis() -> MultiplexedConnection {
+    REDIS.get().expect("REDIS lost connections").clone()
 }
 
 pub async fn init_redis() {
     let client = redis::Client::open(COMMAND.redis_endpoint()).unwrap();
-    let conn = Mutex::new(client.get_async_connection().await.unwrap());
+
+    let conn = client.get_multiplexed_tokio_connection().await.unwrap();
     REDIS
         .set(conn)
         .map_err(|_e| "redis connection failure")
@@ -94,9 +95,6 @@ pub struct CommandLineArgs {
     /// Bootstrap seeds for p2p network with MultiAddr style
     #[structopt(long = "bootstrap")]
     pub bootstrap: Vec<String>,
-    /// Free query for consumer limit everyday
-    #[structopt(long = "free-plan", default_value = "60")]
-    pub free_limit: u64,
     /// Open telemetry for SubQuery
     #[structopt(long = "telemetry", parse(try_from_str), default_value = "true")]
     pub telemetry: bool,
@@ -109,6 +107,10 @@ pub struct CommandLineArgs {
 }
 
 impl CommandLineArgs {
+    pub fn free_limit(&self) -> u64 {
+        1440 // 1 times/min
+    }
+
     pub fn port(&self) -> u16 {
         self.port
     }
@@ -192,7 +194,11 @@ impl CommandLineArgs {
     pub fn telemetries(&self) -> Vec<PeerId> {
         if self.telemetry {
             match self.network() {
-                Network::Kepler | Network::Mainnet => TELEMETRIES_MAINNET
+                Network::Mainnet => TELEMETRIES_MAINNET
+                    .iter()
+                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .collect(),
+                Network::Kepler => TELEMETRIES_KEPLER
                     .iter()
                     .filter_map(|p| PeerId::from_hex(p.trim()).ok())
                     .collect(),

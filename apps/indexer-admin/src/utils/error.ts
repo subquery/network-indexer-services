@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import contractErrorCodes from '@subql/contract-sdk/publish/revertcode.json';
@@ -13,8 +13,10 @@ const getErrorMsg = (error: any) => {
 };
 
 export const mapContractError = (error: any) => {
-  const revertCode = Object.keys(contractErrorCodes).find((key) =>
-    getErrorMsg(error).toString().match(`reverted: ${key}`)
+  const revertCode = Object.keys(contractErrorCodes).find(
+    (key) =>
+      getErrorMsg(error).toString().match(`reverted: ${key}`) ||
+      getErrorMsg(error).toString().match(`revert: ${key}`)
   ) as keyof typeof contractErrorCodes;
 
   const getExtraExplain = (revertCode: 'IR004' | 'RS002') => {

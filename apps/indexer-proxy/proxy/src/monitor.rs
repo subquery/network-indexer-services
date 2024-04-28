@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use redis::{AsyncCommands, RedisResult};
+use redis::RedisResult;
 use subql_indexer_utils::request::REQUEST_CLIENT;
 use sysinfo::{CpuExt, DiskExt, System, SystemExt};
 use tokio::sync::{Mutex, OnceCell};
@@ -39,11 +39,16 @@ pub fn listen() {
         loop {
             let (p_cpu, t_mem, p_mem, t_disk, p_disk) = fetch_sysinfo().await;
 
-            let conn = redis();
-            let mut conn_lock = conn.lock().await;
-            let agreements: RedisResult<Vec<String>> = conn_lock.keys("*-dlimit").await;
-            let channels: RedisResult<Vec<String>> = conn_lock.keys("*-channel").await;
-            drop(conn_lock);
+            let mut conn = redis();
+
+            let agreements: RedisResult<Vec<String>> = redis::cmd("KEYS")
+                .arg("*-dlimit")
+                .query_async(&mut conn)
+                .await;
+            let channels: RedisResult<Vec<String>> = redis::cmd("KEYS")
+                .arg("*-channel")
+                .query_async(&mut conn)
+                .await;
 
             let agreement = match agreements {
                 Ok(s) => s.len(),

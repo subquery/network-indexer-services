@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
@@ -37,9 +37,7 @@ export class MonitorService {
       try {
         const result = await axios.get(
           `${
-            project.serviceEndpoints.find((e) => {
-              e.key === SubqueryEndpointType.Node;
-            }).value
+            project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node).value
           }/health`,
           {
             timeout: 5000,
@@ -48,12 +46,14 @@ export class MonitorService {
         if (result.status === 200) {
           this.nodeUnhealthTimesMap.set(project.id, 0);
         } else {
+          this.logger.debug(`check node health failed: ${result.status}`);
           this.nodeUnhealthTimesMap.set(
             project.id,
             (this.nodeUnhealthTimesMap.get(project.id) ?? 0) + 1
           );
         }
       } catch (e) {
+        this.logger.debug(`check node health error: ${e.message}`);
         this.nodeUnhealthTimesMap.set(
           project.id,
           (this.nodeUnhealthTimesMap.get(project.id) ?? 0) + 1

@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { ContractSDK, SdkOptions, SubqueryNetwork } from '@subql/contract-sdk';
@@ -43,6 +43,7 @@ export const networkToChainID: Record<SubqueryNetwork, ChainID> = {
 
 export const sdkOptions = {
   [ChainID.testnet]: createContractOptions('testnet'),
+  [ChainID['testnet-mumbai']]: createContractOptions('testnet-mumbai'),
   [ChainID.local]: createContractOptions('local'),
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };

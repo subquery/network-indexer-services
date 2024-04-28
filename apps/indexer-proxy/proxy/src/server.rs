@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
+    payg::{MultipleQueryState, QueryState},
     tools::{hex_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -43,7 +44,10 @@ use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
 use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
-use crate::payg::{fetch_channel_cache, merket_price, open_state, query_state, AuthPayg};
+use crate::payg::{
+    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel,
+    query_multiple_state, query_single_state, AuthPayg,
+};
 use crate::project::get_project;
 
 #[derive(Serialize)]
@@ -72,8 +76,12 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
+        // `POST /payg-extend/0x00...955X` goes to extend channel expiration
+        .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
+        // `GET /payg-pay` goes to pay to channel some spent
+        .route("/payg-pay", post(payg_pay))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
         .route("/metrics", get(metrics_handler))
@@ -141,7 +149,7 @@ async fn generate_token(
                 // fixed plan just for try and dispute usecase. 1/second
                 if let Some(consumer) = &payload.consumer {
                     if signer == consumer.to_lowercase() {
-                        (true, COMMAND.free_limit, 1, Some(addr))
+                        (true, COMMAND.free_limit(), 1, Some(addr))
                     } else {
                         (false, 0, 0, None)
                     }
@@ -237,7 +245,7 @@ async fn payg_generate(Json(payload): Json<Value>) -> Result<Json<Value>, Error>
 
 async fn payg_query(
     mut headers: HeaderMap,
-    AuthPayg(state): AuthPayg,
+    AuthPayg(auth): AuthPayg,
     Path(deployment): Path<String>,
     ep_name: Query<EpName>,
     body: String,
@@ -246,14 +254,35 @@ async fn payg_query(
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
 
-    let (data, signature, state_data) = query_state(
-        &deployment,
-        body,
-        ep_name.0.ep_name,
-        &state,
-        MetricsNetwork::HTTP,
-    )
-    .await?;
+    // single or multiple
+    let block = headers
+        .remove("X-Channel-Block")
+        .unwrap_or(HeaderValue::from_static("single"));
+
+    let (data, signature, state_data) = match block.to_str() {
+        Ok("multiple") => {
+            let state = MultipleQueryState::from_bs64(auth)?;
+            query_multiple_state(
+                &deployment,
+                body,
+                ep_name.0.ep_name,
+                state,
+                MetricsNetwork::HTTP,
+            )
+            .await?
+        }
+        _ => {
+            let state = QueryState::from_bs64_old1(auth)?;
+            query_single_state(
+                &deployment,
+                body,
+                ep_name.0.ep_name,
+                state,
+                MetricsNetwork::HTTP,
+            )
+            .await?
+        }
+    };
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -286,6 +315,35 @@ async fn payg_query(
     headers.push(("Content-Type", "application/json"));
 
     Ok(build_response(body, headers))
+}
+
+async fn payg_pay(body: String) -> Result<String, Error> {
+    let state = QueryState::from_bs64(body)?;
+    let new_state = pay_channel(state).await?;
+    Ok(new_state)
+}
+
+#[derive(Deserialize)]
+struct ExtendParams {
+    expired: i64,
+    expiration: i32,
+    signature: String,
+}
+
+async fn payg_extend(
+    Path(channel): Path<String>,
+    Json(payload): Json<ExtendParams>,
+) -> Result<Json<Value>, Error> {
+    let extend = extend_channel(
+        channel,
+        payload.expired,
+        payload.expiration,
+        payload.signature,
+    )
+    .await?;
+    Ok(Json(json!({
+        "signature": extend
+    })))
 }
 
 #[derive(Deserialize)]

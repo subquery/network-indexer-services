@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { TOKEN_SYMBOL } from 'utils/web3';
@@ -8,7 +8,7 @@ import { RegisterStep } from './types';
 const prompts = {
   [RegisterStep.onboarding]: {
     title: 'Stake to Become a Subquery Indexer',
-    desc: `Become an indexer so you can index SubQuery projects. You need to stake a minimum of 14,000 ${TOKEN_SYMBOL} in order to index SubQuery projects.`,
+    desc: `Become an indexer so you can index SubQuery projects. You need to stake a minimum of 200,000 ${TOKEN_SYMBOL} in order to index SubQuery projects.`,
     buttonTitle: 'Get Started',
   },
   [RegisterStep.authorisation]: {

@@ -1,15 +1,17 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import path from 'path';
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
 import { timeoutPromiseHO } from 'src/utils/promise';
-import { argv } from 'src/yargs';
+import { PostgresKeys, argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
-import { Config } from '../configure/configure.module';
+import { Config, Postgres } from '../configure/configure.module';
 import { AccountService } from '../core/account.service';
 import { ContractService } from '../core/contract.service';
 import { DockerService } from '../core/docker.service';
@@ -71,6 +73,20 @@ export class ProjectService {
     void this.restoreProjects();
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async autoUpdateProjectInfo() {
+    const projects = await this.projectRepo.find();
+    for (const project of projects) {
+      try {
+        const projectInfo = await this.getProjectInfoFromNetwork(project.id);
+        project.details = projectInfo;
+        await this.projectRepo.save(project);
+      } catch (e) {
+        getLogger('project').warn(`Failed to update project info: ${project.id}`);
+      }
+    }
+  }
+
   getProject(id: string): Promise<Project> {
     return this.projectRepo.findOneBy({ id });
   }
@@ -123,7 +139,12 @@ export class ProjectService {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return this.projectRepo.find();
+    return this.projectRepo.find({
+      order: {
+        projectType: 'DESC',
+        id: 'ASC',
+      },
+    });
   }
 
   async getAlivePaygs(): Promise<Payg[]> {
@@ -298,10 +319,11 @@ export class ProjectService {
     const mmrStoreType = await this.getMmrStoreType(project.id);
     const projectID = projectId(project.id);
 
-    const postgres = this.config.postgres;
+    const postgres = this.escapePostgresConfig(this.config.postgres);
     const dockerNetwork = this.config.dockerNetwork;
 
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
+    const containerCertsPath = '/usr/certs';
 
     this.setDefaultConfigValue(projectConfig);
 
@@ -317,9 +339,22 @@ export class ProjectService {
       mmrPath,
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
+      hostCertsPath: argv[PostgresKeys.hostCertsPath],
+      certsPath: containerCertsPath,
+      pgCa: argv[PostgresKeys.ca] ? path.join(containerCertsPath, argv[PostgresKeys.ca]) : '',
+      pgKey: argv[PostgresKeys.key] ? path.join(containerCertsPath, argv[PostgresKeys.key]) : '',
+      pgCert: argv[PostgresKeys.cert] ? path.join(containerCertsPath, argv[PostgresKeys.cert]) : '',
     };
 
     return item;
+  }
+
+  escapePostgresConfig(config: Postgres) {
+    const escaped = JSON.parse(JSON.stringify(config)) as Postgres;
+    escaped.user = escaped.user.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    escaped.pass = escaped.pass.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    escaped.db = escaped.db.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return escaped;
   }
 
   async createAndStartSubqueryProject(id: string, projectConfig: IProjectConfig) {

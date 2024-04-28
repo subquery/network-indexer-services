@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo } from 'react';
@@ -59,7 +59,7 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={13}>
         <Avatar address={cidToBytes32(id)} size={50} />
         <ProfileContainer>
-          <Typography style={{ display: 'inline-flex', gap: 8 }}>
+          <Typography className="overflowEllipsis2" style={{ gap: 8, maxWidth: 560 }}>
             {details.name}
             {isUnsafe && <UnsafeWarn />}
           </Typography>

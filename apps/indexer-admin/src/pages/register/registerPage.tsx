@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -34,7 +34,7 @@ const RegisterPage = () => {
   const signer = useSignerOrProvider();
 
   const { account } = useAccount();
-  const isRegistedIndexer = useIsRegistedIndexer();
+  const { isRegisterIndexer } = useIsRegistedIndexer();
   const isIndexer = useIsIndexer();
   const sdk = useContractSDK();
   const { tokenBalance, getTokenBalance } = useTokenBalance(account);
@@ -49,8 +49,8 @@ const RegisterPage = () => {
   const isRegisterStep = useCallback(() => currentStep === RegisterStep.register, [currentStep]);
   useEffect(() => {
     if (initialStep) setStep(initialStep);
-    if (isRegistedIndexer) setStep(RegisterStep.sync);
-  }, [initialStep, isRegistedIndexer]);
+    if (isRegisterIndexer) setStep(RegisterStep.sync);
+  }, [initialStep, isRegisterIndexer]);
 
   useEffect(() => {
     if (!account) {
@@ -171,7 +171,7 @@ const RegisterPage = () => {
     );
   };
 
-  if (isUndefined(initialStep) || isUndefined(isRegistedIndexer)) return <LoadingSpinner />;
+  if (isUndefined(initialStep) || isUndefined(isRegisterIndexer)) return <LoadingSpinner />;
 
   return (
     <Container>

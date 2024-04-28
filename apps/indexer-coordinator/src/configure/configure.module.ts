@@ -1,4 +1,4 @@
-// Copyright 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 import { DynamicModule, Global, Module } from '@nestjs/common';
@@ -16,7 +16,7 @@ export type Postgres = {
 
 export interface IConfig {
   readonly network: Network;
-  readonly wsEndpoint: string;
+  readonly networkEndpoint: string;
   readonly port: number;
   readonly postgres: Postgres;
   readonly debug: boolean;
@@ -37,7 +37,7 @@ export class Config implements IConfig {
 
     return new Config({
       network: argv['network'] as Network,
-      wsEndpoint: argv['ws-endpoint'],
+      networkEndpoint: argv['network-endpoint'],
       port: argv['port'],
       debug: argv['debug'],
       secret: argv['secret-key'],
@@ -53,8 +53,8 @@ export class Config implements IConfig {
     return this._config.network;
   }
 
-  get wsEndpoint(): string {
-    return this._config.wsEndpoint;
+  get networkEndpoint(): string {
+    return this._config.networkEndpoint;
   }
 
   get port(): number {

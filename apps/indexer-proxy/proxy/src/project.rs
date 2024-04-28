@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2023 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
-use redis::{AsyncCommands, RedisResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -137,7 +136,7 @@ impl RpcMainfest {
             if v.is_null() {
                 return Ok(Default::default());
             }
-            serde_json::from_value(v.clone()).map_err(|_| Error::ServiceException(1202))?
+            serde_json::from_value(v.clone()).map_err(|_| Error::ServiceException(1203))?
         } else {
             return Ok(Default::default());
         };
@@ -174,7 +173,7 @@ impl RpcMainfest {
     pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
         for rd in &self.rpc_deny_list {
             if method.starts_with(rd) {
-                return Err(Error::InvalidRequest(1049));
+                return Err(Error::InvalidRequest(1060));
             }
         }
 
@@ -186,7 +185,7 @@ impl RpcMainfest {
             }
         }
         if not_allowed {
-            return Err(Error::InvalidRequest(1049));
+            return Err(Error::InvalidRequest(1060));
         }
 
         if let Some(cu) = self.compute_unit.get(method) {
@@ -317,17 +316,27 @@ impl Project {
     ) -> Result<(Vec<u8>, String)> {
         if let Some(limit) = self.rate_limit {
             // project rate limit
-            let conn = redis();
-            let mut conn_lock = conn.lock().await;
+            let mut conn = redis();
             let second = Utc::now().timestamp();
             let used_key = format!("{}-rate-{}", self.id, second);
 
-            let used: i64 = conn_lock.get(&used_key).await.unwrap_or(0);
+            let used: i64 = redis::cmd("GET")
+                .arg(&used_key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(0);
+
             if is_limit && used + 1 > limit {
                 return Err(Error::RateLimit(1057));
             }
-            let _: RedisResult<()> = conn_lock.set_ex(&used_key, used + 1, 1).await;
-            drop(conn_lock);
+
+            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+                .arg(&used_key)
+                .arg(1)
+                .arg(used + 1)
+                .query_async(&mut conn)
+                .await
+                .map_err(|err| error!("Redis 1 {}", err));
         }
 
         match self.ptype {
