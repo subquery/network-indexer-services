@@ -258,7 +258,6 @@ export class ContractService {
           break;
         }
         default: {
-          logger.warn(`Unsupported txType: ${txOptions.type}`);
           break;
         }
       }
@@ -291,47 +290,6 @@ export class ContractService {
       }
     }
   }
-
-  // async checkBypass(task: string, timeout = bypassTime) {
-  //   // check gas limit and bypass if needed
-  //   // complete task if gas limit not exceeded
-  //   // register task in redis with start time
-  //   // after 6 hours force complete task
-  //   if (await this.checkGasLimit()) {
-  //     this.completeTask(task);
-  //     return true;
-  //   }
-  //   const cacheKey = `bypass:${task}`;
-  //   let cache = await redisGetObj<{ start: number }>(cacheKey);
-  //   if (!cache) {
-  //     cache = { start: Date.now() };
-  //   }
-  //   if (Date.now() - cache.start > timeout) {
-  //     this.completeTask(task);
-  //     return true;
-  //   }
-  //   await redisSetObj(cacheKey, cache, timeout / 1000);
-  //   return false;
-  // }
-
-  // async checkPostpone(task: string, timeout = bypassTime) {
-  //   // check gas limit and postpone if needed
-  //   // complete task if gas limit not exceeded
-  //   // register task in redis with start time
-  //   return this.checkBypass(task, timeout);
-  // }
-
-  // async checkPostponedTask(task: string) {
-  //   // don't do anything if task is not registered in redis
-  //   // check gas limit and postpone if needed
-  //   // complete task if gas limit not exceeded
-  //   // after 6 hours force complete task
-  //   const cacheKey = `bypass:${task}`;
-  //   if (!(await redisHas(cacheKey))) {
-  //     return false;
-  //   }
-  //   return this.checkBypass(task);
-  // }
 
   private async registerTask(task: string) {
     await redisSetObj(`bypass:${task}`, { start: Date.now() }, bypassTime / 1000);

@@ -7,7 +7,6 @@ import { BigNumber } from 'ethers';
 import { NetworkService } from 'src/network/network.service';
 import { getLogger } from 'src/utils/logger';
 import { AccountService } from './account.service';
-import { ContractService } from './contract.service';
 import { OnChainService } from './onchain.service';
 import { TxType } from './types';
 
@@ -22,7 +21,6 @@ export class RewardService implements OnModuleInit {
   constructor(
     private accountService: AccountService,
     private networkService: NetworkService,
-    private contractService: ContractService,
     private onChainService: OnChainService
   ) {}
 

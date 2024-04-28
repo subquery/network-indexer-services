@@ -31,13 +31,23 @@ export enum TxType {
   postponed = 'postponed',
 }
 
-export interface TxOptions {
+type TxOptionsBase = {
   action: string;
   type: TxType;
   txFun: TxFun;
-  gasFun?: GasFun;
   desc?: string;
-}
+};
+
+type TxOptionsGo = TxOptionsBase & {
+  type: TxType.go;
+};
+
+type TxOptionsNotGo = TxOptionsBase & {
+  type: Exclude<TxType, TxType.go>;
+  gasFun: GasFun;
+};
+
+export type TxOptions = TxOptionsGo | TxOptionsNotGo;
 
 export type Transaction = {
   name: string;
