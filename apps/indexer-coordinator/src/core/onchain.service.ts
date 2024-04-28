@@ -340,4 +340,32 @@ export class OnChainService implements OnApplicationBootstrap {
       logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
     }
   }
+
+  async startProject(projectId: string, runner: string): Promise<void> {
+    if (!(await this.checkControllerReady())) return;
+    try {
+      await this.contractService.sendTransaction({
+        action: `start project: ${projectId}`,
+        type: TxType.go,
+        txFun: (overrides) =>
+          this.sdk.projectRegistry.startService2(cidToBytes32(projectId), runner, overrides),
+      });
+    } catch (e) {
+      logger.warn(e, `Fail to start project: ${projectId}`);
+    }
+  }
+
+  async stopProject(projectId: string, runner: string): Promise<void> {
+    if (!(await this.checkControllerReady())) return;
+    try {
+      await this.contractService.sendTransaction({
+        action: `stop project: ${projectId}`,
+        type: TxType.go,
+        txFun: (overrides) =>
+          this.sdk.projectRegistry.stopService2(cidToBytes32(projectId), runner, overrides),
+      });
+    } catch (e) {
+      logger.warn(e, `Fail to stop project: ${projectId}`);
+    }
+  }
 }
