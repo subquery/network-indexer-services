@@ -248,14 +248,16 @@ export class ProjectResolver {
     return this.projectService.updateProjectPayg(id, paygConfig);
   }
 
-  @Mutation()
+  @Mutation(() => Boolean)
   async startProjectOnChain(@Args('id') id: string) {
-    return this.projectService.startProjectOnChain(id);
+    await this.projectService.startProjectOnChain(id);
+    return true;
   }
 
-  @Mutation()
+  @Mutation(() => Boolean)
   async stopProjectOnChain(@Args('id') id: string) {
-    return this.projectService.stopProjectOnChain(id);
+    await this.projectService.stopProjectOnChain(id);
+    return true;
   }
 
   @Subscription(() => Project)
