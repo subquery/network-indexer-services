@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
+import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
 import { Not, Repository } from 'typeorm';
@@ -66,6 +67,7 @@ export class ProjectService {
     private account: AccountService,
     private config: Config,
     private portService: PortService,
+    private onchainService: OnChainService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -481,5 +483,15 @@ export class ProjectService {
   async logs(container: string): Promise<LogType> {
     const log = await this.docker.logs(container);
     return { log };
+  }
+
+  async startProjectOnChain(id: string) {
+    const indexer = await this.account.getIndexer();
+    return this.onchainService.startProject(id, indexer);
+  }
+
+  async stopProjectOnChain(id: string) {
+    const indexer = await this.account.getIndexer();
+    return this.onchainService.stopProject(id, indexer);
   }
 }

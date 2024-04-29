@@ -352,6 +352,7 @@ export class OnChainService implements OnApplicationBootstrap {
       });
     } catch (e) {
       logger.warn(e, `Fail to start project: ${projectId}`);
+      throw new Error(`Fail to start project: ${projectId}`);
     }
   }
 
@@ -366,6 +367,7 @@ export class OnChainService implements OnApplicationBootstrap {
       });
     } catch (e) {
       logger.warn(e, `Fail to stop project: ${projectId}`);
+      throw new Error(`Fail to stop project: ${projectId}`);
     }
   }
 }

@@ -248,6 +248,16 @@ export class ProjectResolver {
     return this.projectService.updateProjectPayg(id, paygConfig);
   }
 
+  @Mutation()
+  async startProjectOnChain(@Args('id') id: string) {
+    return this.projectService.startProjectOnChain(id);
+  }
+
+  @Mutation()
+  async stopProjectOnChain(@Args('id') id: string) {
+    return this.projectService.stopProjectOnChain(id);
+  }
+
   @Subscription(() => Project)
   projectChanged() {
     return this.pubSub.asyncIterator([ProjectEvent.ProjectStarted, ProjectEvent.ProjectStopped]);
