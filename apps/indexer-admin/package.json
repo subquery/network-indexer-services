@@ -127,6 +127,7 @@
     "/build"
   ],
   "resolutions": {
-    "listhen": "1.5.5"
+    "listhen": "1.5.5",
+    "@walletconnect/ethereum-provider": "2.11.1"
   }
 }
