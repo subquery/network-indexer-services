@@ -8,10 +8,13 @@ import { useContractSDK } from 'containers/contractSdk';
 import { useNotification } from 'containers/notificationContext';
 import { AccountActionName } from 'pages/account/config';
 import { ControllerAction } from 'pages/controllers/types';
+import { ProjectActionName } from 'pages/project-details/config';
 import { AccountAction, ProjectAction, TransactionType } from 'pages/project-details/types';
 import {
   configController,
   getIndexMetadata,
+  readyIndexing,
+  stopIndexing,
   unRegister,
   updateMetadata,
 } from 'utils/indexerActions';
@@ -60,38 +63,49 @@ export const useAccountAction = () => {
 export const useIndexingAction = (id: string) => {
   const [announceReady] = useMutation(ANNOUNCE_READY);
   const [announceStop] = useMutation(ANNOUNCE_STOP);
+
+  const signer = useSignerOrProvider();
+
+  const sdk = useContractSDK();
+  const notificationContext = useNotification();
+
   const indexingTransactions = useMemo(
     () => ({
-      [ProjectAction.AnnounceReady]: async () => {
-        await announceReady({
-          variables: {
-            id,
-          },
-        });
-      },
-      [ProjectAction.AnnounceTerminating]: async () => {
-        await announceStop({
-          variables: {
-            id,
-          },
-        });
-      },
+      [ProjectAction.AnnounceReady]: () => readyIndexing(sdk, signer, id),
+      [ProjectAction.AnnounceTerminating]: () => stopIndexing(sdk, signer, id),
+      // [ProjectAction.AnnounceReady]: async () => {
+      //   await announceReady({
+      //     variables: {
+      //       id,
+      //     },
+      //   });
+      // },
+      // [ProjectAction.AnnounceTerminating]: async () => {
+      //   await announceStop({
+      //     variables: {
+      //       id,
+      //     },
+      //   });
+      // },
     }),
-    [announceReady, announceStop, id]
+    [sdk, signer, id]
   );
 
   return useCallback(
     async (type: TransactionType, onProcess: Callback, onSuccess?: Callback) => {
       try {
         const sendTx = indexingTransactions[type];
-        await sendTx();
-        onProcess();
-        onSuccess?.();
+        const actionName = ProjectActionName[type];
+        const tx = await sendTx();
+        await handleTransaction(actionName, tx, notificationContext, onSuccess);
+        // await sendTx();
+        // onProcess();
+        // onSuccess?.();
       } catch (e) {
         onProcess(e);
       }
     },
-    [indexingTransactions]
+    [indexingTransactions, notificationContext]
   );
 };
 
