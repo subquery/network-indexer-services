@@ -18,10 +18,10 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
   const { isConnected } = useAccount();
   const { chain } = useNetwork();
   const { chains, switchNetwork } = useSwitchNetwork();
-  const { indexer } = useCoordinatorIndexer();
+  const { indexer, loading: coordinatorIndexerLoading } = useCoordinatorIndexer();
   const location = useLocation();
 
-  const { data: hasController } = useHasController();
+  const { data: hasController, loading } = useHasController();
 
   if (isConnected && !tipsChainIds.includes(chain?.id || 0)) {
     return (
@@ -47,8 +47,10 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
       </div>
     );
   }
+
   // User have register in the coordinator service, but don't set the controller account
   if (
+    !loading &&
     isConnected &&
     !hasController &&
     // must have record, otherwises should redirect to register page.
@@ -59,7 +61,7 @@ export const ChainStatus: React.FC<React.PropsWithChildren> = ({ children }) => 
   }
 
   // database don't have indexer record so must register.
-  if (!indexer && location.pathname !== '/register') {
+  if (!coordinatorIndexerLoading && !indexer && location.pathname !== '/register') {
     return <Redirect to="/register" />;
   }
 

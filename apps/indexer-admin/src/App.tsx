@@ -48,7 +48,7 @@ const AppContents = () => {
     await load();
   });
   useEffect(() => {
-    if (!loading && address && sdk) {
+    if (!loading && address) {
       refetch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
