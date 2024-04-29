@@ -342,7 +342,7 @@ export class OnChainService implements OnApplicationBootstrap {
   }
 
   async startProject(projectId: string, runner: string): Promise<void> {
-    if (!(await this.checkControllerReady())) return;
+    if (!(await this.checkControllerReady())) throw new Error('Controller not ready');
     try {
       await this.contractService.sendTransaction({
         action: `start project: ${projectId}`,
@@ -357,7 +357,7 @@ export class OnChainService implements OnApplicationBootstrap {
   }
 
   async stopProject(projectId: string, runner: string): Promise<void> {
-    if (!(await this.checkControllerReady())) return;
+    if (!(await this.checkControllerReady())) throw new Error('Controller not ready');
     try {
       await this.contractService.sendTransaction({
         action: `stop project: ${projectId}`,
