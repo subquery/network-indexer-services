@@ -68,6 +68,7 @@ const ProjectDetailsPage = () => {
   const [startProjectRequest, { loading: startProjectLoading }] = useMutation(START_PROJECT);
   const [stopProjectRequest, { loading: stopProjectLoading }] = useMutation(STOP_PROJECT);
   const [removeProjectRequest, { loading: removeProjectLoading }] = useMutation(REMOVE_PROJECT);
+  const [announceLoading, setAnnounceLoading] = useState(false);
   const queryVersions = useQueryVersions(id);
   const nodeVersions = useNodeVersions(id);
 
@@ -103,6 +104,7 @@ const ProjectDetailsPage = () => {
     if (error) {
       parseError(error, {
         alert: true,
+        rawMsg: true,
       });
       return;
     }
@@ -164,8 +166,8 @@ const ProjectDetailsPage = () => {
   );
 
   const loading = useMemo(
-    () => startProjectLoading || stopProjectLoading || removeProjectLoading,
-    [startProjectLoading, stopProjectLoading, removeProjectLoading]
+    () => startProjectLoading || stopProjectLoading || removeProjectLoading || announceLoading,
+    [startProjectLoading, stopProjectLoading, removeProjectLoading, announceLoading]
   );
 
   const projectDetails = useMemo(() => {
@@ -243,16 +245,27 @@ const ProjectDetailsPage = () => {
 
     const stopProjectSteps = createStopProjectSteps(stopProject);
     const removeProjectSteps = createRemoveProjectSteps(removeProject);
-    const announceReadySteps = createReadyIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceReady, onPopoverClose, () => {
-        getDeploymentStatus();
-      })
-    );
-    const announceNotIndexingSteps = createNotIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose, () => {
-        getDeploymentStatus();
-      })
-    );
+    const announceReadySteps = createReadyIndexingSteps(async () => {
+      try {
+        setAnnounceLoading(true);
+        await indexingAction(ProjectAction.AnnounceReady, onPopoverClose, () => {
+          getDeploymentStatus();
+        });
+      } finally {
+        setAnnounceLoading(false);
+      }
+    });
+    const announceNotIndexingSteps = createNotIndexingSteps(async () => {
+      try {
+        setAnnounceLoading(true);
+
+        await indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose, () => {
+          getDeploymentStatus();
+        });
+      } finally {
+        setAnnounceLoading(false);
+      }
+    });
 
     return {
       ...startIndexingSteps,

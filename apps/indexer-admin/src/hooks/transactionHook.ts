@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMutation } from '@apollo/client';
 
 import { useContractSDK } from 'containers/contractSdk';
 import { useNotification } from 'containers/notificationContext';
 import { AccountActionName } from 'pages/account/config';
 import { ControllerAction } from 'pages/controllers/types';
-import { ProjectActionName } from 'pages/project-details/config';
 import { AccountAction, ProjectAction, TransactionType } from 'pages/project-details/types';
 import {
   configController,
   getIndexMetadata,
-  readyIndexing,
-  stopIndexing,
   unRegister,
   updateMetadata,
 } from 'utils/indexerActions';
+import { ANNOUNCE_READY, ANNOUNCE_STOP } from 'utils/queries';
 import { handleTransaction } from 'utils/transactions';
 
 import { useSignerOrProvider } from './web3Hook';
@@ -59,32 +58,40 @@ export const useAccountAction = () => {
 };
 
 export const useIndexingAction = (id: string) => {
-  const signer = useSignerOrProvider();
-
-  const sdk = useContractSDK();
-  const notificationContext = useNotification();
-
+  const [announceReady] = useMutation(ANNOUNCE_READY);
+  const [announceStop] = useMutation(ANNOUNCE_STOP);
   const indexingTransactions = useMemo(
     () => ({
-      [ProjectAction.AnnounceReady]: () => readyIndexing(sdk, signer, id),
-      [ProjectAction.AnnounceTerminating]: () => stopIndexing(sdk, signer, id),
+      [ProjectAction.AnnounceReady]: async () => {
+        await announceReady({
+          variables: {
+            id,
+          },
+        });
+      },
+      [ProjectAction.AnnounceTerminating]: async () => {
+        await announceStop({
+          variables: {
+            id,
+          },
+        });
+      },
     }),
-    [sdk, signer, id]
+    [announceReady, announceStop, id]
   );
 
   return useCallback(
     async (type: TransactionType, onProcess: Callback, onSuccess?: Callback) => {
       try {
         const sendTx = indexingTransactions[type];
-        const actionName = ProjectActionName[type];
-        const tx = await sendTx();
+        await sendTx();
         onProcess();
-        await handleTransaction(actionName, tx, notificationContext, onSuccess);
+        onSuccess?.();
       } catch (e) {
         onProcess(e);
       }
     },
-    [indexingTransactions, notificationContext]
+    [indexingTransactions]
   );
 };
 
