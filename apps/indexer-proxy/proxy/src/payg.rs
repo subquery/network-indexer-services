@@ -380,7 +380,7 @@ pub async fn query_single_state(
         return Err(Error::InvalidProjectPrice(1034));
     }
 
-    if remote_next > total {
+    if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
@@ -500,8 +500,13 @@ pub async fn query_multiple_state(
     // check spent
     let total = state_cache.total;
     let price = state_cache.price;
-    let local_next = state_cache.spent + price;
     let remote_prev = state_cache.remote;
+
+    // compute unit count times
+    let (unit_times, _uint_overflow) = project.compute_query_method(&query)?;
+    let used_amount = price * unit_times;
+
+    let local_next = state_cache.spent + used_amount;
 
     if local_next > total {
         // overflow the total
