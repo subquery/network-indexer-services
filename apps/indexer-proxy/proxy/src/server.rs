@@ -18,13 +18,10 @@
 
 #![deny(warnings)]
 use axum::{
-    extract::{ConnectInfo, Path, Query},
-    http::{
+    extract::{ConnectInfo, Path, Query, WebSocketUpgrade}, http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
-    },
-    routing::{get, post},
-    Json, Router,
+    }, routing::{get, post}, Json, Router
 };
 use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
@@ -49,6 +46,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::websocket::handle_websocket;
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -68,6 +66,7 @@ pub async fn start_server(port: u16) {
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
         .route("/query/:deployment", post(query_handler))
+        .route("/query/:deployment/ws", get(ws_query_handler))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `GET /payg-price` get the payg price
@@ -220,6 +219,20 @@ async fn query_handler(
     headers.push(("Content-Type", "application/json"));
 
     Ok(build_response(body, headers))
+}
+
+async fn ws_query_handler(
+    ws: WebSocketUpgrade,
+    Path(deployment): Path<String>,
+    AuthQuery(deployment_id): AuthQuery,
+) -> Result<(), Error> {
+    if COMMAND.auth() && deployment != deployment_id {
+        return Err(Error::AuthVerify(1004));
+    };
+
+    // Handle WebSocket connection
+    _ = ws.on_upgrade(move |socket| handle_websocket(socket, deployment));
+    Ok(())
 }
 
 async fn query_limit_handler(

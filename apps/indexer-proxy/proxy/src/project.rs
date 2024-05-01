@@ -74,6 +74,14 @@ impl Project {
         &self.endpoints[0].1
     }
 
+    pub fn ws_endpoint<'a>(&'a self) -> Option<&'a str> {
+        if self.endpoints.len() > 1 {
+            Some(&self.endpoints[1].1)
+        } else {
+            None
+        }
+    }
+
     pub fn open_payg(&self) -> bool {
         self.payg_price > U256::zero() && self.payg_expiration > 0
     }
@@ -419,6 +427,11 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                 "queryEndpoint" => {
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
+                    continue;
+                }
+                "websocketEndpoint" => {
+                    // push query to endpoint index 1
+                    endpoints.insert(1, (endpoint.key, endpoint.value));
                     continue;
                 }
                 _ => (),

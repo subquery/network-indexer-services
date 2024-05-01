@@ -53,6 +53,8 @@ pub enum Error {
     Overflow(i32),
 
     Serialize(i32),
+
+    WebSocket(i32),
 }
 
 impl Error {
@@ -106,6 +108,7 @@ impl Error {
             Error::Expired(c) => (StatusCode::BAD_REQUEST, c, "Service expired"),
             Error::Overflow(c) => (StatusCode::BAD_REQUEST, c, "Query overflow"),
             Error::Serialize(c) => (StatusCode::BAD_REQUEST, c, "Invalid serialize"),
+            Error::WebSocket(c) => (StatusCode::BAD_REQUEST, c, "WebSocket error"),
         }
     }
 }
