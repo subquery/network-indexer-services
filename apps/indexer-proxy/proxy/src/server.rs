@@ -21,9 +21,10 @@ use axum::{
     extract::{ConnectInfo, Path, Query, WebSocketUpgrade}, http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
-    }, routing::{get, post}, Json, Router
+    }, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use axum_auth::AuthBearer;
+use axum::extract::ws::WebSocket;
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -36,7 +37,7 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::account::{get_indexer, indexer_healthy};
+use crate::{account::{get_indexer, indexer_healthy}, websocket::WSConnections};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
@@ -47,6 +48,8 @@ use crate::payg::{
 };
 use crate::project::get_project;
 use crate::websocket::handle_websocket;
+use tokio::sync::Mutex;
+use std::sync::Arc;
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -61,6 +64,11 @@ pub struct QueryToken {
 }
 
 pub async fn start_server(port: u16) {
+    // TODO: remove this seems unused
+    let connections = Arc::new(WSConnections {
+        sockets: Mutex::new(Vec::new()),
+    });
+
     let app = Router::new()
         // `POST /token` goes to create token for query
         .route("/token", post(generate_token))
@@ -86,6 +94,7 @@ pub async fn start_server(port: u16) {
         .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
+        .layer(Extension(connections))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -225,14 +234,13 @@ async fn ws_query_handler(
     ws: WebSocketUpgrade,
     Path(deployment): Path<String>,
     AuthQuery(deployment_id): AuthQuery,
-) -> Result<(), Error> {
+) -> impl IntoResponse {
     if COMMAND.auth() && deployment != deployment_id {
-        return Err(Error::AuthVerify(1004));
+        return Error::AuthVerify(1004).into_response();
     };
 
     // Handle WebSocket connection
-    _ = ws.on_upgrade(move |socket| handle_websocket(socket, deployment));
-    Ok(())
+    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment))
 }
 
 async fn query_limit_handler(

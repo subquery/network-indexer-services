@@ -117,8 +117,11 @@ where
         req: &mut Parts,
         _state: &S,
     ) -> std::result::Result<Self, Self::Rejection> {
-        let claims = check_jwt(req)?;
+        if !COMMAND.auth() {
+            return Ok(AuthQuery("".to_string()));
+        }
 
+        let claims = check_jwt(req)?;
         if let Some(agreement) = claims.agreement {
             check_agreement_limit(&agreement).await?;
         }
