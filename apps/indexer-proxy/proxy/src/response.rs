@@ -1,10 +1,13 @@
 use chrono::Utc;
-use ethers::{abi::{encode, Tokenizable}, signers::Signer, utils::keccak256};
+use ethers::{
+    abi::{encode, Tokenizable},
+    signers::Signer,
+    utils::keccak256,
+};
 use sha2::Digest;
 use subql_indexer_utils::payg::{convert_sign_to_string, default_sign};
 
 use crate::account::ACCOUNT;
-
 
 pub async fn sign_response(data: &[u8]) -> String {
     let mut hasher = sha2::Sha256::new();

@@ -17,14 +17,18 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![deny(warnings)]
+use axum::extract::ws::WebSocket;
 use axum::{
-    extract::{ConnectInfo, Path, Query, WebSocketUpgrade}, http::{
+    extract::{ConnectInfo, Path, Query, WebSocketUpgrade},
+    http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
-    }, response::IntoResponse, routing::{get, post}, Json, Router
+    },
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
 };
 use axum_auth::AuthBearer;
-use axum::extract::ws::WebSocket;
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
