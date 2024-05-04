@@ -99,7 +99,7 @@ impl WebSocketConnection {
             .expect("Failed to send text message to Ethereum endpoint");
     }
 
-    async fn close(&mut self, code: Option<CloseCode>, reason: Option<String>) {
+    async fn close_client(&mut self, code: Option<CloseCode>, reason: Option<String>) {
         self.client_socket
             .send(Message::Close(Some(CloseFrame {
                 code: code.unwrap_or(500),
@@ -107,10 +107,18 @@ impl WebSocketConnection {
             })))
             .await
             .expect("Failed to send close message to client");
+    }
+
+    async fn close_remote(&mut self) {
         self.remote_socket
             .close(None)
             .await
             .expect("Failed to close remote WebSocket");
+    }
+
+    async fn close(&mut self, code: Option<CloseCode>, reason: Option<String>) {
+        self.close_client(code, reason).await;
+        self.close_remote().await;
     }
 }
 
@@ -166,7 +174,7 @@ pub async fn handle_websocket(
                     }
                     Message::Close(_) => {
                         println!("Client closed the WebSocket");
-                        ws_connection.close(None, None).await;
+                        ws_connection.close_remote().await;
                         break;
                     }
                     Message::Ping(data) => {
@@ -216,7 +224,7 @@ pub async fn handle_websocket(
                     }
                     TMessage::Close(_) => {
                         println!("Remote closed the WebSocket");
-                        ws_connection.close(None, None).await;
+                        ws_connection.close_client(None, None).await;
                         break;
                     }
                     TMessage::Ping(data) => {
