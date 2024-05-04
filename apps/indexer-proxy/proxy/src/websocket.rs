@@ -1,4 +1,6 @@
-use axum::extract::ws::{CloseCode, CloseFrame, Message, WebSocket};
+use axum::{extract::ws::{CloseCode, CloseFrame, Message, WebSocket}, http::{HeaderMap, HeaderValue}};
+use base64::{engine::general_purpose, Engine as _};
+use serde_json::json;
 use tokio_tungstenite::{WebSocketStream, MaybeTlsStream};
 use tokio::net::TcpStream;
 use std::result::Result;
@@ -8,7 +10,7 @@ use futures_util::{StreamExt, sink::SinkExt};
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 use subql_indexer_utils::error::Error;
 
-use crate::project::get_project;
+use crate::{project::get_project, response::sign_response};
 
 pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -49,11 +51,36 @@ fn create_close_msg(code: CloseCode, msg: String) -> Message {
     }))
 }
 
+async fn format_response(data: Vec<u8>, res_fmt: &str) -> String {
+    // TODO: if pagy need to add the `state` field
+
+    let signature = sign_response(&data).await;
+    match res_fmt {
+        // FIXME: don't think we need the inline format
+        "inline" => {
+            String::from_utf8(data).unwrap_or("".to_owned())
+        },
+        _ => {
+            let result = general_purpose::STANDARD.encode(&data);
+            serde_json::to_string(&json!({ "result": result, "signature": signature}))
+                .unwrap_or("".to_owned())
+        },
+    }
+}
+
 pub async fn handle_websocket(
     mut client_socket: WebSocket,
+    mut headers: HeaderMap,
     deployment: String,
 ) {
     println!("WebSocket connected for deployment: {}", deployment);
+
+    let res_fmt: HeaderValue = headers
+        .remove("X-Indexer-Response-Format")
+        .unwrap_or(HeaderValue::from_static("inline"));
+
+
+    let res_fmt_str = res_fmt.to_str().unwrap();
 
     // TODO: handle the socket on close and on error events
     let mut remote_socket = match connect_to_project_ws(&deployment).await {
@@ -76,7 +103,6 @@ pub async fn handle_websocket(
                 match msg {
                     Message::Text(text) => {
                         println!("Forwarding text message to Ethereum: {}", text);
-                        // TODO: handle the limitation or metrics etc
                         remote_socket.send(TMessage::Text(text)).await.expect("Failed to send text message to Ethereum endpoint");
                     },
                     Message::Binary(data) => {
@@ -111,11 +137,13 @@ pub async fn handle_websocket(
                 Ok(msg) => match msg {
                     TMessage::Text(text) => {
                         println!("Received text response from Ethereum, sending back to client: {}", text);
-                        client_socket.send(Message::Text(text)).await.expect("Failed to send response to client");
+                        let response_msg = format_response(text.into_bytes(), res_fmt_str).await;
+                        client_socket.send(Message::Text(response_msg)).await.expect("Failed to send response to client");
                     },
                     TMessage::Binary(data) => {
                         println!("Received binary response from Ethereum, sending back to client");
-                        client_socket.send(Message::Binary(data)).await.expect("Failed to send response to client");
+                        let response_msg = format_response(data, res_fmt_str).await;
+                        client_socket.send(Message::Binary(response_msg.into_bytes())).await.expect("Failed to send response to client");
                     },
                     TMessage::Close(_) => {
                         println!("Remote closed the WebSocket");

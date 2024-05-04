@@ -35,6 +35,7 @@ mod project;
 mod server;
 mod subscriber;
 mod websocket;
+mod response;
 
 use cli::COMMAND;
 use tracing::Level;

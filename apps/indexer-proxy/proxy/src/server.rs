@@ -224,6 +224,7 @@ async fn query_handler(
 
 async fn ws_query_handler(
     ws: WebSocketUpgrade,
+    headers: HeaderMap,
     Path(deployment): Path<String>,
     AuthQuery(deployment_id): AuthQuery,
 ) -> impl IntoResponse {
@@ -232,7 +233,7 @@ async fn ws_query_handler(
     };
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment))
+    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, headers, deployment))
 }
 
 async fn query_limit_handler(
