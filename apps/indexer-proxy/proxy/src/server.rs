@@ -236,6 +236,14 @@ async fn ws_query_handler(
         return Error::AuthVerify(1004).into_response();
     };
 
+    let project = match get_project(&deployment).await {
+        Ok(project) => project,
+        Err(e) => return e.into_response(),
+    };
+    if project.ws_endpoint().is_none() {
+        return Error::WebSocket(3000).into_response();
+    }
+
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, headers, deployment))
 }
