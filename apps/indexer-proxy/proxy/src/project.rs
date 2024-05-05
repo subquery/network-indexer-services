@@ -177,10 +177,10 @@ impl RpcMainfest {
             }
         }
 
-        let mut not_allowed = true;
+        let mut not_allowed = !self.rpc_allow_list.is_empty();
         for ra in &self.rpc_allow_list {
             if method.starts_with(ra) {
-                not_allowed = true;
+                not_allowed = false;
                 break;
             }
         }
