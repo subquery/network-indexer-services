@@ -6,6 +6,7 @@ import path from 'path';
 import process from 'process';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { getFileContent } from './utils/load';
+import { getLogger } from './utils/logger';
 import { argv, PostgresKeys } from './yargs';
 
 const isLocal = process.env.NODE_ENV === 'local';
@@ -54,3 +55,7 @@ export const dbOption: PostgresConnectionOptions = {
   // namingStrategy: new SnakeNamingStrategy(),
   ssl: getSSLOptions(),
 };
+
+if (argv['log-args']) {
+  getLogger('data-source').debug('DB Options: %o', dbOption);
+}

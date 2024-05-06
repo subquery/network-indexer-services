@@ -62,3 +62,7 @@ export class NestLogger implements LoggerService {
     this.logger.warn(message);
   }
 }
+
+if (argv['log-args']) {
+  getLogger('yargs').debug('yargs argv: %o', argv);
+}

@@ -183,6 +183,12 @@ function getYargsOption() {
       default: '0',
       group: Groups.coordinator,
     },
+    'log-args': {
+      type: 'boolean',
+      describe: 'Log the arguments passed to the service',
+      default: false,
+      group: Groups.coordinator,
+    },
   });
 }
 
