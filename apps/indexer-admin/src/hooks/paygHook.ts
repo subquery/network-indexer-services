@@ -4,13 +4,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApolloQueryResult, useMutation } from '@apollo/client';
 import { formatEther, formatUnits, parseEther, parseUnits } from '@ethersproject/units';
+import { openNotification } from '@subql/components';
 import { GraphqlQueryClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS, STABLE_COIN_DECIMAL } from '@subql/network-config';
 import { GetIndexerClosedFlexPlans, GetIndexerOngoingFlexPlans } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { PAYG_PRICE } from 'utils/queries';
 import { network } from 'utils/web3';
 
@@ -79,7 +80,17 @@ export function usePAYGConfig(deploymentId: string) {
     [deploymentId, paygPriceRequest, projectQuery, sdk]
   );
 
-  return { paygConfig, changePAYGCofnig, loading };
+  useEffect(() => {
+    if (projectQuery.error) {
+      openNotification({
+        type: 'error',
+        title: 'Fetch error',
+        description: projectQuery.error.message,
+      });
+    }
+  }, [projectQuery.error]);
+
+  return { paygConfig, changePAYGCofnig, loading, initializeLoading: projectQuery.loading };
 }
 
 // hook for PAYG plans
@@ -114,7 +125,7 @@ export function usePAYGPlans(deploymentId: string) {
   const [data, setData] = useState<ApolloQueryResult<{ stateChannels: { nodes: Plan[] } }>>();
 
   const plans = useMemo((): Plan[] | undefined => data?.data.stateChannels.nodes, [data]);
-  const { account: indexer } = useAccount();
+  const { indexer } = useCoordinatorIndexer();
 
   const getPlans = useCallback(
     async (id: string, status: FlexPlanStatus) => {

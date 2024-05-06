@@ -224,6 +224,18 @@ export const WITHDRAW_CONTROLLER = gql`
   }
 `;
 
+export const ANNOUNCE_READY = gql`
+  mutation StartProjectOnChain($id: String!) {
+    startProjectOnChain(id: $id)
+  }
+`;
+
+export const ANNOUNCE_STOP = gql`
+  mutation StopProjectOnChain($id: String!) {
+    stopProjectOnChain(id: $id)
+  }
+`;
+
 export const REMOVE_ACCOUNTS = gql`
   mutation {
     removeAccounts {

@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { FormikHelpers } from 'formik';
 import { isUndefined } from 'lodash';
+import { useAccount } from 'wagmi';
 
 import IntroductionView from 'components/introductionView';
 import { LoadingSpinner } from 'components/loading';
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useNotification } from 'containers/notificationContext';
@@ -22,20 +22,18 @@ import { createIndexerMetadata } from 'utils/ipfs';
 import { verifyProxyEndpoint } from 'utils/validateService';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
-import { Container } from '../login/styles';
 import IndexerRegistryView from './indexerRegistryView';
 import prompts from './prompts';
-import { RegistrySteps } from './styles';
+import { Container, RegistrySteps } from './styles';
 import { RegisterStep } from './types';
 import { getStepIndex, getStepStatus, registerSteps } from './utils';
 
-// TODO: refactor
 const RegisterPage = () => {
   const signer = useSignerOrProvider();
 
-  const { account } = useAccount();
-  const { isRegisterIndexer } = useIsRegistedIndexer();
-  const isIndexer = useIsIndexer();
+  const { address: account } = useAccount();
+  const { isRegisterIndexer } = useIsRegistedIndexer(account || '');
+  const { loading: isIndexerLoading, data: isIndexer } = useIsIndexer();
   const sdk = useContractSDK();
   const { tokenBalance, getTokenBalance } = useTokenBalance(account);
   const history = useHistory();
@@ -47,18 +45,6 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const isRegisterStep = useCallback(() => currentStep === RegisterStep.register, [currentStep]);
-  useEffect(() => {
-    if (initialStep) setStep(initialStep);
-    if (isRegisterIndexer) setStep(RegisterStep.sync);
-  }, [initialStep, isRegisterIndexer]);
-
-  useEffect(() => {
-    if (!account) {
-      history.replace('/');
-    } else if (isIndexer) {
-      history.replace('/account');
-    }
-  }, [isIndexer, account, history]);
 
   const item = useMemo(() => currentStep && prompts[currentStep], [currentStep]);
 
@@ -170,6 +156,17 @@ const RegisterPage = () => {
       </RegistrySteps>
     );
   };
+
+  useEffect(() => {
+    if (initialStep) setStep(initialStep);
+    if (isRegisterIndexer) setStep(RegisterStep.sync);
+  }, [initialStep, isRegisterIndexer]);
+
+  useEffect(() => {
+    if (!isIndexerLoading && isIndexer) {
+      history.replace('/account');
+    }
+  }, [isIndexer, account, history, isIndexerLoading]);
 
   if (isUndefined(initialStep) || isUndefined(isRegisterIndexer)) return <LoadingSpinner />;
 

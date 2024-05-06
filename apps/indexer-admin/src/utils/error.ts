@@ -46,7 +46,7 @@ export const parseError = (
   // show tips to users.
   const msg = rawMsg
     ? getErrorMsg(error)
-    : mapContractError(error) ?? 'Unfortunately, something went wrong.';
+    : mapContractError(error) ?? 'Unfortunately, something went wrong';
 
   if (alert) {
     notificationMsg({

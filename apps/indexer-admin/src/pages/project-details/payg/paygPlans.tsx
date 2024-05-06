@@ -58,7 +58,13 @@ export function PAYGPlan({ deploymentId, onTerminate }: Props) {
         {channels.title}
       </Text>
       <Tabs tabs={tabItems} onTabClick={onTabChange} />
-      <SubqlTable columns={[...planColumns, actionColumn]} dataSource={dataSource} />
+      <SubqlTable
+        columns={[...planColumns, actionColumn]}
+        dataSource={dataSource}
+        rowKey={(record, index) => {
+          return `${index}`;
+        }}
+      />
     </PlansContainer>
   );
 }

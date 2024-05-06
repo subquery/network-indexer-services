@@ -10,15 +10,9 @@ import { useBalance } from 'wagmi';
 import AccountCard from 'components/accountCard';
 import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
-import { useAccount } from 'containers/account';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useNotification } from 'containers/notificationContext';
-import {
-  useController,
-  useIndexerMetadata,
-  useIsController,
-  useIsIndexer,
-} from 'hooks/indexerHook';
+import { useController, useIndexerMetadata, useIsIndexer } from 'hooks/indexerHook';
 import { useTokenSymbol } from 'hooks/network';
 import { useAccountAction } from 'hooks/transactionHook';
 import { AccountAction } from 'pages/project-details/types';
@@ -44,12 +38,10 @@ const Account = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [actionType, setActionType] = useState<AccountAction>();
 
-  const { account } = useAccount();
-  const isIndexer = useIsIndexer();
-  const { indexer } = useCoordinatorIndexer();
-  const { metadata, fetchMetadata, loading } = useIndexerMetadata();
+  const { loading: isIndexerLoading, data: isIndexer } = useIsIndexer();
+  const { indexer: account, setIndexer } = useCoordinatorIndexer();
+  const { metadata, fetchMetadata, loading } = useIndexerMetadata(account || '');
   const accountAction = useAccountAction();
-  const isController = useIsController(account);
   const { controller } = useController();
   const {
     data: controllerBalance,
@@ -135,6 +127,7 @@ const Account = () => {
 
   const unregisterCompleted = async () => {
     await removeAccounts();
+    setIndexer(undefined);
     history.replace('/register');
   };
 
@@ -147,7 +140,7 @@ const Account = () => {
     [unregisterStep, updateMetadataStep]
   );
 
-  if (isUndefined(account) || isUndefined(indexer)) return <LoadingSpinner />;
+  if (isUndefined(account) || isUndefined(account) || isIndexerLoading) return <LoadingSpinner />;
 
   return (
     <Container>
@@ -163,7 +156,7 @@ const Account = () => {
           )} ${tokenSymbol}`}
         />
       )}
-      {(isIndexer || isController) && (
+      {isIndexer && (
         <AccountCard
           key={2}
           title={controllerItem.title}

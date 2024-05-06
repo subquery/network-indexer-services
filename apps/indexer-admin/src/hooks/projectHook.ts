@@ -8,9 +8,8 @@ import axios from 'axios';
 import yaml from 'js-yaml';
 import { isEmpty } from 'lodash';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
-import { useNotification } from 'containers/notificationContext';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import {
   ChainType,
   dockerContainerEnum,
@@ -57,26 +56,6 @@ export const useProjectDetails = (deploymentId: string) => {
   return projectQuery;
 };
 
-export const useServiceStatus = (deploymentId: string): ServiceStatus | undefined => {
-  const [status, setStatus] = useState<ServiceStatus>(ServiceStatus.TERMINATED);
-  const { account } = useAccount();
-  const notificationContext = useNotification();
-  const sdk = useContractSDK();
-
-  useEffect(() => {
-    if (sdk && account && deploymentId) {
-      sdk.projectRegistry
-        .deploymentStatusByIndexer(cidToBytes32(deploymentId), account)
-        .then((status) => {
-          setStatus(status);
-        })
-        .catch((error) => console.error(error));
-    }
-  }, [sdk, account, deploymentId, notificationContext.notification?.type]);
-
-  return status;
-};
-
 export const getQueryMetadata = async (id: string, type: number): Promise<TQueryMetadata> => {
   try {
     const result = await coordinatorClient.query<{ serviceMetadata: TQueryMetadata }>({
@@ -92,7 +71,7 @@ export const getQueryMetadata = async (id: string, type: number): Promise<TQuery
 
 export const useDeploymentStatus = (deploymentId: string) => {
   const [status, setStatus] = useState<ServiceStatus | undefined>();
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const sdk = useContractSDK();
 
   const getDeploymentStatus = useCallback(async () => {
@@ -109,7 +88,10 @@ export const useDeploymentStatus = (deploymentId: string) => {
     getDeploymentStatus();
   }, [getDeploymentStatus]);
 
-  return status;
+  return {
+    status,
+    getDeploymentStatus,
+  };
 };
 
 export const getManifest = async (cid: string) => {

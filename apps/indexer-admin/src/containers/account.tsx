@@ -15,6 +15,7 @@ type TAccountContext = {
 
 function useAccountImpl(): TAccountContext {
   const { address: account } = useAccountWagmi();
+
   const [isRegisterIndexer, updateIsRegisterIndexer] = useState<boolean>();
 
   return {

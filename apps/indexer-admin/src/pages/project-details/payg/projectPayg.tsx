@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
-import { Modal, Tooltip, Typography } from '@subql/components';
+import { Modal, Spinner, Tooltip, Typography } from '@subql/components';
 import { TOKEN_SYMBOLS } from '@subql/network-config';
 import { Input, Select } from 'antd';
 import { SubqlInput } from 'styles/input';
@@ -25,7 +25,7 @@ type TProjectPAYG = {
 };
 
 export function ProjectPAYG({ id }: TProjectPAYG) {
-  const { paygConfig, changePAYGCofnig, loading } = usePAYGConfig(id);
+  const { paygConfig, changePAYGCofnig, loading, initializeLoading } = usePAYGConfig(id);
   const sdk = useContractSDK();
   const [showModal, setShowModal] = useState(false);
   const innerConfig = useMemo(() => {
@@ -52,6 +52,13 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paygConfig, sdk]);
+
+  if (initializeLoading)
+    return (
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Spinner />
+      </div>
+    );
 
   return (
     <Container>
