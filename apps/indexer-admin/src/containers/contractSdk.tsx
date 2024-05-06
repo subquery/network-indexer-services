@@ -37,6 +37,7 @@ function useContractsImpl(logger: Logger): SDK {
     if (!chain?.id || !tipsChainIds.includes(chain.id)) return;
 
     const sdkOption = options[intToHex(chain.id) as ChainID];
+
     if (!sdkOption || !sdkOption.network) {
       openNotification({
         type: 'error',

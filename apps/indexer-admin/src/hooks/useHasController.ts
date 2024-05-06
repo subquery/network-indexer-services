@@ -30,9 +30,12 @@ export const useHasControllerImpl = () => {
 
       if (result.data?.controllers?.find((i) => i.address === controller)) {
         setHasController(true);
-      } else {
-        setHasController(false);
+        return true;
       }
+      setHasController(false);
+      return false;
+    } catch {
+      return false;
     } finally {
       setTimeout(() => {
         setHasControllerLoading(false);
