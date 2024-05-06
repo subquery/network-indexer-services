@@ -222,7 +222,11 @@ export class ContractService {
           if (!txOptions.gasFun) {
             throw new Error('Gas function is required for checking tx gas limit');
           }
-          if (this.gasFeeLimit.gt(await txOptions.gasFun(await this.getOverrides()))) {
+          const overrides = await this.getOverrides();
+          const gasFeeEstimate = (await txOptions.gasFun(overrides)).mul(
+            overrides.maxFeePerGas as BigNumber
+          );
+          if (this.gasFeeLimit.gt(gasFeeEstimate)) {
             await this.completeTask(txOptions.action);
             break;
           }
@@ -262,20 +266,21 @@ export class ContractService {
         }
       }
     }
-    await this.mutexTransaction(txOptions.action, txOptions.txFun, txOptions.desc);
+    await this.mutexTransaction(txOptions);
   }
 
   @mutexPromise()
-  private async mutexTransaction(action: string, txFun: TxFun, desc = '') {
-    await this._sendTransaction(action, txFun, desc);
+  private async mutexTransaction(txOptions: TxOptions) {
+    await this._sendTransaction(txOptions);
   }
 
-  private async _sendTransaction(action: string, txFun: TxFun, desc = '', retries = 0) {
+  private async _sendTransaction(txOptions: TxOptions, retries = 0) {
+    const { action, txFun, wait, desc } = txOptions;
     try {
       logger.info(`${colorText(action)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
 
       const tx = await txFun(await this.getOverrides());
-      await tx.wait(10);
+      await tx.wait(wait ?? 10);
 
       logger.info(`${colorText(action)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
@@ -283,7 +288,7 @@ export class ContractService {
     } catch (e) {
       if (retries < MAX_RETRY) {
         logger.warn(`${colorText(action)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
-        await this._sendTransaction(action, txFun, desc, retries + 1);
+        await this._sendTransaction(txOptions, retries + 1);
       } else {
         logger.warn(e, `${colorText(action)}: ${colorText('FAILED', TextColor.RED)}`);
         throw e;

@@ -35,6 +35,7 @@ type TxOptionsBase = {
   action: string;
   type: TxType;
   txFun: TxFun;
+  wait?: number;
   desc?: string;
 };
 

@@ -347,6 +347,7 @@ export class OnChainService implements OnApplicationBootstrap {
       await this.contractService.sendTransaction({
         action: `start project: ${projectId}`,
         type: TxType.go,
+        wait: 5,
         txFun: (overrides) =>
           this.sdk.projectRegistry.startService2(cidToBytes32(projectId), runner, overrides),
       });
@@ -362,6 +363,7 @@ export class OnChainService implements OnApplicationBootstrap {
       await this.contractService.sendTransaction({
         action: `stop project: ${projectId}`,
         type: TxType.go,
+        wait: 5,
         txFun: (overrides) =>
           this.sdk.projectRegistry.stopService2(cidToBytes32(projectId), runner, overrides),
       });
