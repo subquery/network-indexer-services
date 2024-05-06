@@ -25,6 +25,7 @@ import { coordinatorServiceUrl, createApolloClient } from 'utils/apolloClient';
 import { GModalView } from './components/modalView';
 import * as Pages from './pages';
 
+import './polyfill/navigatorClip';
 import 'react-notifications-component/dist/theme.css';
 import 'antd/dist/reset.css';
 import './App.css';
