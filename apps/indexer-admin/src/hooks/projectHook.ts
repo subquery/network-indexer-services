@@ -7,9 +7,9 @@ import { useInterval } from 'ahooks';
 import axios from 'axios';
 import yaml from 'js-yaml';
 import { isEmpty } from 'lodash';
-import { useAccount } from 'wagmi';
 
 import { useContractSDK } from 'containers/contractSdk';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import {
   ChainType,
   dockerContainerEnum,
@@ -71,7 +71,7 @@ export const getQueryMetadata = async (id: string, type: number): Promise<TQuery
 
 export const useDeploymentStatus = (deploymentId: string) => {
   const [status, setStatus] = useState<ServiceStatus | undefined>();
-  const { address: account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const sdk = useContractSDK();
 
   const getDeploymentStatus = useCallback(async () => {

@@ -27,15 +27,15 @@ const prompts = {
   announce: {
     indexing: {
       title: 'Update Status on Subquery Network',
-      desc: 'This action initiates a transaction to start indexing the project on the contract. Once the transaction is completed, the controller account on the coordinator service will begin updating the status of the indexing service on the contract. The transaction processing time may take around 10 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
+      desc: 'This action initiates a transaction to start indexing the project on the contract. Once the transaction is completed, the controller account on the coordinator service will begin updating the status of the indexing service on the contract. The transaction processing time may take around 30 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
     },
     ready: {
       title: 'Update Indexing To Ready',
-      desc: 'This action initiates a transaction to change the indexing status to "ready" on the contract. Once the transaction is completed, the explorer will display your query endpoint. The transaction processing time may take around 10 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
+      desc: 'This action initiates a transaction to change the indexing status to "ready" on the contract. Once the transaction is completed, the explorer will display your query endpoint. The transaction processing time may take around 30 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
     },
     notIndexing: {
       title: 'Announce Not Indexing the Project',
-      desc: 'This action initiates a transaction to change the indexing status to "not indexing" on the contract. The project status will change to "not indexing" on the network. The transaction processing time may take around 10 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
+      desc: 'This action initiates a transaction to change the indexing status to "not indexing" on the contract. The project status will change to "not indexing" on the network. The transaction processing time may take around 30 seconds and will depend on the network and gas fee. You will be able to see the processing status on the top of the page once the transaction is confirmed on the Wallet.',
     },
   },
   // PAYG
