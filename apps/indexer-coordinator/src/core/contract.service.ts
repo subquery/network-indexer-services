@@ -250,7 +250,11 @@ export class ContractService {
           if (!start) {
             return;
           }
-          if (this.gasFeeLimit.gt(await txOptions.gasFun(await this.getOverrides()))) {
+          const overrides = await this.getOverrides();
+          const gasFeeEstimate = (await txOptions.gasFun(overrides)).mul(
+            overrides.maxFeePerGas as BigNumber
+          );
+          if (this.gasFeeLimit.gt(gasFeeEstimate)) {
             await this.completeTask(txOptions.action);
             break;
           }
