@@ -346,11 +346,6 @@ async fn payg_extend(
     })))
 }
 
-#[derive(Deserialize)]
-struct PoiBlock {
-    block: Option<u64>,
-}
-
 async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
     let channel_id = hex_u256(&channel);
     let (state, _) = fetch_channel_cache(channel_id).await?;
@@ -365,13 +360,10 @@ async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
     })))
 }
 
-async fn metadata_handler(
-    Path(deployment): Path<String>,
-    block: Query<PoiBlock>,
-) -> Result<Json<Value>, Error> {
+async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
     get_project(&deployment)
         .await?
-        .metadata(block.0.block, MetricsNetwork::HTTP)
+        .metadata(MetricsNetwork::HTTP)
         .await
         .map(Json)
 }
