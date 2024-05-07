@@ -9,10 +9,7 @@ use crate::graphql::METADATA_QUERY;
 use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
 use crate::project::Project;
 
-pub async fn metadata(
-    project: &Project,
-    network: MetricsNetwork,
-) -> Result<Value> {
+pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let now = Instant::now();
     let metadata_res =
         graphql_request(project.endpoint(), &GraphQLQuery::query(METADATA_QUERY)).await;
