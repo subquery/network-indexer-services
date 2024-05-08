@@ -5,15 +5,11 @@ use subql_indexer_utils::{
     types::Result,
 };
 
-use crate::graphql::{poi_with_block, METADATA_QUERY};
+use crate::graphql::METADATA_QUERY;
 use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
 use crate::project::Project;
 
-pub async fn metadata(
-    project: &Project,
-    block: Option<u64>,
-    network: MetricsNetwork,
-) -> Result<Value> {
+pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let now = Instant::now();
     let metadata_res =
         graphql_request(project.endpoint(), &GraphQLQuery::query(METADATA_QUERY)).await;
@@ -35,24 +31,6 @@ pub async fn metadata(
         Some(data) => data.as_u64().unwrap_or(0),
         None => 0,
     };
-    let poi_height = if let Some(b) = block { b } else { last_height };
-
-    let now = Instant::now();
-    let poi_res = graphql_request(
-        project.endpoint(),
-        &GraphQLQuery::query(&poi_with_block(poi_height)),
-    )
-    .await;
-    let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(
-        project.id.clone(),
-        time,
-        MetricsQuery::Free,
-        network,
-        poi_res.is_ok(),
-    );
-    let poi = poi_res?;
-
     let target_height = match metadata.pointer("/data/_metadata/targetHeight") {
         Some(data) => data.as_u64().unwrap_or(0),
         None => 0,
@@ -82,28 +60,6 @@ pub async fn metadata(
         None => "",
     };
 
-    let poi_id = match poi.pointer("/data/_poi/id") {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-
-    let poi_hash = match poi.pointer("/data/_poi/hash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_parent_hash = match poi.pointer("/data/_poi/parentHash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_chain_block_hash = match poi.pointer("/data/_poi/chainBlockHash") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let poi_operation_root = match poi.pointer("/data/_poi/operationHashRoot") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-
     Ok(json!({
         "startHeight": start_height,
         "lastHeight": last_height,
@@ -111,11 +67,6 @@ pub async fn metadata(
         "lastTime": last_time,
         "genesis": genesis,
         "chainId": chain,
-        "poiId": poi_id,
-        "poiHash": poi_hash,
-        "poiParentHash": poi_parent_hash,
-        "poiChainBlockHash": poi_chain_block_hash,
-        "poiOperationHashRoot": poi_operation_root,
         "subqueryHealthy": subquery_healthy,
         "subqueryNode": subquery_node,
         "subqueryQuery": subquery_query,
