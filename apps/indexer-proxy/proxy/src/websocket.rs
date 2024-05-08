@@ -199,13 +199,13 @@ impl WebSocketConnection {
                 Ok((true, None))
             }
             QueryType::PAYG => {
-                let (status, state) = self.before_query_pagy_check(auth).await?;
+                let (status, state) = self.before_query_payg_check(auth).await?;
                 Ok((status, state))
             }
         }
     }
 
-    async fn before_query_pagy_check(
+    async fn before_query_payg_check(
         &mut self,
         auth: String,
     ) -> Result<(bool, Option<String>), Error> {
