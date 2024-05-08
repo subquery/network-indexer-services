@@ -38,7 +38,7 @@ struct ReceivedMessage {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct CacheState {
-    state: String,
+    state_remote: String,
     state_cache: Vec<u8>,
 }
 
@@ -84,7 +84,7 @@ impl WebSocketConnection {
         let remote_socket = match connect_to_project_ws(deployment).await {
             Ok(socket) => socket,
             Err(_) => {
-                let _ = close_socket(&mut client_socket, Some(Error::WebSocket(3008))).await;
+                let _ = close_socket(&mut client_socket, Some(Error::WebSocket(1308))).await;
                 return None;
             }
         };
@@ -101,7 +101,7 @@ impl WebSocketConnection {
     }
 
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
-        let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(3003))?;
+        let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(1301))?;
         let ReceivedMessage { body, auth } = message;
 
         let status = self.before_query_check(auth).await?;
@@ -110,7 +110,7 @@ impl WebSocketConnection {
         self.remote_socket
             .send(TMessage::Text(body))
             .await
-            .map_err(|_| Error::WebSocket(3005))?;
+            .map_err(|_| Error::WebSocket(1302))?;
         Ok(())
     }
 
@@ -134,7 +134,7 @@ impl WebSocketConnection {
         self.client_socket
             .send(Message::Text(response_msg))
             .await
-            .map_err(|_| Error::WebSocket(3006))?;
+            .map_err(|_| Error::WebSocket(1303))?;
 
         Ok(())
     }
@@ -157,11 +157,11 @@ impl WebSocketConnection {
     }
 
     async fn close_remote(&mut self) -> Result<(), Error> {
-        println!("Closing remote WebSocket");
+        debug!("Closing remote WebSocket");
         self.remote_socket
             .close(None)
             .await
-            .map_err(|_| Error::WebSocket(3015))?;
+            .map_err(|_| Error::WebSocket(1304))?;
         Ok(())
     }
 
@@ -195,10 +195,10 @@ impl WebSocketConnection {
         };
 
         let value = serde_json::to_string(&json!({
-            "state": state,
+            "state_remote": state,
             "state_cache": state_cache.to_bytes(),
         }))
-        .unwrap();
+        .map_err(|_| Error::WebSocket(1305))?;
 
         let cache_key = format!("{}-ws", keyname);
         let mut conn = redis();
@@ -209,7 +209,7 @@ impl WebSocketConnection {
             .arg(value)
             .query_async(&mut conn)
             .await
-            .map_err(|_| Error::WebSocket(3023))?;
+            .map_err(|_| Error::WebSocket(1305))?;
 
         Ok(!inactive)
     }
@@ -227,17 +227,17 @@ impl WebSocketConnection {
             .arg(&cache_key)
             .query_async(&mut conn)
             .await
-            .map_err(|_| Error::WebSocket(3024))?;
+            .map_err(|_| Error::WebSocket(1306))?;
 
-        let cache_states = from_str::<CacheState>(&value).map_err(|_| Error::WebSocket(3025))?;
-        let state_str = cache_states.state;
+        let cache_states = from_str::<CacheState>(&value).map_err(|_| Error::WebSocket(1306))?;
+        let state_str = cache_states.state_remote;
         let state_cache = StateCache::from_bytes(&cache_states.state_cache)
-            .map_err(|_| Error::WebSocket(3026))?;
+            .map_err(|_| Error::WebSocket(1306))?;
 
         match self.query_state_type {
             QueryStateType::Single => {
                 let before_state =
-                    QueryState::from_bs64_old1(state_str).map_err(|_| Error::WebSocket(3027))?;
+                    QueryState::from_bs64_old1(state_str).map_err(|_| Error::WebSocket(1307))?;
                 let state = post_query_signle_state(before_state, state_cache, keyname).await?;
                 Ok(state.to_bs64_old1())
             }
@@ -255,7 +255,7 @@ pub async fn handle_websocket(
     deployment: String,
     query_type: QueryType,
 ) {
-    println!("WebSocket connected for deployment: {}", deployment);
+    debug!("WebSocket connected for deployment: {}", deployment);
     let mut ws_connection =
         match WebSocketConnection::new(headers, client_socket, query_type, &deployment).await {
             Some(ws_connection) => ws_connection,
@@ -275,8 +275,8 @@ pub async fn handle_websocket(
                 let _ = handle_client_socket_message(&mut ws_connection, msg).await;
             }
             Err(e) => {
-                println!("WebSocket error: {}", e);
-                let _ = ws_connection.close_all(Some(Error::WebSocket(3009))).await;
+                debug!("WebSocket error: {}", e);
+                let _ = ws_connection.close_all(None).await;
                 break;
             }
         }
@@ -287,14 +287,14 @@ pub async fn handle_websocket(
                     let _ = handle_remote_socket_message(&mut ws_connection, msg).await;
                 }
                 Err(_) => {
-                    let _ = ws_connection.close_all(Some(Error::WebSocket(3010))).await;
+                    let _ = ws_connection.close_all(Some(Error::WebSocket(1309))).await;
                     break;
                 }
             }
         }
     }
 
-    println!("WebSocket closed for deployment: {}", deployment);
+    debug!("WebSocket closed for deployment: {}", deployment);
 }
 
 async fn handle_client_socket_message(
@@ -303,25 +303,24 @@ async fn handle_client_socket_message(
 ) -> Result<(), Error> {
     match msg {
         Message::Text(text) => {
-            println!("Forwarding text message to remote: {}", text);
+            debug!("Forwarding text message to remote: {}", text);
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
                 let (_, code, reason) = e.to_status_message();
                 ws_connection.send_error_smg(code, reason.to_string()).await;
             }
         }
         Message::Binary(_) => {
-            // TODO: handle binary messages later
-            println!("Forwarding binary message to remote");
+            debug!("Receive binary message to remote");
             ws_connection
-                .close_all(Some(Error::WebSocket(3011)))
+                .close_all(Some(Error::WebSocket(1310)))
                 .await?
         }
         Message::Close(_) => {
-            println!("Client closed the WebSocket");
+            debug!("Client closed the WebSocket");
             ws_connection.close_remote().await?
         }
         _ => {
-            println!("Fowarding PING/PONG message to remote");
+            debug!("Fowarding PING/PONG message to remote");
         }
     }
 
@@ -334,27 +333,25 @@ async fn handle_remote_socket_message(
 ) -> Result<(), Error> {
     match msg {
         TMessage::Text(text) => {
-            println!("Received text response from remote");
-            if ws_connection.send_text_msg(text).await.is_err() {
-                ws_connection
-                    .close_all(Some(Error::WebSocket(3011)))
-                    .await?;
+            debug!("Received text response from remote");
+            if let Err(e) = ws_connection.send_text_msg(text).await {
+                ws_connection.close_all(Some(e)).await?;
             }
         }
         TMessage::Binary(_) => {
-            println!("Received binary response from remote, sending back to client");
+            debug!("Receive binary message to remote");
             ws_connection
-                .close_all(Some(Error::WebSocket(3011)))
-                .await?;
+                .close_all(Some(Error::WebSocket(1310)))
+                .await?
         }
         TMessage::Close(_) => {
-            println!("Remote closed the WebSocket");
+            debug!("Remote closed the WebSocket");
             ws_connection
-                .close_client(Some(Error::WebSocket(3012)))
+                .close_client(Some(Error::WebSocket(1308)))
                 .await?;
         }
         _ => {
-            println!("Forwarding PING/PONG message to client");
+            debug!("Forwarding PING/PONG message to client");
         }
     }
 
@@ -363,33 +360,33 @@ async fn handle_remote_socket_message(
 
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
-    // TODO: revert this commented code
-    // let project = get_project(deployment_id).await.unwrap();
-    // let ws_url = match project.ws_endpoint() {
-    //     Some(ws_url) => ws_url,
-    //     None => return Err(Error::WebSocket(3000)),
-    // };
+    let project = get_project(deployment_id).await.unwrap();
+    let ws_url = match project.ws_endpoint() {
+        Some(ws_url) => ws_url,
+        None => return Err(Error::WebSocket(1300)),
+    };
 
-    let ws_url = "wss://ethereum-rpc.publicnode.com";
+    // Test url
+    // let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
 
-    let url = url::Url::parse(&ws_url).map_err(|_| Error::WebSocket(3001))?;
+    let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
         .await
-        .map_err(|_| Error::WebSocket(3002))?;
+        .map_err(|_| Error::WebSocket(1308))?;
 
-    println!("Connected to the server: {}", ws_url);
+    debug!("Connected to the server: {}", ws_url);
     Ok(socket)
 }
 
 async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<(), Error> {
-    let (_, code, reason) = error.unwrap_or(Error::WebSocket(3000)).to_status_message();
+    let (_, code, reason) = error.unwrap_or(Error::WebSocket(1312)).to_status_message();
     socket
         .send(Message::Close(Some(CloseFrame {
             code: code as u16,
             reason: reason.into(),
         })))
         .await
-        .map_err(|_| Error::WebSocket(3007))?;
+        .map_err(|_| Error::WebSocket(1311))?;
     Ok(())
 }
 
@@ -397,11 +394,11 @@ pub async fn validate_project(deployment: &str) -> Result<(), Error> {
     let project: crate::project::Project = get_project(&deployment).await?;
     if !project.is_rpc_project() {
         // only rpc project support websocket
-        return Err(Error::WebSocket(3012));
+        return Err(Error::WebSocket(1300));
     }
     if project.ws_endpoint().is_none() {
         // No ws endpoint found for this project
-        return Err(Error::WebSocket(3000));
+        return Err(Error::WebSocket(1300));
     }
 
     Ok(())

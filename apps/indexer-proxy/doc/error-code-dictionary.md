@@ -92,3 +92,17 @@
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
+  
+- `1300` - Websocket connection: project not support websocket
+- `1301` - Websocket connection: invalid message
+- `1302` - Websocket connection: failed to send message to remote socket
+- `1303` - Websocket connection: failed to send message to client socket 
+- `1304` - Websocket connection: failed to close remote socket
+- `1305` - Websocket connection: failed to manange the before state cache
+- `1306` - Websocket connection: failed to manange the after state cache
+- `1307` - Websocket connection: invalid query state
+- `1308` - Websocket connection: failed to connect remote socket
+- `1309` - Websocket connection: remote socket disconnected
+- `1310` - Websocket connection: unsuppot message type
+- `1311` - Websocket connection: failed to close the socket
+- `1312` - Websocket connection: internal socket error

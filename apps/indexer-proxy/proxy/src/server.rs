@@ -237,9 +237,9 @@ async fn ws_query(
         return Error::AuthVerify(1004).into_response();
     };
 
-    // if let Err(e) = validate_project(&deployment).await {
-    //     return e.into_response();
-    // }
+    if let Err(e) = validate_project(&deployment).await {
+        return e.into_response();
+    }
 
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
@@ -253,7 +253,7 @@ async fn ws_payg_query(
     AuthPayg(_): AuthPayg,
     Path(deployment): Path<String>,
 ) -> impl IntoResponse {
-    // TODO: would be good to validate auth token at this stage as well (validate the signature)
+    // TODO: would be good to validate auth token at this stage as well (validate the state)
     if let Err(e) = validate_project(&deployment).await {
         return e.into_response();
     }
