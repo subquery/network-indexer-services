@@ -479,16 +479,11 @@ pub async fn query_single_state(
 }
 
 // query with multiple state mode
-pub async fn query_multiple_state(
-    project_id: &str,
-    query: String,
-    ep_name: Option<String>,
+pub async fn before_query_multiple_state(
     mut state: MultipleQueryState,
-    network_type: MetricsNetwork,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
     let signer = state.recover()?;
-    let project = get_project(project_id).await?;
 
     // check channel state
     let channel_id = state.channel_id;
@@ -543,17 +538,11 @@ pub async fn query_multiple_state(
     state.sign(&account.controller, mpqsa).await?;
     drop(account);
 
-    if mpqsa.is_inactive() {
-        return Ok((vec![], "".to_owned(), state.to_bs64()));
-    }
+    Ok((state, keyname, state_cache, mpqsa.is_inactive()))
+}
 
-    // query the data.
-    let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
-        .await?;
-
-    // update redis cache
-    state_cache.spent = local_next;
+pub async fn post_query_multiple_state(keyname: String, mut state_cache: StateCache) {
+    state_cache.spent = state_cache.spent + state_cache.price;
     let mut conn = redis();
     let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
@@ -563,6 +552,27 @@ pub async fn query_multiple_state(
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 1: {}", err));
+}
+
+pub async fn query_multiple_state(
+    project_id: &str,
+    query: String,
+    ep_name: Option<String>,
+    state: MultipleQueryState,
+    network_type: MetricsNetwork,
+) -> Result<(Vec<u8>, String, String)> {
+    let (state, keyname, state_cache, status) = before_query_multiple_state(state).await?;
+    if !status {
+        return Ok((vec![], "".to_owned(), state.to_bs64()));
+    }
+
+    // query the data.
+    let project = get_project(project_id).await?;
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .await?;
+
+    post_query_multiple_state(keyname, state_cache).await;
 
     debug!("Handle query channel success");
     Ok((data, signature, state.to_bs64()))

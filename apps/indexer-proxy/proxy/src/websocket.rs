@@ -10,10 +10,21 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use futures_util::{sink::SinkExt, StreamExt};
-use subql_indexer_utils::{error::Error, payg::QueryState};
+use subql_indexer_utils::{
+    error::Error,
+    payg::{MultipleQueryState, QueryState},
+};
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
-use crate::{cli::COMMAND, payg::{before_query_signle_state, post_query_signle_state}, project::{get_project, Project}, response::sign_response};
+use crate::{
+    cli::COMMAND,
+    payg::{
+        before_query_multiple_state, before_query_signle_state, post_query_multiple_state,
+        post_query_signle_state,
+    },
+    project::{get_project, Project},
+    response::sign_response,
+};
 
 pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -79,36 +90,10 @@ impl WebSocketConnection {
         })
     }
 
-    async fn send_msg_to_client(&mut self, msg: Message) {
-        self.client_socket
-            .send(msg)
-            .await
-            .expect("Failed to send message to client");
-    }
-
-    async fn send_msg_to_remote(&mut self, msg: TMessage) {
-        self.remote_socket
-            .send(msg)
-            .await
-            .expect("Failed to send message to remote WebSocket");
-    }
-
-    async fn send_error_smg(&mut self, code: i32, reason: String) {
-        let error_msg = json!({ "error": { "code": code, "message": reason } });
-        if self
-            .client_socket
-            .send(Message::Text(error_msg.to_string()))
-            .await
-            .is_err()
-        {
-            let _ = self.close_all(None).await;
-        }
-    }
-
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(3003))?;
         let ReceivedMessage { body, auth } = message;
-        
+
         self.before_query_check(auth).await?;
 
         self.remote_socket
@@ -128,8 +113,10 @@ impl WebSocketConnection {
             "inline" => String::from_utf8(msg_data).unwrap_or("".to_owned()),
             _ => {
                 let result = general_purpose::STANDARD.encode(&msg_data);
-                serde_json::to_string(&json!({ "result": result, "signature": signature, "state": state }))
-                    .unwrap_or("".to_owned())
+                serde_json::to_string(
+                    &json!({ "result": result, "signature": signature, "state": state }),
+                )
+                .unwrap_or("".to_owned())
             }
         };
 
@@ -139,6 +126,18 @@ impl WebSocketConnection {
             .map_err(|_| Error::WebSocket(3006))?;
 
         Ok(())
+    }
+
+    async fn send_error_smg(&mut self, code: i32, reason: String) {
+        let error_msg = json!({ "error": { "code": code, "message": reason } });
+        if self
+            .client_socket
+            .send(Message::Text(error_msg.to_string()))
+            .await
+            .is_err()
+        {
+            let _ = self.close_all(None).await;
+        }
     }
 
     async fn close_client(&mut self, error: Option<Error>) -> Result<(), Error> {
@@ -161,18 +160,23 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn before_query_check(&self, auth: String) -> Result<(), Error>{
+    async fn before_query_check(&self, auth: String) -> Result<(), Error> {
         if self.query_type != QueryType::PAYG {
             return Ok(());
         }
 
         let project: Project = get_project(&self.deployment).await?;
-        if self.query_state_type == QueryStateType::Single {
-            let state: QueryState = QueryState::from_bs64_old1(auth)?;
-            before_query_signle_state(&project, state).await?;
-        } else {
 
-        }
+        match self.query_state_type {
+            QueryStateType::Single => {
+                let state: QueryState = QueryState::from_bs64_old1(auth)?;
+                before_query_signle_state(&project, state).await?;
+            }
+            QueryStateType::Multiple => {
+                let state = MultipleQueryState::from_bs64(auth)?;
+                before_query_multiple_state(state).await?;
+            }
+        };
 
         Ok(())
     }
@@ -189,12 +193,12 @@ impl WebSocketConnection {
                 Ok(state.to_bs64_old2())
             }
             QueryStateType::Multiple => {
-                let state = post_query_multiple_state(state, state_cache, keyname).await?;
+                let state = post_query_multiple_state(state_cache, keyname).await?;
                 Ok(state.to_bs64_old2())
             }
             _ => Ok("".to_owned()),
         }
-    }    
+    }
 }
 
 pub async fn handle_websocket(
