@@ -10,10 +10,10 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use futures_util::{sink::SinkExt, StreamExt};
-use subql_indexer_utils::error::Error;
+use subql_indexer_utils::{error::Error, payg::QueryState};
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
-use crate::{cli::COMMAND, project::get_project, response::sign_response};
+use crate::{cli::COMMAND, payg::{before_query_signle_state, post_query_signle_state}, project::{get_project, Project}, response::sign_response};
 
 pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
@@ -23,17 +23,20 @@ struct ReceivedMessage {
     auth: String,
 }
 
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub enum QueryType {
     CloseAgreement,
     PAYG,
 }
 
+#[derive(Eq, PartialEq, Clone, Copy)]
 enum QueryStateType {
     Single,
     Multiple,
 }
 
 struct WebSocketConnection {
+    deployment: String,
     client_socket: WebSocket,
     remote_socket: SocketConnection,
     query_type: QueryType,
@@ -67,6 +70,7 @@ impl WebSocketConnection {
         };
 
         Some(WebSocketConnection {
+            deployment: deployment.to_string(),
             client_socket,
             remote_socket,
             query_type,
@@ -89,15 +93,6 @@ impl WebSocketConnection {
             .expect("Failed to send message to remote WebSocket");
     }
 
-    async fn send_text_msg(&mut self, msg: String) -> Result<(), Error> {
-        let response_msg = format_response(msg.into_bytes(), &self.res_fmt).await;
-        self.client_socket
-            .send(Message::Text(response_msg))
-            .await
-            .map_err(|_| Error::WebSocket(3006))?;
-        Ok(())
-    }
-
     async fn send_error_smg(&mut self, code: i32, reason: String) {
         let error_msg = json!({ "error": { "code": code, "message": reason } });
         if self
@@ -111,11 +106,38 @@ impl WebSocketConnection {
     }
 
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
-        let msg: ReceivedMessage = parse_message(raw_msg)?;
+        let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(3003))?;
+        let ReceivedMessage { body, auth } = message;
+        
+        self.before_query_check(auth).await?;
+
         self.remote_socket
-            .send(TMessage::Text(msg.body))
+            .send(TMessage::Text(body))
             .await
             .map_err(|_| Error::WebSocket(3005))?;
+        Ok(())
+    }
+
+    async fn send_text_msg(&mut self, msg: String) -> Result<(), Error> {
+        let state = self.post_query_sync().await?;
+        let msg_data = msg.into_bytes();
+        let signature = sign_response(&msg_data).await;
+
+        let response_msg = match self.res_fmt.as_str() {
+            // FIXME: don't think we need to support the inline format
+            "inline" => String::from_utf8(msg_data).unwrap_or("".to_owned()),
+            _ => {
+                let result = general_purpose::STANDARD.encode(&msg_data);
+                serde_json::to_string(&json!({ "result": result, "signature": signature, "state": state }))
+                    .unwrap_or("".to_owned())
+            }
+        };
+
+        self.client_socket
+            .send(Message::Text(response_msg))
+            .await
+            .map_err(|_| Error::WebSocket(3006))?;
+
         Ok(())
     }
 
@@ -138,6 +160,41 @@ impl WebSocketConnection {
         self.close_client(error).await?;
         Ok(())
     }
+
+    async fn before_query_check(&self, auth: String) -> Result<(), Error>{
+        if self.query_type != QueryType::PAYG {
+            return Ok(());
+        }
+
+        let project: Project = get_project(&self.deployment).await?;
+        if self.query_state_type == QueryStateType::Single {
+            let state: QueryState = QueryState::from_bs64_old1(auth)?;
+            before_query_signle_state(&project, state).await?;
+        } else {
+
+        }
+
+        Ok(())
+    }
+
+    async fn post_query_sync(&self) -> Result<String, Error> {
+        if self.query_type != QueryType::PAYG {
+            return Ok("".to_owned());
+        }
+
+        match self.query_state_type {
+            QueryStateType::Single => {
+                // TODO: need to resolve this state cross reference issue
+                let state = post_query_signle_state(state, state_cache, keyname).await?;
+                Ok(state.to_bs64_old2())
+            }
+            QueryStateType::Multiple => {
+                let state = post_query_multiple_state(state, state_cache, keyname).await?;
+                Ok(state.to_bs64_old2())
+            }
+            _ => Ok("".to_owned()),
+        }
+    }    
 }
 
 pub async fn handle_websocket(
@@ -284,34 +341,6 @@ async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<()
         .await
         .map_err(|_| Error::WebSocket(3007))?;
     Ok(())
-}
-
-fn parse_message(msg: &str) -> Result<ReceivedMessage, Error> {
-    match from_str::<ReceivedMessage>(msg) {
-        Ok(parsed_message) => {
-            // Verify the auth
-            if COMMAND.auth() && parsed_message.auth.is_empty() {
-                return Err(Error::WebSocket(3004));
-            }
-            Ok(parsed_message)
-        }
-        Err(_) => Err(Error::WebSocket(3003)),
-    }
-}
-
-async fn format_response(data: Vec<u8>, res_fmt: &str) -> String {
-    // TODO: if pagy need to add the `state` field
-
-    let signature = sign_response(&data).await;
-    match res_fmt {
-        // FIXME: don't think we need the inline format
-        "inline" => String::from_utf8(data).unwrap_or("".to_owned()),
-        _ => {
-            let result = general_purpose::STANDARD.encode(&data);
-            serde_json::to_string(&json!({ "result": result, "signature": signature}))
-                .unwrap_or("".to_owned())
-        }
-    }
 }
 
 pub async fn validate_project(deployment: &str) -> Result<(), Error> {
