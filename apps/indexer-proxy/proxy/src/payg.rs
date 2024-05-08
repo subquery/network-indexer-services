@@ -311,15 +311,12 @@ pub async fn open_state(body: &Value) -> Result<Value> {
     Ok(state.to_json())
 }
 
-pub async fn query_single_state(
-    project_id: &str,
-    query: String,
-    ep_name: Option<String>,
+// query with single state mode
+pub async fn before_query_signle_state(
+    project: &Project,
     mut state: QueryState,
-    network_type: MetricsNetwork,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(QueryState, StateCache, String)> {
     debug!("Start handle query channel");
-    let project = get_project(project_id).await?;
 
     // check channel state
     let channel_id = state.channel_id;
@@ -395,12 +392,19 @@ pub async fn query_single_state(
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
     }
+
     debug!("Verified channel, start query");
 
-    // query the data.
-    let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
-        .await?;
+    Ok((state, state_cache, keyname))
+}
+
+pub async fn post_query_signle_state(
+    mut state: QueryState,
+    mut state_cache: StateCache,
+    keyname: String,
+) -> Result<QueryState> {
+    let local_next = state_cache.spent + state_cache.price;
+    let remote_next = state.spent;
 
     // update redis cache
     state_cache.spent = local_next;
@@ -422,16 +426,17 @@ pub async fn query_single_state(
     }
 
     // async to coordiantor
+    let channel_id = state.channel_id;
     let mdata = format!(
         r#"mutation {{
-             channelUpdate(
-               id:"{:#X}",
-               spent:"{}",
-               isFinal:{},
-               indexerSign:"0x{}",
-               consumerSign:"0x{}")
-           {{ id, spent }}
-        }}"#,
+              channelUpdate(
+                id:"{:#X}",
+                spent:"{}",
+                isFinal:{},
+                indexerSign:"0x{}",
+                consumerSign:"0x{}")
+            {{ id, spent }}
+         }}"#,
         channel_id, // use default u256 hex style with other library
         remote_next,
         state.is_final,
@@ -448,10 +453,32 @@ pub async fn query_single_state(
     });
 
     state.remote = local_next;
-    debug!("Handle query channel success");
-    Ok((data, signature, state.to_bs64_old2()))
+
+    Ok(state)
 }
 
+pub async fn query_single_state(
+    project_id: &str,
+    query: String,
+    ep_name: Option<String>,
+    state: QueryState,
+    network_type: MetricsNetwork,
+) -> Result<(Vec<u8>, String, String)> {
+    let project: Project = get_project(project_id).await?;
+    let (before_state, state_cache, keyname) = before_query_signle_state(&project, state).await?;
+
+    // query the data
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .await?;
+
+    let post_state = post_query_signle_state(before_state, state_cache, keyname).await?;
+
+    debug!("Handle query channel success");
+    Ok((data, signature, post_state.to_bs64_old2()))
+}
+
+// query with multiple state mode
 pub async fn query_multiple_state(
     project_id: &str,
     query: String,

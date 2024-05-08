@@ -23,6 +23,11 @@ struct ReceivedMessage {
     auth: String,
 }
 
+pub enum QueryType {
+    CloseAgreement,
+    PAYG,
+}
+
 enum QueryStateType {
     Single,
     Multiple,
@@ -31,6 +36,7 @@ enum QueryStateType {
 struct WebSocketConnection {
     client_socket: WebSocket,
     remote_socket: SocketConnection,
+    query_type: QueryType,
     query_state_type: QueryStateType,
     res_fmt: String,
 }
@@ -39,6 +45,7 @@ impl WebSocketConnection {
     async fn new(
         mut headers: HeaderMap,
         mut client_socket: WebSocket,
+        query_type: QueryType,
         deployment: &str,
     ) -> Option<Self> {
         let res_fmt_value: HeaderValue = headers
@@ -62,8 +69,9 @@ impl WebSocketConnection {
         Some(WebSocketConnection {
             client_socket,
             remote_socket,
-            res_fmt,
+            query_type,
             query_state_type,
+            res_fmt,
         })
     }
 
@@ -132,61 +140,15 @@ impl WebSocketConnection {
     }
 }
 
-pub async fn handle_query_websocket(
+pub async fn handle_websocket(
     client_socket: WebSocket,
     headers: HeaderMap,
     deployment: String,
+    query_type: QueryType,
 ) {
     println!("WebSocket connected for deployment: {}", deployment);
     let mut ws_connection =
-        match WebSocketConnection::new(headers, client_socket, &deployment).await {
-            Some(ws_connection) => ws_connection,
-            None => return,
-        };
-
-    loop {
-        let socket_message = ws_connection.client_socket.recv().await;
-        if socket_message.is_none() {
-            // the message is None when the client closes the connection
-            let _ = ws_connection.close_remote().await;
-            break;
-        }
-
-        match socket_message.unwrap() {
-            Ok(msg) => {
-                let _ = handle_client_socket_message(&mut ws_connection, msg).await;
-            }
-            Err(e) => {
-                println!("WebSocket error: {}", e);
-                let _ = ws_connection.close_all(Some(Error::WebSocket(3009))).await;
-                break;
-            }
-        }
-
-        if let Some(remote_response) = ws_connection.remote_socket.next().await {
-            match remote_response {
-                Ok(msg) => {
-                    let _ = handle_remote_socket_message(&mut ws_connection, msg).await;
-                }
-                Err(_) => {
-                    let _ = ws_connection.close_all(Some(Error::WebSocket(3010))).await;
-                    break;
-                }
-            }
-        }
-    }
-
-    println!("WebSocket closed for deployment: {}", deployment);
-}
-
-pub async fn handle_payg_websocket(
-    client_socket: WebSocket,
-    headers: HeaderMap,
-    deployment: String,
-) {
-    println!("WebSocket connected for deployment: {}", deployment);
-    let mut ws_connection =
-        match WebSocketConnection::new(headers, client_socket, &deployment).await {
+        match WebSocketConnection::new(headers, client_socket, query_type, &deployment).await {
             Some(ws_connection) => ws_connection,
             None => return,
         };

@@ -51,7 +51,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
-use crate::websocket::{handle_payg_websocket, handle_query_websocket, validate_project};
+use crate::websocket::{handle_websocket, validate_project, QueryType};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -237,12 +237,14 @@ async fn ws_query(
         return Error::AuthVerify(1004).into_response();
     };
 
-    if let Err(e) = validate_project(&deployment).await {
-        return e.into_response();
-    }
+    // if let Err(e) = validate_project(&deployment).await {
+    //     return e.into_response();
+    // }
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_query_websocket(socket, headers, deployment))
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(socket, headers, deployment, QueryType::CloseAgreement)
+    })
 }
 
 async fn ws_payg_query(
@@ -257,7 +259,9 @@ async fn ws_payg_query(
     }
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_payg_websocket(socket, headers, deployment))
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(socket, headers, deployment, QueryType::PAYG)
+    })
 }
 
 async fn query_limit_handler(
