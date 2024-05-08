@@ -115,6 +115,7 @@ impl Project {
             "controller": format!("{:?}", controller_address),
             "deploymentId": self.id,
             "timestamp": timestamp,
+            "rateLimit": self.rate_limit.unwrap_or(1000),
             "signature": sign.to_string(),
         });
 
