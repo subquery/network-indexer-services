@@ -82,6 +82,10 @@ impl Project {
         }
     }
 
+    pub fn is_rpc_project(&self) -> bool {
+        matches!(self.ptype, ProjectType::RpcEvm | ProjectType::RpcSubstrate)
+    }
+
     pub fn open_payg(&self) -> bool {
         self.payg_price > U256::zero() && self.payg_expiration > 0
     }

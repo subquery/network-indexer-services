@@ -51,7 +51,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
-use crate::websocket::handle_websocket;
+use crate::websocket::{handle_payg_websocket, handle_query_websocket, validate_project};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -71,7 +71,7 @@ pub async fn start_server(port: u16) {
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
         .route("/query/:deployment", post(query_handler))
-        .route("/query/:deployment/ws", get(ws_query_handler))
+        .route("/query/:deployment/ws", get(ws_query))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `GET /payg-price` get the payg price
@@ -80,6 +80,7 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
+        .route("/payg/:deployment/ws", get(ws_payg_query))
         // `POST /payg-extend/0x00...955X` goes to extend channel expiration
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
@@ -226,7 +227,7 @@ async fn query_handler(
     Ok(build_response(body, headers))
 }
 
-async fn ws_query_handler(
+async fn ws_query(
     ws: WebSocketUpgrade,
     headers: HeaderMap,
     Path(deployment): Path<String>,
@@ -236,16 +237,27 @@ async fn ws_query_handler(
         return Error::AuthVerify(1004).into_response();
     };
 
-    let project = match get_project(&deployment).await {
-        Ok(project) => project,
-        Err(e) => return e.into_response(),
-    };
-    if project.ws_endpoint().is_none() {
-        return Error::WebSocket(3000).into_response();
+    if let Err(e) = validate_project(&deployment).await {
+        return e.into_response();
     }
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, headers, deployment))
+    ws.on_upgrade(move |socket: WebSocket| handle_query_websocket(socket, headers, deployment))
+}
+
+async fn ws_payg_query(
+    ws: WebSocketUpgrade,
+    headers: HeaderMap,
+    AuthPayg(_): AuthPayg,
+    Path(deployment): Path<String>,
+) -> impl IntoResponse {
+    // TODO: would be good to validate auth token at this stage as well (validate the signature)
+    if let Err(e) = validate_project(&deployment).await {
+        return e.into_response();
+    }
+
+    // Handle WebSocket connection
+    ws.on_upgrade(move |socket: WebSocket| handle_payg_websocket(socket, headers, deployment))
 }
 
 async fn query_limit_handler(
