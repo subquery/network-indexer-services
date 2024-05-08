@@ -3,6 +3,8 @@ use axum::{
     http::{HeaderMap, HeaderValue},
 };
 use base64::{engine::general_purpose, Engine as _};
+use ethers::types::U256;
+use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use std::result::Result;
@@ -17,10 +19,10 @@ use subql_indexer_utils::{
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
-    cli::COMMAND,
+    cli::redis,
     payg::{
-        before_query_multiple_state, before_query_signle_state, post_query_multiple_state,
-        post_query_signle_state,
+        before_query_multiple_state, before_query_signle_state, channel_id_to_keyname,
+        post_query_multiple_state, post_query_signle_state, StateCache,
     },
     project::{get_project, Project},
     response::sign_response,
@@ -32,6 +34,12 @@ pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
 struct ReceivedMessage {
     body: String,
     auth: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CacheState {
+    state: String,
+    state_cache: Vec<u8>,
 }
 
 #[derive(Eq, PartialEq, Clone, Copy)]
@@ -50,6 +58,7 @@ struct WebSocketConnection {
     deployment: String,
     client_socket: WebSocket,
     remote_socket: SocketConnection,
+    order_id: U256,
     query_type: QueryType,
     query_state_type: QueryStateType,
     res_fmt: String,
@@ -87,6 +96,7 @@ impl WebSocketConnection {
             query_type,
             query_state_type,
             res_fmt,
+            order_id: U256::zero(),
         })
     }
 
@@ -94,7 +104,8 @@ impl WebSocketConnection {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(3003))?;
         let ReceivedMessage { body, auth } = message;
 
-        self.before_query_check(auth).await?;
+        let status = self.before_query_check(auth).await?;
+        // TODO: handle status `false`
 
         self.remote_socket
             .send(TMessage::Text(body))
@@ -160,43 +171,80 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn before_query_check(&self, auth: String) -> Result<(), Error> {
+    async fn before_query_check(&mut self, auth: String) -> Result<bool, Error> {
         if self.query_type != QueryType::PAYG {
-            return Ok(());
+            return Ok(true);
         }
 
-        let project: Project = get_project(&self.deployment).await?;
-
-        match self.query_state_type {
+        let (state, keyname, state_cache, inactive) = match self.query_state_type {
             QueryStateType::Single => {
-                let state: QueryState = QueryState::from_bs64_old1(auth)?;
-                before_query_signle_state(&project, state).await?;
+                let project: Project = get_project(&self.deployment).await?;
+                let raw_state: QueryState = QueryState::from_bs64_old1(auth)?;
+                self.order_id = raw_state.channel_id;
+                let (state, keyname, state_cache) =
+                    before_query_signle_state(&project, raw_state).await?;
+                (state.to_bs64_old1(), keyname, state_cache, false)
             }
             QueryStateType::Multiple => {
-                let state = MultipleQueryState::from_bs64(auth)?;
-                before_query_multiple_state(state).await?;
+                let raw_state = MultipleQueryState::from_bs64(auth)?;
+                self.order_id = raw_state.channel_id;
+                let (state, keyname, state_cache, inactive) =
+                    before_query_multiple_state(raw_state).await?;
+                (state.to_bs64(), keyname, state_cache, inactive)
             }
         };
 
-        Ok(())
+        let value = serde_json::to_string(&json!({
+            "state": state,
+            "state_cache": state_cache.to_bytes(),
+        }))
+        .unwrap();
+
+        let cache_key = format!("{}-ws", keyname);
+        let mut conn = redis();
+        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        redis::cmd("SETEX")
+            .arg(&cache_key)
+            .arg(exp.unwrap_or(30000))
+            .arg(value)
+            .query_async(&mut conn)
+            .await
+            .map_err(|_| Error::WebSocket(3023))?;
+
+        Ok(!inactive)
     }
 
-    async fn post_query_sync(&self) -> Result<String, Error> {
+    async fn post_query_sync(&mut self) -> Result<String, Error> {
         if self.query_type != QueryType::PAYG {
             return Ok("".to_owned());
         }
 
+        let keyname = channel_id_to_keyname(self.order_id);
+        let cache_key = format!("{}-ws", keyname);
+
+        let mut conn = redis();
+        let value: String = redis::cmd("GET")
+            .arg(&cache_key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|_| Error::WebSocket(3024))?;
+
+        let cache_states = from_str::<CacheState>(&value).map_err(|_| Error::WebSocket(3025))?;
+        let state_str = cache_states.state;
+        let state_cache = StateCache::from_bytes(&cache_states.state_cache)
+            .map_err(|_| Error::WebSocket(3026))?;
+
         match self.query_state_type {
             QueryStateType::Single => {
-                // TODO: need to resolve this state cross reference issue
-                let state = post_query_signle_state(state, state_cache, keyname).await?;
-                Ok(state.to_bs64_old2())
+                let before_state =
+                    QueryState::from_bs64_old1(state_str).map_err(|_| Error::WebSocket(3027))?;
+                let state = post_query_signle_state(before_state, state_cache, keyname).await?;
+                Ok(state.to_bs64_old1())
             }
             QueryStateType::Multiple => {
-                let state = post_query_multiple_state(state_cache, keyname).await?;
-                Ok(state.to_bs64_old2())
+                post_query_multiple_state(keyname, state_cache).await;
+                Ok(state_str)
             }
-            _ => Ok("".to_owned()),
         }
     }
 }
@@ -274,7 +322,6 @@ async fn handle_client_socket_message(
         }
         _ => {
             println!("Fowarding PING/PONG message to remote");
-            // ws_connection.send_msg_to_remote(msg.into_tungstenite()).await;
         }
     }
 
@@ -308,7 +355,6 @@ async fn handle_remote_socket_message(
         }
         _ => {
             println!("Forwarding PING/PONG message to client");
-            // ws_connection.send_msg_to_client(msg).await;
         }
     }
 

@@ -68,7 +68,7 @@ pub struct StateCache {
 }
 
 impl StateCache {
-    fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
         if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
@@ -107,7 +107,7 @@ impl StateCache {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![CURRENT_VERSION];
 
         bytes.extend(&self.expiration.to_le_bytes());
@@ -315,7 +315,7 @@ pub async fn open_state(body: &Value) -> Result<Value> {
 pub async fn before_query_signle_state(
     project: &Project,
     mut state: QueryState,
-) -> Result<(QueryState, StateCache, String)> {
+) -> Result<(QueryState, String, StateCache)> {
     debug!("Start handle query channel");
 
     // check channel state
@@ -395,7 +395,7 @@ pub async fn before_query_signle_state(
 
     debug!("Verified channel, start query");
 
-    Ok((state, state_cache, keyname))
+    Ok((state, keyname, state_cache))
 }
 
 pub async fn post_query_signle_state(
@@ -465,7 +465,7 @@ pub async fn query_single_state(
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
     let project: Project = get_project(project_id).await?;
-    let (before_state, state_cache, keyname) = before_query_signle_state(&project, state).await?;
+    let (before_state, keyname, state_cache) = before_query_signle_state(&project, state).await?;
 
     // query the data
     let (data, signature) = project
@@ -480,7 +480,7 @@ pub async fn query_single_state(
 
 // query with multiple state mode
 pub async fn before_query_multiple_state(
-    mut state: MultipleQueryState,
+    state: MultipleQueryState,
 ) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
     let signer = state.recover()?;
@@ -534,9 +534,9 @@ pub async fn before_query_multiple_state(
         mpqsa = MultipleQueryStateActive::Inactive2;
     }
 
-    let account = ACCOUNT.read().await;
-    state.sign(&account.controller, mpqsa).await?;
-    drop(account);
+    // let account = ACCOUNT.read().await;
+    // state.sign(&account.controller, mpqsa).await?;
+    // drop(account);
 
     Ok((state, keyname, state_cache, mpqsa.is_inactive()))
 }
@@ -926,10 +926,14 @@ where
     }
 }
 
-pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String)> {
+pub fn channel_id_to_keyname(channel_id: U256) -> String {
     let mut keybytes = [0u8; 32];
     channel_id.to_little_endian(&mut keybytes);
-    let keyname = format!("{}-channel", hex::encode(keybytes));
+    format!("{}-channel", hex::encode(keybytes))
+}
+
+pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String)> {
+    let keyname = channel_id_to_keyname(channel_id);
 
     let mut conn = redis();
     let cache_bytes: RedisResult<Vec<u8>> =
