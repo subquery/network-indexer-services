@@ -480,7 +480,7 @@ pub async fn query_single_state(
 
 // query with multiple state mode
 pub async fn before_query_multiple_state(
-    state: MultipleQueryState,
+    mut state: MultipleQueryState,
 ) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
     let signer = state.recover()?;
@@ -534,9 +534,9 @@ pub async fn before_query_multiple_state(
         mpqsa = MultipleQueryStateActive::Inactive2;
     }
 
-    // let account = ACCOUNT.read().await;
-    // state.sign(&account.controller, mpqsa).await?;
-    // drop(account);
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, mpqsa).await?;
+    drop(account);
 
     Ok((state, keyname, state_cache, mpqsa.is_inactive()))
 }
