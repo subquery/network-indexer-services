@@ -19,13 +19,10 @@ use subql_indexer_utils::{
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
-    cli::redis,
-    payg::{
+    auth::verify_auth, cli::{redis, COMMAND}, payg::{
         before_query_multiple_state, before_query_signle_state, channel_id_to_keyname,
         post_query_multiple_state, post_query_signle_state, StateCache,
-    },
-    project::{get_project, Project},
-    response::sign_response,
+    }, project::{get_project, Project}, response::sign_response
 };
 
 pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
@@ -172,10 +169,25 @@ impl WebSocketConnection {
     }
 
     async fn before_query_check(&mut self, auth: String) -> Result<bool, Error> {
-        if self.query_type != QueryType::PAYG {
-            return Ok(true);
+        match self.query_type {
+            QueryType::CloseAgreement => {
+                if COMMAND.auth() {
+                    let deployment_id = verify_auth(&auth).await?;
+                    if deployment_id != self.deployment {
+                        return Err(Error::AuthVerify(1004));
+                    }    
+                }
+    
+                Ok(true)
+            }
+            QueryType::PAYG => {
+                let status = self.before_query_pagy_check(auth).await?;
+                Ok(status)
+            }
         }
+    }
 
+    async fn before_query_pagy_check(&mut self, auth: String) -> Result<bool, Error> {
         let (state, keyname, state_cache, inactive) = match self.query_state_type {
             QueryStateType::Single => {
                 let project: Project = get_project(&self.deployment).await?;

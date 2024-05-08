@@ -121,12 +121,9 @@ where
             return Ok(AuthQuery("".to_string()));
         }
 
-        let claims = check_jwt(req)?;
-        if let Some(agreement) = claims.agreement {
-            check_agreement_limit(&agreement).await?;
-        }
-
-        Ok(AuthQuery(claims.deployment_id))
+        let authorisation = extract_auth_from_req(req)?;
+        let deployment_id = verify_auth(&authorisation).await?;
+        Ok(AuthQuery(deployment_id))
     }
 }
 
@@ -144,7 +141,8 @@ where
         req: &mut Parts,
         _state: &S,
     ) -> std::result::Result<Self, Self::Rejection> {
-        let claims = check_jwt(req)?;
+        let authorisation = extract_auth_from_req(req)?;
+        let claims = check_jwt(&authorisation)?;
 
         if let Some(agreement) = claims.agreement {
             let (daily_limit, daily_times, rate_limit, rate_times) =
@@ -161,8 +159,7 @@ where
     }
 }
 
-fn check_jwt(req: &mut Parts) -> Result<Claims> {
-    // Get authorisation header
+fn extract_auth_from_req(req: &mut Parts) -> Result<String> {
     let authorisation = req
         .headers
         .get(AUTHORIZATION)
@@ -170,8 +167,21 @@ fn check_jwt(req: &mut Parts) -> Result<Claims> {
         .to_str()
         .map_err(|_| Error::Permission(1020))?;
 
+    Ok(authorisation.to_string())
+}
+
+pub async fn verify_auth(authorisation: &str) -> Result<String> {
+    let claims = check_jwt(authorisation)?;
+    if let Some(agreement) = claims.agreement {
+        check_agreement_limit(&agreement).await?;
+    }
+
+    Ok(claims.deployment_id)
+}
+
+fn check_jwt(auth: &str) -> Result<Claims> {
     // Check that is bearer and jwt
-    let split = authorisation.split_once(' ');
+    let split = auth.split_once(' ');
     let jwt = match split {
         Some((name, contents)) if name == "Bearer" => Ok(contents),
         _ => Err(Error::InvalidAuthHeader(1030)),
