@@ -16,11 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
-use std::sync::RwLock;
-use once_cell::sync::Lazy;
 use ethers::prelude::Address;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::RwLock;
 use tokio::time::{sleep, Duration};
 
 use crate::{contracts::check_whitelist_account, primitives::WHITELIST_REFRESH_TIME};
@@ -59,32 +59,28 @@ impl Default for Whitelist {
     }
 }
 
-pub static WHITELIST: Lazy<RwLock<Whitelist>> = Lazy::new(|| {
-    RwLock::new(Whitelist::default())
-});
+pub static WHITELIST: Lazy<RwLock<Whitelist>> = Lazy::new(|| RwLock::new(Whitelist::default()));
 
 pub fn listen() {
     tokio::spawn(async {
         sleep(Duration::from_secs(WHITELIST_REFRESH_TIME)).await;
         loop {
             // TODO: get the list from subquery project
-            
+
             let accounts = {
                 let whitelist = WHITELIST.read().unwrap();
                 whitelist.get_all_accounts()
             };
-    
+
             for account in accounts {
                 match Address::from_str(&account) {
-                    Ok(addr) => {
-                        match check_whitelist_account(addr).await {
-                            Ok(whitelisted) => {
-                                let mut whitelist = WHITELIST.write().unwrap();
-                                whitelist.update_account(&account, whitelisted);
-                                drop(whitelist);
-                            },
-                            Err(_) => ()
+                    Ok(addr) => match check_whitelist_account(addr).await {
+                        Ok(whitelisted) => {
+                            let mut whitelist = WHITELIST.write().unwrap();
+                            whitelist.update_account(&account, whitelisted);
+                            drop(whitelist);
                         }
+                        Err(_) => (),
                     },
                     Err(_) => {
                         let mut whitelist = WHITELIST.write().unwrap();

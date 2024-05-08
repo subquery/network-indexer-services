@@ -34,8 +34,11 @@ use serde_json;
 use std::result;
 use std::str::FromStr;
 
-use crate::{cli::{redis, COMMAND}, whitelist::WHITELIST};
 use crate::contracts::check_agreement_and_consumer;
+use crate::{
+    cli::{redis, COMMAND},
+    whitelist::WHITELIST,
+};
 
 type AuthRejection = Error;
 type AuthResult<T> = std::result::Result<T, AuthRejection>;
@@ -438,7 +441,6 @@ where
 
         if !is_whitelisted {
             return Err(Error::Permission(1301));
-        
         }
 
         let deployment_id = payload.deployment_id.clone();
