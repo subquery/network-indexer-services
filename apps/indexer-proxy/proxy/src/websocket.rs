@@ -19,10 +19,14 @@ use subql_indexer_utils::{
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
-    auth::verify_auth, cli::{redis, COMMAND}, payg::{
+    auth::verify_auth,
+    cli::{redis, COMMAND},
+    payg::{
         before_query_multiple_state, before_query_signle_state, channel_id_to_keyname,
         post_query_multiple_state, post_query_signle_state, StateCache,
-    }, project::{get_project, Project}, response::sign_response
+    },
+    project::{get_project, Project},
+    response::sign_response,
 };
 
 pub type SocketConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
@@ -101,8 +105,11 @@ impl WebSocketConnection {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(1301))?;
         let ReceivedMessage { body, auth } = message;
 
-        let status = self.before_query_check(auth).await?;
-        // TODO: handle status `false`
+        let (status, state) = self.before_query_check(auth).await?;
+        if !status && state.is_some() {
+            self.send_msg(vec![], "".to_owned(), state.unwrap()).await?;
+            return Ok(());
+        }
 
         self.remote_socket
             .send(TMessage::Text(body))
@@ -116,11 +123,22 @@ impl WebSocketConnection {
         let msg_data = msg.into_bytes();
         let signature = sign_response(&msg_data).await;
 
+        self.send_msg(msg_data, signature, state).await?;
+
+        Ok(())
+    }
+
+    async fn send_msg(
+        &mut self,
+        msg: Vec<u8>,
+        signature: String,
+        state: String,
+    ) -> Result<(), Error> {
         let response_msg = match self.res_fmt.as_str() {
             // FIXME: don't think we need to support the inline format
-            "inline" => String::from_utf8(msg_data).unwrap_or("".to_owned()),
+            "inline" => String::from_utf8(msg).unwrap_or("".to_owned()),
             _ => {
-                let result = general_purpose::STANDARD.encode(&msg_data);
+                let result = general_purpose::STANDARD.encode(&msg);
                 serde_json::to_string(
                     &json!({ "result": result, "signature": signature, "state": state }),
                 )
@@ -168,26 +186,29 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn before_query_check(&mut self, auth: String) -> Result<bool, Error> {
+    async fn before_query_check(&mut self, auth: String) -> Result<(bool, Option<String>), Error> {
         match self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
                     let deployment_id = verify_auth(&auth).await?;
                     if deployment_id != self.deployment {
                         return Err(Error::AuthVerify(1004));
-                    }    
+                    }
                 }
-    
-                Ok(true)
+
+                Ok((true, None))
             }
             QueryType::PAYG => {
-                let status = self.before_query_pagy_check(auth).await?;
-                Ok(status)
+                let (status, state) = self.before_query_pagy_check(auth).await?;
+                Ok((status, state))
             }
         }
     }
 
-    async fn before_query_pagy_check(&mut self, auth: String) -> Result<bool, Error> {
+    async fn before_query_pagy_check(
+        &mut self,
+        auth: String,
+    ) -> Result<(bool, Option<String>), Error> {
         let (state, keyname, state_cache, inactive) = match self.query_state_type {
             QueryStateType::Single => {
                 let project: Project = get_project(&self.deployment).await?;
@@ -206,6 +227,10 @@ impl WebSocketConnection {
             }
         };
 
+        if inactive {
+            return Ok((false, Some(state)));
+        }
+
         let value = serde_json::to_string(&json!({
             "state_remote": state,
             "state_cache": state_cache.to_bytes(),
@@ -223,7 +248,7 @@ impl WebSocketConnection {
             .await
             .map_err(|_| Error::WebSocket(1305))?;
 
-        Ok(!inactive)
+        Ok((true, None))
     }
 
     async fn post_query_sync(&mut self) -> Result<String, Error> {
