@@ -432,8 +432,8 @@ where
             serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1300))?;
 
         let is_whitelisted = {
-            let whitelist = WHITELIST.read().map_err(|_| Error::Permission(1301))?;
-            let account_whitelisted = whitelist.is_whitelisted(&payload.account);
+            let mut whitelist = WHITELIST.lock().await;
+            let account_whitelisted = whitelist.is_whitelisted(&payload.account).await;
             drop(whitelist);
 
             account_whitelisted

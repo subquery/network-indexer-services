@@ -239,7 +239,6 @@ async fn query_limit_handler(
 }
 
 async fn wl_query_handler(
-    _: HeaderMap,
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
     ep_name: Query<EpName>,
@@ -261,7 +260,7 @@ async fn wl_query_handler(
         .await?;
 
     let body = serde_json::to_string(&json!({
-        "result": general_purpose::STANDARD.encode(&data),
+        "result": general_purpose::STANDARD.encode(data),
         "signature": signature
     }))
     .unwrap_or("".to_owned());

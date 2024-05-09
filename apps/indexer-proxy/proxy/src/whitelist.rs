@@ -20,7 +20,7 @@ use ethers::prelude::Address;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::sync::RwLock;
+use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
 use crate::{contracts::check_whitelist_account, primitives::WHITELIST_REFRESH_TIME};
@@ -40,12 +40,21 @@ impl Whitelist {
         self.accounts.remove(account);
     }
 
-    pub fn update_account(&mut self, account: &str, whitelisted: bool) {
-        self.accounts.insert(account.to_string(), whitelisted);
-    }
-
-    pub fn is_whitelisted(&self, account: &str) -> bool {
-        self.accounts.get(account).map_or(false, |v| *v)
+    pub async fn is_whitelisted(&mut self, account: &str) -> bool {
+        if let Some(is_whitelist) = self.accounts.get(account) {
+            *is_whitelist
+        } else {
+            match Address::from_str(account) {
+                Ok(addr) => match check_whitelist_account(addr).await {
+                    Ok(is_whitelist) => {
+                        self.accounts.insert(account.to_owned(), is_whitelist);
+                        is_whitelist
+                    }
+                    Err(_) => false,
+                },
+                Err(_) => false,
+            }
+        }
     }
 
     pub fn get_all_accounts(&self) -> Vec<String> {
@@ -59,36 +68,41 @@ impl Default for Whitelist {
     }
 }
 
-pub static WHITELIST: Lazy<RwLock<Whitelist>> = Lazy::new(|| RwLock::new(Whitelist::default()));
+pub static WHITELIST: Lazy<Mutex<Whitelist>> = Lazy::new(|| Mutex::new(Whitelist::default()));
 
 pub fn listen() {
     tokio::spawn(async {
         sleep(Duration::from_secs(WHITELIST_REFRESH_TIME)).await;
         loop {
-            // TODO: get the list from subquery project
-
             let accounts = {
-                let whitelist = WHITELIST.read().unwrap();
-                whitelist.get_all_accounts()
+                let whitelist = WHITELIST.lock().await;
+                let accounts = whitelist.get_all_accounts();
+                drop(whitelist);
+                accounts
             };
 
+            let mut deletes = vec![];
             for account in accounts {
                 match Address::from_str(&account) {
                     Ok(addr) => match check_whitelist_account(addr).await {
                         Ok(whitelisted) => {
-                            let mut whitelist = WHITELIST.write().unwrap();
-                            whitelist.update_account(&account, whitelisted);
-                            drop(whitelist);
+                            if !whitelisted {
+                                deletes.push(account)
+                            }
                         }
-                        Err(_) => (),
+                        Err(_) => continue,
                     },
                     Err(_) => {
-                        let mut whitelist = WHITELIST.write().unwrap();
-                        whitelist.remove(&account);
-                        drop(whitelist);
+                        deletes.push(account);
                     }
-                }
+                };
             }
+
+            let mut whitelist = WHITELIST.lock().await;
+            for delete in deletes {
+                whitelist.remove(&delete);
+            }
+            drop(whitelist);
         }
     });
 }
