@@ -191,6 +191,16 @@ pub async fn verify_auth(authorisation: &str) -> Result<String> {
     Ok(claims.deployment_id)
 }
 
+
+pub async fn verify_auth_ws(authorisation: &str) -> Result<String> {
+    let claims = check_jwt(authorisation)?;
+    if let Some(agreement) = claims.agreement {
+        check_agreement_daily_limit(&agreement).await?;
+    }
+
+    Ok(claims.deployment_id)
+}
+
 fn check_jwt(auth: &str) -> Result<Claims> {
     // Check that is bearer and jwt
     let split = auth.split_once(' ');
@@ -296,6 +306,30 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
             .await
             .map_err(|err| error!("Redis 3 {}", err));
     }
+}
+
+async fn check_agreement_daily_limit(agreement: &str) -> Result<()> {
+   // check limit
+   let (daily_limit, daily_times, _, _) = get_agreement_limit(agreement).await;
+
+   if daily_times + 1 > daily_limit {
+       return Err(Error::DailyLimit(1051));
+   }
+
+   let mut conn = redis();
+
+   let (date, _) = day_and_second();
+   let daily_key = format!("{}-daily-{}", agreement, date);
+
+   let _: result::Result<(), ()> = redis::cmd("SETEX")
+       .arg(&daily_key)
+       .arg(86400)
+       .arg(daily_times + 1)
+       .query_async(&mut conn)
+       .await
+       .map_err(|err| error!("Redis 4 {}", err));
+
+   Ok(())
 }
 
 async fn check_agreement_limit(agreement: &str) -> Result<()> {

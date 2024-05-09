@@ -242,9 +242,10 @@ async fn ws_query(
         return Error::AuthVerify(1004).into_response();
     };
 
-    if let Err(e) = validate_project(&deployment).await {
-        return e.into_response();
-    }
+    // TODO: uncomment this
+    // if let Err(e) = validate_project(&deployment).await {
+    //     return e.into_response();
+    // }
 
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {

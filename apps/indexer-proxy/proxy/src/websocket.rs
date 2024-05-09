@@ -19,7 +19,7 @@ use subql_indexer_utils::{
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
-    auth::verify_auth,
+    auth::verify_auth_ws,
     cli::{redis, COMMAND},
     payg::{
         before_query_multiple_state, before_query_signle_state, channel_id_to_keyname,
@@ -172,7 +172,7 @@ impl WebSocketConnection {
     }
 
     async fn close_remote(&mut self) -> Result<(), Error> {
-        debug!("Closing remote WebSocket");
+        println!("Closing remote WebSocket");
         self.remote_socket
             .close(None)
             .await
@@ -190,7 +190,7 @@ impl WebSocketConnection {
         match self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
-                    let deployment_id = verify_auth(&auth).await?;
+                    let deployment_id = verify_auth_ws(&auth).await?;
                     if deployment_id != self.deployment {
                         return Err(Error::AuthVerify(1004));
                     }
@@ -292,7 +292,7 @@ pub async fn handle_websocket(
     deployment: String,
     query_type: QueryType,
 ) {
-    debug!("WebSocket connected for deployment: {}", deployment);
+    println!("WebSocket connected for deployment: {}", deployment);
     let mut ws_connection =
         match WebSocketConnection::new(headers, client_socket, query_type, &deployment).await {
             Some(ws_connection) => ws_connection,
@@ -312,7 +312,7 @@ pub async fn handle_websocket(
                 let _ = handle_client_socket_message(&mut ws_connection, msg).await;
             }
             Err(e) => {
-                debug!("WebSocket error: {}", e);
+                println!("WebSocket error: {}", e);
                 let _ = ws_connection.close_all(None).await;
                 break;
             }
@@ -331,7 +331,7 @@ pub async fn handle_websocket(
         }
     }
 
-    debug!("WebSocket closed for deployment: {}", deployment);
+    println!("WebSocket closed for deployment: {}", deployment);
 }
 
 async fn handle_client_socket_message(
@@ -340,24 +340,24 @@ async fn handle_client_socket_message(
 ) -> Result<(), Error> {
     match msg {
         Message::Text(text) => {
-            debug!("Forwarding text message to remote: {}", text);
+            println!("Forwarding text message to remote: {}", text);
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
                 let (_, code, reason) = e.to_status_message();
                 ws_connection.send_error_smg(code, reason.to_string()).await;
             }
         }
         Message::Binary(_) => {
-            debug!("Receive binary message to remote");
+            println!("Receive binary message to remote");
             ws_connection
                 .close_all(Some(Error::WebSocket(1310)))
                 .await?
         }
         Message::Close(_) => {
-            debug!("Client closed the WebSocket");
+            println!("Client closed the WebSocket");
             ws_connection.close_remote().await?
         }
         _ => {
-            debug!("Fowarding PING/PONG message to remote");
+            println!("Fowarding PING/PONG message to remote");
         }
     }
 
@@ -370,25 +370,25 @@ async fn handle_remote_socket_message(
 ) -> Result<(), Error> {
     match msg {
         TMessage::Text(text) => {
-            debug!("Received text response from remote");
+            println!("Received text response from remote");
             if let Err(e) = ws_connection.send_text_msg(text).await {
                 ws_connection.close_all(Some(e)).await?;
             }
         }
         TMessage::Binary(_) => {
-            debug!("Receive binary message to remote");
+            println!("Receive binary message to remote");
             ws_connection
                 .close_all(Some(Error::WebSocket(1310)))
                 .await?
         }
         TMessage::Close(_) => {
-            debug!("Remote closed the WebSocket");
+            println!("Remote closed the WebSocket");
             ws_connection
                 .close_client(Some(Error::WebSocket(1308)))
                 .await?;
         }
         _ => {
-            debug!("Forwarding PING/PONG message to client");
+            println!("Forwarding PING/PONG message to client");
         }
     }
 
@@ -397,21 +397,22 @@ async fn handle_remote_socket_message(
 
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
-    let project = get_project(deployment_id).await.unwrap();
-    let ws_url = match project.ws_endpoint() {
-        Some(ws_url) => ws_url,
-        None => return Err(Error::WebSocket(1300)),
-    };
+    // TODO: uncomment this when we have the project endpoint
+    // let project = get_project(deployment_id).await.unwrap();
+    // let ws_url = match project.ws_endpoint() {
+    //     Some(ws_url) => ws_url,
+    //     None => return Err(Error::WebSocket(1300)),
+    // };
 
     // Test url
-    // let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
+    let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
         .await
         .map_err(|_| Error::WebSocket(1308))?;
 
-    debug!("Connected to the server: {}", ws_url);
+    println!("Connected to the server: {}", ws_url);
     Ok(socket)
 }
 
