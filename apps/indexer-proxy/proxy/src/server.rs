@@ -39,7 +39,6 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::account::{get_indexer, indexer_healthy};
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
@@ -49,6 +48,10 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::{
+    account::{get_indexer, indexer_healthy},
+    auth::AuthWhitelistQuery,
+};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -70,6 +73,8 @@ pub async fn start_server(port: u16) {
         .route("/query/:deployment", post(query_handler))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
+        // `POST /wl-query/:Qm...955X` goes to query with whitelist account
+        .route("/wl-query/:deployment", post(wl_query_handler))
         // `GET /payg-price` get the payg price
         .route("/payg-price", get(payg_price))
         // `POST /payg-open` goes to open a state channel for payg
@@ -231,6 +236,38 @@ async fn query_limit_handler(
         "rate_limit": rate_limit,
         "rate_used": rate_used,
     })))
+}
+
+async fn wl_query_handler(
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
+    Path(deployment): Path<String>,
+    ep_name: Query<EpName>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    if deployment != deployment_id {
+        return Err(Error::AuthVerify(1004));
+    };
+
+    let (data, signature) = get_project(&deployment)
+        .await?
+        .query(
+            body,
+            ep_name.0.ep_name,
+            MetricsQuery::Free,
+            MetricsNetwork::HTTP,
+            false,
+        )
+        .await?;
+
+    let body = serde_json::to_string(&json!({
+        "result": general_purpose::STANDARD.encode(data),
+        "signature": signature
+    }))
+    .unwrap_or("".to_owned());
+
+    let header = vec![("Content-Type", "application/json")];
+
+    Ok(build_response(body, header))
 }
 
 async fn payg_price() -> Result<Json<Value>, Error> {

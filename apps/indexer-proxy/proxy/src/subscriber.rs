@@ -30,7 +30,7 @@ use crate::project::{handle_projects, ProjectItem};
 
 fn merge(a: &mut Value, b: &Value) {
     match (a, b) {
-        (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
+        (&mut Value::Object(ref mut a), Value::Object(b)) => {
             for (k, v) in b {
                 merge(a.entry(k.clone()).or_insert(Value::Null), v);
             }

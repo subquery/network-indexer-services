@@ -92,3 +92,7 @@
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
+- `1300` - Invalid whitelist auth: invalid payload
+- `1301` - Invalid whitelist auth: account is not whitelisted
+- `1302` - Invalid whitelist auth: auth expired
+- `1303` - Invalid whitelist auth: signature verify failure

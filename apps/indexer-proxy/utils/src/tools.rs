@@ -62,7 +62,7 @@ pub fn hex_u256(a: &str) -> U256 {
 
 pub fn merge_json(a: &mut Value, b: &Value) {
     match (a, b) {
-        (&mut Value::Object(ref mut a), &Value::Object(ref b)) => {
+        (&mut Value::Object(ref mut a), Value::Object(b)) => {
             for (k, v) in b {
                 merge_json(a.entry(k.clone()).or_insert(Value::Null), v);
             }

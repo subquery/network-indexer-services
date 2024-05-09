@@ -45,3 +45,6 @@ pub const SUBSCRIBER_INIT_TIME: u64 = 10;
 
 /// subscriber loop time (had account and projects): 2min=120s
 pub const SUBSCRIBER_LOOP_TIME: u64 = 120;
+
+/// loop refresh whitelist time: 30min = 1800s
+pub const WHITELIST_REFRESH_TIME: u64 = 1800;
