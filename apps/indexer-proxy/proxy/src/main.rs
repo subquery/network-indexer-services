@@ -36,6 +36,7 @@ mod response;
 mod server;
 mod subscriber;
 mod websocket;
+mod whitelist;
 
 use cli::COMMAND;
 use tracing::Level;
@@ -54,6 +55,7 @@ async fn main() {
     monitor::listen();
     p2p::listen();
     metrics::listen();
+    whitelist::listen();
 
     server::start_server(port).await;
 }

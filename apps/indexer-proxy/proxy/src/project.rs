@@ -90,11 +90,11 @@ impl Project {
         self.payg_price > U256::zero() && self.payg_expiration > 0
     }
 
-    pub async fn metadata(&self, block: Option<u64>, network: MetricsNetwork) -> Result<Value> {
+    pub async fn metadata(&self, network: MetricsNetwork) -> Result<Value> {
         let mut metadata = match self.ptype {
-            ProjectType::Subquery => subquery_metadata(&self, block, network).await?,
-            ProjectType::RpcEvm => rpc_evm_metadata(&self, block, network).await?,
-            ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, block, network).await?,
+            ProjectType::Subquery => subquery_metadata(&self, network).await?,
+            ProjectType::RpcEvm => rpc_evm_metadata(&self, network).await?,
+            ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, network).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -113,12 +113,6 @@ impl Project {
             self.id.clone().into_token(),
             metadata["lastHeight"].as_i64().unwrap_or(0).into_token(),
             metadata["targetHeight"].as_i64().unwrap_or(0).into_token(),
-            metadata["poiId"].as_i64().unwrap_or(0).into_token(),
-            metadata["poiHash"]
-                .as_str()
-                .unwrap_or("")
-                .to_owned()
-                .into_token(),
             timestamp.into_token(),
         ]);
         let hash = keccak256(payload);
@@ -133,6 +127,7 @@ impl Project {
             "controller": format!("{:?}", controller_address),
             "deploymentId": self.id,
             "timestamp": timestamp,
+            "rateLimit": self.rate_limit.unwrap_or(1000),
             "signature": sign.to_string(),
         });
 

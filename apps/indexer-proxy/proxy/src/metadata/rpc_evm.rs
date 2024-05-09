@@ -7,11 +7,7 @@ use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
 use crate::project::Project;
 
 /// rpc evm
-pub async fn metadata(
-    project: &Project,
-    block: Option<u64>,
-    network: MetricsNetwork,
-) -> Result<Value> {
+pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let provider = Provider::<Http>::try_from(project.endpoint())
         .map_err(|_e| Error::ServiceException(1200))?;
 
@@ -36,22 +32,6 @@ pub async fn metadata(
     let last_height = last_block.number.unwrap_or(U64::zero()).as_u64();
     let last_time = last_block.timestamp.as_u64();
 
-    let poi_block = if let Some(b) = block {
-        let now = Instant::now();
-        let poi_block = provider
-            .get_block(BlockNumber::Number(b.into()))
-            .await
-            .map_err(|_| Error::ServiceException(1201))?
-            .ok_or(Error::ServiceException(1201))?;
-        let time = now.elapsed().as_millis() as u64;
-        add_metrics_query(project.id.clone(), time, MetricsQuery::Free, network, true);
-        poi_block
-    } else {
-        last_block
-    };
-    let poi_height = poi_block.number.unwrap_or(U64::zero()).as_u64();
-    let poi_hash = poi_block.hash.unwrap_or(H256::default());
-
     let now = Instant::now();
     let genesis_block = provider
         .get_block(BlockNumber::Earliest)
@@ -70,10 +50,5 @@ pub async fn metadata(
         "lastTime": last_time,
         "genesis": genesis,
         "chainId": chain,
-        "poiId": poi_height,
-        "poiHash": poi_hash,
-        "poiParentHash": poi_block.parent_hash,
-        "poiChainBlockHash": poi_hash,
-        "poiOperationHashRoot": poi_block.state_root,
     }))
 }
