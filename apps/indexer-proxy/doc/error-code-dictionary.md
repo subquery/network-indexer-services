@@ -49,6 +49,7 @@
 - `1057` - Rate limit: reach the max limit of project in 1s.
 - `1058` - Overflow: paid less that previous paid.
 - `1059` - Overflow: range size overflow.
+- `1060` - Invalid request: query method is deny.
 - `1100` - Serialize: hex convert failure.
 - `1101` - Serialize: rustc_hex convert failure.
 - `1102` - Serialize: uint convert failure.
@@ -89,10 +90,11 @@
 - `1138` - Serialize: payg price expired.
 - `1139` - Serialize: payg price signature.
 - `1140` - Serialize: subquery's query is invalid.
+- `1141` - Serialize: cannot parse rpc query method.
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
-  
+- `1203` - Service exception: Coordinator RPC mainfest is invalid 
 - `1300` - Websocket connection: project not support websocket
 - `1301` - Websocket connection: invalid message
 - `1302` - Websocket connection: failed to send message to remote socket
@@ -106,7 +108,6 @@
 - `1310` - Websocket connection: unsuppot message type
 - `1311` - Websocket connection: failed to close the socket
 - `1312` - Websocket connection: internal socket error
-
 - `1400` - Invalid whitelist auth: invalid payload
 - `1401` - Invalid whitelist auth: account is not whitelisted
 - `1402` - Invalid whitelist auth: auth expired

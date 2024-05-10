@@ -52,7 +52,7 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
-const CURRENT_VERSION: u8 = 2;
+const CURRENT_VERSION: u8 = 3;
 
 pub struct StateCache {
     pub expiration: i64,
@@ -62,8 +62,9 @@ pub struct StateCache {
     pub total: U256,
     pub spent: U256,
     pub remote: U256,
-    coordi: U256,
-    pub conflict: i64,
+    pub coordi: U256,
+    pub conflict_start: i64,
+    pub conflict_times: u64,
     signer: ConsumerType,
 }
 
@@ -73,7 +74,7 @@ impl StateCache {
             return Err(Error::Serialize(1136));
         }
 
-        if bytes.len() < 229 {
+        if bytes.len() < 237 {
             return Err(Error::Serialize(1136));
         }
 
@@ -88,10 +89,16 @@ impl StateCache {
         let spent = U256::from_little_endian(&bytes[125..157]);
         let remote = U256::from_little_endian(&bytes[157..189]);
         let coordi = U256::from_little_endian(&bytes[189..221]);
-        let mut conflict_bytes = [0u8; 8];
-        conflict_bytes.copy_from_slice(&bytes[221..229]);
-        let conflict = i64::from_le_bytes(conflict_bytes);
-        let signer = ConsumerType::from_bytes(&bytes[229..])?;
+
+        let mut conflict_start_bytes = [0u8; 8];
+        conflict_start_bytes.copy_from_slice(&bytes[221..229]);
+        let conflict_start = i64::from_le_bytes(conflict_start_bytes);
+
+        let mut conflict_times_bytes = [0u8; 8];
+        conflict_times_bytes.copy_from_slice(&bytes[229..237]);
+        let conflict_times = u64::from_le_bytes(conflict_times_bytes);
+
+        let signer = ConsumerType::from_bytes(&bytes[237..])?;
 
         Ok(StateCache {
             expiration,
@@ -102,7 +109,8 @@ impl StateCache {
             spent,
             remote,
             coordi,
-            conflict,
+            conflict_start,
+            conflict_times,
             signer,
         })
     }
@@ -125,7 +133,8 @@ impl StateCache {
         bytes.extend(u256_bytes);
         self.coordi.to_little_endian(&mut u256_bytes);
         bytes.extend(u256_bytes);
-        bytes.extend(&self.conflict.to_le_bytes());
+        bytes.extend(&self.conflict_start.to_le_bytes());
+        bytes.extend(&self.conflict_times.to_le_bytes());
         bytes.extend(&self.signer.to_bytes());
         bytes
     }
@@ -343,16 +352,21 @@ pub async fn before_query_signle_state(
         }
     }
 
+    let conflict = project.payg_overflow;
     let total = state_cache.total;
     let price = state_cache.price;
     let local_prev = state_cache.spent;
-    let local_next = local_prev + price;
     let remote_prev = state_cache.remote;
+
+    // compute unit count times
+    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
+    let used_amount = price * unit_times;
+
+    let local_next = local_prev + used_amount;
     let remote_next = state.spent;
-    let conflict = project.payg_overflow;
 
     // check spent & conflict
-    if remote_prev < remote_next && remote_prev + price > remote_next {
+    if remote_prev < remote_next && remote_prev + used_amount > remote_next {
         warn!(
             "remote prev: {} remote next: {}, should: {}",
             remote_prev,
@@ -363,29 +377,29 @@ pub async fn before_query_signle_state(
         return Err(Error::InvalidProjectPrice(1034));
     }
 
-    if remote_next > total {
+    if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    if local_next > remote_next + price {
+    if local_next > remote_next + used_amount {
         // mark conflict is happend
-        let times = ((local_next - remote_next) / price).as_u32() as i32;
-        if times <= 1 {
-            state_cache.conflict = Utc::now().timestamp();
+        if state_cache.conflict_times <= 1 {
+            state_cache.conflict_start = Utc::now().timestamp();
         }
+        state_cache.conflict_times += uint_overflow;
     }
 
-    if local_next > remote_next + price * conflict {
+    if state_cache.conflict_times > conflict {
         warn!(
             "CONFLICT: local_next: {}, remote_next: {}, price: {}, conflict: {}",
-            local_next, remote_next, price, conflict
+            local_next, remote_next, price, state_cache.conflict_times
         );
 
         let project_id = project.id.clone();
         let channel = format!("{:#x}", channel_id);
-        let times = conflict.as_u32() as i32;
-        let start = state_cache.conflict;
+        let times = state_cache.conflict_times;
+        let start = state_cache.conflict_start;
         let end = Utc::now().timestamp();
         tokio::spawn(report_conflict(project_id, channel, times, start, end));
 
@@ -508,8 +522,13 @@ pub async fn before_query_multiple_state(
     // check spent
     let total = state_cache.total;
     let price = state_cache.price;
-    let local_next = state_cache.spent + price;
     let remote_prev = state_cache.remote;
+
+    // compute unit count times
+    let (unit_times, _uint_overflow) = project.compute_query_method(&query)?;
+    let used_amount = price * unit_times;
+
+    let local_next = state_cache.spent + used_amount;
 
     if local_next > total {
         // overflow the total
@@ -881,7 +900,8 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 remote,
                 signer,
                 coordi: spent,
-                conflict: now,
+                conflict_start: now,
+                conflict_times: 0,
             }
         };
 

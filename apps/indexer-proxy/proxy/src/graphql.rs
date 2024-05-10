@@ -42,3 +42,25 @@ pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration 
 
 pub const CHANNEL_QUERY: &str =
     "query { getAliveChannels { id consumer deploymentId agent total spent remote price lastFinal expiredAt } }";
+
+pub fn project_mainfest(project_type: i64, project_id: &str) -> String {
+    format!(
+        r#"query {{
+  getManifest(projectType: {}, projectId: "{}") {{
+    rpcManifest {{
+      name
+      nodeType
+      featureFlags
+      rpcFamily
+      rpcDenyList
+      rpcAllowList
+      computeUnit {{ name value }}
+    }}
+    subqueryManifest {{
+      specVersion
+    }}
+  }}
+}}"#,
+        project_type, project_id
+    )
+}
