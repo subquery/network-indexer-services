@@ -28,8 +28,20 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use subql_indexer_utils::{error::Error, types::Result};
 
-use crate::cli::{redis, COMMAND};
+use ethers::prelude::*;
+use ethers::utils::keccak256;
+use serde_json;
+use std::result;
+use std::str::FromStr;
+
 use crate::contracts::check_agreement_and_consumer;
+use crate::{
+    cli::{redis, COMMAND},
+    whitelist::WHITELIST,
+};
+
+type AuthRejection = Error;
+type AuthResult<T> = std::result::Result<T, AuthRejection>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Payload {
@@ -111,12 +123,9 @@ impl<S> FromRequestParts<S> for AuthQuery
 where
     S: Send + Sync,
 {
-    type Rejection = Error;
+    type Rejection = AuthRejection;
 
-    async fn from_request_parts(
-        req: &mut Parts,
-        _state: &S,
-    ) -> std::result::Result<Self, Self::Rejection> {
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
         let claims = check_jwt(req)?;
 
         if let Some(agreement) = claims.agreement {
@@ -135,12 +144,9 @@ impl<S> FromRequestParts<S> for AuthQueryLimit
 where
     S: Send + Sync,
 {
-    type Rejection = Error;
+    type Rejection = AuthRejection;
 
-    async fn from_request_parts(
-        req: &mut Parts,
-        _state: &S,
-    ) -> std::result::Result<Self, Self::Rejection> {
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
         let claims = check_jwt(req)?;
 
         if let Some(agreement) = claims.agreement {
@@ -246,14 +252,14 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
     // update the limit
     let mut conn = redis();
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_limit)
         .arg(limit_expired)
         .arg(daily)
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 1 {}", err));
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_limit)
         .arg(limit_expired)
         .arg(rate)
@@ -263,7 +269,7 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
 
     if let Some(signer) = signer {
         let ca_consumer = format!("{}-{}", agreement, signer);
-        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+        let _: result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&ca_consumer)
             .arg(limit_expired)
             .arg(true)
@@ -291,7 +297,7 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
     let daily_key = format!("{}-daily-{}", agreement, date);
     let rate_key = format!("{}-rate-{}", agreement, second);
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&daily_key)
         .arg(86400)
         .arg(daily_times + 1)
@@ -299,7 +305,7 @@ async fn check_agreement_limit(agreement: &str) -> Result<()> {
         .await
         .map_err(|err| error!("Redis 4 {}", err));
 
-    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&rate_key)
         .arg(1)
         .arg(rate_times + 1)
@@ -351,4 +357,95 @@ fn day_and_second() -> (i32, i64) {
     let date = utc.date_naive().num_days_from_ce();
     let second = utc.timestamp();
     (date, second)
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct AuthWhitelistQuery(pub String);
+/// Struct to represent the payload used for whitelist authorization, extracted from a custom header.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthWhitelistPayload {
+    /// The deployment identifier to which the query is targeted.
+    #[serde(rename = "deploymentId")]
+    pub deployment_id: String,
+    /// Ethereum public address used to sign the payload.
+    pub account: String,
+    /// Unix timestamp indicating when the token expires.
+    pub expired: u64,
+    /// Signature to verify authenticity and integrity of the payload.
+    pub signature: String,
+}
+
+impl AuthWhitelistQuery {
+    fn verify_signature(payload: AuthWhitelistPayload) -> AuthResult<()> {
+        let AuthWhitelistPayload {
+            deployment_id,
+            account,
+            expired,
+            signature,
+        } = payload;
+
+        // Check expiration
+        if expired < chrono::Utc::now().timestamp_millis() as u64 {
+            return Err(Error::Permission(1302));
+        }
+
+        // Prepare message and hash it
+        let message = format!("{}{}{}", deployment_id, account, expired);
+        let message_hash = keccak256(message.as_bytes());
+
+        // Decode and verify signature
+        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1303))?;
+        let signature =
+            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1303))?;
+
+        // Verify public address from the signature
+        let address = Address::from_str(&account).map_err(|_| Error::Permission(1303))?;
+        let recovery_message = RecoveryMessage::from(message_hash);
+        let recovered_address = signature
+            .recover(recovery_message)
+            .map_err(|_| Error::Permission(1303))?;
+
+        if recovered_address != address {
+            return Err(Error::Permission(1303));
+        }
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for AuthWhitelistQuery
+where
+    S: Send + Sync,
+{
+    type Rejection = AuthRejection;
+
+    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
+        let authorization = req
+            .headers
+            .get("X-Whitelist-Auth")
+            .ok_or(Error::Permission(1020))?
+            .to_str()
+            .map_err(|_| Error::Permission(1030))?;
+
+        let payload: AuthWhitelistPayload =
+            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1300))?;
+
+        let is_whitelisted = {
+            let mut whitelist = WHITELIST.lock().await;
+            let account_whitelisted = whitelist.is_whitelisted(&payload.account).await;
+            drop(whitelist);
+
+            account_whitelisted
+        };
+
+        if !is_whitelisted {
+            return Err(Error::Permission(1301));
+        }
+
+        let deployment_id = payload.deployment_id.clone();
+        AuthWhitelistQuery::verify_signature(payload)?;
+
+        Ok(AuthWhitelistQuery(deployment_id))
+    }
 }

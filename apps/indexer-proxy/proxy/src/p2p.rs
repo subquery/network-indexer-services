@@ -477,7 +477,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             let mut events = vec![];
             for project_id in project_ids {
                 if let Ok(project) = get_project(&project_id).await {
-                    if let Ok(data) = project.metadata(None, MetricsNetwork::P2P).await {
+                    if let Ok(data) = project.metadata(MetricsNetwork::P2P).await {
                         let e = Event::ProjectMetadataRes(
                             serde_json::to_string(&data).map_err(|_| RpcError::ParseError)?,
                         );
@@ -676,9 +676,9 @@ async fn handle_group(
                     }
                     drop(ledger);
                 }
-                Event::ProjectMetadata(project, block) => {
+                Event::ProjectMetadata(project, _block) => {
                     if let Ok(project) = get_project(&project).await {
-                        if let Ok(data) = project.metadata(block, MetricsNetwork::P2P).await {
+                        if let Ok(data) = project.metadata(MetricsNetwork::P2P).await {
                             let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
 
                             let msg = SendType::Event(0, peer_id, e.to_bytes());
