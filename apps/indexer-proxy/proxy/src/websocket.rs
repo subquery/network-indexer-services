@@ -190,6 +190,9 @@ impl WebSocketConnection {
         auth: String,
         query: &str,
     ) -> Result<(bool, Option<String>), Error> {
+        let project: Project = get_project(&self.deployment).await?;
+        let (unit_times, unit_overflow) = project.compute_query_method(query)?;
+
         match self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
@@ -202,7 +205,9 @@ impl WebSocketConnection {
                 Ok((true, None))
             }
             QueryType::PAYG => {
-                let (status, state) = self.before_query_payg_check(auth, query).await?;
+                let (status, state) = self
+                    .before_query_payg_check(auth, project, unit_times, unit_overflow)
+                    .await?;
                 Ok((status, state))
             }
         }
@@ -211,11 +216,10 @@ impl WebSocketConnection {
     async fn before_query_payg_check(
         &mut self,
         auth: String,
-        query: &str,
+        project: Project,
+        unit_times: u64,
+        unit_overflow: u64,
     ) -> Result<(bool, Option<String>), Error> {
-        let project: Project = get_project(&self.deployment).await?;
-        let (unit_times, unit_overflow) = project.compute_query_method(query)?;
-
         let (state, keyname, state_cache, inactive) = match self.query_state_type {
             QueryStateType::Single => {
                 let raw_state: QueryState = QueryState::from_bs64_old1(auth)?;
