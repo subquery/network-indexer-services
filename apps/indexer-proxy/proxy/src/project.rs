@@ -351,12 +351,8 @@ impl Project {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm(_) => {
-                // TODO filter the methods
-                self.rpcquery_raw(body, ep_name, payment, network).await
-            }
+            ProjectType::RpcEvm(_) => self.rpcquery_raw(body, ep_name, payment, network).await,
             ProjectType::RpcSubstrate(_) => {
-                // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
         }
