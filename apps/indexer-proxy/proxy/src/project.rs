@@ -42,7 +42,8 @@ use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 use crate::account::ACCOUNT;
-use crate::cli::redis;
+use crate::cli::{redis, COMMAND};
+use crate::graphql::project_mainfest;
 use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -53,8 +54,146 @@ pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
 #[derive(Clone)]
 pub enum ProjectType {
     Subquery,
-    RpcEvm,
-    RpcSubstrate,
+    RpcEvm(RpcMainfest),
+    RpcSubstrate(RpcMainfest),
+}
+
+#[derive(Serialize, Clone, Default)]
+enum NodeType {
+    #[default]
+    Full,
+    Archive,
+}
+
+impl NodeType {
+    fn from_str(s: &str) -> NodeType {
+        match s {
+            "archive" => NodeType::Archive,
+            _ => NodeType::Full,
+        }
+    }
+}
+
+//impl Default for NodeType
+
+#[derive(Clone)]
+struct ComputeUnit {
+    value: u64,
+    overflow: u64,
+}
+
+#[derive(Clone, Default)]
+pub struct RpcMainfest {
+    node_type: NodeType,
+    feature_flags: Vec<String>,
+    rpc_allow_list: Vec<String>,
+    rpc_deny_list: Vec<String>,
+    compute_unit: HashMap<String, ComputeUnit>,
+}
+
+#[derive(Deserialize)]
+struct ComputeUnitItem {
+    name: String,
+    value: u64,
+}
+
+#[derive(Deserialize)]
+struct RpcMainfestItem {
+    #[serde(rename = "nodeType")]
+    node_type: String,
+    #[serde(rename = "featureFlags")]
+    feature_flags: Option<Vec<String>>,
+    #[serde(rename = "rpcDenyList")]
+    rpc_deny_list: Option<Vec<String>>,
+    #[serde(rename = "rpcAllowList")]
+    rpc_allow_list: Option<Vec<String>>,
+    #[serde(rename = "computeUnit")]
+    compute_units: Option<Vec<ComputeUnitItem>>,
+}
+
+impl RpcMainfest {
+    fn json_values(&self) -> Value {
+        json!({
+            "nodeType": self.node_type,
+            "featureFlags": self.feature_flags,
+            "rpcAllowList": self.rpc_allow_list,
+            "rpcDenyList": self.rpc_deny_list,
+            "computeUnit": self.compute_unit.iter().map(|(m, c)| (m, c.value)).collect::<HashMap<&String, u64>>(),
+        })
+    }
+
+    async fn fetch(
+        url: &str,
+        project_type: i64,
+        project_id: &str,
+        payg_overflow: u64,
+    ) -> Result<Self> {
+        // fetch mainfest
+        let query = GraphQLQuery::query(&project_mainfest(project_type, project_id));
+        let value = graphql_request(url, &query).await?;
+        let item: RpcMainfestItem = if let Some(v) = value.pointer("/data/getManifest/rpcManifest")
+        {
+            if v.is_null() {
+                return Ok(Default::default());
+            }
+            serde_json::from_value(v.clone()).map_err(|_| Error::ServiceException(1203))?
+        } else {
+            return Ok(Default::default());
+        };
+
+        let node_type = NodeType::from_str(&item.node_type);
+
+        // compute unit overflow times
+        let mut compute_unit = HashMap::new();
+        for cu in item.compute_units.unwrap_or(vec![]) {
+            let value = cu.value;
+            let allowed_times = payg_overflow / value;
+            let overflow = if allowed_times < COMMAND.max_unit_overflow {
+                if payg_overflow > COMMAND.max_unit_overflow {
+                    payg_overflow / COMMAND.max_unit_overflow
+                } else {
+                    1
+                }
+            } else {
+                payg_overflow
+            };
+            compute_unit.insert(cu.name, ComputeUnit { value, overflow });
+        }
+
+        Ok(Self {
+            node_type,
+            feature_flags: item.feature_flags.unwrap_or(vec![]),
+            rpc_allow_list: item.rpc_allow_list.unwrap_or(vec![]),
+            rpc_deny_list: item.rpc_deny_list.unwrap_or(vec![]),
+            compute_unit,
+        })
+    }
+
+    // correct times & reasonable overflow times
+    pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
+        for rd in &self.rpc_deny_list {
+            if method.starts_with(rd) {
+                return Err(Error::InvalidRequest(1060));
+            }
+        }
+
+        let mut not_allowed = !self.rpc_allow_list.is_empty();
+        for ra in &self.rpc_allow_list {
+            if method.starts_with(ra) {
+                not_allowed = false;
+                break;
+            }
+        }
+        if not_allowed {
+            return Err(Error::InvalidRequest(1060));
+        }
+
+        if let Some(cu) = self.compute_unit.get(method) {
+            Ok((cu.value, cu.overflow))
+        } else {
+            Ok((1, 1))
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -66,10 +205,28 @@ pub struct Project {
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
-    pub payg_overflow: U256,
+    pub payg_overflow: u64,
+}
+
+#[derive(Deserialize)]
+struct SimpleJsonrpc {
+    method: String,
 }
 
 impl Project {
+    pub fn compute_query_method(&self, query: &str) -> Result<(u64, u64)> {
+        // compute unit times
+        match &self.ptype {
+            ProjectType::Subquery => Ok((1, 1)),
+            ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
+                // parse the jsonrpc method
+                let s: SimpleJsonrpc =
+                    serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+                m.unit_times(&s.method)
+            }
+        }
+    }
+
     pub fn endpoint<'a>(&'a self) -> &'a str {
         &self.endpoints[0].1
     }
@@ -79,10 +236,18 @@ impl Project {
     }
 
     pub async fn metadata(&self, network: MetricsNetwork) -> Result<Value> {
-        let mut metadata = match self.ptype {
+        let mut metadata = match &self.ptype {
             ProjectType::Subquery => subquery_metadata(&self, network).await?,
-            ProjectType::RpcEvm => rpc_evm_metadata(&self, network).await?,
-            ProjectType::RpcSubstrate => rpc_substrate_metadata(&self, network).await?,
+            ProjectType::RpcEvm(m) => {
+                let mut data = rpc_evm_metadata(&self, network).await?;
+                merge_json(&mut data, &m.json_values());
+                data
+            }
+            ProjectType::RpcSubstrate(m) => {
+                let mut data = rpc_substrate_metadata(&self, network).await?;
+                merge_json(&mut data, &m.json_values());
+                data
+            }
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -123,6 +288,19 @@ impl Project {
         Ok(metadata)
     }
 
+    pub async fn check_query(
+        &self,
+        body: String,
+        ep_name: Option<String>,
+        payment: MetricsQuery,
+        network: MetricsNetwork,
+        is_limit: bool,
+    ) -> Result<(Vec<u8>, String)> {
+        let _ = self.compute_query_method(&body)?;
+
+        self.query(body, ep_name, payment, network, is_limit).await
+    }
+
     pub async fn query(
         &self,
         body: String,
@@ -161,11 +339,11 @@ impl Project {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm => {
+            ProjectType::RpcEvm(_) => {
                 // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
-            ProjectType::RpcSubstrate => {
+            ProjectType::RpcSubstrate(_) => {
                 // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
@@ -368,6 +546,7 @@ pub struct ProjectItem {
 }
 
 pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
+    let url = COMMAND.graphql_url();
     let mut project_ids = vec![];
     let mut new_projects = vec![];
     for item in projects {
@@ -387,9 +566,11 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let payg_overflow = item.payg_overflow.into();
         let payg_expiration = item.payg_expiration;
 
+        let rpc_mainfest =
+            RpcMainfest::fetch(&url, item.project_type, &item.id, payg_overflow).await?;
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
-            1 => ProjectType::RpcEvm,
+            1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
             _ => {
                 error!("Invalid project type");
                 return Ok(());
@@ -400,13 +581,13 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         for endpoint in item.project_endpoints {
             match endpoint.key.as_str() {
                 "evmHttp" => {
-                    ptype = ProjectType::RpcEvm;
+                    ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
                 }
                 "substrateHttp" => {
-                    ptype = ProjectType::RpcSubstrate;
+                    ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;

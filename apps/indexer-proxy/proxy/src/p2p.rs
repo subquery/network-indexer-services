@@ -80,7 +80,7 @@ pub async fn stop_network() {
 pub async fn report_conflict(
     deployment: String,
     channel: String,
-    conflict: i32,
+    conflict: u64,
     start: i64,
     end: i64,
 ) {
@@ -808,7 +808,7 @@ async fn handle_close_agreement_query(
 
     let (data, _signature) = get_project(project)
         .await?
-        .query(
+        .check_query(
             query,
             ep_name,
             MetricsQuery::CloseAgreement,
