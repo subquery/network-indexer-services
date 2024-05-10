@@ -104,8 +104,7 @@ impl WebSocketConnection {
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(1301))?;
         let ReceivedMessage { body, auth } = message;
-
-        let (status, state) = self.before_query_check(auth).await?;
+        let (status, state) = self.before_query_check(auth, &body).await?;
         if !status && state.is_some() {
             self.send_msg(vec![], "".to_owned(), state.unwrap()).await?;
             return Ok(());
@@ -186,7 +185,11 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn before_query_check(&mut self, auth: String) -> Result<(bool, Option<String>), Error> {
+    async fn before_query_check(
+        &mut self,
+        auth: String,
+        query: &str,
+    ) -> Result<(bool, Option<String>), Error> {
         match self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
@@ -199,7 +202,7 @@ impl WebSocketConnection {
                 Ok((true, None))
             }
             QueryType::PAYG => {
-                let (status, state) = self.before_query_payg_check(auth).await?;
+                let (status, state) = self.before_query_payg_check(auth, query).await?;
                 Ok((status, state))
             }
         }
@@ -208,21 +211,25 @@ impl WebSocketConnection {
     async fn before_query_payg_check(
         &mut self,
         auth: String,
+        query: &str,
     ) -> Result<(bool, Option<String>), Error> {
+        let project: Project = get_project(&self.deployment).await?;
+        let (unit_times, unit_overflow) = project.compute_query_method(query)?;
+
         let (state, keyname, state_cache, inactive) = match self.query_state_type {
             QueryStateType::Single => {
-                let project: Project = get_project(&self.deployment).await?;
                 let raw_state: QueryState = QueryState::from_bs64_old1(auth)?;
                 self.order_id = raw_state.channel_id;
                 let (state, keyname, state_cache) =
-                    before_query_signle_state(&project, raw_state).await?;
+                    before_query_signle_state(&project, raw_state, unit_times, unit_overflow)
+                        .await?;
                 (state.to_bs64_old1(), keyname, state_cache, false)
             }
             QueryStateType::Multiple => {
                 let raw_state = MultipleQueryState::from_bs64(auth)?;
                 self.order_id = raw_state.channel_id;
                 let (state, keyname, state_cache, inactive) =
-                    before_query_multiple_state(raw_state).await?;
+                    before_query_multiple_state(raw_state, unit_times).await?;
                 (state.to_bs64(), keyname, state_cache, inactive)
             }
         };
@@ -396,7 +403,7 @@ async fn handle_remote_socket_message(
 }
 
 // Asynchronously connect to a remote WebSocket endpoint
-pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
+pub async fn connect_to_project_ws(_deployment_id: &str) -> Result<SocketConnection, Error> {
     // TODO: uncomment this when we have the project endpoint
     // let project = get_project(deployment_id).await.unwrap();
     // let ws_url = match project.ws_endpoint() {

@@ -240,7 +240,10 @@ impl Project {
     }
 
     pub fn is_rpc_project(&self) -> bool {
-        matches!(self.ptype, ProjectType::RpcEvm | ProjectType::RpcSubstrate)
+        matches!(
+            self.ptype,
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
+        )
     }
 
     pub fn open_payg(&self) -> bool {

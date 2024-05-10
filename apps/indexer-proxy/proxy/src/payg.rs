@@ -324,6 +324,8 @@ pub async fn open_state(body: &Value) -> Result<Value> {
 pub async fn before_query_signle_state(
     project: &Project,
     mut state: QueryState,
+    unit_times: u64,
+    uint_overflow: u64,
 ) -> Result<(QueryState, String, StateCache)> {
     debug!("Start handle query channel");
 
@@ -357,9 +359,6 @@ pub async fn before_query_signle_state(
     let price = state_cache.price;
     let local_prev = state_cache.spent;
     let remote_prev = state_cache.remote;
-
-    // compute unit count times
-    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
     let used_amount = price * unit_times;
 
     let local_next = local_prev + used_amount;
@@ -479,7 +478,12 @@ pub async fn query_single_state(
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
     let project: Project = get_project(project_id).await?;
-    let (before_state, keyname, state_cache) = before_query_signle_state(&project, state).await?;
+
+    // compute unit count times
+    let (unit_times, unit_overflow) = project.compute_query_method(&query)?;
+
+    let (before_state, keyname, state_cache) =
+        before_query_signle_state(&project, state, unit_times, unit_overflow).await?;
 
     // query the data
     let (data, signature) = project
@@ -495,6 +499,7 @@ pub async fn query_single_state(
 // query with multiple state mode
 pub async fn before_query_multiple_state(
     mut state: MultipleQueryState,
+    unit_times: u64,
 ) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
     let signer = state.recover()?;
@@ -523,9 +528,6 @@ pub async fn before_query_multiple_state(
     let total = state_cache.total;
     let price = state_cache.price;
     let remote_prev = state_cache.remote;
-
-    // compute unit count times
-    let (unit_times, _uint_overflow) = project.compute_query_method(&query)?;
     let used_amount = price * unit_times;
 
     let local_next = state_cache.spent + used_amount;
@@ -580,13 +582,18 @@ pub async fn query_multiple_state(
     state: MultipleQueryState,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
-    let (state, keyname, state_cache, status) = before_query_multiple_state(state).await?;
+    let project = get_project(project_id).await?;
+
+    // compute unit count times
+    let (unit_times, _unit_overflow) = project.compute_query_method(&query)?;
+
+    let (state, keyname, state_cache, status) =
+        before_query_multiple_state(state, unit_times).await?;
     if !status {
         return Ok((vec![], "".to_owned(), state.to_bs64()));
     }
 
     // query the data.
-    let project = get_project(project_id).await?;
     let (data, signature) = project
         .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
         .await?;
