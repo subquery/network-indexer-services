@@ -317,7 +317,7 @@ export class OnChainService implements OnApplicationBootstrap {
     deploymentId: string,
     runner: string,
     txType: TxType
-  ): Promise<void> {
+  ): Promise<boolean> {
     if (!(await this.checkControllerReady())) return;
     try {
       await this.contractService.sendTransaction({
@@ -336,8 +336,10 @@ export class OnChainService implements OnApplicationBootstrap {
             overrides
           ),
       });
+      return true;
     } catch (e) {
       logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
+      return false;
     }
   }
 
