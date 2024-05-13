@@ -234,7 +234,6 @@ async fn query_handler(
 
 async fn ws_query(
     ws: WebSocketUpgrade,
-    headers: HeaderMap,
     Path(deployment): Path<String>,
     AuthQuery(deployment_id): AuthQuery,
 ) -> impl IntoResponse {
@@ -249,25 +248,18 @@ async fn ws_query(
 
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(socket, headers, deployment, QueryType::CloseAgreement)
+        handle_websocket(socket, deployment, QueryType::CloseAgreement)
     })
 }
 
-async fn ws_payg_query(
-    ws: WebSocketUpgrade,
-    headers: HeaderMap,
-    AuthPayg(_): AuthPayg,
-    Path(deployment): Path<String>,
-) -> impl IntoResponse {
+async fn ws_payg_query(ws: WebSocketUpgrade, Path(deployment): Path<String>) -> impl IntoResponse {
     // TODO: would be good to validate auth token at this stage as well (validate the state)
     if let Err(e) = validate_project(&deployment).await {
         return e.into_response();
     }
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(socket, headers, deployment, QueryType::PAYG)
-    })
+    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment, QueryType::PAYG))
 }
 
 async fn query_limit_handler(

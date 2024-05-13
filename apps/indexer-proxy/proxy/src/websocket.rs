@@ -1,29 +1,22 @@
-use axum::{
-    extract::ws::{CloseFrame, Message, WebSocket},
-    http::{HeaderMap, HeaderValue},
-};
+use axum::extract::ws::{CloseFrame, Message, WebSocket};
 use base64::{engine::general_purpose, Engine as _};
 use ethers::types::U256;
 use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use std::result::Result;
-use tokio::net::TcpStream;
+use tokio::{net::TcpStream, select};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 use futures_util::{sink::SinkExt, StreamExt};
-use subql_indexer_utils::{
-    error::Error,
-    payg::{MultipleQueryState, QueryState},
-};
+use subql_indexer_utils::{error::Error, payg::MultipleQueryState};
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
     auth::verify_auth_ws,
     cli::{redis, COMMAND},
     payg::{
-        before_query_multiple_state, before_query_signle_state, channel_id_to_keyname,
-        post_query_multiple_state, post_query_signle_state, StateCache,
+        before_query_multiple_state, channel_id_to_keyname, post_query_multiple_state, StateCache,
     },
     project::{get_project, Project},
     response::sign_response,
@@ -49,39 +42,20 @@ pub enum QueryType {
     PAYG,
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
-enum QueryStateType {
-    Single,
-    Multiple,
-}
-
 struct WebSocketConnection {
     deployment: String,
     client_socket: WebSocket,
     remote_socket: SocketConnection,
     order_id: U256,
     query_type: QueryType,
-    query_state_type: QueryStateType,
-    res_fmt: String,
 }
 
 impl WebSocketConnection {
     async fn new(
-        mut headers: HeaderMap,
         mut client_socket: WebSocket,
         query_type: QueryType,
         deployment: &str,
     ) -> Option<Self> {
-        let res_fmt_value: HeaderValue = headers
-            .remove("X-Indexer-Response-Format")
-            .unwrap_or(HeaderValue::from_static("inline"));
-        let res_fmt = res_fmt_value.to_str().unwrap().to_string();
-
-        let query_state_type = headers
-            .remove("X-Channel-Block")
-            .map(|_| QueryStateType::Multiple)
-            .unwrap_or(QueryStateType::Single);
-
         let remote_socket = match connect_to_project_ws(deployment).await {
             Ok(socket) => socket,
             Err(_) => {
@@ -95,8 +69,6 @@ impl WebSocketConnection {
             client_socket,
             remote_socket,
             query_type,
-            query_state_type,
-            res_fmt,
             order_id: U256::zero(),
         })
     }
@@ -133,17 +105,11 @@ impl WebSocketConnection {
         signature: String,
         state: String,
     ) -> Result<(), Error> {
-        let response_msg = match self.res_fmt.as_str() {
-            // FIXME: don't think we need to support the inline format
-            "inline" => String::from_utf8(msg).unwrap_or("".to_owned()),
-            _ => {
-                let result = general_purpose::STANDARD.encode(&msg);
-                serde_json::to_string(
-                    &json!({ "result": result, "signature": signature, "state": state }),
-                )
-                .unwrap_or("".to_owned())
-            }
-        };
+        let result = general_purpose::STANDARD.encode(&msg);
+        let response_msg = serde_json::to_string(
+            &json!({ "result": result, "signature": signature, "state": state }),
+        )
+        .unwrap_or("".to_owned());
 
         self.client_socket
             .send(Message::Text(response_msg))
@@ -216,34 +182,21 @@ impl WebSocketConnection {
     async fn before_query_payg_check(
         &mut self,
         auth: String,
-        project: Project,
+        _project: Project,
         unit_times: u64,
-        unit_overflow: u64,
+        _unit_overflow: u64,
     ) -> Result<(bool, Option<String>), Error> {
-        let (state, keyname, state_cache, inactive) = match self.query_state_type {
-            QueryStateType::Single => {
-                let raw_state: QueryState = QueryState::from_bs64_old1(auth)?;
-                self.order_id = raw_state.channel_id;
-                let (state, keyname, state_cache) =
-                    before_query_signle_state(&project, raw_state, unit_times, unit_overflow)
-                        .await?;
-                (state.to_bs64_old1(), keyname, state_cache, false)
-            }
-            QueryStateType::Multiple => {
-                let raw_state = MultipleQueryState::from_bs64(auth)?;
-                self.order_id = raw_state.channel_id;
-                let (state, keyname, state_cache, inactive) =
-                    before_query_multiple_state(raw_state, unit_times).await?;
-                (state.to_bs64(), keyname, state_cache, inactive)
-            }
-        };
+        let raw_state = MultipleQueryState::from_bs64(auth)?;
+        self.order_id = raw_state.channel_id;
+        let (state, keyname, state_cache, inactive) =
+            before_query_multiple_state(raw_state, unit_times).await?;
 
         if inactive {
-            return Ok((false, Some(state)));
+            return Ok((false, Some(state.to_bs64())));
         }
 
         let value = serde_json::to_string(&json!({
-            "state_remote": state,
+            "state_remote": state.to_bs64(),
             "state_cache": state_cache.to_bytes(),
         }))
         .map_err(|_| Error::WebSocket(1305))?;
@@ -282,67 +235,43 @@ impl WebSocketConnection {
         let state_cache = StateCache::from_bytes(&cache_states.state_cache)
             .map_err(|_| Error::WebSocket(1306))?;
 
-        match self.query_state_type {
-            QueryStateType::Single => {
-                let before_state =
-                    QueryState::from_bs64_old1(state_str).map_err(|_| Error::WebSocket(1307))?;
-                let state = post_query_signle_state(before_state, state_cache, keyname).await?;
-                Ok(state.to_bs64_old1())
-            }
-            QueryStateType::Multiple => {
-                post_query_multiple_state(keyname, state_cache).await;
-                Ok(state_str)
-            }
-        }
+        post_query_multiple_state(keyname, state_cache).await;
+        Ok(state_str)
     }
 }
 
-pub async fn handle_websocket(
-    client_socket: WebSocket,
-    headers: HeaderMap,
-    deployment: String,
-    query_type: QueryType,
-) {
-    println!("WebSocket connected for deployment: {}", deployment);
+enum SocketMessage {
+    Client(Message),
+    Remote(TMessage),
+}
+
+pub async fn handle_websocket(client_socket: WebSocket, deployment: String, query_type: QueryType) {
+    debug!("WebSocket connected for deployment: {}", deployment);
+
     let mut ws_connection =
-        match WebSocketConnection::new(headers, client_socket, query_type, &deployment).await {
+        match WebSocketConnection::new(client_socket, query_type, &deployment).await {
             Some(ws_connection) => ws_connection,
             None => return,
         };
 
     loop {
-        let socket_message = ws_connection.client_socket.recv().await;
-        if socket_message.is_none() {
-            // the message is None when the client closes the connection
-            let _ = ws_connection.close_remote().await;
-            break;
-        }
+        let res = select! {
+            v = async { ws_connection.client_socket.recv().await.and_then(|v| v.ok()).map(SocketMessage::Client) } => v,
+            v = async { ws_connection.remote_socket.next().await.and_then(|v| v.ok()).map(SocketMessage::Remote) } => v,
+        };
 
-        match socket_message.unwrap() {
-            Ok(msg) => {
+        match res {
+            Some(SocketMessage::Client(msg)) => {
                 let _ = handle_client_socket_message(&mut ws_connection, msg).await;
             }
-            Err(e) => {
-                println!("WebSocket error: {}", e);
-                let _ = ws_connection.close_all(None).await;
-                break;
+            Some(SocketMessage::Remote(msg)) => {
+                let _ = handle_remote_socket_message(&mut ws_connection, msg).await;
             }
-        }
-
-        if let Some(remote_response) = ws_connection.remote_socket.next().await {
-            match remote_response {
-                Ok(msg) => {
-                    let _ = handle_remote_socket_message(&mut ws_connection, msg).await;
-                }
-                Err(_) => {
-                    let _ = ws_connection.close_all(Some(Error::WebSocket(1309))).await;
-                    break;
-                }
-            }
+            None => break,
         }
     }
 
-    println!("WebSocket closed for deployment: {}", deployment);
+    debug!("WebSocket closed for deployment: {}", deployment);
 }
 
 async fn handle_client_socket_message(
