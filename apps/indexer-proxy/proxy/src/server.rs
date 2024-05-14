@@ -228,6 +228,7 @@ async fn query_handler(
         _ => ("".to_owned(), vec![]),
     };
     headers.push(("Content-Type", "application/json"));
+    headers.push(("Access-Control-Max-Age", "600"));
 
     Ok(build_response(body, headers))
 }
@@ -377,6 +378,7 @@ async fn payg_query(
         ),
     };
     headers.push(("Content-Type", "application/json"));
+    headers.push(("Access-Control-Max-Age", "600"));
 
     Ok(build_response(body, headers))
 }
