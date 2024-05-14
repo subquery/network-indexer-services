@@ -296,8 +296,21 @@ async fn handle_client_socket_message(
             println!("Client closed the WebSocket");
             ws_connection.close_remote().await?
         }
-        _ => {
-            println!("Fowarding PING/PONG message to remote");
+        Message::Ping(data) => {
+            println!("Received PING message from client");
+            ws_connection
+                .remote_socket
+                .send(TMessage::Ping(data))
+                .await
+                .map_err(|_| Error::WebSocket(1314))?;
+        }
+        Message::Pong(data) => {
+            println!("Received PONG message from client");
+            ws_connection
+                .remote_socket
+                .send(TMessage::Pong(data))
+                .await
+                .map_err(|_| Error::WebSocket(1314))?;
         }
     }
 
@@ -321,14 +334,27 @@ async fn handle_remote_socket_message(
                 .close_all(Some(Error::WebSocket(1310)))
                 .await?
         }
+        TMessage::Ping(data) => {
+            println!("Received PING message from remote");
+            ws_connection
+                .client_socket
+                .send(Message::Ping(data))
+                .await
+                .map_err(|_| Error::WebSocket(1313))?;
+        }
+        TMessage::Pong(data) => {
+            println!("Received PONG message from remote");
+            ws_connection
+                .client_socket
+                .send(Message::Pong(data))
+                .await
+                .map_err(|_| Error::WebSocket(1313))?;
+        }
         TMessage::Close(_) => {
             println!("Remote closed the WebSocket");
             ws_connection
                 .close_client(Some(Error::WebSocket(1308)))
                 .await?;
-        }
-        _ => {
-            println!("Forwarding PING/PONG message to client");
         }
     }
 
@@ -345,7 +371,7 @@ pub async fn connect_to_project_ws(_deployment_id: &str) -> Result<SocketConnect
     // };
 
     // Test url
-    let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
+    let ws_url: &str = "wss://polkadot.api.onfinality.io/ws?apikey=YOUR_API_KEY";
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
