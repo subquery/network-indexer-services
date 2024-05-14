@@ -74,7 +74,6 @@ pub async fn start_server(port: u16) {
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
         .route("/query/:deployment", post(query_handler))
-        .route("/query/:deployment/ws", get(ws_query))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `POST /wl-query/:Qm...955X` goes to query with whitelist account
@@ -85,7 +84,6 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
-        .route("/payg/:deployment/ws", get(ws_payg_query))
         // `POST /payg-extend/0x00...955X` goes to extend channel expiration
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
@@ -97,6 +95,8 @@ pub async fn start_server(port: u16) {
         .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
+        .route("/ws/query/:deployment", get(ws_query))
+        .route("/ws/payg/:deployment", get(ws_payg_query))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
