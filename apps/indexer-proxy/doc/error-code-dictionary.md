@@ -108,6 +108,8 @@
 - `1310` - Websocket connection: unsuppot message type
 - `1311` - Websocket connection: failed to close the socket
 - `1312` - Websocket connection: internal socket error
+- `1313` - Websocket connection: failed to send ping/pong to client
+- `1314` - Websocket connection: failed to send ping/pong to remote
 - `1400` - Invalid whitelist auth: invalid payload
 - `1401` - Invalid whitelist auth: account is not whitelisted
 - `1402` - Invalid whitelist auth: auth expired
