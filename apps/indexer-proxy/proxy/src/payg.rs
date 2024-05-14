@@ -69,7 +69,7 @@ pub struct StateCache {
 }
 
 impl StateCache {
-    fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<StateCache> {
         if bytes[0] != CURRENT_VERSION {
             return Err(Error::Serialize(1136));
         }
@@ -115,7 +115,7 @@ impl StateCache {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![CURRENT_VERSION];
 
         bytes.extend(&self.expiration.to_le_bytes());
@@ -320,15 +320,14 @@ pub async fn open_state(body: &Value) -> Result<Value> {
     Ok(state.to_json())
 }
 
-pub async fn query_single_state(
-    project_id: &str,
-    query: String,
-    ep_name: Option<String>,
+// query with single state mode
+pub async fn before_query_signle_state(
+    project: &Project,
     mut state: QueryState,
-    network_type: MetricsNetwork,
-) -> Result<(Vec<u8>, String, String)> {
+    unit_times: u64,
+    uint_overflow: u64,
+) -> Result<(QueryState, String, StateCache)> {
     debug!("Start handle query channel");
-    let project = get_project(project_id).await?;
 
     // check channel state
     let channel_id = state.channel_id;
@@ -360,9 +359,6 @@ pub async fn query_single_state(
     let price = state_cache.price;
     let local_prev = state_cache.spent;
     let remote_prev = state_cache.remote;
-
-    // compute unit count times
-    let (unit_times, uint_overflow) = project.compute_query_method(&query)?;
     let used_amount = price * unit_times;
 
     let local_next = local_prev + used_amount;
@@ -409,12 +405,19 @@ pub async fn query_single_state(
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
     }
+
     debug!("Verified channel, start query");
 
-    // query the data.
-    let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
-        .await?;
+    Ok((state, keyname, state_cache))
+}
+
+pub async fn post_query_signle_state(
+    mut state: QueryState,
+    mut state_cache: StateCache,
+    keyname: String,
+) -> Result<QueryState> {
+    let local_next = state_cache.spent + state_cache.price;
+    let remote_next = state.spent;
 
     // update redis cache
     state_cache.spent = local_next;
@@ -436,16 +439,17 @@ pub async fn query_single_state(
     }
 
     // async to coordiantor
+    let channel_id = state.channel_id;
     let mdata = format!(
         r#"mutation {{
-             channelUpdate(
-               id:"{:#X}",
-               spent:"{}",
-               isFinal:{},
-               indexerSign:"0x{}",
-               consumerSign:"0x{}")
-           {{ id, spent }}
-        }}"#,
+              channelUpdate(
+                id:"{:#X}",
+                spent:"{}",
+                isFinal:{},
+                indexerSign:"0x{}",
+                consumerSign:"0x{}")
+            {{ id, spent }}
+         }}"#,
         channel_id, // use default u256 hex style with other library
         remote_next,
         state.is_final,
@@ -462,20 +466,43 @@ pub async fn query_single_state(
     });
 
     state.remote = local_next;
-    debug!("Handle query channel success");
-    Ok((data, signature, state.to_bs64_old2()))
+
+    Ok(state)
 }
 
-pub async fn query_multiple_state(
+pub async fn query_single_state(
     project_id: &str,
     query: String,
     ep_name: Option<String>,
-    mut state: MultipleQueryState,
+    state: QueryState,
     network_type: MetricsNetwork,
 ) -> Result<(Vec<u8>, String, String)> {
+    let project: Project = get_project(project_id).await?;
+
+    // compute unit count times
+    let (unit_times, unit_overflow) = project.compute_query_method(&query)?;
+
+    let (before_state, keyname, state_cache) =
+        before_query_signle_state(&project, state, unit_times, unit_overflow).await?;
+
+    // query the data
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .await?;
+
+    let post_state = post_query_signle_state(before_state, state_cache, keyname).await?;
+
+    debug!("Handle query channel success");
+    Ok((data, signature, post_state.to_bs64_old2()))
+}
+
+// query with multiple state mode
+pub async fn before_query_multiple_state(
+    mut state: MultipleQueryState,
+    unit_times: u64,
+) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
     let signer = state.recover()?;
-    let project = get_project(project_id).await?;
 
     // check channel state
     let channel_id = state.channel_id;
@@ -501,9 +528,6 @@ pub async fn query_multiple_state(
     let total = state_cache.total;
     let price = state_cache.price;
     let remote_prev = state_cache.remote;
-
-    // compute unit count times
-    let (unit_times, _uint_overflow) = project.compute_query_method(&query)?;
     let used_amount = price * unit_times;
 
     let local_next = state_cache.spent + used_amount;
@@ -535,17 +559,11 @@ pub async fn query_multiple_state(
     state.sign(&account.controller, mpqsa).await?;
     drop(account);
 
-    if mpqsa.is_inactive() {
-        return Ok((vec![], "".to_owned(), state.to_bs64()));
-    }
+    Ok((state, keyname, state_cache, mpqsa.is_inactive()))
+}
 
-    // query the data.
-    let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
-        .await?;
-
-    // update redis cache
-    state_cache.spent = local_next;
+pub async fn post_query_multiple_state(keyname: String, mut state_cache: StateCache) {
+    state_cache.spent = state_cache.spent + state_cache.price;
     let mut conn = redis();
     let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
@@ -555,6 +573,32 @@ pub async fn query_multiple_state(
         .query_async(&mut conn)
         .await
         .map_err(|err| error!("Redis 1: {}", err));
+}
+
+pub async fn query_multiple_state(
+    project_id: &str,
+    query: String,
+    ep_name: Option<String>,
+    state: MultipleQueryState,
+    network_type: MetricsNetwork,
+) -> Result<(Vec<u8>, String, String)> {
+    let project = get_project(project_id).await?;
+
+    // compute unit count times
+    let (unit_times, _unit_overflow) = project.compute_query_method(&query)?;
+
+    let (state, keyname, state_cache, status) =
+        before_query_multiple_state(state, unit_times).await?;
+    if !status {
+        return Ok((vec![], "".to_owned(), state.to_bs64()));
+    }
+
+    // query the data.
+    let (data, signature) = project
+        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .await?;
+
+    post_query_multiple_state(keyname, state_cache).await;
 
     debug!("Handle query channel success");
     Ok((data, signature, state.to_bs64()))
@@ -909,10 +953,14 @@ where
     }
 }
 
-pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String)> {
+pub fn channel_id_to_keyname(channel_id: U256) -> String {
     let mut keybytes = [0u8; 32];
     channel_id.to_little_endian(&mut keybytes);
-    let keyname = format!("{}-channel", hex::encode(keybytes));
+    format!("{}-channel", hex::encode(keybytes))
+}
+
+pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String)> {
+    let keyname = channel_id_to_keyname(channel_id);
 
     let mut conn = redis();
     let cache_bytes: RedisResult<Vec<u8>> =

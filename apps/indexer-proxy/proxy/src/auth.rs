@@ -125,14 +125,17 @@ where
 {
     type Rejection = AuthRejection;
 
-    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
-        let claims = check_jwt(req)?;
-
-        if let Some(agreement) = claims.agreement {
-            check_agreement_limit(&agreement).await?;
+    async fn from_request_parts(
+        req: &mut Parts,
+        _state: &S,
+    ) -> std::result::Result<Self, Self::Rejection> {
+        if !COMMAND.auth() {
+            return Ok(AuthQuery("".to_string()));
         }
 
-        Ok(AuthQuery(claims.deployment_id))
+        let authorisation = extract_auth_from_req(req)?;
+        let deployment_id = verify_auth(&authorisation).await?;
+        Ok(AuthQuery(deployment_id))
     }
 }
 
@@ -146,8 +149,12 @@ where
 {
     type Rejection = AuthRejection;
 
-    async fn from_request_parts(req: &mut Parts, _state: &S) -> AuthResult<Self> {
-        let claims = check_jwt(req)?;
+    async fn from_request_parts(
+        req: &mut Parts,
+        _state: &S,
+    ) -> std::result::Result<Self, Self::Rejection> {
+        let authorisation = extract_auth_from_req(req)?;
+        let claims = check_jwt(&authorisation)?;
 
         if let Some(agreement) = claims.agreement {
             let (daily_limit, daily_times, rate_limit, rate_times) =
@@ -164,8 +171,7 @@ where
     }
 }
 
-fn check_jwt(req: &mut Parts) -> Result<Claims> {
-    // Get authorisation header
+fn extract_auth_from_req(req: &mut Parts) -> Result<String> {
     let authorisation = req
         .headers
         .get(AUTHORIZATION)
@@ -173,8 +179,30 @@ fn check_jwt(req: &mut Parts) -> Result<Claims> {
         .to_str()
         .map_err(|_| Error::Permission(1020))?;
 
+    Ok(authorisation.to_string())
+}
+
+pub async fn verify_auth(authorisation: &str) -> Result<String> {
+    let claims = check_jwt(authorisation)?;
+    if let Some(agreement) = claims.agreement {
+        check_agreement_limit(&agreement).await?;
+    }
+
+    Ok(claims.deployment_id)
+}
+
+pub async fn verify_auth_ws(authorisation: &str) -> Result<String> {
+    let claims = check_jwt(authorisation)?;
+    if let Some(agreement) = claims.agreement {
+        check_agreement_daily_limit(&agreement).await?;
+    }
+
+    Ok(claims.deployment_id)
+}
+
+fn check_jwt(auth: &str) -> Result<Claims> {
     // Check that is bearer and jwt
-    let split = authorisation.split_once(' ');
+    let split = auth.split_once(' ');
     let jwt = match split {
         Some((name, contents)) if name == "Bearer" => Ok(contents),
         _ => Err(Error::InvalidAuthHeader(1030)),
@@ -277,6 +305,30 @@ async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&
             .await
             .map_err(|err| error!("Redis 3 {}", err));
     }
+}
+
+async fn check_agreement_daily_limit(agreement: &str) -> Result<()> {
+    // check limit
+    let (daily_limit, daily_times, _, _) = get_agreement_limit(agreement).await;
+
+    if daily_times + 1 > daily_limit {
+        return Err(Error::DailyLimit(1051));
+    }
+
+    let mut conn = redis();
+
+    let (date, _) = day_and_second();
+    let daily_key = format!("{}-daily-{}", agreement, date);
+
+    let _: result::Result<(), ()> = redis::cmd("SETEX")
+        .arg(&daily_key)
+        .arg(86400)
+        .arg(daily_times + 1)
+        .query_async(&mut conn)
+        .await
+        .map_err(|err| error!("Redis 4 {}", err));
+
+    Ok(())
 }
 
 async fn check_agreement_limit(agreement: &str) -> Result<()> {
@@ -386,7 +438,7 @@ impl AuthWhitelistQuery {
 
         // Check expiration
         if expired < chrono::Utc::now().timestamp_millis() as u64 {
-            return Err(Error::Permission(1302));
+            return Err(Error::Permission(1402));
         }
 
         // Prepare message and hash it
@@ -394,19 +446,19 @@ impl AuthWhitelistQuery {
         let message_hash = keccak256(message.as_bytes());
 
         // Decode and verify signature
-        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1303))?;
+        let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1403))?;
         let signature =
-            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1303))?;
+            Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1403))?;
 
         // Verify public address from the signature
-        let address = Address::from_str(&account).map_err(|_| Error::Permission(1303))?;
+        let address = Address::from_str(&account).map_err(|_| Error::Permission(1403))?;
         let recovery_message = RecoveryMessage::from(message_hash);
         let recovered_address = signature
             .recover(recovery_message)
-            .map_err(|_| Error::Permission(1303))?;
+            .map_err(|_| Error::Permission(1403))?;
 
         if recovered_address != address {
-            return Err(Error::Permission(1303));
+            return Err(Error::Permission(1403));
         }
 
         Ok(())
@@ -429,7 +481,7 @@ where
             .map_err(|_| Error::Permission(1030))?;
 
         let payload: AuthWhitelistPayload =
-            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1300))?;
+            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1400))?;
 
         let is_whitelisted = {
             let mut whitelist = WHITELIST.lock().await;
@@ -440,7 +492,7 @@ where
         };
 
         if !is_whitelisted {
-            return Err(Error::Permission(1301));
+            return Err(Error::Permission(1401));
         }
 
         let deployment_id = payload.deployment_id.clone();

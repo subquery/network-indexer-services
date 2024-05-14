@@ -17,12 +17,14 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![deny(warnings)]
+use axum::extract::ws::WebSocket;
 use axum::{
-    extract::{ConnectInfo, Path, Query},
+    extract::{ConnectInfo, Path, Query, WebSocketUpgrade},
     http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
     },
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -48,6 +50,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::websocket::{handle_websocket, validate_project, QueryType};
 use crate::{
     account::{get_indexer, indexer_healthy},
     auth::AuthWhitelistQuery,
@@ -71,6 +74,7 @@ pub async fn start_server(port: u16) {
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
         .route("/query/:deployment", post(query_handler))
+        .route("/query/:deployment/ws", get(ws_query))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `POST /wl-query/:Qm...955X` goes to query with whitelist account
@@ -81,6 +85,7 @@ pub async fn start_server(port: u16) {
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
         .route("/payg/:deployment", post(payg_query))
+        .route("/payg/:deployment/ws", get(ws_payg_query))
         // `POST /payg-extend/0x00...955X` goes to extend channel expiration
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
@@ -223,8 +228,37 @@ async fn query_handler(
         _ => ("".to_owned(), vec![]),
     };
     headers.push(("Content-Type", "application/json"));
+    headers.push(("Access-Control-Max-Age", "600"));
 
     Ok(build_response(body, headers))
+}
+
+async fn ws_query(
+    ws: WebSocketUpgrade,
+    Path(deployment): Path<String>,
+    AuthQuery(deployment_id): AuthQuery,
+) -> impl IntoResponse {
+    if COMMAND.auth() && deployment != deployment_id {
+        return Error::AuthVerify(1004).into_response();
+    };
+
+    if let Err(e) = validate_project(&deployment).await {
+        return e.into_response();
+    }
+
+    // Handle WebSocket connection
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(socket, deployment, QueryType::CloseAgreement)
+    })
+}
+
+async fn ws_payg_query(ws: WebSocketUpgrade, Path(deployment): Path<String>) -> impl IntoResponse {
+    if let Err(e) = validate_project(&deployment).await {
+        return e.into_response();
+    }
+
+    // Handle WebSocket connection
+    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment, QueryType::PAYG))
 }
 
 async fn query_limit_handler(
@@ -330,15 +364,7 @@ async fn payg_query(
                 ("X-Indexer-Response-Format", "inline"),
             ],
         ),
-        Ok("wrapped") => (
-            serde_json::to_string(&json!({
-                "result": general_purpose::STANDARD.encode(&data),
-                "signature": signature,
-                "state": state_data
-            }))
-            .unwrap_or("".to_owned()),
-            vec![("X-Indexer-Response-Format", "wrapped")],
-        ),
+        // `wrapped` or other res format
         _ => (
             serde_json::to_string(&json!({
                 "result": general_purpose::STANDARD.encode(&data),
@@ -350,6 +376,7 @@ async fn payg_query(
         ),
     };
     headers.push(("Content-Type", "application/json"));
+    headers.push(("Access-Control-Max-Age", "600"));
 
     Ok(build_response(body, headers))
 }

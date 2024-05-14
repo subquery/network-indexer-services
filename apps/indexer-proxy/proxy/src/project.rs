@@ -231,6 +231,21 @@ impl Project {
         &self.endpoints[0].1
     }
 
+    pub fn ws_endpoint<'a>(&'a self) -> Option<&'a str> {
+        if self.endpoints.len() > 1 {
+            Some(&self.endpoints[1].1)
+        } else {
+            None
+        }
+    }
+
+    pub fn is_rpc_project(&self) -> bool {
+        matches!(
+            self.ptype,
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
+        )
+    }
+
     pub fn open_payg(&self) -> bool {
         self.payg_price > U256::zero() && self.payg_expiration > 0
     }
@@ -339,12 +354,8 @@ impl Project {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, payment, network).await
             }
-            ProjectType::RpcEvm(_) => {
-                // TODO filter the methods
-                self.rpcquery_raw(body, ep_name, payment, network).await
-            }
+            ProjectType::RpcEvm(_) => self.rpcquery_raw(body, ep_name, payment, network).await,
             ProjectType::RpcSubstrate(_) => {
-                // TODO filter the methods
                 self.rpcquery_raw(body, ep_name, payment, network).await
             }
         }
@@ -595,6 +606,11 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                 "queryEndpoint" => {
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
+                    continue;
+                }
+                "websocketEndpoint" => {
+                    // push query to endpoint index 1
+                    endpoints.insert(1, (endpoint.key, endpoint.value));
                     continue;
                 }
                 _ => (),

@@ -32,8 +32,10 @@ mod p2p;
 mod payg;
 mod primitives;
 mod project;
+mod response;
 mod server;
 mod subscriber;
+mod websocket;
 mod whitelist;
 
 use cli::COMMAND;
