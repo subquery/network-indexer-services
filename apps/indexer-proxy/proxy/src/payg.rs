@@ -587,9 +587,9 @@ pub async fn query_multiple_state(
     // compute unit count times
     let (unit_times, _unit_overflow) = project.compute_query_method(&query)?;
 
-    let (state, keyname, state_cache, status) =
+    let (state, keyname, state_cache, inactive) =
         before_query_multiple_state(state, unit_times).await?;
-    if !status {
+    if inactive {
         return Ok((vec![], "".to_owned(), state.to_bs64()));
     }
 
