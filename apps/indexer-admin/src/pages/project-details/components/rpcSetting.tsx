@@ -45,7 +45,7 @@ const RpcSetting: FC<IProps> = (props) => {
 
   const debouncedValidator = useMemo(() => {
     return debounce(async (rule: Rule, value: string) => {
-      if (!value) return Promise.reject(new Error('Please input http endpoint'));
+      if (!value) return Promise.reject(new Error('Please input endpoint'));
       const res = await validate({
         variables: {
           projectId: mineId,
