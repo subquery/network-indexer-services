@@ -254,9 +254,10 @@ async fn ws_query(
 }
 
 async fn ws_payg_query(ws: WebSocketUpgrade, Path(deployment): Path<String>) -> impl IntoResponse {
-    if let Err(e) = validate_project(&deployment).await {
-        return e.into_response();
-    }
+    // TMP
+    // if let Err(e) = validate_project(&deployment).await {
+    //     return e.into_response();
+    // }
 
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
