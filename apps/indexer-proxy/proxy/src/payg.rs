@@ -525,6 +525,26 @@ pub async fn before_query_multiple_state(
     }
 
     // check spent
+    let mpqsa = check_multiple_state_balance(&state_cache, unit_times, state.start, state.end)?;
+
+    // update state cache
+    state_cache.spent = state_cache.spent + state_cache.price * unit_times;
+
+    // sign the state
+    let account = ACCOUNT.read().await;
+    state.sign(&account.controller, mpqsa).await?;
+    drop(account);
+
+    Ok((state, keyname, state_cache, mpqsa.is_inactive()))
+}
+
+pub fn check_multiple_state_balance(
+    state_cache: &StateCache,
+    unit_times: u64,
+    start: U256,
+    end: U256,
+) -> Result<MultipleQueryStateActive> {
+    // check spent
     let total = state_cache.total;
     let price = state_cache.price;
     let remote_prev = state_cache.remote;
@@ -537,33 +557,28 @@ pub async fn before_query_multiple_state(
         return Err(Error::Overflow(1056));
     }
 
-    let range = state.end - state.start;
+    let range = end - start;
     if range > MULTIPLE_RANGE_MAX {
         return Err(Error::Overflow(1059));
     }
 
-    let middle = state.start + range / 2;
+    let middle = start + range / 2;
     let mut mpqsa = if local_next < middle {
         MultipleQueryStateActive::Active
-    } else if local_next > state.end {
+    } else if local_next > end {
         MultipleQueryStateActive::Inactive2
     } else {
         MultipleQueryStateActive::Inactive1
     };
 
-    if state.start > range && remote_prev < state.start - range {
+    if start > range && remote_prev < start - range {
         mpqsa = MultipleQueryStateActive::Inactive2;
     }
 
-    let account = ACCOUNT.read().await;
-    state.sign(&account.controller, mpqsa).await?;
-    drop(account);
-
-    Ok((state, keyname, state_cache, mpqsa.is_inactive()))
+    Ok(mpqsa)
 }
 
-pub async fn post_query_multiple_state(keyname: String, mut state_cache: StateCache) {
-    state_cache.spent = state_cache.spent + state_cache.price;
+pub async fn post_query_multiple_state(keyname: String, state_cache: StateCache) {
     let mut conn = redis();
     let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")

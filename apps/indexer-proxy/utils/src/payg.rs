@@ -643,6 +643,24 @@ impl MultipleQueryState {
         Ok(state)
     }
 
+    pub async fn indexer_generate(
+        active: MultipleQueryStateActive,
+        channel_id: U256,
+        start: U256,
+        end: U256,
+        key: &impl Signer,
+    ) -> Result<Self, Error> {
+        let mut state = Self {
+            active,
+            channel_id,
+            start,
+            end,
+            sign: default_sign(),
+        };
+        state.sign(key, MultipleQueryStateActive::Active).await?;
+        Ok(state)
+    }
+
     pub fn recover(&self) -> Result<Address, Error> {
         let payload = encode(&[
             self.active.to_byte().into_token(),

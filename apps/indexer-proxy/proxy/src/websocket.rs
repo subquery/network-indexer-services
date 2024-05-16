@@ -13,10 +13,12 @@ use subql_indexer_utils::{error::Error, payg::MultipleQueryState};
 use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
+    account::ACCOUNT,
     auth::verify_auth_ws,
     cli::{redis, COMMAND},
     payg::{
-        before_query_multiple_state, channel_id_to_keyname, post_query_multiple_state, StateCache,
+        before_query_multiple_state, channel_id_to_keyname, check_multiple_state_balance,
+        fetch_channel_cache, post_query_multiple_state, StateCache,
     },
     project::{get_project, Project},
     response::sign_response,
@@ -39,7 +41,8 @@ struct CacheState {
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum QueryType {
     CloseAgreement,
-    PAYG,
+    // multiple query start, end
+    PAYG(U256, U256),
 }
 
 struct WebSocketConnection {
@@ -76,9 +79,9 @@ impl WebSocketConnection {
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(1301))?;
         let ReceivedMessage { body, auth } = message;
-        let (status, state) = self.before_query_check(auth, &body).await?;
-        if !status && state.is_some() {
-            self.send_msg(vec![], "".to_owned(), state.unwrap()).await?;
+        let inactive = self.before_query_check(auth, &body).await?;
+        if let Some(state) = inactive {
+            self.send_msg(vec![], "".to_owned(), state).await?;
             return Ok(());
         }
 
@@ -155,11 +158,11 @@ impl WebSocketConnection {
         &mut self,
         auth: String,
         query: &str,
-    ) -> Result<(bool, Option<String>), Error> {
+    ) -> Result<Option<String>, Error> {
         let project: Project = get_project(&self.deployment).await?;
         let (unit_times, unit_overflow) = project.compute_query_method(query)?;
 
-        match self.query_type {
+        let (inactive, channel_id) = match &mut self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
                     let deployment_id = verify_auth_ws(&auth).await?;
@@ -168,31 +171,41 @@ impl WebSocketConnection {
                     }
                 }
 
-                Ok((true, None))
+                return Ok(None);
             }
-            QueryType::PAYG => {
-                let (status, state) = self
-                    .before_query_payg_check(auth, project, unit_times, unit_overflow)
-                    .await?;
-                Ok((status, state))
+            QueryType::PAYG(ref mut start, ref mut end) => {
+                let (inactive, channel_id, new_start, new_end) =
+                    Self::before_query_payg_check(auth, project, unit_times, unit_overflow).await?;
+
+                if inactive.is_none() {
+                    *start = new_start;
+                    *end = new_end;
+                }
+
+                (inactive, channel_id)
             }
-        }
+        };
+
+        self.order_id = channel_id;
+        Ok(inactive)
     }
 
     async fn before_query_payg_check(
-        &mut self,
         auth: String,
         _project: Project,
         unit_times: u64,
         _unit_overflow: u64,
-    ) -> Result<(bool, Option<String>), Error> {
+    ) -> Result<(Option<String>, U256, U256, U256), Error> {
         let raw_state = MultipleQueryState::from_bs64(auth)?;
-        self.order_id = raw_state.channel_id;
+        let start = raw_state.start;
+        let end = raw_state.end;
+
+        let channel_id = raw_state.channel_id;
         let (state, keyname, state_cache, inactive) =
             before_query_multiple_state(raw_state, unit_times).await?;
 
         if inactive {
-            return Ok((false, Some(state.to_bs64())));
+            return Ok((Some(state.to_bs64()), channel_id, start, end));
         }
 
         let value = serde_json::to_string(&json!({
@@ -212,19 +225,18 @@ impl WebSocketConnection {
             .await
             .map_err(|_| Error::WebSocket(1305))?;
 
-        Ok((true, None))
+        Ok((None, channel_id, start, end))
     }
 
-    async fn post_query_sync(&mut self) -> Result<String, Error> {
-        if self.query_type != QueryType::PAYG {
-            return Ok("".to_owned());
-        }
-
-        let keyname = channel_id_to_keyname(self.order_id);
+    /// FIXME: when request with unit compute send to proxy,
+    /// proxy will store the tmp state cache, and when has response
+    /// will use it, if not fetch the tmp state cache,
+    /// will default use unit times = 1
+    async fn fetch_state(keyname: &str) -> Result<(String, StateCache), Error> {
         let cache_key = format!("{}-ws", keyname);
 
         let mut conn = redis();
-        let value: String = redis::cmd("GET")
+        let value: String = redis::cmd("DEL")
             .arg(&cache_key)
             .query_async(&mut conn)
             .await
@@ -235,8 +247,50 @@ impl WebSocketConnection {
         let state_cache = StateCache::from_bytes(&cache_states.state_cache)
             .map_err(|_| Error::WebSocket(1306))?;
 
-        post_query_multiple_state(keyname, state_cache).await;
-        Ok(state_str)
+        Ok((state_str, state_cache))
+    }
+
+    async fn post_query_sync(&mut self) -> Result<String, Error> {
+        match self.query_type {
+            QueryType::CloseAgreement => Ok("".to_owned()),
+            QueryType::PAYG(start, end) => {
+                let keyname = channel_id_to_keyname(self.order_id);
+
+                let (state_str, state_cache) = if let Ok((state_str, state_cache)) =
+                    Self::fetch_state(&keyname).await
+                {
+                    (state_str, state_cache)
+                } else {
+                    let unit_times = 1;
+
+                    // fetch state cache
+                    let (mut state_cache, _) = fetch_channel_cache(self.order_id).await?;
+
+                    // check spent & balance
+                    let mpqsa = check_multiple_state_balance(&state_cache, unit_times, start, end)?;
+
+                    // generate state
+                    let account = ACCOUNT.read().await;
+                    let state = MultipleQueryState::indexer_generate(
+                        mpqsa,
+                        self.order_id,
+                        start,
+                        end,
+                        &account.controller,
+                    )
+                    .await?;
+                    drop(account);
+
+                    // update state cache. default unit is 1
+                    state_cache.spent = state_cache.spent + state_cache.price * unit_times;
+
+                    (state.to_bs64(), state_cache)
+                };
+
+                post_query_multiple_state(keyname, state_cache).await;
+                Ok(state_str)
+            }
+        }
     }
 }
 

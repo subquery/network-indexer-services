@@ -30,6 +30,7 @@ use axum::{
 };
 use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
+use ethers::prelude::U256;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -258,7 +259,13 @@ async fn ws_payg_query(ws: WebSocketUpgrade, Path(deployment): Path<String>) -> 
     }
 
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment, QueryType::PAYG))
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(
+            socket,
+            deployment,
+            QueryType::PAYG(U256::zero(), U256::zero()),
+        )
+    })
 }
 
 async fn query_limit_handler(
