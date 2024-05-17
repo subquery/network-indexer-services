@@ -50,7 +50,7 @@ export class ProjectRpcService {
     return manifest.rpcFamily || [];
   }
 
-  getEndpointKeys(rpcFamily: string): string[] {
+  private getEndpointKeys(rpcFamily: string): string[] {
     const family = getRpcFamilyObject(rpcFamily);
     if (!family) return [];
 
@@ -62,11 +62,12 @@ export class ProjectRpcService {
     return rpcFamilyList.map((family) => this.getEndpointKeys(family)).flat();
   }
 
-  async validateProjectEndpoints(
+  private async validateProjectEndpoints(
     project: Project,
     serviceEndpoints: SeviceEndpoint[]
   ): Promise<ValidationResponse> {
     const validateUrlResult = this.validateRpcEndpointsUrl(serviceEndpoints);
+    serviceEndpoints = serviceEndpoints.filter((endpoint) => endpoint.value);
     let reason = '';
     for (const endpoint of serviceEndpoints) {
       if (!validateUrlResult.valid) {
@@ -88,7 +89,7 @@ export class ProjectRpcService {
     return this.formatResponse(!reason, reason);
   }
 
-  validateRpcEndpointsUrl(serviceEndpoints: SeviceEndpoint[]): ValidationResponse {
+  private validateRpcEndpointsUrl(serviceEndpoints: SeviceEndpoint[]): ValidationResponse {
     if (!serviceEndpoints || serviceEndpoints.length === 0) {
       return this.formatResponse(false, 'No endpoints');
     }
@@ -125,7 +126,7 @@ export class ProjectRpcService {
     return this.validateRequiredRpcType(rpcFamily, serviceEndpoints);
   }
 
-  validateRequiredRpcType(
+  private validateRequiredRpcType(
     rpcFamily: string,
     serviceEndpoints: SeviceEndpoint[]
   ): ValidationResponse {
@@ -214,7 +215,7 @@ export class ProjectRpcService {
     }
   }
 
-  formatResponse(valid = false, reason = ''): ValidationResponse {
+  private formatResponse(valid = false, reason = ''): ValidationResponse {
     return {
       valid,
       reason,
