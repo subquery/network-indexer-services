@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NetworkStatus, useLazyQuery, useQuery } from '@apollo/client';
 import { useInterval } from 'ahooks';
 import axios from 'axios';
@@ -148,8 +148,8 @@ export const useNodeVersions = (cid: string): string[] => {
   const fetchNodeVersions = useCallback(async () => {
     const manifest = await getManifest(cid);
     const { dataSources, runner } = manifest;
-    const runtime = dataSources[0].kind;
-    const chainType = runtime.split('/')[0] as ChainType;
+    const runtime = dataSources?.[0].kind;
+    const chainType = runtime?.split('/')?.[0] as ChainType;
 
     const registry = dockerRegistryFromChain(chainType);
     const range = runner?.node?.version ?? defaultRange[chainType];
@@ -160,7 +160,7 @@ export const useNodeVersions = (cid: string): string[] => {
     fetchNodeVersions();
   }, [fetchNodeVersions]);
 
-  const versions = data?.getRegistryVersions;
+  const versions = useMemo(() => data?.getRegistryVersions, [data?.getRegistryVersions]);
   return !isEmpty(versions) ? versions : [];
 };
 
