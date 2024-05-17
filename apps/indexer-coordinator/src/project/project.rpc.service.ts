@@ -98,6 +98,11 @@ export class ProjectRpcService {
       if (rpcFamily !== rpcFamily2) {
         return this.formatResponse(false, 'Endpoints are not from the same rpc family');
       }
+      const host1 = new URL(serviceEndpoints[0].value).hostname;
+      const host2 = new URL(serviceEndpoints[1].value).hostname;
+      if (host1 !== host2) {
+        return this.formatResponse(false, 'Endpoints are not from the same host');
+      }
     }
     for (const endpoint of serviceEndpoints) {
       if (
