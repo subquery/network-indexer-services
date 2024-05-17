@@ -20,7 +20,7 @@
     "@patternfly/react-log-viewer": "^4.43.19",
     "@rainbow-me/rainbowkit": "^1.2.0",
     "@subql/components": "2.0.1-1",
-    "@subql/contract-sdk": "1.0.0",
+    "@subql/contract-sdk": "1.2.0",
     "@subql/network-clients": "1.1.0",
     "@subql/network-config": "1.1.1",
     "@subql/network-query": "1.1.0",

@@ -4,7 +4,6 @@
 import * as yup from 'yup';
 
 import { IndexerMetadata } from 'pages/account/types';
-import { TOKEN_SYMBOL } from 'utils/web3';
 
 import { IProjectAdvancedConfig } from './types';
 
@@ -27,20 +26,6 @@ export enum RegisterFormKey {
   rate = 'rate',
 }
 
-export const RegisterFormSchema = yup.object({
-  [RegisterFormKey.name]: yup.string().defined(),
-  [RegisterFormKey.proxyEndpoint]: yup.string().defined(),
-  [RegisterFormKey.amount]: yup
-    .number()
-    .min(200000, `Staking token should large than 200,000 ${TOKEN_SYMBOL}`)
-    .defined(),
-  [RegisterFormKey.rate]: yup
-    .number()
-    .min(0, 'Rate should be between 0 and 100')
-    .max(100, 'Rate should be between 0 and 100')
-    .defined(),
-});
-
 export const initialRegisterValues = {
   [RegisterFormKey.name]: '',
   [RegisterFormKey.proxyEndpoint]: '',
@@ -48,7 +33,12 @@ export const initialRegisterValues = {
   [RegisterFormKey.rate]: 0,
 };
 
-export type TRegisterValues = yup.Asserts<typeof RegisterFormSchema>;
+export type TRegisterValues = {
+  name: string;
+  proxyEndpoint: string;
+  amount: number;
+  rate: number;
+};
 
 // update metadata
 export enum MetadataFormKey {

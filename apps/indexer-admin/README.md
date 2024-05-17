@@ -11,7 +11,6 @@ Please check the root readme [indexer-coordinator](https://github.com/subquery/i
 ```conf
 VITE_APP_NETWORK=testnet
 VITE_APP_COORDINATOR_SERVICE_URL=http://cyrbuzz.space:8000/graphql
-VITE_APP_COORDINATOR_SERVICE_PORT=8000
 ```
 
 2. Start [indexer-coordinator](https://github.com/subquery/indexer-coordinator/apps/indexer-coordinator) service.
