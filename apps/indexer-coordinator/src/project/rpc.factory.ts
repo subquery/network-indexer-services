@@ -17,7 +17,10 @@ export function getRpcFamilyObject(rpcFamily: string): IRpcFamily | undefined {
       family = new RpcFamilyEvm();
       break;
     case 'substrate':
-      family = new RpcFamilySubstrate();
+      family = new RpcFamilyPolkadot();
+      break;
+    case 'polkadot':
+      family = new RpcFamilyPolkadot();
       break;
     default:
       break;
@@ -96,6 +99,9 @@ async function jsonWsRpcRequest(endpoint: string, method: string, params: any[])
 }
 
 function getRpcRequestFunction(endpoint: string) {
+  if (!endpoint) {
+    throw new Error('Endpoint is empty');
+  }
   if (endpoint.startsWith('ws://') || endpoint.startsWith('wss://')) {
     return jsonWsRpcRequest;
   } else if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
@@ -258,7 +264,7 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   async getStartHeight(endpoint: string): Promise<number> {
-    const result = await getRpcRequestFunction(this.endpoint)(endpoint, 'eth_syncing', []);
+    const result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_syncing', []);
     if (result.data.error) {
       throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
     }
@@ -270,7 +276,7 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   async getTargetHeight(endpoint: string): Promise<number> {
-    const result = await getRpcRequestFunction(this.endpoint)(endpoint, 'eth_syncing', []);
+    const result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_syncing', []);
     if (result.data.error) {
       throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
     }
@@ -281,14 +287,14 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   async getLastHeight(endpoint: string): Promise<number> {
-    let result = await getRpcRequestFunction(this.endpoint)(endpoint, 'eth_syncing', []);
+    let result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_syncing', []);
     if (result.data.error) {
       throw new Error(`Request eth_syncing failed: ${result.data.error.message}`);
     }
     if (result.data.result !== false) {
       return BigNumber.from(result.data.result.currentBlock).toNumber();
     }
-    result = await getRpcRequestFunction(this.endpoint)(endpoint, 'eth_blockNumber', []);
+    result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_blockNumber', []);
     if (result.data.error) {
       throw new Error(`Request eth_blockNumber failed: ${result.data.error.message}`);
     }
@@ -296,7 +302,7 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   async getLastTimestamp(endpoint: string): Promise<number> {
-    const result = await getRpcRequestFunction(this.endpoint)(endpoint, 'eth_getBlockByNumber', [
+    const result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_getBlockByNumber', [
       'latest',
       false,
     ]);
@@ -308,10 +314,10 @@ export class RpcFamilyEvm extends RpcFamily {
 }
 
 export class RpcFamilySubstrate extends RpcFamily {
-  startHeight: number;
-  targetHeight: number;
-  lastHeight: number;
-  lastTimestamp: number;
+  startHeight = 0;
+  targetHeight = 0;
+  lastHeight = 0;
+  lastTimestamp = 0;
 
   constructor() {
     super();
@@ -401,12 +407,16 @@ export class RpcFamilySubstrate extends RpcFamily {
   }
 
   async getHeights(endpoint: string): Promise<void> {
-    const result = await getRpcRequestFunction(this.endpoint)(endpoint, 'system_syncState', []);
+    if (!endpoint) {
+      logger.debug('getHeights: endpoint is empty');
+      return;
+    }
+    const result = await getRpcRequestFunction(endpoint)(endpoint, 'system_syncState', []);
     if (result.error) {
       throw new Error(`Request system_syncState failed: ${result.error.message}`);
     }
     this.startHeight = result.data.result.startingBlock;
-    this.targetHeight = result.data.result.currentBlock;
+    this.targetHeight = result.data.result.highestBlock;
     this.lastHeight = result.data.result.currentBlock;
   }
 
@@ -415,5 +425,11 @@ export class RpcFamilySubstrate extends RpcFamily {
       return Promise.resolve(this.lastTimestamp);
     }
     return Promise.resolve(0);
+  }
+}
+
+export class RpcFamilyPolkadot extends RpcFamilySubstrate {
+  getEndpointKeys(): string[] {
+    return ['polkadotWs', 'polkadotHttp'];
   }
 }
