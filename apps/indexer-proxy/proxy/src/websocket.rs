@@ -417,15 +417,14 @@ async fn handle_remote_socket_message(
 
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
-    // let project = get_project(deployment_id).await.unwrap();
-    // let ws_url = match project.ws_endpoint() {
-    //     Some(ws_url) => ws_url,
-    //     None => return Err(Error::WebSocket(1300)),
-    // };
+    let project = get_project(deployment_id).await.unwrap();
+    let ws_url = match project.ws_endpoint() {
+        Some(ws_url) => ws_url,
+        None => return Err(Error::WebSocket(1300)),
+    };
 
     // TMP Test url
-    // let ws_url: &str = "wss://polkadot.api.onfinality.io/ws?apikey=YOUR_API_KEY";
-    let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
+    // let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)

@@ -608,7 +608,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
                 }
-                "websocketEndpoint" => {
+                "evmWs" | "substrateWs" => {
                     // push query to endpoint index 1
                     endpoints.insert(1, (endpoint.key, endpoint.value));
                     continue;
