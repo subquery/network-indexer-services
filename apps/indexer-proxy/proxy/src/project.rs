@@ -597,7 +597,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
                 }
-                "substrateHttp" => {
+                "polkadotHttp" => {
                     ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     // push query to endpoint index 0
                     endpoints.insert(0, (endpoint.key, endpoint.value));
@@ -608,7 +608,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert(0, (endpoint.key, endpoint.value));
                     continue;
                 }
-                "evmWs" | "substrateWs" => {
+                "evmWs" | "polkadotWs" => {
                     // push query to endpoint index 1
                     endpoints.insert(1, (endpoint.key, endpoint.value));
                     continue;
