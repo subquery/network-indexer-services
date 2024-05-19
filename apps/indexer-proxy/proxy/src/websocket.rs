@@ -382,7 +382,7 @@ async fn handle_remote_socket_message(
                 ws_connection.close_all(Some(e)).await?;
             }
         }
-        TMessage::Binary(_) => {
+        TMessage::Binary(_) | TMessage::Frame(_) => {
             debug!("Receive binary message to remote");
             ws_connection
                 .close_all(Some(Error::WebSocket(1310)))
