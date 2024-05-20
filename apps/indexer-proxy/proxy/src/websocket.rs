@@ -51,6 +51,7 @@ struct WebSocketConnection {
     remote_socket: SocketConnection,
     order_id: U256,
     query_type: QueryType,
+    no_sig: bool,
 }
 
 impl WebSocketConnection {
@@ -58,6 +59,7 @@ impl WebSocketConnection {
         mut client_socket: WebSocket,
         query_type: QueryType,
         deployment: &str,
+        no_sig: bool,
     ) -> Option<Self> {
         let remote_socket = match connect_to_project_ws(deployment).await {
             Ok(socket) => socket,
@@ -72,6 +74,7 @@ impl WebSocketConnection {
             client_socket,
             remote_socket,
             query_type,
+            no_sig,
             order_id: U256::zero(),
         })
     }
@@ -95,7 +98,12 @@ impl WebSocketConnection {
     async fn send_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let state = self.post_query_sync().await?;
         let msg_data = msg.into_bytes();
-        let signature = sign_response(&msg_data).await;
+
+        let signature = if self.no_sig {
+            String::default()
+        } else {
+            sign_response(&msg_data).await
+        };
 
         self.send_msg(msg_data, signature, state).await?;
 
@@ -122,7 +130,7 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn send_error_smg(&mut self, code: i32, reason: String) {
+    async fn send_error_msg(&mut self, code: i32, reason: String) {
         let error_msg = json!({ "error": { "code": code, "message": reason } });
         if self
             .client_socket
@@ -299,11 +307,16 @@ enum SocketMessage {
     Remote(TMessage),
 }
 
-pub async fn handle_websocket(client_socket: WebSocket, deployment: String, query_type: QueryType) {
+pub async fn handle_websocket(
+    client_socket: WebSocket,
+    deployment: String,
+    query_type: QueryType,
+    no_sig: bool,
+) {
     debug!("WebSocket connected for deployment: {}", deployment);
 
     let mut ws_connection =
-        match WebSocketConnection::new(client_socket, query_type, &deployment).await {
+        match WebSocketConnection::new(client_socket, query_type, &deployment, no_sig).await {
             Some(ws_connection) => ws_connection,
             None => return,
         };
@@ -337,7 +350,7 @@ async fn handle_client_socket_message(
             debug!("Forwarding text message to remote: {}", text);
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
                 let (_, code, reason) = e.to_status_message();
-                ws_connection.send_error_smg(code, reason.to_string()).await;
+                ws_connection.send_error_msg(code, reason.to_string()).await;
             }
         }
         Message::Binary(_) => {

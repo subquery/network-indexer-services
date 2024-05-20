@@ -712,6 +712,7 @@ async fn handle_group(
                             ep_name,
                             state,
                             MetricsNetwork::P2P,
+                            false,
                         )
                         .await
                         {
@@ -813,6 +814,7 @@ async fn handle_close_agreement_query(
             ep_name,
             MetricsQuery::CloseAgreement,
             MetricsNetwork::P2P,
+            false,
             false,
         )
         .await?;

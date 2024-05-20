@@ -476,6 +476,7 @@ pub async fn query_single_state(
     ep_name: Option<String>,
     state: QueryState,
     network_type: MetricsNetwork,
+    no_sig: bool,
 ) -> Result<(Vec<u8>, String, String)> {
     let project: Project = get_project(project_id).await?;
 
@@ -487,7 +488,14 @@ pub async fn query_single_state(
 
     // query the data
     let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .query(
+            query,
+            ep_name,
+            MetricsQuery::PAYG,
+            network_type,
+            true,
+            no_sig,
+        )
         .await?;
 
     let post_state = post_query_signle_state(before_state, state_cache, keyname).await?;
@@ -596,6 +604,7 @@ pub async fn query_multiple_state(
     ep_name: Option<String>,
     state: MultipleQueryState,
     network_type: MetricsNetwork,
+    no_sig: bool,
 ) -> Result<(Vec<u8>, String, String)> {
     let project = get_project(project_id).await?;
 
@@ -610,7 +619,14 @@ pub async fn query_multiple_state(
 
     // query the data.
     let (data, signature) = project
-        .query(query, ep_name, MetricsQuery::PAYG, network_type, true)
+        .query(
+            query,
+            ep_name,
+            MetricsQuery::PAYG,
+            network_type,
+            true,
+            no_sig,
+        )
         .await?;
 
     post_query_multiple_state(keyname, state_cache).await;
