@@ -39,7 +39,11 @@ const RpcSetting: FC<IProps> = (props) => {
   const rules = useMemo(() => {
     const checkIfWsAndHttpSame = () => {
       const allValues = keys.data?.getRpcEndpointKeys.map((key) => {
-        return new URL(form.getFieldValue(key) || '').hostname;
+        try {
+          return new URL(form.getFieldValue(key)).hostname;
+        } catch {
+          return form.getFieldValue(key);
+        }
       });
 
       const ifSame = new Set(allValues).size === 1;
@@ -73,6 +77,7 @@ const RpcSetting: FC<IProps> = (props) => {
           };
 
         const httpVal = form.getFieldValue(ruleField.replace('Ws', 'Http'));
+
         if (httpVal) {
           return checkIfWsAndHttpSame();
         }
@@ -83,8 +88,15 @@ const RpcSetting: FC<IProps> = (props) => {
       }
 
       if (endpointType === 'http') {
-        if (value) {
-          return checkIfWsAndHttpSame();
+        if (value.trim()) {
+          if (value.trim().startsWith('http')) {
+            return checkIfWsAndHttpSame();
+          }
+
+          return {
+            result: false,
+            message: 'Please input a valid endpoint',
+          };
         }
 
         return {
@@ -101,7 +113,7 @@ const RpcSetting: FC<IProps> = (props) => {
       evm: (endpointType: 'http' | 'ws', value: string, ruleField: string) => {
         if (endpointType === 'ws') {
           const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
-          if (wsVal) {
+          if (wsVal && wsVal?.startsWith('ws')) {
             return checkIfWsAndHttpSame();
           }
 
@@ -295,10 +307,11 @@ const RpcSetting: FC<IProps> = (props) => {
               .map((key) => {
                 return {
                   key,
-                  value: form.getFieldValue(`${key}`),
+                  value: form.getFieldValue(`${key}`)?.trim(),
                 };
               })
               .filter((i) => i.value);
+
             await startProjectRequest({
               variables: {
                 rateLimit: form.getFieldValue('rateLimit'),
