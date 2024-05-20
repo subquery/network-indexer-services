@@ -129,7 +129,7 @@ export interface IRpcFamily {
 abstract class RpcFamily implements IRpcFamily {
   protected actions: (() => Promise<any>)[] = [];
   protected endpoint: string;
-  protected requiredRpcType: RequiredRpcType = RequiredRpcType.any;
+  protected requiredRpcType: RequiredRpcType = RequiredRpcType.http;
 
   async validate(endpoint: string) {
     this.endpoint = endpoint;
@@ -321,7 +321,7 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   constructor() {
     super();
-    this.requiredRpcType = RequiredRpcType.ws;
+    this.requiredRpcType = RequiredRpcType.both;
   }
 
   getEndpointKeys(): string[] {
