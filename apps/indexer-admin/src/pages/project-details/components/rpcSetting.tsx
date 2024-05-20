@@ -37,29 +37,33 @@ const RpcSetting: FC<IProps> = (props) => {
   });
 
   const rules = useMemo(() => {
+    const checkIfWsAndHttpSame = () => {
+      const allValues = keys.data?.getRpcEndpointKeys.map((key) => {
+        try {
+          return new URL(form.getFieldValue(key)).hostname;
+        } catch {
+          return form.getFieldValue(key);
+        }
+      });
+
+      const ifSame = new Set(allValues).size === 1;
+
+      if (ifSame)
+        return {
+          result: true,
+        };
+
+      return {
+        result: false,
+        message: 'The origin of Ws and Http endpoint should be the same.',
+      };
+    };
+
     const polkadotAndSubstrateRule = (
       endpointType: 'http' | 'ws',
       value: string,
       ruleField: string
     ) => {
-      const checkIfWsAndHttpSame = () => {
-        const allValues = keys.data?.getRpcEndpointKeys.map((key) => {
-          return new URL(form.getFieldValue(key) || '').hostname;
-        });
-
-        const ifSame = new Set(allValues).size === 1;
-
-        if (ifSame)
-          return {
-            result: true,
-          };
-
-        return {
-          result: false,
-          message: 'The origin of Ws and Http endpoint should be the same.',
-        };
-      };
-
       if (endpointType === 'ws') {
         if (!value)
           return {
@@ -73,6 +77,7 @@ const RpcSetting: FC<IProps> = (props) => {
           };
 
         const httpVal = form.getFieldValue(ruleField.replace('Ws', 'Http'));
+
         if (httpVal) {
           return checkIfWsAndHttpSame();
         }
@@ -83,7 +88,20 @@ const RpcSetting: FC<IProps> = (props) => {
       }
 
       if (endpointType === 'http') {
-        return checkIfWsAndHttpSame();
+        if (value.trim()) {
+          if (value.trim().startsWith('http')) {
+            return checkIfWsAndHttpSame();
+          }
+
+          return {
+            result: false,
+            message: 'Please input a valid endpoint',
+          };
+        }
+
+        return {
+          result: true,
+        };
       }
 
       return {
@@ -93,10 +111,16 @@ const RpcSetting: FC<IProps> = (props) => {
 
     return {
       evm: (endpointType: 'http' | 'ws', value: string, ruleField: string) => {
-        if (endpointType === 'ws')
+        if (endpointType === 'ws') {
+          const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
+          if (wsVal && wsVal?.startsWith('ws')) {
+            return checkIfWsAndHttpSame();
+          }
+
           return {
             result: true,
           };
+        }
         if (value.startsWith('http'))
           return {
             result: true,
@@ -279,12 +303,15 @@ const RpcSetting: FC<IProps> = (props) => {
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
           onClick={async () => {
             await form.validateFields();
-            const serviceEndpoints = keys.data?.getRpcEndpointKeys.map((key) => {
-              return {
-                key,
-                value: form.getFieldValue(`${key}`),
-              };
-            });
+            const serviceEndpoints = keys.data?.getRpcEndpointKeys
+              .map((key) => {
+                return {
+                  key,
+                  value: form.getFieldValue(`${key}`)?.trim(),
+                };
+              })
+              .filter((i) => i.value);
+
             await startProjectRequest({
               variables: {
                 rateLimit: form.getFieldValue('rateLimit'),
