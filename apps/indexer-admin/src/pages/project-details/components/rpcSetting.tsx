@@ -89,7 +89,7 @@ const RpcSetting: FC<IProps> = (props) => {
 
       if (endpointType === 'http') {
         if (value && value?.trim()) {
-          if (value?.trim()?.startsWith('http')) {
+          if (value?.startsWith('http')) {
             return checkIfWsAndHttpSame();
           }
 
