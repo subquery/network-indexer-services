@@ -61,6 +61,7 @@ impl WebSocketConnection {
         deployment: &str,
         no_sig: bool,
     ) -> Result<Self, Error> {
+        println!("----- 00 -----");
         let remote_socket = match connect_to_project_ws(deployment).await {
             Ok(socket) => socket,
             Err(e) => {
@@ -68,6 +69,7 @@ impl WebSocketConnection {
                 return Err(e);
             }
         };
+        println!("----- 01 -----");
 
         Ok(WebSocketConnection {
             deployment: deployment.to_string(),
@@ -434,21 +436,25 @@ async fn handle_remote_socket_message(
 
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
-    let project = get_project(deployment_id).await.unwrap();
+    println!("----- 0 -----");
+    let project = get_project(deployment_id).await?;
+    println!("----- 1 -----");
     let mut ws_url = match project.ws_endpoint() {
         Some(ws_url) => ws_url,
         None => return Err(Error::WebSocket(1300)),
     };
+    println!("----- 2 -----");
 
     // TMP Test url
     println!("{}", ws_url);
     //ws_url = "wss://ethereum-rpc.publicnode.com";
-    println!("=-0-------- 00000000");
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
         .await
         .map_err(|_| Error::WebSocket(1308))?;
+
+    println!("----- 3 -----");
 
     println!("Connected to the server: {}", ws_url);
     Ok(socket)
@@ -469,10 +475,12 @@ async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<()
 pub async fn validate_project(deployment: &str) -> Result<(), Error> {
     let project: crate::project::Project = get_project(&deployment).await?;
     if !project.is_rpc_project() {
+        println!("===== debug === 0")
         // only rpc project support websocket
         return Err(Error::WebSocket(1300));
     }
     if project.ws_endpoint().is_none() {
+        println!("===== debug === 1")
         // No ws endpoint found for this project
         return Err(Error::WebSocket(1300));
     }
