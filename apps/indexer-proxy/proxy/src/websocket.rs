@@ -313,16 +313,17 @@ pub async fn handle_websocket(
     query_type: QueryType,
     no_sig: bool,
 ) {
-    debug!("WebSocket connected for deployment: {}", deployment);
+    println!("WebSocket connected for deployment: {}", deployment);
 
     let mut ws_connection =
         match WebSocketConnection::new(client_socket, query_type, &deployment, no_sig).await {
             Ok(ws_connection) => ws_connection,
             Err(error) => {
-                error!("Create websocket error: {:?}", error);
+                println!("Create websocket error: {:?}", error);
                 return;
             },
         };
+    println!("---- OK ----");
 
     loop {
         let res = select! {
@@ -341,7 +342,7 @@ pub async fn handle_websocket(
         }
     }
 
-    debug!("WebSocket closed for deployment: {}", deployment);
+    println!("WebSocket closed for deployment: {}", deployment);
 }
 
 async fn handle_client_socket_message(
@@ -434,20 +435,22 @@ async fn handle_remote_socket_message(
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
     let project = get_project(deployment_id).await.unwrap();
-    let ws_url = match project.ws_endpoint() {
+    let mut ws_url = match project.ws_endpoint() {
         Some(ws_url) => ws_url,
         None => return Err(Error::WebSocket(1300)),
     };
 
     // TMP Test url
-    // ws_url = "wss://ethereum-rpc.publicnode.com";
+    println!("{}", ws_url);
+    //ws_url = "wss://ethereum-rpc.publicnode.com";
+    println!("=-0-------- 00000000");
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
         .await
         .map_err(|_| Error::WebSocket(1308))?;
 
-    debug!("Connected to the server: {}", ws_url);
+    println!("Connected to the server: {}", ws_url);
     Ok(socket)
 }
 
