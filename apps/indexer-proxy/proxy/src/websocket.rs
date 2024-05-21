@@ -449,10 +449,9 @@ pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnecti
     println!("{}", ws_url);
     //ws_url = "wss://ethereum-rpc.publicnode.com";
 
-    let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
-    let (socket, _) = tokio_tungstenite::connect_async(url)
-        .await
-        .map_err(|_| Error::WebSocket(1308))?;
+    let url = url::Url::parse(ws_url).unwrap();
+    println!("{}", url);
+    let (socket, _) = tokio_tungstenite::connect_async(url).await.unwrap();
 
     println!("----- 3 -----");
 
