@@ -272,18 +272,14 @@ async fn ws_payg_query(
     if let Err(e) = validate_project(&deployment).await {
         return e.into_response();
     }
-    println!("===== debug === 2");
 
     let res_sig = headers
         .remove("X-SQ-No-Resp-Sig")
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
-    println!("===== debug === 3");
-
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
-        println!("===== debug === 4");
         handle_websocket(
             socket,
             deployment,
