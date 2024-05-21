@@ -122,7 +122,7 @@ const RpcSetting: FC<IProps> = (props) => {
             result: true,
           };
         }
-        if (value.startsWith('http'))
+        if (value?.startsWith('http'))
           return {
             result: true,
           };
