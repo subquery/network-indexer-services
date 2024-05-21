@@ -276,9 +276,9 @@ export class ProjectRpcService {
     const manifest = project.manifest as RpcManifest;
     const rpcFamily = manifest.rpcFamily[0];
     const family = getRpcFamilyObject(rpcFamily);
-    const keys = family.getEndpointKeys();
+    const keys = family?.getEndpointKeys();
     const endpoint = project.serviceEndpoints.find(
-      (endpoint) => endpoint.value && keys.includes(endpoint.key)
+      (endpoint) => endpoint.value && keys?.includes(endpoint.key)
     );
     const startHeight = 0;
     let lastHeight = 0;
