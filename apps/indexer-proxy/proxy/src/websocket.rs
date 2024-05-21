@@ -323,7 +323,7 @@ pub async fn handle_websocket(
             Err(error) => {
                 println!("Create websocket error: {:?}", error);
                 return;
-            },
+            }
         };
     println!("---- OK ----");
 
@@ -475,12 +475,12 @@ async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<()
 pub async fn validate_project(deployment: &str) -> Result<(), Error> {
     let project: crate::project::Project = get_project(&deployment).await?;
     if !project.is_rpc_project() {
-        println!("===== debug === 0")
+        println!("===== debug === 0");
         // only rpc project support websocket
         return Err(Error::WebSocket(1300));
     }
     if project.ws_endpoint().is_none() {
-        println!("===== debug === 1")
+        println!("===== debug === 1");
         // No ws endpoint found for this project
         return Err(Error::WebSocket(1300));
     }
