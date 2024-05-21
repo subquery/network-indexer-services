@@ -605,36 +605,33 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             }
         };
 
-        let mut endpoints: Vec<(String, String)> = vec![];
+        let mut endpoints: Vec<(String, String)> = vec![Default::default(); 2];
         for endpoint in item.project_endpoints {
             match endpoint.key.as_str() {
                 "evmHttp" => {
                     ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "polkadotHttp" => {
                     ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "queryEndpoint" => {
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "evmWs" | "polkadotWs" => {
                     // push query to endpoint index 1
-                    endpoints.insert(1, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[1] = (endpoint.key, endpoint.value);
                 }
-                _ => (),
+                _ => {
+                    endpoints[0] = (endpoint.key, endpoint.value);
+                }
             }
-
-            endpoints.push((endpoint.key, endpoint.value));
         }
+
         if endpoints.is_empty() {
             error!("Project {} with no endpoints", id);
             return Ok(());
