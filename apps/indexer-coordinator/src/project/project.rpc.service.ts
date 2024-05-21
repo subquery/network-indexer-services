@@ -274,11 +274,12 @@ export class ProjectRpcService {
       return;
     }
     const manifest = project.manifest as RpcManifest;
-    // TODO: support multiple rpc family
     const rpcFamily = manifest.rpcFamily[0];
     const family = getRpcFamilyObject(rpcFamily);
-    const key = family.getEndpointKeys().find((key) => key.endsWith('Http'));
-    const endpoint = project.serviceEndpoints.find((endpoint) => endpoint.key === key);
+    const keys = family.getEndpointKeys();
+    const endpoint = project.serviceEndpoints.find(
+      (endpoint) => endpoint.value && keys.includes(endpoint.key)
+    );
     const startHeight = 0;
     let lastHeight = 0;
     let lastTime = 0;
