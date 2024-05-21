@@ -60,16 +60,16 @@ impl WebSocketConnection {
         query_type: QueryType,
         deployment: &str,
         no_sig: bool,
-    ) -> Option<Self> {
+    ) -> Result<Self, Error> {
         let remote_socket = match connect_to_project_ws(deployment).await {
             Ok(socket) => socket,
-            Err(_) => {
+            Err(e) => {
                 let _ = close_socket(&mut client_socket, Some(Error::WebSocket(1308))).await;
-                return None;
+                return Err(e);
             }
         };
 
-        Some(WebSocketConnection {
+        Ok(WebSocketConnection {
             deployment: deployment.to_string(),
             client_socket,
             remote_socket,
@@ -317,8 +317,11 @@ pub async fn handle_websocket(
 
     let mut ws_connection =
         match WebSocketConnection::new(client_socket, query_type, &deployment, no_sig).await {
-            Some(ws_connection) => ws_connection,
-            None => return,
+            Ok(ws_connection) => ws_connection,
+            Err(error) => {
+                debug!("Create websocket error: {:?}", error);
+                return;
+            },
         };
 
     loop {
@@ -437,7 +440,7 @@ pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnecti
     };
 
     // TMP Test url
-    // let ws_url: &str = "wss://ethereum-rpc.publicnode.com";
+    // ws_url = "wss://ethereum-rpc.publicnode.com";
 
     let url = url::Url::parse(ws_url).map_err(|_| Error::WebSocket(1308))?;
     let (socket, _) = tokio_tungstenite::connect_async(url)
