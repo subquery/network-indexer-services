@@ -12,4 +12,13 @@ addPeers() {
   ipfs swarm connect /dns4/ipfs-swarm-c-lh.subquery.network/tcp/19988/p2p/12D3KooWCFokEyt9gtuQHTwVAzwBsdjsBqfSxq1D3X1FsAbTwaSN
 }
 
+loop() {
+ while :
+ do
+   addPeers 600
+ done
+}
+
 addPeers 10 &
+
+loop &
