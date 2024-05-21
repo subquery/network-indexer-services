@@ -14,6 +14,7 @@ import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
 import { useProjectDetails } from 'hooks/projectHook';
+import { parseError } from 'utils/error';
 import { GET_RPC_ENDPOINT_KEYS, START_PROJECT, VALID_RPC_ENDPOINT } from 'utils/queries';
 
 interface IProps {
@@ -116,6 +117,13 @@ const RpcSetting: FC<IProps> = (props) => {
           const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
           if (wsVal && wsVal?.startsWith('ws')) {
             return checkIfWsAndHttpSame();
+          }
+
+          if (wsVal && !wsVal?.startsWith('ws')) {
+            return {
+              result: false,
+              message: 'Please input a valid endpoint',
+            };
           }
 
           return {
@@ -313,26 +321,33 @@ const RpcSetting: FC<IProps> = (props) => {
               })
               .filter((i) => i.value);
 
-            await startProjectRequest({
-              variables: {
-                rateLimit: form.getFieldValue('rateLimit'),
-                poiEnabled: false,
-                queryVersion: '',
-                nodeVersion: '',
-                networkDictionary: '',
-                networkEndpoints: '',
-                batchSize: 1,
-                workers: 1,
-                timeout: 1,
-                cache: 1,
-                cpu: 1,
-                memory: 1,
-                id: mineId,
-                projectType: projectQuery.data?.project.projectType,
-                serviceEndpoints,
-              },
-            });
-            onSubmit?.();
+            try {
+              await startProjectRequest({
+                variables: {
+                  rateLimit: form.getFieldValue('rateLimit'),
+                  poiEnabled: false,
+                  queryVersion: '',
+                  nodeVersion: '',
+                  networkDictionary: '',
+                  networkEndpoints: '',
+                  batchSize: 1,
+                  workers: 1,
+                  timeout: 1,
+                  cache: 1,
+                  cpu: 1,
+                  memory: 1,
+                  id: mineId,
+                  projectType: projectQuery.data?.project.projectType,
+                  serviceEndpoints,
+                },
+              });
+              onSubmit?.();
+            } catch (e) {
+              parseError(e, {
+                alert: true,
+                rawMsg: true,
+              });
+            }
           }}
         >
           Update

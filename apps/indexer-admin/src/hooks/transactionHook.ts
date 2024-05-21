@@ -17,6 +17,7 @@ import {
 } from 'utils/indexerActions';
 import { ANNOUNCE_READY, ANNOUNCE_STOP } from 'utils/queries';
 import { handleTransaction } from 'utils/transactions';
+import { sleep } from 'utils/waitForSomething';
 
 import { useSignerOrProvider } from './web3Hook';
 
@@ -86,6 +87,7 @@ export const useIndexingAction = (id: string) => {
       try {
         const sendTx = indexingTransactions[type];
         await sendTx();
+        await sleep();
         onProcess();
         onSuccess?.();
       } catch (e) {
