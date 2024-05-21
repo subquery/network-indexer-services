@@ -319,7 +319,7 @@ pub async fn handle_websocket(
         match WebSocketConnection::new(client_socket, query_type, &deployment, no_sig).await {
             Ok(ws_connection) => ws_connection,
             Err(error) => {
-                debug!("Create websocket error: {:?}", error);
+                error!("Create websocket error: {:?}", error);
                 return;
             },
         };
