@@ -100,7 +100,8 @@ const RpcSetting: FC<IProps> = (props) => {
         }
 
         return {
-          result: true,
+          result: false,
+          message: 'Please input a endpoint',
         };
       }
 
