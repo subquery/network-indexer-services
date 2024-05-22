@@ -54,28 +54,21 @@ struct WebSocketConnection {
 }
 
 impl WebSocketConnection {
-    async fn new(
-        mut client_socket: WebSocket,
+    fn new(
+        remote_socket: SocketConnection,
+        client_socket: WebSocket,
         query_type: QueryType,
         deployment: &str,
         no_sig: bool,
-    ) -> Result<Self, Error> {
-        let remote_socket = match connect_to_project_ws(deployment).await {
-            Ok(socket) => socket,
-            Err(e) => {
-                let _ = close_socket(&mut client_socket, Some(Error::WebSocket(1308))).await;
-                return Err(e);
-            }
-        };
-
-        Ok(WebSocketConnection {
+    ) -> Self {
+        WebSocketConnection {
             deployment: deployment.to_string(),
             client_socket,
             remote_socket,
             query_type,
             no_sig,
             order_id: U256::zero(),
-        })
+        }
     }
 
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
@@ -314,21 +307,20 @@ enum SocketMessage {
 }
 
 pub async fn handle_websocket(
+    remote_socket: SocketConnection,
     client_socket: WebSocket,
     deployment: String,
     query_type: QueryType,
     no_sig: bool,
 ) {
     debug!("WebSocket connected for deployment: {}", deployment);
-
-    let mut ws_connection =
-        match WebSocketConnection::new(client_socket, query_type, &deployment, no_sig).await {
-            Ok(ws_connection) => ws_connection,
-            Err(error) => {
-                error!("Create websocket error: {:?}", error);
-                return;
-            }
-        };
+    let mut ws_connection = WebSocketConnection::new(
+        remote_socket,
+        client_socket,
+        query_type,
+        &deployment,
+        no_sig,
+    );
 
     loop {
         let res = select! {
@@ -441,7 +433,7 @@ async fn handle_remote_socket_message(
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
     let project = get_project(deployment_id).await?;
-    let mut ws_url = match project.ws_endpoint() {
+    let ws_url = match project.ws_endpoint() {
         Some(ws_url) => ws_url,
         None => return Err(Error::WebSocket(1300)),
     };

@@ -51,7 +51,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
-use crate::websocket::{handle_websocket, validate_project, QueryType};
+use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
 use crate::{
     account::{get_indexer, indexer_healthy},
     auth::AuthWhitelistQuery,
@@ -258,9 +258,21 @@ async fn ws_query(
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
+    // Connect to remote
+    let remote_socket = match connect_to_project_ws(&deployment).await {
+        Ok(socket) => socket,
+        Err(e) => return e.into_response(),
+    };
+
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(socket, deployment, QueryType::CloseAgreement, no_sig)
+        handle_websocket(
+            remote_socket,
+            socket,
+            deployment,
+            QueryType::CloseAgreement,
+            no_sig,
+        )
     })
 }
 
@@ -278,9 +290,16 @@ async fn ws_payg_query(
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
+    // Connect to remote
+    let remote_socket = match connect_to_project_ws(&deployment).await {
+        Ok(socket) => socket,
+        Err(e) => return e.into_response(),
+    };
+
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
         handle_websocket(
+            remote_socket,
             socket,
             deployment,
             QueryType::PAYG(U256::zero(), U256::zero()),
