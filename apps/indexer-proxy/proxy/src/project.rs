@@ -310,10 +310,12 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         is_limit: bool,
+        no_sig: bool,
     ) -> Result<(Vec<u8>, String)> {
         let _ = self.compute_query_method(&body)?;
 
-        self.query(body, ep_name, payment, network, is_limit).await
+        self.query(body, ep_name, payment, network, is_limit, no_sig)
+            .await
     }
 
     pub async fn query(
@@ -323,6 +325,7 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         is_limit: bool,
+        no_sig: bool,
     ) -> Result<(Vec<u8>, String)> {
         if let Some(limit) = self.rate_limit {
             // project rate limit
@@ -352,11 +355,15 @@ impl Project {
         match self.ptype {
             ProjectType::Subquery => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, payment, network).await
+                self.subquery_raw(&query, payment, network, no_sig).await
             }
-            ProjectType::RpcEvm(_) => self.rpcquery_raw(body, ep_name, payment, network).await,
+            ProjectType::RpcEvm(_) => {
+                self.rpcquery_raw(body, ep_name, payment, network, no_sig)
+                    .await
+            }
             ProjectType::RpcSubstrate(_) => {
-                self.rpcquery_raw(body, ep_name, payment, network).await
+                self.rpcquery_raw(body, ep_name, payment, network, no_sig)
+                    .await
             }
         }
     }
@@ -403,6 +410,7 @@ impl Project {
         query: &GraphQLQuery,
         payment: MetricsQuery,
         network: MetricsNetwork,
+        no_sig: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
         let res = graphql_request_raw(self.endpoint(), query).await;
@@ -412,7 +420,11 @@ impl Project {
 
         match res {
             Ok(data) => {
-                let signature = Self::sign_response(&data).await;
+                let signature = if no_sig {
+                    String::default()
+                } else {
+                    Self::sign_response(&data).await
+                };
                 Ok((data, signature))
             }
             Err(err) => Err(err),
@@ -425,6 +437,7 @@ impl Project {
         ep_name: Option<String>,
         payment: MetricsQuery,
         network: MetricsNetwork,
+        no_sig: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
         let mut endpoint = self.endpoint();
@@ -443,7 +456,11 @@ impl Project {
 
         match res {
             Ok(data) => {
-                let signature = Self::sign_response(&data).await;
+                let signature = if no_sig {
+                    String::default()
+                } else {
+                    Self::sign_response(&data).await
+                };
                 Ok((data, signature))
             }
             Err(err) => Err(err),
@@ -588,36 +605,33 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             }
         };
 
-        let mut endpoints: Vec<(String, String)> = vec![];
+        let mut endpoints: Vec<(String, String)> = vec![Default::default(); 2];
         for endpoint in item.project_endpoints {
             match endpoint.key.as_str() {
                 "evmHttp" => {
                     ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
-                "substrateHttp" => {
+                "polkadotHttp" => {
                     ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "queryEndpoint" => {
                     // push query to endpoint index 0
-                    endpoints.insert(0, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[0] = (endpoint.key, endpoint.value);
                 }
-                "websocketEndpoint" => {
+                "evmWs" | "polkadotWs" => {
                     // push query to endpoint index 1
-                    endpoints.insert(1, (endpoint.key, endpoint.value));
-                    continue;
+                    endpoints[1] = (endpoint.key, endpoint.value);
                 }
-                _ => (),
+                _ => {
+                    endpoints[0] = (endpoint.key, endpoint.value);
+                }
             }
-
-            endpoints.push((endpoint.key, endpoint.value));
         }
+
         if endpoints.is_empty() {
             error!("Project {} with no endpoints", id);
             return Ok(());

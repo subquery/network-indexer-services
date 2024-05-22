@@ -30,6 +30,7 @@ use axum::{
 };
 use axum_auth::AuthBearer;
 use base64::{engine::general_purpose, Engine as _};
+use ethers::prelude::U256;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -50,7 +51,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
-use crate::websocket::{handle_websocket, validate_project, QueryType};
+use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
 use crate::{
     account::{get_indexer, indexer_healthy},
     auth::AuthWhitelistQuery,
@@ -197,6 +198,10 @@ async fn query_handler(
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
+    let res_sig = headers
+        .remove("X-SQ-No-Resp-Sig")
+        .unwrap_or(HeaderValue::from_static("false"));
+    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
     let (data, signature) = get_project(&deployment)
         .await?
@@ -206,6 +211,7 @@ async fn query_handler(
             MetricsQuery::CloseAgreement,
             MetricsNetwork::HTTP,
             false,
+            no_sig,
         )
         .await?;
 
@@ -234,6 +240,7 @@ async fn query_handler(
 }
 
 async fn ws_query(
+    mut headers: HeaderMap,
     ws: WebSocketUpgrade,
     Path(deployment): Path<String>,
     AuthQuery(deployment_id): AuthQuery,
@@ -246,19 +253,59 @@ async fn ws_query(
         return e.into_response();
     }
 
+    let res_sig = headers
+        .remove("X-SQ-No-Resp-Sig")
+        .unwrap_or(HeaderValue::from_static("false"));
+    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
+
+    // Connect to remote
+    let remote_socket = match connect_to_project_ws(&deployment).await {
+        Ok(socket) => socket,
+        Err(e) => return e.into_response(),
+    };
+
     // Handle WebSocket connection
     ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(socket, deployment, QueryType::CloseAgreement)
+        handle_websocket(
+            remote_socket,
+            socket,
+            deployment,
+            QueryType::CloseAgreement,
+            no_sig,
+        )
     })
 }
 
-async fn ws_payg_query(ws: WebSocketUpgrade, Path(deployment): Path<String>) -> impl IntoResponse {
+async fn ws_payg_query(
+    mut headers: HeaderMap,
+    ws: WebSocketUpgrade,
+    Path(deployment): Path<String>,
+) -> impl IntoResponse {
     if let Err(e) = validate_project(&deployment).await {
         return e.into_response();
     }
 
+    let res_sig = headers
+        .remove("X-SQ-No-Resp-Sig")
+        .unwrap_or(HeaderValue::from_static("false"));
+    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
+
+    // Connect to remote
+    let remote_socket = match connect_to_project_ws(&deployment).await {
+        Ok(socket) => socket,
+        Err(e) => return e.into_response(),
+    };
+
     // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| handle_websocket(socket, deployment, QueryType::PAYG))
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(
+            remote_socket,
+            socket,
+            deployment,
+            QueryType::PAYG(U256::zero(), U256::zero()),
+            no_sig,
+        )
+    })
 }
 
 async fn query_limit_handler(
@@ -289,6 +336,7 @@ async fn wl_query_handler(
             ep_name.0.ep_name,
             MetricsQuery::Free,
             MetricsNetwork::HTTP,
+            false,
             false,
         )
         .await?;
@@ -324,6 +372,10 @@ async fn payg_query(
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
+    let res_sig = headers
+        .remove("X-SQ-No-Resp-Sig")
+        .unwrap_or(HeaderValue::from_static("false"));
+    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
     // single or multiple
     let block = headers
@@ -339,6 +391,7 @@ async fn payg_query(
                 ep_name.0.ep_name,
                 state,
                 MetricsNetwork::HTTP,
+                no_sig,
             )
             .await?
         }
@@ -350,6 +403,7 @@ async fn payg_query(
                 ep_name.0.ep_name,
                 state,
                 MetricsNetwork::HTTP,
+                no_sig,
             )
             .await?
         }
