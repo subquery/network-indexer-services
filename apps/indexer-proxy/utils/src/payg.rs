@@ -657,7 +657,7 @@ impl MultipleQueryState {
             end,
             sign: default_sign(),
         };
-        state.sign(key, MultipleQueryStateActive::Active).await?;
+        state.sign(key, active).await?;
         Ok(state)
     }
 
