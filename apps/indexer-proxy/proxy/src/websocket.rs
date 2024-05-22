@@ -142,13 +142,13 @@ impl WebSocketConnection {
     }
 
     async fn close_client(&mut self, error: Option<Error>) -> Result<(), Error> {
-        println!("DEBUG: CLOSE CLIENT");
+        debug!("CLOSE CLIENT");
         close_socket(&mut self.client_socket, error).await?;
         Ok(())
     }
 
     async fn close_remote(&mut self) -> Result<(), Error> {
-        println!("DEBUG: CLOSE REMOTE");
+        debug!("CLOSE REMOTE");
         self.remote_socket
             .close(None)
             .await
@@ -157,7 +157,7 @@ impl WebSocketConnection {
     }
 
     async fn close_all(&mut self, error: Option<Error>) -> Result<(), Error> {
-        println!("DEBUG: CLOSE ALL");
+        debug!("CLOSE ALL");
         self.close_remote().await?;
         self.close_client(error).await?;
         Ok(())
@@ -250,7 +250,8 @@ impl WebSocketConnection {
             .query_async(&mut conn)
             .await
             .map_err(|_| Error::WebSocket(1306))?;
-        let _ = redis::cmd("DEL").arg(&cache_key)
+        let _ = redis::cmd("DEL")
+            .arg(&cache_key)
             .query_async(&mut conn)
             .await
             .map_err(|_| Error::WebSocket(1306))?;
@@ -272,7 +273,6 @@ impl WebSocketConnection {
                 let (state_str, state_cache) = if let Ok((state_str, state_cache)) =
                     Self::fetch_state(&keyname).await
                 {
-                    println!("DEBUG: has cache");
                     (state_str, state_cache)
                 } else {
                     let unit_times = 1;
@@ -295,11 +295,8 @@ impl WebSocketConnection {
                     .await?;
                     drop(account);
 
-                    println!("DEBUG: no cache");
-
                     // update state cache. default unit is 1
                     state_cache.spent = state_cache.spent + state_cache.price * unit_times;
-                    println!("new state spent: {} {} {} {:?}", state_cache.spent, start, end, mpqsa);
 
                     (state.to_bs64(), state_cache)
                 };
@@ -359,7 +356,7 @@ async fn handle_client_socket_message(
 ) -> Result<(), Error> {
     match msg {
         Message::Text(text) => {
-            println!("Received text message from client");
+            debug!("Received text message from client");
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
                 let (_, code, reason) = e.to_status_message();
                 ws_connection.send_error_msg(code, reason.to_string()).await;
@@ -372,7 +369,7 @@ async fn handle_client_socket_message(
                 .await?
         }
         Message::Close(_) => {
-            println!("Client closed the WebSocket");
+            debug!("Client closed the WebSocket");
             ws_connection.close_remote().await?
         }
         Message::Ping(data) => {
@@ -402,9 +399,9 @@ async fn handle_remote_socket_message(
 ) -> Result<(), Error> {
     match msg {
         TMessage::Text(text) => {
-            println!("Received text response from remote");
+            debug!("Received text response from remote");
             if let Err(e) = ws_connection.send_text_msg(text).await {
-                println!("debug: 0 {:?}", e);
+                debug!("send message to client error: {:?}", e);
                 ws_connection.close_all(Some(e)).await?;
             }
         }
@@ -431,7 +428,7 @@ async fn handle_remote_socket_message(
                 .map_err(|_| Error::WebSocket(1313))?;
         }
         TMessage::Close(_) => {
-            println!("Remote closed the WebSocket");
+            debug!("Remote closed the WebSocket");
             ws_connection
                 .close_client(Some(Error::WebSocket(1308)))
                 .await?;
