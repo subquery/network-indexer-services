@@ -142,7 +142,8 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
 
   if (!data) return null;
 
-  const imageVersion = (type: string, version: string) => `onfinality/subql-${type}:${version}`;
+  const imageVersion = (type: string, version: string) =>
+    `subquerynetwork/subql-${type}:${version}`;
 
   return (
     <CardContainer>

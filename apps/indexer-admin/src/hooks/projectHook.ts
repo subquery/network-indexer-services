@@ -126,9 +126,9 @@ function dockerRegistryFromChain(chainType: ChainType): string {
     case 'flare':
     case 'near':
     case 'ethereum':
-      return `onfinality/subql-node-${chainType}`;
+      return `subquerynetwork/subql-node-${chainType}`;
     default:
-      return 'onfinality/subql-node';
+      return 'subquerynetwork/subql-node-substrate';
   }
 }
 
