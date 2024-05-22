@@ -299,7 +299,7 @@ impl WebSocketConnection {
 
                     // update state cache. default unit is 1
                     state_cache.spent = state_cache.spent + state_cache.price * unit_times;
-                    println!("new state spent: {} {} {}", state_cache.spent, start, end);
+                    println!("new state spent: {} {} {} {:?}", state_cache.spent, start, end, mpqsa);
 
                     (state.to_bs64(), state_cache)
                 };
