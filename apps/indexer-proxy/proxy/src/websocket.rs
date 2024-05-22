@@ -1,7 +1,6 @@
 use axum::extract::ws::{CloseFrame, Message, WebSocket};
 use base64::{engine::general_purpose, Engine as _};
 use ethers::types::U256;
-use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use std::result::Result;
@@ -143,12 +142,13 @@ impl WebSocketConnection {
     }
 
     async fn close_client(&mut self, error: Option<Error>) -> Result<(), Error> {
+        println!("DEBUG: CLOSE CLIENT");
         close_socket(&mut self.client_socket, error).await?;
         Ok(())
     }
 
     async fn close_remote(&mut self) -> Result<(), Error> {
-        debug!("Closing remote WebSocket");
+        println!("DEBUG: CLOSE REMOTE");
         self.remote_socket
             .close(None)
             .await
@@ -157,6 +157,7 @@ impl WebSocketConnection {
     }
 
     async fn close_all(&mut self, error: Option<Error>) -> Result<(), Error> {
+        println!("DEBUG: CLOSE ALL");
         self.close_remote().await?;
         self.close_client(error).await?;
         Ok(())
@@ -223,11 +224,11 @@ impl WebSocketConnection {
         .map_err(|_| Error::WebSocket(1305))?;
 
         let cache_key = format!("{}-ws", keyname);
+
         let mut conn = redis();
-        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
         redis::cmd("SETEX")
             .arg(&cache_key)
-            .arg(exp.unwrap_or(30000))
+            .arg(600) // 10min
             .arg(value)
             .query_async(&mut conn)
             .await
@@ -244,8 +245,12 @@ impl WebSocketConnection {
         let cache_key = format!("{}-ws", keyname);
 
         let mut conn = redis();
-        let value: String = redis::cmd("DEL")
+        let value: String = redis::cmd("GET")
             .arg(&cache_key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|_| Error::WebSocket(1306))?;
+        let _ = redis::cmd("DEL").arg(&cache_key)
             .query_async(&mut conn)
             .await
             .map_err(|_| Error::WebSocket(1306))?;
@@ -267,6 +272,7 @@ impl WebSocketConnection {
                 let (state_str, state_cache) = if let Ok((state_str, state_cache)) =
                     Self::fetch_state(&keyname).await
                 {
+                    println!("DEBUG: has cache");
                     (state_str, state_cache)
                 } else {
                     let unit_times = 1;
@@ -289,8 +295,11 @@ impl WebSocketConnection {
                     .await?;
                     drop(account);
 
+                    println!("DEBUG: no cache");
+
                     // update state cache. default unit is 1
                     state_cache.spent = state_cache.spent + state_cache.price * unit_times;
+                    println!("new state spent: {} {} {}", state_cache.spent, start, end);
 
                     (state.to_bs64(), state_cache)
                 };
@@ -350,7 +359,7 @@ async fn handle_client_socket_message(
 ) -> Result<(), Error> {
     match msg {
         Message::Text(text) => {
-            debug!("Forwarding text message to remote: {}", text);
+            println!("Received text message from client");
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
                 let (_, code, reason) = e.to_status_message();
                 ws_connection.send_error_msg(code, reason.to_string()).await;
@@ -363,7 +372,7 @@ async fn handle_client_socket_message(
                 .await?
         }
         Message::Close(_) => {
-            debug!("Client closed the WebSocket");
+            println!("Client closed the WebSocket");
             ws_connection.close_remote().await?
         }
         Message::Ping(data) => {
@@ -393,8 +402,9 @@ async fn handle_remote_socket_message(
 ) -> Result<(), Error> {
     match msg {
         TMessage::Text(text) => {
-            debug!("Received text response from remote");
+            println!("Received text response from remote");
             if let Err(e) = ws_connection.send_text_msg(text).await {
+                println!("debug: 0 {:?}", e);
                 ws_connection.close_all(Some(e)).await?;
             }
         }
@@ -421,7 +431,7 @@ async fn handle_remote_socket_message(
                 .map_err(|_| Error::WebSocket(1313))?;
         }
         TMessage::Close(_) => {
-            debug!("Remote closed the WebSocket");
+            println!("Remote closed the WebSocket");
             ws_connection
                 .close_client(Some(Error::WebSocket(1308)))
                 .await?;
@@ -434,13 +444,10 @@ async fn handle_remote_socket_message(
 // Asynchronously connect to a remote WebSocket endpoint
 pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
     let project = get_project(deployment_id).await?;
-    let ws_url = match project.ws_endpoint() {
+    let mut ws_url = match project.ws_endpoint() {
         Some(ws_url) => ws_url,
         None => return Err(Error::WebSocket(1300)),
     };
-
-    // TMP Test url
-    //ws_url = "wss://ethereum-rpc.publicnode.com";
 
     let (socket, _) = tokio_tungstenite::connect_async(ws_url)
         .await
