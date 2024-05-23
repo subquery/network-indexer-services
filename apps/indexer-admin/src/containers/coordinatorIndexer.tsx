@@ -14,18 +14,16 @@ type CoordinatorIndexerContext = {
   load: () => void;
   loading: boolean;
   error?: Error;
+  setIndexer: (indexer?: string) => void;
 };
 
 function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
-  const [load, { data, loading, error }] = useLazyQuery(GET_COORDINATOR_INDEXER);
+  const [fetchCoordinatorIndexer, { error }] = useLazyQuery(GET_COORDINATOR_INDEXER);
 
   const [addIndexer] = useMutation(ADD_INDEXER);
 
   const [indexer, setIndexer] = React.useState<string>();
-
-  React.useEffect(() => {
-    setIndexer(data?.accountMetadata?.indexer || undefined);
-  }, [data?.accountMetadata?.indexer]);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (error) {
@@ -49,12 +47,23 @@ function useCoordinatorIndexerImpl(): CoordinatorIndexerContext {
     [addIndexer]
   );
 
+  const load = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetchCoordinatorIndexer();
+      setIndexer(res.data?.accountMetadata?.indexer || undefined);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchCoordinatorIndexer]);
+
   return {
     indexer,
     updateIndexer,
     load,
     loading,
     error,
+    setIndexer,
   };
 }
 

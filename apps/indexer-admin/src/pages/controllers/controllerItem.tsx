@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC } from 'react';
+import { FC, useMemo } from 'react';
 import { Tag } from '@subql/components';
 import { isUndefined } from 'lodash';
 import { useBalance } from 'wagmi';
@@ -47,7 +47,9 @@ const ControllerItem: FC<Props> = ({
   const { data: balance } = useBalance({
     address: address as `0x${string}`,
   });
-  const emptyBalance = Number(balance?.formatted) === 0;
+  const emptyBalance = useMemo(() => {
+    return +Number(balance?.formatted).toFixed(6) === 0;
+  }, [balance]);
   const account = { id, address };
   const tokenSymbol = useTokenSymbol();
   return (

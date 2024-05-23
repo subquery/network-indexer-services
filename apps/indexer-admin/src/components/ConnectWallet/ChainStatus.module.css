@@ -13,30 +13,10 @@
   display: flex;
   flex-direction: column;
 
-  padding: 2rem 3rem;
+  padding: 40px 24px;
   background: white;
-  border-radius: 1rem;
-  max-width: 725px;
-  height: 300px;
+  border-radius: 8px;
+  max-width: 420px;
   align-items: center;
-}
-
-.title {
-  font-size: 26px;
-  font-weight: 600;
-}
-
-.switchContainer {
-  height: 100%;
-  align-items: stretch;
-  margin: 1rem 0;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.description {
-  font-size: 18px;
-  text-align: center;
+  gap: 24px;
 }

@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ContractTransaction, Overrides } from 'ethers';
+import { BigNumber, ContractTransaction, Overrides } from 'ethers';
 
 export enum DesiredStatus {
   STOPPED,
@@ -22,6 +22,33 @@ export enum ServiceStatus {
 }
 
 export type TxFun = (overrides: Overrides) => Promise<ContractTransaction>;
+
+export type GasFun = (overrides: Overrides) => Promise<BigNumber>;
+
+export enum TxType {
+  go = 'go',
+  check = 'check',
+  postponed = 'postponed',
+}
+
+type TxOptionsBase = {
+  action: string;
+  type: TxType;
+  txFun: TxFun;
+  wait?: number;
+  desc?: string;
+};
+
+type TxOptionsGo = TxOptionsBase & {
+  type: TxType.go;
+};
+
+type TxOptionsNotGo = TxOptionsBase & {
+  type: Exclude<TxType, TxType.go>;
+  gasFun: GasFun;
+};
+
+export type TxOptions = TxOptionsGo | TxOptionsNotGo;
 
 export type Transaction = {
   name: string;

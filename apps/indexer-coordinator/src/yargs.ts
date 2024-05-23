@@ -42,6 +42,12 @@ function getYargsOption() {
       default: 'https://mainnet.base.org',
       group: Groups.coordinator,
     },
+    'eth-endpoint': {
+      type: 'string',
+      describe: 'Specify eth rpc endpoint',
+      default: 'https://eth.llamarpc.com',
+      group: Groups.coordinator,
+    },
     ipfs: {
       type: 'string',
       describe: 'Specify ipfs endpoint for this network',
@@ -164,6 +170,24 @@ function getYargsOption() {
       describe: 'Postgres cert file name',
       default: '',
       group: Groups.postgres,
+    },
+    'redis-url': {
+      type: 'string',
+      describe: 'Redis connection url',
+      default: 'redis://indexer_cache:6379',
+      group: Groups.coordinator,
+    },
+    'gas-fee-limit': {
+      type: 'string',
+      describe: 'Gas fee limit for the transaction',
+      default: '0',
+      group: Groups.coordinator,
+    },
+    'log-args': {
+      type: 'boolean',
+      describe: 'Log the arguments passed to the service',
+      default: false,
+      group: Groups.coordinator,
     },
   });
 }

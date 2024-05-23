@@ -1,16 +1,15 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NetworkStatus, useLazyQuery, useQuery } from '@apollo/client';
 import { useInterval } from 'ahooks';
 import axios from 'axios';
 import yaml from 'js-yaml';
 import { isEmpty } from 'lodash';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
-import { useNotification } from 'containers/notificationContext';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import {
   ChainType,
   dockerContainerEnum,
@@ -57,26 +56,6 @@ export const useProjectDetails = (deploymentId: string) => {
   return projectQuery;
 };
 
-export const useServiceStatus = (deploymentId: string): ServiceStatus | undefined => {
-  const [status, setStatus] = useState<ServiceStatus>(ServiceStatus.TERMINATED);
-  const { account } = useAccount();
-  const notificationContext = useNotification();
-  const sdk = useContractSDK();
-
-  useEffect(() => {
-    if (sdk && account && deploymentId) {
-      sdk.projectRegistry
-        .deploymentStatusByIndexer(cidToBytes32(deploymentId), account)
-        .then((status) => {
-          setStatus(status);
-        })
-        .catch((error) => console.error(error));
-    }
-  }, [sdk, account, deploymentId, notificationContext.notification?.type]);
-
-  return status;
-};
-
 export const getQueryMetadata = async (id: string, type: number): Promise<TQueryMetadata> => {
   try {
     const result = await coordinatorClient.query<{ serviceMetadata: TQueryMetadata }>({
@@ -92,7 +71,7 @@ export const getQueryMetadata = async (id: string, type: number): Promise<TQuery
 
 export const useDeploymentStatus = (deploymentId: string) => {
   const [status, setStatus] = useState<ServiceStatus | undefined>();
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const sdk = useContractSDK();
 
   const getDeploymentStatus = useCallback(async () => {
@@ -109,7 +88,10 @@ export const useDeploymentStatus = (deploymentId: string) => {
     getDeploymentStatus();
   }, [getDeploymentStatus]);
 
-  return status;
+  return {
+    status,
+    getDeploymentStatus,
+  };
 };
 
 export const getManifest = async (cid: string) => {
@@ -137,16 +119,16 @@ export const useGetIndexerMetadata = (indexer: string) => {
   return metadata;
 };
 
-function dockerRegistryFromChain(chainType: ChainType): string {
+export function dockerRegistryFromChain(chainType: ChainType): string {
   switch (chainType) {
     case 'cosmos':
     case 'algorand':
     case 'flare':
     case 'near':
     case 'ethereum':
-      return `onfinality/subql-node-${chainType}`;
+      return `subquerynetwork/subql-node-${chainType}`;
     default:
-      return 'onfinality/subql-node';
+      return 'subquerynetwork/subql-node-substrate';
   }
 }
 
@@ -160,14 +142,23 @@ const defaultRange: Record<ChainType, string> = {
   stellar: '>=3.0.1',
 };
 
+export const useFetchManifest = () => {
+  const fetchManifest = useCallback(async (cid: string) => {
+    const manifest = await getManifest(cid);
+    return manifest;
+  }, []);
+
+  return fetchManifest;
+};
+
 export const useNodeVersions = (cid: string): string[] => {
   const [getNodeVersions, { data }] = useLazyQuery(GET_REGISTRY_VERSIONS);
 
   const fetchNodeVersions = useCallback(async () => {
     const manifest = await getManifest(cid);
     const { dataSources, runner } = manifest;
-    const runtime = dataSources[0].kind;
-    const chainType = runtime.split('/')[0] as ChainType;
+    const runtime = dataSources?.[0].kind;
+    const chainType = runtime?.split('/')?.[0] as ChainType;
 
     const registry = dockerRegistryFromChain(chainType);
     const range = runner?.node?.version ?? defaultRange[chainType];
@@ -178,7 +169,7 @@ export const useNodeVersions = (cid: string): string[] => {
     fetchNodeVersions();
   }, [fetchNodeVersions]);
 
-  const versions = data?.getRegistryVersions;
+  const versions = useMemo(() => data?.getRegistryVersions, [data?.getRegistryVersions]);
   return !isEmpty(versions) ? versions : [];
 };
 

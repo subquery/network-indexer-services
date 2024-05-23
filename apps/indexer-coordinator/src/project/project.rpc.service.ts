@@ -14,10 +14,11 @@ import {
   MetadataType,
   Project,
   ProjectEntity,
+  SeviceEndpoint,
   ValidationResponse,
 } from './project.model';
 import { ProjectService } from './project.service';
-import { getRpcFamilyObject } from './rpc.factory';
+import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
 import { ProjectType } from './types';
 
 const logger = getLogger('project.rpc.service');
@@ -35,16 +36,7 @@ export class ProjectRpcService {
       (project) => project.projectType === ProjectType.RPC
     );
     for (const project of projects) {
-      for (const endpoint of project.serviceEndpoints) {
-        const response = await this.validateRpcEndpoint(project.id, endpoint.key, endpoint.value);
-        if (!response.valid) {
-          logger.warn(
-            `Project ${project.id} endpoint ${endpoint.key} is invalid: ${response.reason}`
-          );
-        }
-        endpoint.valid = response.valid;
-        endpoint.reason = response.reason;
-      }
+      await this.validateProjectEndpoints(project, project.serviceEndpoints);
     }
     await this.projectRepo.save(projects);
   }
@@ -58,16 +50,119 @@ export class ProjectRpcService {
     return manifest.rpcFamily || [];
   }
 
-  getEndpointKeys(rpcFamily: string): string[] {
+  private getEndpointKeys(rpcFamily: string): string[] {
     const family = getRpcFamilyObject(rpcFamily);
     if (!family) return [];
 
-    // TODO return family.getEndpointKeys();
-    return family.getEndpointKeys().filter((key) => key.endsWith('Http'));
+    return family.getEndpointKeys();
+    // return family.getEndpointKeys().filter((key) => key.endsWith('Http'));
   }
 
   getAllEndpointKeys(rpcFamilyList: string[]): string[] {
     return rpcFamilyList.map((family) => this.getEndpointKeys(family)).flat();
+  }
+
+  private async validateProjectEndpoints(
+    project: Project,
+    serviceEndpoints: SeviceEndpoint[]
+  ): Promise<ValidationResponse> {
+    const validateUrlResult = this.validateRpcEndpointsUrl(serviceEndpoints);
+    serviceEndpoints = serviceEndpoints.filter((endpoint) => endpoint.value);
+    let reason = '';
+    for (const endpoint of serviceEndpoints) {
+      if (!validateUrlResult.valid) {
+        endpoint.valid = false;
+        endpoint.reason = validateUrlResult.reason;
+        reason = reason || validateUrlResult.reason;
+        continue;
+      }
+      const response = await this.validateRpcEndpoint(project.id, endpoint.key, endpoint.value);
+      if (!response.valid) {
+        logger.warn(
+          `Project ${project.id} endpoint ${endpoint.key} is invalid: ${response.reason}`
+        );
+      }
+      endpoint.valid = response.valid;
+      endpoint.reason = response.reason;
+      reason = reason || response.reason;
+    }
+    return this.formatResponse(!reason, reason);
+  }
+
+  private validateRpcEndpointsUrl(serviceEndpoints: SeviceEndpoint[]): ValidationResponse {
+    if (!serviceEndpoints || serviceEndpoints.length === 0) {
+      return this.formatResponse(false, 'No endpoints');
+    }
+    const rpcFamily = serviceEndpoints[0].key.replace(/(Http|Ws)$/, '');
+    if (serviceEndpoints.length > 1) {
+      const rpcFamily2 = serviceEndpoints[1].key.replace(/(Http|Ws)$/, '');
+      if (rpcFamily !== rpcFamily2) {
+        return this.formatResponse(false, 'Endpoints are not from the same rpc family');
+      }
+      try {
+        const host1 = new URL(serviceEndpoints[0].value).hostname;
+        const host2 = new URL(serviceEndpoints[1].value).hostname;
+        if (host1 !== host2) {
+          return this.formatResponse(false, 'Endpoints are not from the same host');
+        }
+      } catch (e) {
+        return this.formatResponse(false, 'Invalid url');
+      }
+    }
+    for (const endpoint of serviceEndpoints) {
+      if (
+        endpoint.key.endsWith('Http') &&
+        !(endpoint.value.startsWith('http://') || endpoint.value.startsWith('https://'))
+      ) {
+        return this.formatResponse(false, 'Invalid http endpoint');
+      }
+      if (
+        endpoint.key.endsWith('Ws') &&
+        !(endpoint.value.startsWith('ws://') || endpoint.value.startsWith('wss://'))
+      ) {
+        return this.formatResponse(false, 'Invalid ws endpoint');
+      }
+    }
+    return this.validateRequiredRpcType(rpcFamily, serviceEndpoints);
+  }
+
+  private validateRequiredRpcType(
+    rpcFamily: string,
+    serviceEndpoints: SeviceEndpoint[]
+  ): ValidationResponse {
+    const rpcType = getRpcFamilyObject(rpcFamily).getRequiredRpcType();
+    switch (rpcType) {
+      case RequiredRpcType.http:
+        if (!serviceEndpoints.find((endpoint) => endpoint.key.endsWith('Http'))) {
+          return this.formatResponse(false, 'Missing http endpoint');
+        }
+        break;
+      case RequiredRpcType.ws:
+        if (!serviceEndpoints.find((endpoint) => endpoint.key.endsWith('Ws'))) {
+          return this.formatResponse(false, 'Missing ws endpoint');
+        }
+        break;
+      case RequiredRpcType.any:
+        if (
+          !serviceEndpoints.find(
+            (endpoint) => endpoint.key.endsWith('Http') || endpoint.key.endsWith('Ws')
+          )
+        ) {
+          return this.formatResponse(false, 'Missing http or ws endpoint');
+        }
+        break;
+      case RequiredRpcType.both:
+        if (
+          !serviceEndpoints.find((endpoint) => endpoint.key.endsWith('Http')) ||
+          !serviceEndpoints.find((endpoint) => endpoint.key.endsWith('Ws'))
+        ) {
+          return this.formatResponse(false, 'Missing http and ws endpoint');
+        }
+        break;
+      default:
+        return this.formatResponse(false, 'Unknown rpc type');
+    }
+    return this.formatResponse(true);
   }
 
   async validateRpcEndpoint(
@@ -120,7 +215,7 @@ export class ProjectRpcService {
     }
   }
 
-  formatResponse(valid = false, reason = ''): ValidationResponse {
+  private formatResponse(valid = false, reason = ''): ValidationResponse {
     return {
       valid,
       reason,
@@ -148,6 +243,11 @@ export class ProjectRpcService {
     });
     projectConfig.serviceEndpoints = project.serviceEndpoints;
 
+    const validateResult = await this.validateProjectEndpoints(project, project.serviceEndpoints);
+    if (!validateResult.valid) {
+      throw new Error(`Invalid endpoints: ${validateResult.reason}`);
+    }
+
     return this.projectRepo.save(project);
   }
 
@@ -174,11 +274,12 @@ export class ProjectRpcService {
       return;
     }
     const manifest = project.manifest as RpcManifest;
-    // TODO: support multiple rpc family
     const rpcFamily = manifest.rpcFamily[0];
     const family = getRpcFamilyObject(rpcFamily);
-    const key = family.getEndpointKeys().find((key) => key.endsWith('Http'));
-    const endpoint = project.serviceEndpoints.find((endpoint) => endpoint.key === key);
+    const keys = family?.getEndpointKeys();
+    const endpoint = project.serviceEndpoints.find(
+      (endpoint) => endpoint.value && keys?.includes(endpoint.key)
+    );
     const startHeight = 0;
     let lastHeight = 0;
     let lastTime = 0;

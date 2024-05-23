@@ -63,7 +63,7 @@ services:
       retries: 100
 
   query_{{projectID}}:
-    image: onfinality/subql-query:{{queryVersion}}
+    image: subquerynetwork/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
     user: "1000"
     expose:

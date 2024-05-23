@@ -14,6 +14,7 @@ import styled from 'styled-components';
 
 import Avatar from 'components/avatar';
 import { useProjectDetails } from 'hooks/projectHook';
+import { parseError } from 'utils/error';
 import { GET_RPC_ENDPOINT_KEYS, START_PROJECT, VALID_RPC_ENDPOINT } from 'utils/queries';
 
 interface IProps {
@@ -36,6 +37,114 @@ const RpcSetting: FC<IProps> = (props) => {
     },
   });
 
+  const rules = useMemo(() => {
+    const checkIfWsAndHttpSame = () => {
+      const allValues = keys.data?.getRpcEndpointKeys.map((key) => {
+        try {
+          return new URL(form.getFieldValue(key)).hostname;
+        } catch {
+          return form.getFieldValue(key);
+        }
+      });
+
+      const ifSame = new Set(allValues).size === 1;
+
+      if (ifSame)
+        return {
+          result: true,
+        };
+
+      return {
+        result: false,
+        message: 'The origin of Ws and Http endpoint should be the same.',
+      };
+    };
+
+    const polkadotAndSubstrateRule = (
+      endpointType: 'http' | 'ws',
+      value: string,
+      ruleField: string
+    ) => {
+      if (endpointType === 'ws') {
+        if (!value)
+          return {
+            result: false,
+            message: 'Please input the endpoint',
+          };
+        if (!value.startsWith('ws'))
+          return {
+            result: false,
+            message: 'Please input a valid endpoint',
+          };
+
+        const httpVal = form.getFieldValue(ruleField.replace('Ws', 'Http'));
+
+        if (httpVal) {
+          return checkIfWsAndHttpSame();
+        }
+
+        return {
+          result: true,
+        };
+      }
+
+      if (endpointType === 'http') {
+        if (value && value?.trim()) {
+          if (value?.startsWith('http')) {
+            return checkIfWsAndHttpSame();
+          }
+
+          return {
+            result: false,
+            message: 'Please input a valid endpoint',
+          };
+        }
+
+        return {
+          result: false,
+          message: 'Please input a endpoint',
+        };
+      }
+
+      return {
+        result: true,
+      };
+    };
+
+    return {
+      evm: (endpointType: 'http' | 'ws', value: string, ruleField: string) => {
+        if (endpointType === 'ws') {
+          const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
+          if (wsVal && wsVal?.startsWith('ws')) {
+            return checkIfWsAndHttpSame();
+          }
+
+          if (wsVal && !wsVal?.startsWith('ws')) {
+            return {
+              result: false,
+              message: 'Please input a valid endpoint',
+            };
+          }
+
+          return {
+            result: true,
+          };
+        }
+        if (value?.startsWith('http'))
+          return {
+            result: true,
+          };
+
+        return {
+          result: false,
+          message: 'Please input a valid endpoint',
+        };
+      },
+      polkadot: polkadotAndSubstrateRule,
+      substrate: polkadotAndSubstrateRule,
+    };
+  }, [form, keys.data?.getRpcEndpointKeys]);
+
   const [validate] = useLazyQuery<
     { validateRpcEndpoint: { valid: boolean; reason?: string } },
     { projectId: string; endpointKey: string; endpoint: string }
@@ -44,16 +153,38 @@ const RpcSetting: FC<IProps> = (props) => {
   const [startProjectRequest] = useMutation(START_PROJECT);
 
   const debouncedValidator = useMemo(() => {
-    return debounce(async (rule: Rule, value: string) => {
-      if (!value) return Promise.reject(new Error('Please input http endpoint'));
+    // if more than one field, the debounce will be shared
+    const validateFunc = async (rule: Rule, value: string) => {
+      // not sure if it's a development field or not.
+      // when print it, the rule actrully is { field, fullField, type }
+      // @ts-ignore
+      const ruleField = rule.field as string;
+      const ruleKeys = Object.keys(rules);
+      const whichRule =
+        rules[
+          ruleKeys.find((key) => ruleField.includes(key as string)) as
+            | 'evm'
+            | 'polkadot'
+            | 'substrate'
+        ];
+      const { result, message } = whichRule(
+        ruleField.toLocaleLowerCase().includes('http') ? 'http' : 'ws',
+        value,
+        ruleField
+      );
+
+      if (!result) {
+        return Promise.reject(new Error(message));
+      }
+
+      // whichRule should validate if the field can be empty, if empty, just true
+      if (!value) return Promise.resolve();
+
       const res = await validate({
         variables: {
           projectId: mineId,
           endpoint: value,
-          // not sure if it's a development field or not.
-          // when print it, the rule actrully is { field, fullField, type }
-          // @ts-ignore
-          endpointKey: rule.field,
+          endpointKey: ruleField,
         },
         defaultOptions: {
           fetchPolicy: 'network-only',
@@ -64,13 +195,16 @@ const RpcSetting: FC<IProps> = (props) => {
         return Promise.reject(new Error(res?.data?.validateRpcEndpoint.reason));
       }
       // verification RPC endpoint
-      if (value) {
-        return Promise.resolve();
-      }
+      return Promise.resolve();
+    };
 
-      return Promise.reject(new Error('xxxx'));
-    }, 1000);
-  }, [validate, mineId]);
+    return keys.data?.getRpcEndpointKeys.reduce((acc, key) => {
+      return {
+        ...acc,
+        [key]: debounce(validateFunc, 1000),
+      };
+    }, {}) as Record<string, (rule: Rule, value: string) => Promise<void> | void>;
+  }, [validate, mineId, rules, keys.data?.getRpcEndpointKeys]);
 
   if (!projectQuery.data) return <Spinner />;
 
@@ -125,7 +259,7 @@ const RpcSetting: FC<IProps> = (props) => {
             },
             ...projectQuery.data.project.projectConfig.serviceEndpoints.map((val) => {
               return {
-                [`${val.key}Endpoint`]: val.value,
+                [`${val.key}`]: val.value,
               };
             })
           )}
@@ -135,12 +269,12 @@ const RpcSetting: FC<IProps> = (props) => {
               <Form.Item
                 key={key}
                 label={`${key} Endpoint`}
-                name={`${key}Endpoint`}
+                name={`${key}`}
                 hasFeedback
                 rules={[
                   () => {
                     return {
-                      validator: debouncedValidator,
+                      validator: debouncedValidator[key],
                     };
                   },
                 ]}
@@ -178,32 +312,42 @@ const RpcSetting: FC<IProps> = (props) => {
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
           onClick={async () => {
             await form.validateFields();
-            const serviceEndpoints = keys.data?.getRpcEndpointKeys.map((key) => {
-              return {
-                key,
-                value: form.getFieldValue(`${key}Endpoint`),
-              };
-            });
-            await startProjectRequest({
-              variables: {
-                rateLimit: form.getFieldValue('rateLimit'),
-                poiEnabled: false,
-                queryVersion: '',
-                nodeVersion: '',
-                networkDictionary: '',
-                networkEndpoints: '',
-                batchSize: 1,
-                workers: 1,
-                timeout: 1,
-                cache: 1,
-                cpu: 1,
-                memory: 1,
-                id: mineId,
-                projectType: projectQuery.data?.project.projectType,
-                serviceEndpoints,
-              },
-            });
-            onSubmit?.();
+            const serviceEndpoints = keys.data?.getRpcEndpointKeys
+              .map((key) => {
+                return {
+                  key,
+                  value: form.getFieldValue(`${key}`)?.trim(),
+                };
+              })
+              .filter((i) => i.value);
+
+            try {
+              await startProjectRequest({
+                variables: {
+                  rateLimit: form.getFieldValue('rateLimit'),
+                  poiEnabled: false,
+                  queryVersion: '',
+                  nodeVersion: '',
+                  networkDictionary: '',
+                  networkEndpoints: '',
+                  batchSize: 1,
+                  workers: 1,
+                  timeout: 1,
+                  cache: 1,
+                  cpu: 1,
+                  memory: 1,
+                  id: mineId,
+                  projectType: projectQuery.data?.project.projectType,
+                  serviceEndpoints,
+                },
+              });
+              onSubmit?.();
+            } catch (e) {
+              parseError(e, {
+                alert: true,
+                rawMsg: true,
+              });
+            }
           }}
         >
           Update

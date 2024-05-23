@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNetwork } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 
-import { useAccount } from 'containers/account';
 import { useContractSDK } from 'containers/contractSdk';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 
 export const useTokenSymbol = () => {
   const { chain } = useNetwork();
@@ -31,7 +31,7 @@ export type IndexerEra = {
 };
 
 export const useIndexerEra = () => {
-  const { account } = useAccount();
+  const { indexer: account } = useCoordinatorIndexer();
   const sdk = useContractSDK();
 
   const [indexerEra, setIndexerEra] = useState<IndexerEra>();

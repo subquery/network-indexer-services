@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import { useMutation } from '@apollo/client';
 import { indexingProgress } from '@subql/network-clients';
 import { renderAsync } from '@subql/react-hooks';
@@ -16,12 +16,11 @@ import { PopupView } from 'components/popupView';
 import { useNotification } from 'containers/notificationContext';
 import {
   getQueryMetadata,
+  useDeploymentStatus,
   useNodeVersions,
   useProjectDetails,
   useQueryVersions,
-  useServiceStatus,
 } from 'hooks/projectHook';
-import { useRouter } from 'hooks/routerHook';
 import { useIndexingAction } from 'hooks/transactionHook';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
@@ -52,7 +51,6 @@ import { Container, ContentContainer } from './styles';
 import {
   dockerContainerEnum,
   ProjectAction,
-  ProjectDetails,
   ProjectStatus,
   ProjectType,
   ServiceStatus,
@@ -61,20 +59,16 @@ import {
 
 const ProjectDetailsPage = () => {
   const { id } = useParams() as { id: string };
-  const {
-    state: { data: projectDetails } = { data: undefined },
-  }: { state: { data: ProjectDetails | undefined } } = useLocation();
-  const status = useServiceStatus(id);
+  const { status, getDeploymentStatus } = useDeploymentStatus(id);
   const projectQuery = useProjectDetails(id);
   const history = useHistory();
-  // a weird but awesome way to solve the hooks cannot be used in judge.
-  useRouter(!projectDetails);
 
   const indexingAction = useIndexingAction(id);
   const { dispatchNotification } = useNotification();
   const [startProjectRequest, { loading: startProjectLoading }] = useMutation(START_PROJECT);
   const [stopProjectRequest, { loading: stopProjectLoading }] = useMutation(STOP_PROJECT);
   const [removeProjectRequest, { loading: removeProjectLoading }] = useMutation(REMOVE_PROJECT);
+  const [announceLoading, setAnnounceLoading] = useState(false);
   const queryVersions = useQueryVersions(id);
   const nodeVersions = useNodeVersions(id);
 
@@ -110,6 +104,7 @@ const ProjectDetailsPage = () => {
     if (error) {
       parseError(error, {
         alert: true,
+        rawMsg: true,
       });
       return;
     }
@@ -171,9 +166,13 @@ const ProjectDetailsPage = () => {
   );
 
   const loading = useMemo(
-    () => startProjectLoading || stopProjectLoading || removeProjectLoading,
-    [startProjectLoading, stopProjectLoading, removeProjectLoading]
+    () => startProjectLoading || stopProjectLoading || removeProjectLoading || announceLoading,
+    [startProjectLoading, stopProjectLoading, removeProjectLoading, announceLoading]
   );
+
+  const projectDetails = useMemo(() => {
+    return projectQuery.data?.project;
+  }, [projectQuery]);
 
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
@@ -246,12 +245,27 @@ const ProjectDetailsPage = () => {
 
     const stopProjectSteps = createStopProjectSteps(stopProject);
     const removeProjectSteps = createRemoveProjectSteps(removeProject);
-    const announceReadySteps = createReadyIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceReady, onPopoverClose)
-    );
-    const announceNotIndexingSteps = createNotIndexingSteps(() =>
-      indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose)
-    );
+    const announceReadySteps = createReadyIndexingSteps(async () => {
+      try {
+        setAnnounceLoading(true);
+        await indexingAction(ProjectAction.AnnounceReady, onPopoverClose, () => {
+          getDeploymentStatus();
+        });
+      } finally {
+        setAnnounceLoading(false);
+      }
+    });
+    const announceNotIndexingSteps = createNotIndexingSteps(async () => {
+      try {
+        setAnnounceLoading(true);
+
+        await indexingAction(ProjectAction.AnnounceTerminating, onPopoverClose, () => {
+          getDeploymentStatus();
+        });
+      } finally {
+        setAnnounceLoading(false);
+      }
+    });
 
     return {
       ...startIndexingSteps,
@@ -270,6 +284,7 @@ const ProjectDetailsPage = () => {
     removeProject,
     indexingAction,
     onPopoverClose,
+    getDeploymentStatus,
   ]);
 
   const [modalTitle, modalSteps] = useMemo(() => {

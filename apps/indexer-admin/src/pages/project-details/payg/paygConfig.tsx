@@ -36,6 +36,7 @@ export function PAYGConfig({ priceData, period, onEdit }: Props) {
           period: `${period} days`,
         },
       ]}
+      rowKey={(record) => record.period}
     />
   );
 }

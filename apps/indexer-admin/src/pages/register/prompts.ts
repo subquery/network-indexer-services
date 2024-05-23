@@ -13,7 +13,7 @@ const prompts = {
   },
   [RegisterStep.authorisation]: {
     title: 'Request Approval for Authorisation',
-    desc: `The Indexer Admin app needs you to approve the authorisation request to deposit the ${TOKEN_SYMBOL} token into the SubQuery Staking contract. This is a one-time operation for the specific account. Please press the approve button and then confirm and send the transaction on MetaMask.`,
+    desc: `The Indexer Admin app needs you to approve the authorisation request to deposit the ${TOKEN_SYMBOL} token into the SubQuery Staking contract. This is a one-time operation for the specific account. Please press the approve button and then confirm and send the transaction on Wallet.`,
     buttonTitle: 'Approve',
   },
   [RegisterStep.register]: {

@@ -4,6 +4,7 @@
 import React from 'react';
 import { connectorsForWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import {
+  coinbaseWallet,
   metaMaskWallet,
   rainbowWallet,
   safeWallet,
@@ -40,6 +41,7 @@ const connectors = connectorsForWallets([
     groupName: 'Recommended',
     wallets: [
       safeWallet({ chains }),
+      coinbaseWallet({ appName: 'SQN indexer admin', chains }),
       metaMaskWallet({ projectId: 'c7ea561f79adc119587d163a68860570', chains }),
       walletConnectWallet({ projectId: 'c7ea561f79adc119587d163a68860570', chains }),
       talismanWalletConnector,

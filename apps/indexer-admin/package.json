@@ -19,8 +19,8 @@
     "@mui/material": "^5.5.1",
     "@patternfly/react-log-viewer": "^4.43.19",
     "@rainbow-me/rainbowkit": "^1.2.0",
-    "@subql/components": "1.0.3-24",
-    "@subql/contract-sdk": "1.0.0",
+    "@subql/components": "2.0.1-1",
+    "@subql/contract-sdk": "1.2.0",
     "@subql/network-clients": "1.1.0",
     "@subql/network-config": "1.1.1",
     "@subql/network-query": "1.1.0",
@@ -127,6 +127,7 @@
     "/build"
   ],
   "resolutions": {
-    "listhen": "1.5.5"
+    "listhen": "1.5.5",
+    "@walletconnect/ethereum-provider": "2.11.1"
   }
 }

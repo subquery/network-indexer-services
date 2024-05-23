@@ -7,17 +7,21 @@ import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides, Wallet, providers } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
+import { getEthProvider } from 'src/utils/ethProvider';
 import { mutexPromise } from 'src/utils/promise';
+import { redisDel, redisGetObj, redisSetObj } from 'src/utils/redis';
+import { argv } from 'src/yargs';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 import { Controller } from './account.model';
 import { AccountService } from './account.service';
-import { IndexerDeploymentStatus, TxFun } from './types';
+import { IndexerDeploymentStatus, TxFun, TxOptions, TxType } from './types';
 
 const MAX_RETRY = 3;
 const logger = getLogger('contract');
+const bypassTime = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class ContractService {
@@ -26,12 +30,16 @@ export class ContractService {
   private provider: providers.StaticJsonRpcProvider;
   private chainID: ChainID;
   private existentialBalance: BigNumber;
+  private gasFeeLimit: BigNumber;
+  private gasFeeLimitEnabled: boolean;
 
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
     this.existentialBalance = parseEther('0.001');
     this.provider = initProvider(config.networkEndpoint, this.chainID);
     this.sdk = initContractSDK(this.provider, this.chainID);
+    this.gasFeeLimit = parseEther(argv['gas-fee-limit']).mul(11).div(10);
+    this.gasFeeLimitEnabled = this.gasFeeLimit.gt(0);
   }
 
   getSdk() {
@@ -204,30 +212,133 @@ export class ContractService {
     }
   }
 
-  @mutexPromise()
-  async sendTransaction(actionName: string, txFun: TxFun, desc = '') {
-    await this._sendTransaction(actionName, txFun, desc);
+  async sendTransaction(txOptions: TxOptions) {
+    if (this.gasFeeLimitEnabled) {
+      switch (txOptions.type) {
+        case TxType.go: {
+          break;
+        }
+        case TxType.check: {
+          if (!txOptions.gasFun) {
+            throw new Error('Gas function is required for checking tx gas limit');
+          }
+          const overrides = await this.getOverrides();
+          const gasFeeEstimate = (await txOptions.gasFun(overrides)).mul(
+            overrides.maxFeePerGas as BigNumber
+          );
+          if (this.gasFeeLimit.gt(gasFeeEstimate)) {
+            await this.completeTask(txOptions.action);
+            break;
+          }
+          const start = await this.getTaskStartTime(txOptions.action);
+          if (!start) {
+            await this.registerTask(txOptions.action);
+            throw new Error('Gas fee limit exceeded');
+          }
+          if (Date.now() - start < bypassTime) {
+            throw new Error('Gas fee limit exceeded');
+          }
+          logger.warn(`Force complete tx task: ${txOptions.action}`);
+          await this.completeTask(txOptions.action);
+          break;
+        }
+        case TxType.postponed: {
+          if (!txOptions.gasFun) {
+            throw new Error('Gas function is required for postponed tx gas limit');
+          }
+          const start = await this.getTaskStartTime(txOptions.action);
+          if (!start) {
+            return;
+          }
+          const overrides = await this.getOverrides();
+          const gasFeeEstimate = (await txOptions.gasFun(overrides)).mul(
+            overrides.maxFeePerGas as BigNumber
+          );
+          if (this.gasFeeLimit.gt(gasFeeEstimate)) {
+            await this.completeTask(txOptions.action);
+            break;
+          }
+          if (Date.now() - start < bypassTime) {
+            throw new Error('Gas fee limit exceeded');
+          }
+          logger.warn(`Force complete tx task: ${txOptions.action}`);
+          await this.completeTask(txOptions.action);
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
+    await this.mutexTransaction(txOptions);
   }
 
-  private async _sendTransaction(actionName: string, txFun: TxFun, desc = '', retries = 0) {
+  @mutexPromise()
+  private async mutexTransaction(txOptions: TxOptions) {
+    await this._sendTransaction(txOptions);
+  }
+
+  private async _sendTransaction(txOptions: TxOptions, retries = 0) {
+    const { action, txFun, wait, desc } = txOptions;
     try {
-      logger.info(`${colorText(actionName)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
+      logger.info(`${colorText(action)}: ${colorText('PROCESSING', TextColor.YELLOW)} ${desc}`);
 
-      const overrides = await this.getOverrides();
-      const tx = await txFun(overrides);
-      await tx.wait(10);
+      const tx = await txFun(await this.getOverrides());
+      await tx.wait(wait ?? 10);
 
-      logger.info(`${colorText(actionName)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
+      logger.info(`${colorText(action)}: ${colorText('SUCCEED', TextColor.GREEN)}`);
 
       return;
     } catch (e) {
       if (retries < MAX_RETRY) {
-        logger.warn(`${colorText(actionName)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
-        await this._sendTransaction(actionName, txFun, desc, retries + 1);
+        logger.warn(`${colorText(action)}: ${colorText('RETRY', TextColor.YELLOW)} ${desc}`);
+        await this._sendTransaction(txOptions, retries + 1);
       } else {
-        logger.warn(e, `${colorText(actionName)}: ${colorText('FAILED', TextColor.RED)}`);
+        logger.warn(e, `${colorText(action)}: ${colorText('FAILED', TextColor.RED)}`);
         throw e;
       }
     }
+  }
+
+  private async registerTask(task: string) {
+    await redisSetObj(`bypass:${task}`, { start: Date.now() }, bypassTime / 1000);
+  }
+
+  private async getTaskStartTime(task: string) {
+    const cache = await redisGetObj<{ start: number }>(`bypass:${task}`);
+    return cache?.start;
+  }
+
+  private async completeTask(task: string) {
+    await redisDel(`bypass:${task}`);
+  }
+
+  private async checkGasLimit() {
+    const gasFeeLimit = parseEther(argv['gas-fee-limit']);
+    if (gasFeeLimit.lte(0)) {
+      return true;
+    }
+
+    const cacheKey = `bypass:gasLimit`;
+    let cache = await redisGetObj<{ result: boolean }>(cacheKey);
+    if (!cache) {
+      try {
+        const ethProvider = getEthProvider();
+        const ethGasPrice = await ethProvider.getGasPrice();
+        const ethGasLimit = BigNumber.from(2100);
+        const gasPrice = await this.provider.getGasPrice();
+        const gasLimit = BigNumber.from(21000);
+        cache = {
+          result: ethGasPrice.mul(ethGasLimit).add(gasPrice.mul(gasLimit)).lt(gasFeeLimit),
+        };
+      } catch (e) {
+        logger.warn(e, 'Failed to check gas limit');
+        cache = {
+          result: false,
+        };
+      }
+      await redisSetObj(cacheKey, cache, 60);
+    }
+    return cache.result;
   }
 }

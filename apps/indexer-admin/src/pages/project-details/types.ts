@@ -16,7 +16,7 @@ export type ChainType =
   | 'stellar';
 
 export enum DockerRegistry {
-  query = 'onfinality/subql-query',
+  query = 'subquerynetwork/subql-query',
 }
 
 export enum ServiceStatus {
