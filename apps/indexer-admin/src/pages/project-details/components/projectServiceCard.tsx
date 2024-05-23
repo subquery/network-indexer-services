@@ -3,16 +3,21 @@
 
 import { FC, useMemo } from 'react';
 import { Tag, Typography } from '@subql/components';
+import { useAsyncMemo } from '@subql/react-hooks';
 import { Button } from 'antd';
 import styled from 'styled-components';
 
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
-import { useGetIndexerMetadata } from 'hooks/projectHook';
+import {
+  dockerRegistryFromChain,
+  useFetchManifest,
+  useGetIndexerMetadata,
+} from 'hooks/projectHook';
 import { statusCode } from 'utils/project';
 
 import { ButtonItem } from '../config';
 import { CardContainer } from '../styles';
-import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
+import { ChainType, ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
 
 const ContentContainer = styled.div`
   display: flex;
@@ -81,6 +86,8 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
   const { indexer: account } = useCoordinatorIndexer();
   const indexMetadata = useGetIndexerMetadata(account || '');
 
+  const fetchManifest = useFetchManifest();
+
   const connectionButtons = useMemo(() => {
     const btns = [];
 
@@ -140,10 +147,22 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
     return btns;
   }, [projectStatus, update, stop]);
 
+  const versionType = useAsyncMemo(async () => {
+    try {
+      const manifest = await fetchManifest(id);
+      const { dataSources } = manifest;
+      const runtime = dataSources?.[0].kind;
+      const chainType = runtime?.split('/')?.[0] as ChainType;
+      const registry = dockerRegistryFromChain(chainType);
+      return registry;
+    } catch {
+      return 'indexer';
+    }
+  }, [id]);
+
   if (!data) return null;
 
-  const imageVersion = (type: string, version: string) =>
-    `subquerynetwork/subql-${type}:${version}`;
+  const imageVersion = (type: string, version: string) => `${type}:${version}`;
 
   return (
     <CardContainer>
@@ -158,7 +177,7 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
         <ContentContainer>
           <ServiceView
             title="Indexer Service"
-            subTitle={`${imageVersion('indexer', data.indexerNodeVersion)}`}
+            subTitle={`${imageVersion(versionType.data || 'indexer', data.indexerNodeVersion)}`}
             status={data.indexerStatus}
           />
           <ServiceView

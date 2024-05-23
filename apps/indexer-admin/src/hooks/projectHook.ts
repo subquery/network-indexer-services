@@ -119,7 +119,7 @@ export const useGetIndexerMetadata = (indexer: string) => {
   return metadata;
 };
 
-function dockerRegistryFromChain(chainType: ChainType): string {
+export function dockerRegistryFromChain(chainType: ChainType): string {
   switch (chainType) {
     case 'cosmos':
     case 'algorand':
@@ -140,6 +140,15 @@ const defaultRange: Record<ChainType, string> = {
   near: '>=3.0.0',
   ethereum: '>=3.1.0',
   stellar: '>=3.0.1',
+};
+
+export const useFetchManifest = () => {
+  const fetchManifest = useCallback(async (cid: string) => {
+    const manifest = await getManifest(cid);
+    return manifest;
+  }, []);
+
+  return fetchManifest;
 };
 
 export const useNodeVersions = (cid: string): string[] => {
