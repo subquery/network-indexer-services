@@ -435,7 +435,7 @@ async fn payg_query(
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));
 
-    println!("DEBUG: TOTAL {}ms", debut_time.elapsed().as_millis());
+    println!("DEBUG: TOTAL {}ms", debug_time.elapsed().as_millis());
     Ok(build_response(body, headers))
 }
 
