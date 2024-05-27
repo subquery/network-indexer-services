@@ -510,7 +510,10 @@ pub async fn before_query_multiple_state(
     unit_times: u64,
 ) -> Result<(MultipleQueryState, String, StateCache, bool)> {
     debug!("Start handle query channel");
+
+    let debug_time1 = std::time::Instant::now();
     let signer = state.recover()?;
+    println!("DEBUG: BEFORE verify {}ms", debug_time1.elapsed().as_millis());
 
     // check channel state
     let channel_id = state.channel_id;
@@ -539,9 +542,11 @@ pub async fn before_query_multiple_state(
     state_cache.spent = state_cache.spent + state_cache.price * unit_times;
 
     // sign the state
+    let debug_time2 = std::time::Instant::now();
     let account = ACCOUNT.read().await;
     state.sign(&account.controller, mpqsa).await?;
     drop(account);
+    println!("DEBUG: BEFORE sign  {}ms", debug_time2.elapsed().as_millis());
 
     Ok((state, keyname, state_cache, mpqsa.is_inactive()))
 }
@@ -606,18 +611,24 @@ pub async fn query_multiple_state(
     network_type: MetricsNetwork,
     no_sig: bool,
 ) -> Result<(Vec<u8>, String, String)> {
+    let debug_time1 = std::time::Instant::now();
     let project = get_project(project_id).await?;
 
     // compute unit count times
     let (unit_times, _unit_overflow) = project.compute_query_method(&query)?;
+    println!("DEBUG: COMPUTE {}ms", debug_time1.elapsed().as_millis());
 
+    let debug_time2 = std::time::Instant::now();
     let (state, keyname, state_cache, inactive) =
         before_query_multiple_state(state, unit_times).await?;
+    println!("DEBUG: BEFORE  {}ms", debug_time2.elapsed().as_millis());
+
     if inactive {
         return Ok((vec![], "".to_owned(), state.to_bs64()));
     }
 
     // query the data.
+    let debug_time3 = std::time::Instant::now();
     let (data, signature) = project
         .query(
             query,
@@ -628,8 +639,11 @@ pub async fn query_multiple_state(
             no_sig,
         )
         .await?;
+    println!("DEBUG: QUERY   {}ms", debug_time3.elapsed().as_millis());
 
+    let debug_time4 = std::time::Instant::now();
     post_query_multiple_state(keyname, state_cache).await;
+    println!("DEBUG: POST    {}ms", debug_time4.elapsed().as_millis());
 
     debug!("Handle query channel success");
     Ok((data, signature, state.to_bs64()))

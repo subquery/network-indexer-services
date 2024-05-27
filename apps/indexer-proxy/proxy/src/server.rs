@@ -369,6 +369,7 @@ async fn payg_query(
     ep_name: Query<EpName>,
     body: String,
 ) -> Result<Response<String>, Error> {
+    let debug_time = std::time::Instant::now();
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
@@ -382,6 +383,7 @@ async fn payg_query(
         .remove("X-Channel-Block")
         .unwrap_or(HeaderValue::from_static("single"));
 
+    let real_time = std::time::Instant::now();
     let (data, signature, state_data) = match block.to_str() {
         Ok("multiple") => {
             let state = MultipleQueryState::from_bs64(auth)?;
@@ -408,6 +410,7 @@ async fn payg_query(
             .await?
         }
     };
+    println!("DEBUG: REAL {}ms", real_time.elapsed().as_millis());
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => (
@@ -432,6 +435,7 @@ async fn payg_query(
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));
 
+    println!("DEBUG: TOTAL {}ms", debut_time.elapsed().as_millis());
     Ok(build_response(body, headers))
 }
 

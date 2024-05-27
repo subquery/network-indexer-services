@@ -327,6 +327,7 @@ impl Project {
         is_limit: bool,
         no_sig: bool,
     ) -> Result<(Vec<u8>, String)> {
+        let debug_time1 = std::time::Instant::now();
         if let Some(limit) = self.rate_limit {
             // project rate limit
             let mut conn = redis();
@@ -352,6 +353,7 @@ impl Project {
                 .map_err(|err| error!("Redis 1 {}", err));
         }
 
+        println!("DEBUG: QUERY limit {}ms", debug_time1.elapsed().as_millis());
         match self.ptype {
             ProjectType::Subquery => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
@@ -449,18 +451,25 @@ impl Project {
             }
         }
 
+        let debug_time1 = std::time::Instant::now();
         let res = post_request_raw(endpoint, query).await;
+        println!("DEBUG: QUERY real  {}ms", debug_time1.elapsed().as_millis());
+
         let time = now.elapsed().as_millis() as u64;
 
+        let debug_time2 = std::time::Instant::now();
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+        println!("DEBUG: QUERY metri {}ms", debug_time2.elapsed().as_millis());
 
         match res {
             Ok(data) => {
+                let debug_time3 = std::time::Instant::now();
                 let signature = if no_sig {
                     String::default()
                 } else {
                     Self::sign_response(&data).await
                 };
+                println!("DEBUG: QUERY sign  {}ms", debug_time3.elapsed().as_millis());
                 Ok((data, signature))
             }
             Err(err) => Err(err),
