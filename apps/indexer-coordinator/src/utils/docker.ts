@@ -4,6 +4,7 @@
 import * as fs from 'fs';
 import { join } from 'path';
 import * as handlebars from 'handlebars';
+import { z } from 'zod';
 
 import { TemplateType } from '../project/types';
 import { argv } from '../yargs';
@@ -86,7 +87,9 @@ export async function generateDockerComposeFile(data: TemplateType) {
     const config = await nodeConfigs(deploymentID);
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file);
-    fs.writeFileSync(getComposeFilePath(deploymentID), template({ ...data, ...config }));
+    const context = { ...data, ...config };
+    getTemplateContextValidator().parse(context);
+    fs.writeFileSync(getComposeFilePath(deploymentID), template(context));
     getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
     getLogger('docker').error(
@@ -104,4 +107,16 @@ export function canContainersRestart(id: string, containerStates: any[]): boolea
   const isContainerAborted = exitCodes.includes(137) || exitCodes.includes(143);
 
   return containersExist && !isContainerAborted;
+}
+
+function getTemplateContextValidator() {
+  const versionSchema = z.string().refine((v) => v.match(/^v?\d+\.\d+\.\d+(-\d+)?$/), {
+    message: 'Invalid version string',
+  });
+  return z.object({
+    networkEndpoints: z.array(z.string().url()),
+    networkDictionary: z.string().url(),
+    nodeVersion: versionSchema,
+    queryVersion: versionSchema,
+  });
 }
