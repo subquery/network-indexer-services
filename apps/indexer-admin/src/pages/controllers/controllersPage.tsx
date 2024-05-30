@@ -4,11 +4,13 @@
 import { useEffect, useState } from 'react';
 import { useLazyQuery, useMutation } from '@apollo/client';
 import { cloneDeep, isEmpty, isUndefined } from 'lodash';
+import { useAccount } from 'wagmi';
 
 import IntroductionView from 'components/introductionView';
 import { LoadingSpinner } from 'components/loading';
 import { PopupView } from 'components/popupView';
 import { Button, Text } from 'components/primary';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useNotification } from 'containers/notificationContext';
 import { useController } from 'hooks/indexerHook';
 import { useAccountAction } from 'hooks/transactionHook';
@@ -43,6 +45,8 @@ const controllersPage = () => {
 
   const { dispatchNotification, removeNotification } = useNotification();
   const { controller: currentController, getController } = useController();
+  const { indexer: registerAccount } = useCoordinatorIndexer();
+  const { address: loginAccount } = useAccount();
   const { refetch } = useHasController();
   const accountAction = useAccountAction();
 
@@ -172,9 +176,48 @@ const controllersPage = () => {
                 key={item.id}
                 controller={currentController}
                 name={`Account ${index + 1}`}
-                onConfigController={onButtonPress(ControllerAction.configController)}
-                onRemoveController={onButtonPress(ControllerAction.removeAccount)}
-                onWithdraw={onButtonPress(ControllerAction.withdraw)}
+                onConfigController={(val) => {
+                  if (registerAccount !== loginAccount) {
+                    dispatchNotification({
+                      message: 'Incorrect Wallet Connection',
+                      type: 'danger',
+                      title: 'Incorrect Wallet Connection',
+                      dismiss: {
+                        duration: 3000,
+                      },
+                    });
+                    return;
+                  }
+                  onButtonPress(ControllerAction.configController)(val);
+                }}
+                onRemoveController={(val) => {
+                  if (registerAccount !== loginAccount) {
+                    dispatchNotification({
+                      message: 'Incorrect Wallet Connection',
+                      type: 'danger',
+                      title: 'Incorrect Wallet Connection',
+                      dismiss: {
+                        duration: 3000,
+                      },
+                    });
+                    return;
+                  }
+                  onButtonPress(ControllerAction.removeAccount)(val);
+                }}
+                onWithdraw={(val) => {
+                  if (registerAccount !== loginAccount) {
+                    dispatchNotification({
+                      message: 'Incorrect Wallet Connection',
+                      type: 'danger',
+                      title: 'Incorrect Wallet Connection',
+                      dismiss: {
+                        duration: 3000,
+                      },
+                    });
+                    return;
+                  }
+                  onButtonPress(ControllerAction.withdraw)(val);
+                }}
                 {...item}
               />
             ))}
