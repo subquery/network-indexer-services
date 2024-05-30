@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router';
 import { useMutation } from '@apollo/client';
 import { isUndefined } from 'lodash';
-import { useBalance } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 
 import AccountCard from 'components/accountCard';
 import { LoadingSpinner } from 'components/loading';
@@ -37,7 +37,7 @@ const Account = () => {
   const [visible, setVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [actionType, setActionType] = useState<AccountAction>();
-
+  const { address: loginAccount } = useAccount();
   const { loading: isIndexerLoading, data: isIndexer } = useIsIndexer();
   const { indexer: account, setIndexer } = useCoordinatorIndexer();
   const { metadata, fetchMetadata, loading } = useIndexerMetadata(account || '');
@@ -112,6 +112,17 @@ const Account = () => {
   const updateMetadataStep = useMemo(
     () =>
       createUpdateMetadataSteps(async (values, formHelper) => {
+        if (account !== loginAccount) {
+          dispatchNotification({
+            message: 'Incorrect Wallet Connection',
+            type: 'danger',
+            title: 'Incorrect Wallet Connection',
+            dismiss: {
+              duration: 3000,
+            },
+          });
+          return;
+        }
         formHelper.setStatus({ loading: true });
         try {
           const name = values[MetadataFormKey.name];
@@ -122,7 +133,7 @@ const Account = () => {
           formHelper.setStatus({ loading: false });
         }
       }, metadata),
-    [accountAction, fetchMetadata, metadata]
+    [accountAction, fetchMetadata, metadata, loginAccount, account, dispatchNotification]
   );
 
   const unregisterCompleted = async () => {
@@ -131,9 +142,20 @@ const Account = () => {
     history.replace('/register');
   };
 
-  const unregisterStep = createUnregisterSteps(() =>
-    accountAction(AccountAction.unregister, '', onModalClose, unregisterCompleted)
-  );
+  const unregisterStep = createUnregisterSteps(() => {
+    if (account !== loginAccount) {
+      dispatchNotification({
+        message: 'Incorrect Wallet Connection',
+        type: 'danger',
+        title: 'Incorrect Wallet Connection',
+        dismiss: {
+          duration: 3000,
+        },
+      });
+      return;
+    }
+    accountAction(AccountAction.unregister, '', onModalClose, unregisterCompleted);
+  });
 
   const steps = useMemo(
     () => ({ ...unregisterStep, ...updateMetadataStep }),
