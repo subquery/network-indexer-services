@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import { AccountButtonItem } from 'pages/account/types';
 
 import Avatar from './avatar';
+import Copy from './Copy';
 import { Button, ButtonContainer, Text } from './primary';
 
 type Props = {
@@ -50,7 +51,9 @@ const AccountCard: FC<Props> = ({ title, desc, buttons, name, account }) => {
             <Avatar address={account ?? ''} size={100} />
             <DescContainer ml={20}>
               <Text className="overflowEllipsis2">{name}</Text>
-              <Text mt={10}>{account}</Text>
+              <Text mt={10}>
+                <Copy value={account}>{account}</Copy>
+              </Text>
               <Text mt={10}>{desc}</Text>
             </DescContainer>
           </ContentContainer>

@@ -8,6 +8,7 @@ import { useBalance } from 'wagmi';
 
 import { asyncRender } from 'components/asyncRender';
 import Avatar from 'components/avatar';
+import Copy from 'components/Copy';
 import { Button, Text } from 'components/primary';
 import { openAccountExporer } from 'utils/account';
 import { formatValueToFixed } from 'utils/units';
@@ -60,8 +61,8 @@ const ControllerItem: FC<Props> = ({
           <Text size={18} fw="600">
             {name}
           </Text>
-          <Text size={15} color="gray" mt={5}>
-            {address}
+          <Text size={15} color="gray" mt={5} style={{ overflowWrap: 'normal' }}>
+            <Copy value={address}>{address}</Copy>
           </Text>
         </AccountContainer>
         <Balance>
