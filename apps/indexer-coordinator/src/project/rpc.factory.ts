@@ -357,12 +357,21 @@ export class RpcFamilySubstrate extends RpcFamily {
     this.actions.push(async () => {
       const result = await getRpcRequestFunction(this.endpoint)(
         this.endpoint,
+        'chain_getBlockHash',
+        [0]
+      );
+      if (result.data.error) {
+        throw new Error(`Request chain_getBlockHash failed: ${result.data.error.message}`);
+      }
+      const genesisHashFromRpc = result.data.result;
+      const result2 = await getRpcRequestFunction(this.endpoint)(
+        this.endpoint,
         'state_getRuntimeVersion',
-        ['0x2d7cfacc14a1603ea1dbb207ae07516224d25fff5310058d1c371f2acac5143e']
+        [genesisHashFromRpc]
       );
       let nodeTypeFromRpc: string;
-      if (result.data.error) {
-        logger.debug(`Request state_getRuntimeVersion failed: ${result.data.error.message}`);
+      if (result2.data.error) {
+        logger.debug(`Request state_getRuntimeVersion failed: ${result2.data.error.message}`);
         nodeTypeFromRpc = 'full';
       } else {
         nodeTypeFromRpc = 'archive';
