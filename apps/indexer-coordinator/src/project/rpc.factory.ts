@@ -218,17 +218,10 @@ export class RpcFamilyEvm extends RpcFamily {
     this.actions.push(async () => {
       const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'eth_getBalance', [
         '0x0000000000000000000000000000000000000000',
-        '0x1',
+        _.toLower(nodeType) === 'archive' ? '0x1' : 'latest',
       ]);
-      let nodeTypeFromRpc: string;
       if (result.data.error) {
-        logger.debug(`Request eth_getBalance failed: ${result.data.error.message}`);
-        nodeTypeFromRpc = 'full';
-      } else {
-        nodeTypeFromRpc = 'archive';
-      }
-      if (nodeTypeFromRpc === 'full' && _.toLower(nodeType) === 'archive') {
-        throw new Error(`NodeType mismatch: ${nodeTypeFromRpc} != ${nodeType}`);
+        throw new Error(`NodeType mismatch: ${nodeType} required`);
       }
     });
     return this;
