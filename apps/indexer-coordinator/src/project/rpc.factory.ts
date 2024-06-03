@@ -348,6 +348,9 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
+      if (_.toLower(nodeType) !== 'archive') {
+        return;
+      }
       const result = await getRpcRequestFunction(this.endpoint)(
         this.endpoint,
         'chain_getBlockHash',
@@ -362,15 +365,9 @@ export class RpcFamilySubstrate extends RpcFamily {
         'state_getRuntimeVersion',
         [genesisHashFromRpc]
       );
-      let nodeTypeFromRpc: string;
       if (result2.data.error) {
         logger.debug(`Request state_getRuntimeVersion failed: ${result2.data.error.message}`);
-        nodeTypeFromRpc = 'full';
-      } else {
-        nodeTypeFromRpc = 'archive';
-      }
-      if (nodeTypeFromRpc === 'full' && _.toLower(nodeType) === 'archive') {
-        throw new Error(`NodeType mismatch: ${nodeTypeFromRpc} != ${nodeType}`);
+        throw new Error(`NodeType mismatch: ${nodeType} required`);
       }
     });
     return this;
