@@ -11,6 +11,7 @@ export enum MmrStoreType {
 export enum ProjectType {
   SUBQUERY,
   RPC,
+  SUBGRAPH,
 }
 
 export enum SubqueryEndpointType {
