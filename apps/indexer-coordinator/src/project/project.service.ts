@@ -141,11 +141,14 @@ export class ProjectService {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return this.projectRepo.find({
-      order: {
-        projectType: 'DESC',
-        id: 'ASC',
-      },
+    return (await this.projectRepo.find()).sort((a, b) => {
+      if (!a?.details?.name) {
+        return 1;
+      }
+      if (!b?.details?.name) {
+        return -1;
+      }
+      return a.details.name.localeCompare(b.details.name);
     });
   }
 
