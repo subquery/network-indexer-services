@@ -14,7 +14,7 @@ import { PaygEntity, ProjectEntity } from './project.model';
 import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
-import { ProjectSubgraphService } from './project.subgraph';
+import { ProjectSubgraphService } from './project.subgraph.service';
 
 @Module({
   imports: [

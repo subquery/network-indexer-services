@@ -21,13 +21,21 @@ import {
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
-import { ProjectType, SubqueryEndpointType } from './types';
+import { ProjectSubgraphService } from './project.subgraph.service';
+import {
+  ProjectType,
+  SubgraphEndpoint,
+  SubgraphPort,
+  SubgraphPortType,
+  SubqueryEndpointType,
+} from './types';
 
 @Resolver(() => Project)
 export class ProjectResolver {
   constructor(
     private projectService: ProjectService,
     private projectRpcService: ProjectRpcService,
+    private projectSubgraphService: ProjectSubgraphService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService
@@ -56,6 +64,8 @@ export class ProjectResolver {
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
+      case ProjectType.SUBGRAPH:
+        return this.projectSubgraphService.getSubgraphMetadata(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -133,6 +143,9 @@ export class ProjectResolver {
       case ProjectType.RPC:
         manifest.rpcManifest = await this.projectService.getManifest(projectId);
         break;
+      case ProjectType.SUBGRAPH:
+        manifest.subgraphManifest = await this.projectService.getManifest(projectId);
+        break;
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -173,27 +186,23 @@ export class ProjectResolver {
     return this.projectRpcService.validateRpcEndpoint(projectId, endpointKey, endpoint);
   }
 
+  @Query(() => [String])
+  getSubgraphPortTypes(): string[] {
+    return this.projectSubgraphService.getRequiredPortsTypes();
+  }
+
+  @Query(() => [SubgraphEndpoint])
+  async getSubgraphEndpoints(
+    @Args('host') host: string,
+    @Args('ports') ports: SubgraphPort[],
+    @Args('cid') cid: string
+  ): Promise<SubgraphEndpoint[]> {
+    return this.projectSubgraphService.getSubgraphEndpoints(host, ports, cid);
+  }
+
   @Mutation(() => Project)
   async addProject(@Args('id') id: string): Promise<Project> {
     return this.projectService.addProject(id);
-  }
-
-  @Mutation(() => [Project])
-  async removeProject(
-    @Args('id') id: string,
-    @Args('projectType', { nullable: true }) projectType?: ProjectType
-  ): Promise<Project[]> {
-    if (projectType === undefined) {
-      projectType = await this.projectService.getProjectType(id);
-    }
-    switch (projectType) {
-      case ProjectType.SUBQUERY:
-        return this.projectService.removeSubqueryProject(id);
-      case ProjectType.RPC:
-        return this.projectRpcService.removeRpcProject(id);
-      default:
-        throw new Error(`Unknown project type ${projectType}`);
-    }
   }
 
   // project management
@@ -212,6 +221,8 @@ export class ProjectResolver {
         return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.RPC:
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
+      case ProjectType.SUBGRAPH:
+        return this.projectSubgraphService.startSubgraphProject(id, projectConfig, rateLimit ?? 0);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -230,6 +241,28 @@ export class ProjectResolver {
         return this.projectService.stopSubqueryProject(id);
       case ProjectType.RPC:
         return this.projectRpcService.stopRpcProject(id);
+      case ProjectType.SUBGRAPH:
+        return this.projectSubgraphService.stopSubgraphProject(id);
+      default:
+        throw new Error(`Unknown project type ${projectType}`);
+    }
+  }
+
+  @Mutation(() => [Project])
+  async removeProject(
+    @Args('id') id: string,
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
+  ): Promise<Project[]> {
+    if (projectType === undefined) {
+      projectType = await this.projectService.getProjectType(id);
+    }
+    switch (projectType) {
+      case ProjectType.SUBQUERY:
+        return this.projectService.removeSubqueryProject(id);
+      case ProjectType.RPC:
+        return this.projectRpcService.removeRpcProject(id);
+      case ProjectType.SUBGRAPH:
+        return this.projectSubgraphService.removeSubgraphProject(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }

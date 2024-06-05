@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { Field, ObjectType } from '@nestjs/graphql';
 import { Postgres } from '../configure/configure.module';
 
 export enum MmrStoreType {
@@ -17,6 +18,38 @@ export enum ProjectType {
 export enum SubqueryEndpointType {
   Node = 'nodeEndpoint',
   Query = 'queryEndpoint',
+}
+
+export enum SubgraphPortType {
+  HttpPort = 'http-port',
+  WsPort = 'ws-port',
+  AdminPort = 'admin-port',
+  IndexNodePort = 'index-node-port',
+  MetricsPort = 'metrics-port',
+}
+
+export enum SubgraphEndpointType {
+  HttpEndpoint = 'http-endpoint',
+  WsEndpoint = 'ws-endpoint',
+  AdminEndpoint = 'admin-endpoint',
+  IndexNodeEndpoint = 'index-node-endpoint',
+  MetricsEndpoint = 'metrics-endpoint',
+}
+
+@ObjectType('SubgraphPort')
+export class SubgraphPort {
+  @Field()
+  key: SubgraphPortType;
+  @Field()
+  value: number;
+}
+
+@ObjectType('SubgraphEndpoint')
+export class SubgraphEndpoint {
+  @Field()
+  key: SubgraphEndpointType;
+  @Field()
+  value: string;
 }
 
 export type TemplateType = {
