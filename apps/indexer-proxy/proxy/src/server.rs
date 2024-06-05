@@ -319,14 +319,25 @@ async fn query_limit_handler(
     })))
 }
 
+#[derive(Deserialize)]
+struct EpNameInternal {
+    ep_name: Option<String>,
+    internal: Option<bool>,
+}
+
 async fn wl_query_handler(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
-    ep_name: Query<EpName>,
+    ep_name: Query<EpNameInternal>,
     body: String,
 ) -> Result<Response<String>, Error> {
     if deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
+    };
+    let is_internal = if let Some(is) = ep_name.0.internal {
+        is
+    } else {
+        false
     };
 
     let (data, signature) = get_project(&deployment)
@@ -338,6 +349,7 @@ async fn wl_query_handler(
             MetricsNetwork::HTTP,
             false,
             false,
+            is_internal,
         )
         .await?;
 

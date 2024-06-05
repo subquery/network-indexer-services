@@ -44,7 +44,9 @@ use tokio::sync::Mutex;
 use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
-use crate::metadata::{rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata};
+use crate::metadata::{
+    rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata, thegraph_metadata,
+};
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
 
@@ -56,6 +58,7 @@ pub enum ProjectType {
     Subquery,
     RpcEvm(RpcMainfest),
     RpcSubstrate(RpcMainfest),
+    Thegraph,
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -200,6 +203,9 @@ impl RpcMainfest {
 pub struct Project {
     pub id: String,
     pub ptype: ProjectType,
+    // [0] is http(external),
+    // [1] is ws  (external),
+    // [2] is http(internal)
     pub endpoints: Vec<(String, String)>,
     pub rate_limit: Option<i64>,
     pub payg_price: U256,
@@ -217,7 +223,8 @@ impl Project {
     pub fn compute_query_method(&self, query: &str) -> Result<(u64, u64)> {
         // compute unit times
         match &self.ptype {
-            ProjectType::Subquery => Ok((1, 1)),
+            // TODO if multiple in single query
+            ProjectType::Subquery | ProjectType::Thegraph => Ok((1, 1)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 let s: SimpleJsonrpc =
@@ -236,6 +243,14 @@ impl Project {
             Some(&self.endpoints[1].1)
         } else {
             None
+        }
+    }
+
+    pub fn internal_endpoint<'a>(&'a self) -> Result<&'a str> {
+        if self.endpoints.len() > 2 {
+            Ok(&self.endpoints[2].1)
+        } else {
+            Err(Error::InvalidServiceEndpoint(1037))
         }
     }
 
@@ -263,6 +278,7 @@ impl Project {
                 merge_json(&mut data, &m.json_values());
                 data
             }
+            ProjectType::Thegraph => thegraph_metadata(&self, network).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -314,7 +330,7 @@ impl Project {
     ) -> Result<(Vec<u8>, String)> {
         let _ = self.compute_query_method(&body)?;
 
-        self.query(body, ep_name, payment, network, is_limit, no_sig)
+        self.query(body, ep_name, payment, network, is_limit, no_sig, false)
             .await
     }
 
@@ -326,43 +342,47 @@ impl Project {
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
+        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
-        if let Some(limit) = self.rate_limit {
-            // project rate limit
-            let mut conn = redis();
-            let second = Utc::now().timestamp();
-            let used_key = format!("{}-rate-{}", self.id, second);
+        if is_limit {
+            if let Some(limit) = self.rate_limit {
+                // project rate limit
+                let mut conn = redis();
+                let second = Utc::now().timestamp();
+                let used_key = format!("{}-rate-{}", self.id, second);
 
-            let used: i64 = redis::cmd("GET")
-                .arg(&used_key)
-                .query_async(&mut conn)
-                .await
-                .unwrap_or(0);
+                let used: i64 = redis::cmd("GET")
+                    .arg(&used_key)
+                    .query_async(&mut conn)
+                    .await
+                    .unwrap_or(0);
 
-            if is_limit && used + 1 > limit {
-                return Err(Error::RateLimit(1057));
+                if used + 1 > limit {
+                    return Err(Error::RateLimit(1057));
+                }
+
+                let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+                    .arg(&used_key)
+                    .arg(1)
+                    .arg(used + 1)
+                    .query_async(&mut conn)
+                    .await
+                    .map_err(|err| error!("Redis 1 {}", err));
             }
-
-            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
-                .arg(&used_key)
-                .arg(1)
-                .arg(used + 1)
-                .query_async(&mut conn)
-                .await
-                .map_err(|err| error!("Redis 1 {}", err));
         }
 
         match self.ptype {
-            ProjectType::Subquery => {
+            ProjectType::Subquery | ProjectType::Thegraph => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, payment, network, no_sig).await
+                self.subquery_raw(&query, payment, network, no_sig, is_internal)
+                    .await
             }
             ProjectType::RpcEvm(_) => {
-                self.rpcquery_raw(body, ep_name, payment, network, no_sig)
+                self.rpcquery_raw(body, ep_name, payment, network, no_sig, is_internal)
                     .await
             }
             ProjectType::RpcSubstrate(_) => {
-                self.rpcquery_raw(body, ep_name, payment, network, no_sig)
+                self.rpcquery_raw(body, ep_name, payment, network, no_sig, is_internal)
                     .await
             }
         }
@@ -411,9 +431,15 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let res = graphql_request_raw(self.endpoint(), query).await;
+        let endpoint = if is_internal {
+            self.internal_endpoint()?
+        } else {
+            self.endpoint()
+        };
+        let res = graphql_request_raw(endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -438,9 +464,14 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let mut endpoint = self.endpoint();
+        let mut endpoint = if is_internal {
+            self.internal_endpoint()?
+        } else {
+            self.endpoint()
+        };
         if let Some(ename) = ep_name {
             for (k, v) in &self.endpoints {
                 if k == &ename {
@@ -599,32 +630,37 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
+            2 => ProjectType::Thegraph,
             _ => {
                 error!("Invalid project type");
                 return Ok(());
             }
         };
 
-        let mut endpoints: Vec<(String, String)> = vec![Default::default(); 2];
+        let mut endpoints: Vec<(String, String)> = vec![Default::default(); 3];
         for endpoint in item.project_endpoints {
             match endpoint.key.as_str() {
                 "evmHttp" => {
                     ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
-                    // push query to endpoint index 0
+                    // push external http query to endpoint index 0
                     endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "polkadotHttp" => {
                     ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
-                    // push query to endpoint index 0
+                    // push external http query to endpoint index 0
                     endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "queryEndpoint" => {
-                    // push query to endpoint index 0
+                    // push external http query to endpoint index 0
                     endpoints[0] = (endpoint.key, endpoint.value);
                 }
                 "evmWs" | "polkadotWs" => {
-                    // push query to endpoint index 1
+                    // push external ws query to endpoint index 1
                     endpoints[1] = (endpoint.key, endpoint.value);
+                }
+                "internalEndpoint" => {
+                    // push internal http query to endpoint index 2
+                    endpoints[2] = (endpoint.key, endpoint.value);
                 }
                 _ => {
                     endpoints[0] = (endpoint.key, endpoint.value);

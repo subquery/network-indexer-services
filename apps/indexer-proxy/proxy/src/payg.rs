@@ -495,6 +495,7 @@ pub async fn query_single_state(
             network_type,
             true,
             no_sig,
+            false
         )
         .await?;
 
@@ -626,6 +627,7 @@ pub async fn query_multiple_state(
             network_type,
             true,
             no_sig,
+            false
         )
         .await?;
 
