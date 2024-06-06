@@ -473,7 +473,7 @@ pub async fn post_query_signle_state(
 pub async fn query_single_state(
     project_id: &str,
     query: String,
-    ep_name: Option<String>,
+    endpoint: String,
     state: QueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
@@ -490,12 +490,11 @@ pub async fn query_single_state(
     let (data, signature) = project
         .query(
             query,
-            ep_name,
+            endpoint,
             MetricsQuery::PAYG,
             network_type,
             true,
             no_sig,
-            false
         )
         .await?;
 
@@ -602,7 +601,7 @@ pub async fn post_query_multiple_state(keyname: String, state_cache: StateCache)
 pub async fn query_multiple_state(
     project_id: &str,
     query: String,
-    ep_name: Option<String>,
+    endpoint: String,
     state: MultipleQueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
@@ -622,12 +621,11 @@ pub async fn query_multiple_state(
     let (data, signature) = project
         .query(
             query,
-            ep_name,
+            endpoint,
             MetricsQuery::PAYG,
             network_type,
             true,
             no_sig,
-            false
         )
         .await?;
 

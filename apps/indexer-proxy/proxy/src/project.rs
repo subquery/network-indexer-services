@@ -32,9 +32,7 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{
-        graphql_request, graphql_request_raw, post_request_raw, proxy_request, GraphQLQuery,
-    },
+    request::{graphql_request, graphql_request_raw, post_request_raw, GraphQLQuery},
     tools::merge_json,
     types::Result,
 };
@@ -200,13 +198,18 @@ impl RpcMainfest {
 }
 
 #[derive(Clone)]
+pub struct Endpoint {
+    pub endpoint: String,
+    pub is_internal: bool,
+    pub is_ws: bool,
+}
+
+#[derive(Clone)]
 pub struct Project {
     pub id: String,
     pub ptype: ProjectType,
-    // [0] is http(external),
-    // [1] is ws  (external),
-    // [2] is http(internal)
-    pub endpoints: Vec<(String, String)>,
+    // ep_name, endpoint, is_inernal, is_ws
+    pub endpoints: HashMap<String, Endpoint>,
     pub rate_limit: Option<i64>,
     pub payg_price: U256,
     pub payg_token: Address,
@@ -234,21 +237,13 @@ impl Project {
         }
     }
 
-    pub fn endpoint<'a>(&'a self) -> &'a str {
-        &self.endpoints[0].1
-    }
-
-    pub fn ws_endpoint<'a>(&'a self) -> Option<&'a str> {
-        if self.endpoints.len() > 1 {
-            Some(&self.endpoints[1].1)
-        } else {
-            None
-        }
-    }
-
-    pub fn internal_endpoint<'a>(&'a self) -> Result<&'a str> {
-        if self.endpoints.len() > 2 {
-            Ok(&self.endpoints[2].1)
+    pub fn endpoint<'a>(&'a self, ep_name: &str, no_internal: bool) -> Result<&Endpoint> {
+        if let Some(end) = self.endpoints.get(ep_name) {
+            if no_internal && end.is_internal {
+                Err(Error::InvalidServiceEndpoint(1037))
+            } else {
+                Ok(end)
+            }
         } else {
             Err(Error::InvalidServiceEndpoint(1037))
         }
@@ -322,7 +317,7 @@ impl Project {
     pub async fn check_query(
         &self,
         body: String,
-        ep_name: Option<String>,
+        endpoint: String,
         payment: MetricsQuery,
         network: MetricsNetwork,
         is_limit: bool,
@@ -330,19 +325,18 @@ impl Project {
     ) -> Result<(Vec<u8>, String)> {
         let _ = self.compute_query_method(&body)?;
 
-        self.query(body, ep_name, payment, network, is_limit, no_sig, false)
+        self.query(body, endpoint, payment, network, is_limit, no_sig)
             .await
     }
 
     pub async fn query(
         &self,
         body: String,
-        ep_name: Option<String>,
+        endpoint: String,
         payment: MetricsQuery,
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
-        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
         if is_limit {
             if let Some(limit) = self.rate_limit {
@@ -374,72 +368,31 @@ impl Project {
         match self.ptype {
             ProjectType::Subquery | ProjectType::Thegraph => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, payment, network, no_sig, is_internal)
+                self.subquery_raw(&query, endpoint, payment, network, no_sig)
                     .await
             }
             ProjectType::RpcEvm(_) => {
-                self.rpcquery_raw(body, ep_name, payment, network, no_sig, is_internal)
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
                     .await
             }
             ProjectType::RpcSubstrate(_) => {
-                self.rpcquery_raw(body, ep_name, payment, network, no_sig, is_internal)
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
                     .await
             }
         }
     }
 
-    pub async fn _subquery(
-        &self,
-        query: &GraphQLQuery,
-        payment: MetricsQuery,
-        network: MetricsNetwork,
-    ) -> Result<Value> {
-        let now = Instant::now();
-        let res = graphql_request(self.endpoint(), query).await;
-
-        let time = now.elapsed().as_millis() as u64;
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
-
-        res
-    }
-
-    pub async fn _rpcquery(
-        &self,
-        query: String,
-        payment: MetricsQuery,
-        network: MetricsNetwork,
-    ) -> Result<Value> {
-        let now = Instant::now();
-        let res = proxy_request("POST", self.endpoint(), "/", "", query, vec![])
-            .await
-            .map_err(|err| {
-                Error::GraphQLQuery(
-                    1012,
-                    serde_json::to_string(&err).unwrap_or("RPC query error".to_owned()),
-                )
-            });
-
-        let time = now.elapsed().as_millis() as u64;
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
-
-        res
-    }
-
     pub async fn subquery_raw(
         &self,
         query: &GraphQLQuery,
+        endpoint: String,
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
-        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let endpoint = if is_internal {
-            self.internal_endpoint()?
-        } else {
-            self.endpoint()
-        };
-        let res = graphql_request_raw(endpoint, query).await;
+
+        let res = graphql_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -460,27 +413,14 @@ impl Project {
     pub async fn rpcquery_raw(
         &self,
         query: String,
-        ep_name: Option<String>,
+        endpoint: String,
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
-        is_internal: bool,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
-        let mut endpoint = if is_internal {
-            self.internal_endpoint()?
-        } else {
-            self.endpoint()
-        };
-        if let Some(ename) = ep_name {
-            for (k, v) in &self.endpoints {
-                if k == &ename {
-                    endpoint = v;
-                }
-            }
-        }
 
-        let res = post_request_raw(endpoint, query).await;
+        let res = post_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
@@ -637,33 +577,41 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             }
         };
 
-        let mut endpoints: Vec<(String, String)> = vec![Default::default(); 3];
+        let mut endpoints: HashMap<String, Endpoint> = HashMap::new();
         for endpoint in item.project_endpoints {
+            let mut e = Endpoint {
+                endpoint: endpoint.value,
+                is_internal: false,
+                is_ws: false,
+            };
+
             match endpoint.key.as_str() {
                 "evmHttp" => {
                     ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
-                    // push external http query to endpoint index 0
-                    endpoints[0] = (endpoint.key, endpoint.value);
+                    endpoints.insert("default".to_owned(), e.clone());
+                    endpoints.insert(endpoint.key, e);
                 }
                 "polkadotHttp" => {
                     ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
-                    // push external http query to endpoint index 0
-                    endpoints[0] = (endpoint.key, endpoint.value);
+                    endpoints.insert("default".to_owned(), e.clone());
+                    endpoints.insert(endpoint.key, e);
                 }
                 "queryEndpoint" => {
-                    // push external http query to endpoint index 0
-                    endpoints[0] = (endpoint.key, endpoint.value);
+                    endpoints.insert("default".to_owned(), e.clone());
+                    endpoints.insert(endpoint.key, e);
                 }
                 "evmWs" | "polkadotWs" => {
-                    // push external ws query to endpoint index 1
-                    endpoints[1] = (endpoint.key, endpoint.value);
+                    e.is_ws = true;
+                    endpoints.insert("ws".to_owned(), e.clone());
+                    endpoints.insert(endpoint.key, e);
                 }
-                "internalEndpoint" => {
-                    // push internal http query to endpoint index 2
-                    endpoints[2] = (endpoint.key, endpoint.value);
+                "internal" => {
+                    // FIXME
+                    e.is_internal = true;
+                    endpoints.insert(endpoint.key, e);
                 }
                 _ => {
-                    endpoints[0] = (endpoint.key, endpoint.value);
+                    endpoints.insert(endpoint.key, e);
                 }
             }
         }

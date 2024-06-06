@@ -431,18 +431,12 @@ async fn handle_remote_socket_message(
 }
 
 // Asynchronously connect to a remote WebSocket endpoint
-pub async fn connect_to_project_ws(deployment_id: &str) -> Result<SocketConnection, Error> {
-    let project = get_project(deployment_id).await?;
-    let ws_url = match project.ws_endpoint() {
-        Some(ws_url) => ws_url,
-        None => return Err(Error::WebSocket(1300)),
-    };
-
-    let (socket, _) = tokio_tungstenite::connect_async(ws_url)
+pub async fn connect_to_project_ws(endpoint: String) -> Result<SocketConnection, Error> {
+    debug!("Connecting to the server: {}", endpoint);
+    let (socket, _) = tokio_tungstenite::connect_async(endpoint)
         .await
         .map_err(|_| Error::WebSocket(1308))?;
 
-    debug!("Connected to the server: {}", ws_url);
     Ok(socket)
 }
 
@@ -458,16 +452,17 @@ async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<()
     Ok(())
 }
 
-pub async fn validate_project(deployment: &str) -> Result<(), Error> {
+pub async fn validate_project(deployment: &str, ep_name: &str) -> Result<String, Error> {
     let project: crate::project::Project = get_project(&deployment).await?;
     if !project.is_rpc_project() {
         // only rpc project support websocket
         return Err(Error::WebSocket(1300));
     }
-    if project.ws_endpoint().is_none() {
-        // No ws endpoint found for this project
-        return Err(Error::WebSocket(1300));
-    }
 
-    Ok(())
+    let endpoint = project.endpoint(ep_name, true)?;
+    if !endpoint.is_ws {
+        Err(Error::WebSocket(1300))
+    } else {
+        Ok(endpoint.endpoint.clone())
+    }
 }

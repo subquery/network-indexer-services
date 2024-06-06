@@ -95,11 +95,11 @@
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
-- `1203` - Service exception: Coordinator RPC mainfest is invalid 
+- `1203` - Service exception: Coordinator RPC mainfest is invalid
 - `1300` - Websocket connection: project not support websocket
 - `1301` - Websocket connection: invalid message
 - `1302` - Websocket connection: failed to send message to remote socket
-- `1303` - Websocket connection: failed to send message to client socket 
+- `1303` - Websocket connection: failed to send message to client socket
 - `1304` - Websocket connection: failed to close remote socket
 - `1305` - Websocket connection: failed to manange the before state cache
 - `1306` - Websocket connection: failed to manange the after state cache
@@ -111,6 +111,7 @@
 - `1312` - Websocket connection: internal socket error
 - `1313` - Websocket connection: failed to send ping/pong to client
 - `1314` - Websocket connection: failed to send ping/pong to remote
+- `1315` - Websocket connection: need GET, not POST
 - `1400` - Invalid whitelist auth: invalid payload
 - `1401` - Invalid whitelist auth: account is not whitelisted
 - `1402` - Invalid whitelist auth: auth expired
