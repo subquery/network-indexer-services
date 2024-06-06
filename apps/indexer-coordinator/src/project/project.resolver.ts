@@ -194,7 +194,7 @@ export class ProjectResolver {
   @Query(() => [SubgraphEndpoint])
   async getSubgraphEndpoints(
     @Args('host') host: string,
-    @Args('ports') ports: SubgraphPort[],
+    @Args('ports', { type: () => [SubgraphPort] }) ports: SubgraphPort[],
     @Args('cid') cid: string
   ): Promise<SubgraphEndpoint[]> {
     return this.projectSubgraphService.getSubgraphEndpoints(host, ports, cid);

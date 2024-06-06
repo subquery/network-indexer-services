@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { Postgres } from '../configure/configure.module';
 
 export enum MmrStoreType {
@@ -36,6 +36,7 @@ export enum SubgraphEndpointType {
   MetricsEndpoint = 'metrics-endpoint',
 }
 
+@InputType('SubgraphPort')
 @ObjectType('SubgraphPort')
 export class SubgraphPort {
   @Field()
