@@ -111,14 +111,16 @@ export class ProjectSubgraphService {
     project.rateLimit = rateLimit;
 
     project.serviceEndpoints = projectConfig.serviceEndpoints.filter((endpoint) => {
-      return this.getRequiredPortsTypes().includes(endpoint.key);
+      return [SubgraphEndpointType.IndexNodeEndpoint, SubgraphEndpointType.HttpEndpoint].includes(
+        endpoint.key as SubgraphEndpointType
+      );
     });
     projectConfig.serviceEndpoints = project.serviceEndpoints;
 
     const validateResult = await this.validateSubgraphNodeEndpoint(
       project.serviceEndpoints.find(
         (endpoint) => endpoint.key === SubgraphEndpointType.IndexNodeEndpoint
-      ).value,
+      )?.value,
       id
     );
     if (!validateResult.valid) {
@@ -127,7 +129,7 @@ export class ProjectSubgraphService {
     const validateResult2 = await this.validateSubgraphProjectEndpoint(
       project.serviceEndpoints.find(
         (endpoint) => endpoint.key === SubgraphEndpointType.HttpEndpoint
-      ).value
+      )?.value
     );
     if (!validateResult2.valid) {
       throw new Error(`Invalid endpoints: ${validateResult2.reason}`);
