@@ -596,7 +596,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert("default".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "queryEndpoint" => {
+                "queryEndpoint" | "http-endpoint" => {
                     endpoints.insert("default".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
@@ -605,8 +605,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert("ws".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "internal" => {
-                    // FIXME
+                "admin-endpoint" => {
                     e.is_internal = true;
                     endpoints.insert(endpoint.key, e);
                 }
