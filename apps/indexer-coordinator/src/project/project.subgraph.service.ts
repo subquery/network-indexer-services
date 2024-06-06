@@ -2,15 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
 import { Repository } from 'typeorm';
 import { SubgraphManifest } from './project.manifest';
-import { IProjectConfig, MetadataType, Project, ProjectEntity } from './project.model';
+import {
+  IProjectConfig,
+  MetadataType,
+  Project,
+  ProjectEntity,
+  SeviceEndpoint,
+  ValidationResponse,
+} from './project.model';
 import { ProjectService } from './project.service';
-import { requestSubgraph } from './subgraph.request';
-import { SubgraphEndpoint, SubgraphPortType, SubgraphPort, SubgraphEndpointType } from './types';
+import { requestSubgraphNode, requestSubgraphMeta } from './subgraph.request';
+import {
+  SubgraphEndpoint,
+  SubgraphPortType,
+  SubgraphPort,
+  SubgraphEndpointType,
+  ProjectType,
+} from './types';
 
 const logger = getLogger('project.subgraph.service');
 
@@ -20,6 +34,37 @@ export class ProjectSubgraphService {
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private projectService: ProjectService
   ) {}
+
+  @Cron('0 */9 * * * *')
+  async autoValidateSubgraphEndpoints() {
+    const projects = (await this.projectService.getAliveProjects()).filter(
+      (project) => project.projectType === ProjectType.SUBGRAPH
+    );
+    for (const project of projects) {
+      await this.validateProjectEndpoints(project, project.serviceEndpoints);
+    }
+    await this.projectRepo.save(projects);
+  }
+
+  private async validateProjectEndpoints(project: Project, endpoints: SeviceEndpoint[]) {
+    const indexNodeEndpoint = endpoints.find(
+      (endpoint) => endpoint.key === SubgraphEndpointType.IndexNodeEndpoint
+    );
+    const httpEndpoint = endpoints.find(
+      (endpoint) => endpoint.key === SubgraphEndpointType.HttpEndpoint
+    );
+
+    const validateResult = await this.validateSubgraphNodeEndpoint(
+      indexNodeEndpoint.value,
+      project.id
+    );
+    indexNodeEndpoint.valid = validateResult.valid;
+    indexNodeEndpoint.reason = validateResult.reason;
+
+    const validateResult2 = await this.validateSubgraphProjectEndpoint(httpEndpoint.value);
+    httpEndpoint.valid = validateResult2.valid;
+    httpEndpoint.reason = validateResult2.reason;
+  }
 
   getRequiredPortsTypes(): string[] {
     return [SubgraphPortType.IndexNodePort, SubgraphPortType.HttpPort];
@@ -36,10 +81,16 @@ export class ProjectSubgraphService {
       throw new Error('Missing required ports');
     }
     const indexNodeUrl = `http://${host}:${indexNodePort}/graphql`;
-    const subgraphData = await requestSubgraph(indexNodeUrl, cid);
-    const projectId = subgraphData?.indexingStatuses[0]?.project?.id;
     const httpEndpoint = `http://${host}:${httpPort}`;
-    const httpProjectUrl = `${httpEndpoint}/subgraphs/id/${projectId}`;
+    const httpProjectUrl = `${httpEndpoint}/subgraphs/id/${cid}`;
+    const validateResult = await this.validateSubgraphNodeEndpoint(indexNodeUrl, cid);
+    if (!validateResult.valid) {
+      throw new Error(`Invalid endpoints: ${validateResult.reason}`);
+    }
+    const validateResult2 = await this.validateSubgraphProjectEndpoint(httpProjectUrl);
+    if (!validateResult2.valid) {
+      throw new Error(`Invalid endpoints: ${validateResult2.reason}`);
+    }
     const endpoints: SubgraphEndpoint[] = [];
     endpoints.push({ key: SubgraphEndpointType.IndexNodeEndpoint, value: indexNodeUrl });
     endpoints.push({ key: SubgraphEndpointType.HttpEndpoint, value: httpProjectUrl });
@@ -64,10 +115,23 @@ export class ProjectSubgraphService {
     });
     projectConfig.serviceEndpoints = project.serviceEndpoints;
 
-    // const validateResult = await this.validateProjectEndpoints(project, project.serviceEndpoints);
-    // if (!validateResult.valid) {
-    //   throw new Error(`Invalid endpoints: ${validateResult.reason}`);
-    // }
+    const validateResult = await this.validateSubgraphNodeEndpoint(
+      project.serviceEndpoints.find(
+        (endpoint) => endpoint.key === SubgraphEndpointType.IndexNodeEndpoint
+      ).value,
+      id
+    );
+    if (!validateResult.valid) {
+      throw new Error(`Invalid endpoints: ${validateResult.reason}`);
+    }
+    const validateResult2 = await this.validateSubgraphProjectEndpoint(
+      project.serviceEndpoints.find(
+        (endpoint) => endpoint.key === SubgraphEndpointType.HttpEndpoint
+      ).value
+    );
+    if (!validateResult2.valid) {
+      throw new Error(`Invalid endpoints: ${validateResult2.reason}`);
+    }
 
     return this.projectRepo.save(project);
   }
@@ -100,15 +164,18 @@ export class ProjectSubgraphService {
     );
     let startHeight = 0;
     let lastHeight = 0;
-    let lastTime = 0;
     let targetHeight = 0;
+    const lastTime = 0;
     try {
       if (endpoint) {
-        const subgraphData = await requestSubgraph(endpoint.value, '');
-        startHeight = subgraphData?.earliestBlock?.number;
-        lastHeight = subgraphData?.lastHealthyBlock?.number;
-        lastTime = 0;
-        targetHeight = subgraphData?.latestBlock?.number;
+        const result = await requestSubgraphNode(endpoint.value, id);
+        if (!result.success) {
+          throw new Error(`Failed to request subgraph index node`);
+        }
+        const chainData = result?.data?.indexingStatuses?.[0]?.chains?.[0];
+        startHeight = chainData?.earliestBlock?.number || 0;
+        lastHeight = chainData?.latestBlock?.number || 0;
+        targetHeight = chainData?.chainHeadBlock?.number || 0;
       }
     } catch (e) {
       logger.debug(`getSubgraphMetadata error: ${e}`);
@@ -126,6 +193,49 @@ export class ProjectSubgraphService {
       queryNodeVersion: '',
       indexerStatus: '',
       queryStatus: '',
+    };
+  }
+
+  async validateSubgraphNodeEndpoint(
+    nodeEndpointUrl: string,
+    cid: string
+  ): Promise<ValidationResponse> {
+    const result = await requestSubgraphNode(nodeEndpointUrl, cid);
+    if (!result.success) {
+      return {
+        valid: false,
+        reason: `Subgraph index node is not valid`,
+      };
+    }
+    if (result?.data?.indexingStatuses?.[0]?.subgraph === cid) {
+      return {
+        valid: true,
+        reason: '',
+      };
+    }
+    return {
+      valid: false,
+      reason: `Subgraph project not found`,
+    };
+  }
+
+  async validateSubgraphProjectEndpoint(httpEndpointUrl: string): Promise<ValidationResponse> {
+    const result = await requestSubgraphMeta(httpEndpointUrl);
+    if (!result.success) {
+      return {
+        valid: false,
+        reason: `Subgraph http endpoint is not valid`,
+      };
+    }
+    if (result?.data?._meta?.block?.number) {
+      return {
+        valid: true,
+        reason: '',
+      };
+    }
+    return {
+      valid: false,
+      reason: `Subgraph http endpoint is not valid`,
     };
   }
 }
