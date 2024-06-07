@@ -390,6 +390,15 @@ export const VALID_RPC_ENDPOINT = gql`
   }
 `;
 
+export const GET_SUBGRAPH_ENDPOINTS = gql`
+  query getSubgraphEndpoints($cid: String!, $host: String!, $ports: [SubgraphPort!]!) {
+    getSubgraphEndpoints(cid: $cid, host: $host, ports: $ports) {
+      key
+      value
+    }
+  }
+`;
+
 export interface ManiFest {
   getManifest: {
     rpcManifest?: {
@@ -414,6 +423,19 @@ export interface ManiFest {
           version?: string;
         };
       };
+    };
+    subgraphManifest?: {
+      specVersion?: string;
+      name?: string;
+      chain?: { chainId: string };
+      version?: string;
+      rpcFamily?: string[];
+      nodeType?: string;
+      client?: { name: string; version: string };
+      featureFlags?: string[];
+      rpcAllowList?: string[];
+      rpcDenyList?: string[];
+      computeUnit?: { name: string; value: string }[];
     };
   };
 }
@@ -454,6 +476,27 @@ export const GET_MANIFEST = gql`
             name
             version
           }
+        }
+      }
+      subgraphManifest {
+        specVersion
+        name
+        chain {
+          chainId
+        }
+        version
+        rpcFamily
+        nodeType
+        client {
+          name
+          version
+        }
+        featureFlags
+        rpcAllowList
+        rpcDenyList
+        computeUnit {
+          name
+          value
         }
       }
     }

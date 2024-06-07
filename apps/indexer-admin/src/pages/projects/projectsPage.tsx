@@ -19,6 +19,7 @@ import { Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
 import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import RpcSetting from 'pages/project-details/components/rpcSetting';
+import SubGraphSetting from 'pages/project-details/components/subGraphSetting';
 import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
 import { ProjectFormKey } from 'types/schemas';
 import { parseError } from 'utils/error';
@@ -144,7 +145,11 @@ const Projects = () => {
         },
       });
 
-      if (!res.data?.getManifest.rpcManifest && !res.data?.getManifest.subqueryManifest) {
+      if (
+        !res.data?.getManifest.rpcManifest &&
+        !res.data?.getManifest.subqueryManifest &&
+        !res.data?.getManifest.subgraphManifest
+      ) {
         return Promise.reject(new Error("Can't find the manifest information"));
       }
 
@@ -255,6 +260,8 @@ const Projects = () => {
                                         {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
                                           manifest.data.getManifest.subqueryManifest?.network
                                             ?.chainId ||
+                                          manifest.data.getManifest.subgraphManifest?.chain
+                                            ?.chainId ||
                                           'Unknown'}
                                       </Typography>
                                     </div>
@@ -352,16 +359,29 @@ const Projects = () => {
                 </div>
               </div>
             )}
-            {currentStep === 1 && processingProject.projectType === ProjectType.SubQuery && (
-              <IndexingForm
+            {currentStep === 1 &&
+              (processingProject.projectType === ProjectType.SubQuery ||
+                processingProject.projectType === ProjectType.Dictionary) && (
+                <IndexingForm
+                  id={processingId}
+                  setVisible={(val) => {
+                    setVisible(val);
+                  }}
+                />
+              )}
+            {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
+              <RpcSetting
                 id={processingId}
-                setVisible={(val) => {
-                  setVisible(val);
+                onCancel={() => {
+                  setCurrentStep(0);
+                }}
+                onSubmit={() => {
+                  setVisible(false);
                 }}
               />
             )}
-            {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
-              <RpcSetting
+            {currentStep === 1 && processingProject.projectType === ProjectType.SubGraph && (
+              <SubGraphSetting
                 id={processingId}
                 onCancel={() => {
                   setCurrentStep(0);

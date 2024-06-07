@@ -289,7 +289,7 @@ const RpcSetting: FC<IProps> = (props) => {
               tooltip="This feature allows you to manage and set rate limits for your Flex Plan, helping you optimize service stability and performance"
               name="rateLimit"
             >
-              <InputNumber />
+              <InputNumber min="0" />
             </Form.Item>
             <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
           </HorizeFormItem>

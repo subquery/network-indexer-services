@@ -43,6 +43,8 @@ export enum PaygStatus {
 export enum ProjectType {
   SubQuery = 0,
   Rpc = 1,
+  Dictionary = 2,
+  SubGraph = 3,
 }
 
 export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceTerminating;

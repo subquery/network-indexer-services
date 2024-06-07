@@ -75,7 +75,9 @@ const ProjectItem: FC<Props> = (props) => {
 
       <ItemContainer flex={5}>
         <Typography variant="small" type="secondary">
-          {projectType === ProjectType.SubQuery ? 'DATA INDEXER' : 'RPC ENDPOINT'}
+          {projectType === ProjectType.SubQuery || projectType === ProjectType.SubGraph
+            ? 'DATA INDEXER'
+            : 'RPC ENDPOINT'}
         </Typography>
       </ItemContainer>
       <ItemContainer flex={4}>

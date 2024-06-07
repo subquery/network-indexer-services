@@ -29,6 +29,13 @@ type Props = {
   announceStop: () => void;
 };
 
+const projectTitleDict: { [key: number]: string } = {
+  [ProjectType.SubQuery]: 'SubQuery Project',
+  [ProjectType.Rpc]: 'RPC Service',
+  [ProjectType.Dictionary]: 'Dictionary',
+  [ProjectType.SubGraph]: 'SubGraph Project',
+};
+
 const ProjectDetailsHeader: FC<Props> = ({
   id,
   project,
@@ -124,10 +131,7 @@ const ProjectDetailsHeader: FC<Props> = ({
                 <Separator height={30} mr={36} ml={36} />
               </>
             )}
-            <TagItem
-              versionType="Project Type"
-              value={project.projectType === ProjectType.Rpc ? 'RPC Service' : 'SubQuery Project'}
-            />
+            <TagItem versionType="Project Type" value={projectTitleDict[project.projectType]} />
             <Separator height={30} mr={36} ml={36} />
 
             {project.projectType === ProjectType.Rpc && (
