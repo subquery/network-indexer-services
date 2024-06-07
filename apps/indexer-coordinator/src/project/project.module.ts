@@ -14,6 +14,7 @@ import { PaygEntity, ProjectEntity } from './project.model';
 import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
+import { ProjectSubgraphService } from './project.subgraph.service';
 
 @Module({
   imports: [
@@ -23,7 +24,13 @@ import { ProjectService } from './project.service';
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
   ],
-  providers: [ProjectService, PortService, ProjectResolver, ProjectRpcService],
+  providers: [
+    ProjectService,
+    PortService,
+    ProjectResolver,
+    ProjectRpcService,
+    ProjectSubgraphService,
+  ],
   exports: [ProjectService, ProjectRpcService],
 })
 export class ProjectModule {}

@@ -69,10 +69,38 @@ export class RpcManifest {
   computeUnit?: ComputeUnitClass[];
 }
 
+@ObjectType('SubgraphManifest')
+export class SubgraphManifest {
+  @Field(() => String, { nullable: true })
+  specVersion?: string;
+  @Field(() => String, { nullable: true })
+  name?: string;
+  @Field(() => ChainClass, { nullable: true })
+  chain?: ChainClass;
+  @Field(() => String, { nullable: true })
+  version?: string;
+  @Field(() => [String], { nullable: true })
+  rpcFamily?: string[];
+  @Field(() => String, { nullable: true })
+  nodeType?: string;
+  @Field(() => ClientClass, { nullable: true })
+  client?: ClientClass;
+  @Field(() => [String], { nullable: true })
+  featureFlags?: string[];
+  @Field(() => [String], { nullable: true })
+  rpcAllowList?: string[];
+  @Field(() => [String], { nullable: true })
+  rpcDenyList?: string[];
+  @Field(() => [ComputeUnitClass], { nullable: true })
+  computeUnit?: ComputeUnitClass[];
+}
+
 @ObjectType('AggregatedManifest')
 export class AggregatedManifest {
   @Field(() => SubqueryManifest, { nullable: true })
   subqueryManifest?: SubqueryManifest;
   @Field(() => RpcManifest, { nullable: true })
   rpcManifest?: RpcManifest;
+  @Field(() => SubgraphManifest, { nullable: true })
+  subgraphManifest?: SubgraphManifest;
 }
