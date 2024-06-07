@@ -19,7 +19,7 @@ export class ProjectDetailsFromNetwork {
 
 export class IndexerAllocationSummary {
   id?: string;
-  proejctId?: string;
+  projectId?: string;
   deploymentId?: string;
   indexerId?: string;
   totalAdded?: bigint;

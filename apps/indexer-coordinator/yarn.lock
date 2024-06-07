@@ -1673,10 +1673,10 @@
   resolved "https://registry.yarnpkg.com/@sqltools/formatter/-/formatter-1.2.5.tgz#3abc203c79b8c3e90fd6c156a0c62d5403520e12"
   integrity sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==
 
-"@subql/contract-sdk@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-1.1.0.tgz#b04e85e96ba8f7fab48a3e78740460e9b09ef73d"
-  integrity sha512-EnP6n1TrksH3zoRn02U7wdihOdbZ6T4G5l4kCrLn6ZJNkSa/QZwTSknJIIoXpxzDR6tNSNV30hhSxJrfEBHU/w==
+"@subql/contract-sdk@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@subql/contract-sdk/-/contract-sdk-1.3.0.tgz#e6474369a2156fd3dfd50a84535d9a2894480198"
+  integrity sha512-vxd8xwtxDtNjv9WXYKx3pD12tdRDJJZ7Cm5yTtyH4piGcvLtJXehENxSBvCKvGtgpvzba8DiwDmbjIMYdomNzA==
 
 "@subql/network-clients@1.1.0":
   version "1.1.0"
@@ -1706,6 +1706,13 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-1.1.0.tgz#dda29d0726349105516ea5f0a2a7fa54f6d24db7"
   integrity sha512-39M9beXTTL+Qlx444sN6TBnTrxa54Y7zzlJLzWrwFpGDaBUeVF3VuvTgn/GzcMKYfp9A4wVXaWRMd2g4DcpgLg==
+  dependencies:
+    graphql "^16.5.0"
+
+"@subql/network-query@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@subql/network-query/-/network-query-1.1.1.tgz#004a9399a7e815e8924d29d8b27efec65a911e74"
+  integrity sha512-eMwSZ1d7vnlsRY4/QwKboQkircjJqNShTkB7ben4nAvBbJ5LhkMZzEUloG1/08zicdJSMM4pL/IGYTbSupsM2A==
   dependencies:
     graphql "^16.5.0"
 
