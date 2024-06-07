@@ -477,7 +477,7 @@ export class ProjectService {
     }
     const manifest = await getProjectManifest(id);
     if (project) {
-      project.manifest = await getProjectManifest(id);
+      project.manifest = manifest;
       await this.projectRepo.save(project);
     }
     return manifest as T;

@@ -110,6 +110,11 @@ export class ProjectResolver {
               ...project,
               metadata: await this.projectRpcService.getRpcMetadata(project.id),
             };
+          case ProjectType.SUBGRAPH:
+            return {
+              ...project,
+              metadata: await this.projectSubgraphService.getSubgraphMetadata(project.id),
+            };
           default:
             throw new Error(`Unknown project type ${project.projectType}`);
         }

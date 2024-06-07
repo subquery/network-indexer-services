@@ -12,6 +12,7 @@ export enum MmrStoreType {
 export enum ProjectType {
   SUBQUERY,
   RPC,
+  DICTIONARY,
   SUBGRAPH,
 }
 
