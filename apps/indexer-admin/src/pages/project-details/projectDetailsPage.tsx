@@ -32,6 +32,7 @@ import ProjectDetailsHeader from './components/projectDetailHeader';
 import ProjectRpcServiceCard from './components/projectRpcServiceCard';
 import ProjectServiceCard from './components/projectServiceCard';
 import ProjectStatusView from './components/projectStatusView';
+import ProjectSubgraphServiceCard from './components/projectSubgraphServiceCard';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
 import {
@@ -355,6 +356,16 @@ const ProjectDetailsPage = () => {
             )}
             {project.projectType === ProjectType.Rpc && (
               <ProjectRpcServiceCard
+                project={project}
+                metadata={metadata}
+                projectStatus={projectStatus}
+                refresh={() => {
+                  projectQuery.refetch();
+                }}
+              />
+            )}
+            {project.projectType === ProjectType.SubGraph && (
+              <ProjectSubgraphServiceCard
                 project={project}
                 metadata={metadata}
                 projectStatus={projectStatus}
