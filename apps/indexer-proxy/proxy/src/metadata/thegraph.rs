@@ -8,32 +8,40 @@ use subql_indexer_utils::{
 use crate::metrics::{add_metrics_query, MetricsNetwork, MetricsQuery};
 use crate::project::Project;
 
-const METADATA_QUERY: &str = r#"query {
-  indexingStatuses(subgraphs:["QmQR5efcF8kTVoPtVEXmZgxBcTaCvR6CRXCbtpgpbevBQu"]){
+fn metadata_query(id: &str) -> String {
+    format!(
+        r#"query {{
+  indexingStatuses(subgraphs:["{}"]){{
     health
-    chains{
+    chains{{
       network
-      chainHeadBlock{
+      chainHeadBlock{{
         number
-      }
-      earliestBlock{
+      }}
+      earliestBlock{{
         number
-      }
-      latestBlock{
+      }}
+      latestBlock{{
         number
-      }
-      lastHealthyBlock{
+      }}
+      lastHealthyBlock{{
         number
-      }
-    }
-  }
-}"#;
+      }}
+    }}
+  }}
+}}"#,
+        id,
+    )
+}
 
 pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let now = Instant::now();
     let endpoint = project.endpoint("index-node-endpoint", false)?;
-    let metadata_res =
-        graphql_request(&endpoint.endpoint, &GraphQLQuery::query(METADATA_QUERY)).await;
+    let metadata_res = graphql_request(
+        &endpoint.endpoint,
+        &GraphQLQuery::query(&metadata_query(&project.id)),
+    )
+    .await;
     let time = now.elapsed().as_millis() as u64;
     add_metrics_query(
         project.id.clone(),
@@ -44,34 +52,58 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
     );
     let metadata = metadata_res?;
 
-    let last_height = match metadata.pointer("/data/indexingStatuses/chains/latestBlock/number") {
-        Some(target) => target.as_u64().unwrap_or(0),
-        None => 0,
-    };
-    let target_height =
-        match metadata.pointer("/data/indexingStatuses/chains/chainHeadBlock/number") {
-            Some(data) => data.as_u64().unwrap_or(0),
-            None => 0,
-        };
-    let start_height = match metadata.pointer("/data/indexingStatuses/chains/earliestBlock/number")
-    {
-        Some(data) => data.as_u64().unwrap_or(0),
-        None => 0,
-    };
-    let chain = match metadata.pointer("/data/indexingStatuses/chains/network") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let subquery_healthy = match metadata.pointer("/data/indexingStatuses/health") {
-        Some(data) => data.as_str().unwrap_or("unhealthy") == "healthy",
-        None => false,
-    };
+    if let Some(data) = metadata.pointer("/data/indexingStatuses") {
+        if let Some(data1) = data.as_array() {
+            if data1.len() > 0 {
+                if let Some(data2) = data1[0]["chains"].as_array() {
+                    if data2.len() > 0 {
+                        let lastdata = &data2[0];
+                        println!("{}", lastdata);
+                        lastdata.pointer("/latestBlock/number").unwrap();
+                        lastdata.pointer("/chainHeadBlock/number").unwrap();
+                        lastdata.pointer("/earliestBlock/number").unwrap();
+                        lastdata.pointer("/network").unwrap();
+                        data1[0].pointer("/health").unwrap();
+
+                        let last_height = match lastdata.pointer("/latestBlock/number") {
+                            Some(target) => target.as_str().unwrap_or("0").parse().unwrap_or(0),
+                            None => 0,
+                        };
+                        let target_height = match lastdata.pointer("/chainHeadBlock/number") {
+                            Some(data) => data.as_str().unwrap_or("0").parse().unwrap_or(0),
+                            None => 0,
+                        };
+                        let start_height = match lastdata.pointer("/earliestBlock/number") {
+                            Some(data) => data.as_str().unwrap_or("0").parse().unwrap_or(0),
+                            None => 0,
+                        };
+                        let chain = match lastdata.pointer("/network") {
+                            Some(data) => data.as_str().unwrap_or(""),
+                            None => "",
+                        };
+                        let subquery_healthy = match data1[0].pointer("/health") {
+                            Some(data) => data.as_str().unwrap_or("unhealthy") == "healthy",
+                            None => false,
+                        };
+
+                        return Ok(json!({
+                            "startHeight": start_height,
+                            "lastHeight": last_height,
+                            "targetHeight": target_height,
+                            "chainId": chain,
+                            "subqueryHealthy": subquery_healthy,
+                        }));
+                    }
+                }
+            }
+        }
+    }
 
     Ok(json!({
-        "startHeight": start_height,
-        "lastHeight": last_height,
-        "targetHeight": target_height,
-        "chainId": chain,
-        "subqueryHealthy": subquery_healthy,
+        "startHeight": 0,
+        "lastHeight": 0,
+        "targetHeight": 0,
+        "chainId": "",
+        "subqueryHealthy": false,
     }))
 }
