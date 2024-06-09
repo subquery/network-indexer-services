@@ -58,12 +58,6 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
                 if let Some(data2) = data1[0]["chains"].as_array() {
                     if data2.len() > 0 {
                         let lastdata = &data2[0];
-                        println!("{}", lastdata);
-                        lastdata.pointer("/latestBlock/number").unwrap();
-                        lastdata.pointer("/chainHeadBlock/number").unwrap();
-                        lastdata.pointer("/earliestBlock/number").unwrap();
-                        lastdata.pointer("/network").unwrap();
-                        data1[0].pointer("/health").unwrap();
 
                         let last_height = match lastdata.pointer("/latestBlock/number") {
                             Some(target) => target.as_str().unwrap_or("0").parse().unwrap_or(0),
