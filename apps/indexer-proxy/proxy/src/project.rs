@@ -570,7 +570,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
-            2 => ProjectType::Thegraph,
+            3 => ProjectType::Thegraph,
             _ => {
                 error!("Invalid project type");
                 return Ok(());
@@ -605,7 +605,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert("ws".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "admin-endpoint" => {
+                "nodeEndpoint" | "index-node-endpoint" => {
                     e.is_internal = true;
                     endpoints.insert(endpoint.key, e);
                 }

@@ -31,7 +31,7 @@ const METADATA_QUERY: &str = r#"query {
 
 pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let now = Instant::now();
-    let endpoint = project.endpoint("default", true)?;
+    let endpoint = project.endpoint("index-node-endpoint", false)?;
     let metadata_res =
         graphql_request(&endpoint.endpoint, &GraphQLQuery::query(METADATA_QUERY)).await;
     let time = now.elapsed().as_millis() as u64;
@@ -66,14 +66,6 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         Some(data) => data.as_str().unwrap_or("unhealthy") == "healthy",
         None => false,
     };
-    let subquery_node = match metadata.pointer("/data/_metadata/indexerNodeVersion") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
-    let subquery_query = match metadata.pointer("/data/_metadata/queryNodeVersion") {
-        Some(data) => data.as_str().unwrap_or(""),
-        None => "",
-    };
 
     Ok(json!({
         "startHeight": start_height,
@@ -81,7 +73,5 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         "targetHeight": target_height,
         "chainId": chain,
         "subqueryHealthy": subquery_healthy,
-        "subqueryNode": subquery_node,
-        "subqueryQuery": subquery_query,
     }))
 }
