@@ -43,7 +43,7 @@ use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
 use crate::metadata::{
-    rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata, subgraph_metadata,
+    rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;

@@ -93,7 +93,7 @@ pub async fn start_server(port: u16) {
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
-        // `GET /payg-pay` goes to pay to channel some spent
+        // `POST /payg-pay` goes to pay to channel some spent
         .route("/payg-pay", post(payg_pay))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
@@ -118,8 +118,7 @@ pub async fn start_server(port: u16) {
 
 async fn wl_query_handler(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
-    Path(deployment): Path<String>,
-    Path(ep_name): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
 ) -> Result<Response<String>, Error> {
     if deployment != deployment_id {
@@ -234,8 +233,7 @@ async fn default_query(
 async fn query_handler(
     headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
-    Path(deployment): Path<String>,
-    Path(ep_name): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
 ) -> Result<Response<String>, Error> {
     ep_query_handler(headers, deployment_id, deployment, ep_name, body).await
@@ -303,8 +301,7 @@ async fn ep_query_handler(
 async fn ws_query(
     headers: HeaderMap,
     ws: WebSocketUpgrade,
-    Path(deployment): Path<String>,
-    Path(ep_name): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
     AuthQuery(deployment_id): AuthQuery,
 ) -> impl IntoResponse {
     if COMMAND.auth() && deployment != deployment_id {
@@ -349,8 +346,7 @@ async fn default_payg(
 async fn payg_query(
     headers: HeaderMap,
     AuthPayg(auth): AuthPayg,
-    Path(deployment): Path<String>,
-    Path(ep_name): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
 ) -> Result<Response<String>, Error> {
     ep_payg_handler(headers, auth, deployment, ep_name, body).await
@@ -439,8 +435,7 @@ async fn ep_payg_handler(
 async fn ws_payg_query(
     headers: HeaderMap,
     ws: WebSocketUpgrade,
-    Path(deployment): Path<String>,
-    Path(ep_name): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
 ) -> impl IntoResponse {
     ws_handler(
         headers,
