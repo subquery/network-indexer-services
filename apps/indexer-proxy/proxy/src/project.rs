@@ -43,7 +43,7 @@ use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
 use crate::metadata::{
-    rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata, thegraph_metadata,
+    rpc_evm_metadata, rpc_substrate_metadata, subquery_metadata, subgraph_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -56,7 +56,7 @@ pub enum ProjectType {
     Subquery,
     RpcEvm(RpcMainfest),
     RpcSubstrate(RpcMainfest),
-    Thegraph,
+    Subgraph,
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -227,7 +227,7 @@ impl Project {
         // compute unit times
         match &self.ptype {
             // TODO if multiple in single query
-            ProjectType::Subquery | ProjectType::Thegraph => Ok((1, 1)),
+            ProjectType::Subquery | ProjectType::Subgraph => Ok((1, 1)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 let s: SimpleJsonrpc =
@@ -273,7 +273,7 @@ impl Project {
                 merge_json(&mut data, &m.json_values());
                 data
             }
-            ProjectType::Thegraph => thegraph_metadata(&self, network).await?,
+            ProjectType::Subgraph => subgraph_metadata(&self, network).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -366,7 +366,7 @@ impl Project {
         }
 
         match self.ptype {
-            ProjectType::Subquery | ProjectType::Thegraph => {
+            ProjectType::Subquery | ProjectType::Subgraph => {
                 let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
                 self.subquery_raw(&query, endpoint, payment, network, no_sig)
                     .await
@@ -570,7 +570,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         let mut ptype = match item.project_type {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
-            3 => ProjectType::Thegraph,
+            3 => ProjectType::Subgraph,
             _ => {
                 error!("Invalid project type");
                 return Ok(());
