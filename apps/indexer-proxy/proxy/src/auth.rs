@@ -441,16 +441,18 @@ impl AuthWhitelistQuery {
             return Err(Error::Permission(1402));
         }
 
-        // Prepare message and hash it
+        let message_prefix = "\x19Ethereum Signed Message:\n";
         let message = format!("{}{}{}", deployment_id, account, expired);
-        let message_hash = keccak256(message.as_bytes());
+        let message_bytes = message.as_bytes();
+        let message_length = message_bytes.len().to_string();
 
-        // Decode and verify signature
+        let prefixed_message = format!("{}{}{}", message_prefix, message_length, message);
+        let message_hash = keccak256(prefixed_message.as_bytes());
+
         let signature_bytes = hex::decode(signature).map_err(|_| Error::Permission(1403))?;
         let signature =
             Signature::try_from(signature_bytes.as_slice()).map_err(|_| Error::Permission(1403))?;
 
-        // Verify public address from the signature
         let address = Address::from_str(&account).map_err(|_| Error::Permission(1403))?;
         let recovery_message = RecoveryMessage::from(message_hash);
         let recovered_address = signature
