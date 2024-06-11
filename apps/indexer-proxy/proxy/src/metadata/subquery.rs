@@ -11,8 +11,9 @@ use crate::project::Project;
 
 pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
     let now = Instant::now();
+    let endpoint = project.endpoint("default", true)?;
     let metadata_res =
-        graphql_request(project.endpoint(), &GraphQLQuery::query(METADATA_QUERY)).await;
+        graphql_request(&endpoint.endpoint, &GraphQLQuery::query(METADATA_QUERY)).await;
     let time = now.elapsed().as_millis() as u64;
     add_metrics_query(
         project.id.clone(),

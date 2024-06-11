@@ -706,29 +706,34 @@ async fn handle_group(
                 Event::PaygQuery(uid, query, ep_name, state) => {
                     let state: RpcParam = serde_json::from_str(&state)?;
                     if let Ok(state) = QueryState::from_json(&state) {
-                        let result = match query_single_state(
-                            &project,
-                            query,
-                            ep_name,
-                            state,
-                            MetricsNetwork::P2P,
-                            false,
-                        )
-                        .await
-                        {
-                            Ok((res_query, res_signature, res_state)) => {
-                                json!({
-                                    "result": general_purpose::STANDARD.encode(&res_query),
-                                    "signature": res_signature,
-                                    "state": res_state,
-                                })
-                            }
-                            Err(err) => json!({ "error": format!("{:?}", err) }),
-                        };
+                        let ep_name = ep_name.unwrap_or("default".to_owned());
+                        if let Ok(p) = get_project(&project).await {
+                            if let Ok(endpoint) = p.endpoint(&ep_name, true) {
+                                let result = match query_single_state(
+                                    &project,
+                                    query,
+                                    endpoint.endpoint.clone(),
+                                    state,
+                                    MetricsNetwork::P2P,
+                                    false,
+                                )
+                                .await
+                                {
+                                    Ok((res_query, res_signature, res_state)) => {
+                                        json!({
+                                            "result": general_purpose::STANDARD.encode(&res_query),
+                                            "signature": res_signature,
+                                            "state": res_state,
+                                        })
+                                    }
+                                    Err(err) => json!({ "error": format!("{:?}", err) }),
+                                };
 
-                        let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
-                        let msg = SendType::Event(0, peer_id, e.to_bytes());
-                        results.groups.push((gid, msg));
+                                let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
+                                let msg = SendType::Event(0, peer_id, e.to_bytes());
+                                results.groups.push((gid, msg));
+                            }
+                        }
                     }
                 }
                 Event::CloseAgreementLimit(uid, agreement) => {
@@ -805,13 +810,15 @@ async fn handle_close_agreement_query(
     query: String,
     ep_name: Option<String>,
 ) -> std::result::Result<String, Error> {
+    let ep_name = ep_name.unwrap_or("default".to_owned());
     check_and_save_agreement(signer, &agreement).await?;
 
-    let (data, _signature) = get_project(project)
-        .await?
+    let project = get_project(project).await?;
+    let endpoint = project.endpoint(&ep_name, true)?;
+    let (data, _signature) = project
         .check_query(
             query,
-            ep_name,
+            endpoint.endpoint.clone(),
             MetricsQuery::CloseAgreement,
             MetricsNetwork::P2P,
             false,

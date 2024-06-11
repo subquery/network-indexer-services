@@ -8,7 +8,7 @@ use crate::project::Project;
 
 /// rpc substrate
 pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
-    let url = project.endpoint();
+    let url = &project.endpoint("default", true)?.endpoint;
 
     let now = Instant::now();
     let latest_block = jsonrpc_request(url, "chain_getBlock", vec![]).await?;

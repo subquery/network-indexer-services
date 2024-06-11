@@ -19,7 +19,7 @@
 #![deny(warnings)]
 use axum::extract::ws::WebSocket;
 use axum::{
-    extract::{ConnectInfo, Path, Query, WebSocketUpgrade},
+    extract::{ConnectInfo, Path, WebSocketUpgrade},
     http::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
@@ -74,8 +74,9 @@ pub async fn start_server(port: u16) {
         // `POST /token` goes to create token for query
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
-        .route("/query/:deployment", post(query_handler))
-        .route("/query/:deployment/ws", get(ws_query))
+        .route("/query/:deployment", post(default_query))
+        .route("/query/:deployment/:ep_name", post(query_handler))
+        .route("/query/:deployment/:ep_name", get(ws_query))
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `POST /wl-query/:Qm...955X` goes to query with whitelist account
@@ -85,13 +86,14 @@ pub async fn start_server(port: u16) {
         // `POST /payg-open` goes to open a state channel for payg
         .route("/payg-open", post(payg_generate))
         // `POST /payg/Qm...955X` goes to query with Pay-As-You-Go with state channel
-        .route("/payg/:deployment", post(payg_query))
-        .route("/payg/:deployment/ws", get(ws_payg_query))
+        .route("/payg/:deployment", post(default_payg))
+        .route("/payg/:deployment/:ep_name", post(payg_query))
+        .route("/payg/:deployment/:ep_name", get(ws_payg_query))
         // `POST /payg-extend/0x00...955X` goes to extend channel expiration
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
-        // `GET /payg-pay` goes to pay to channel some spent
+        // `POST /payg-pay` goes to pay to channel some spent
         .route("/payg-pay", post(payg_pay))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
         .route("/metadata/:deployment", get(metadata_handler))
@@ -112,6 +114,39 @@ pub async fn start_server(port: u16) {
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .unwrap();
+}
+
+async fn wl_query_handler(
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
+    Path((deployment, ep_name)): Path<(String, String)>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    if deployment != deployment_id {
+        return Err(Error::AuthVerify(1004));
+    };
+
+    let project = get_project(&deployment).await?;
+    let endpoint = project.endpoint(&ep_name, false)?;
+    let (data, signature) = project
+        .query(
+            body,
+            endpoint.endpoint.clone(),
+            MetricsQuery::Free,
+            MetricsNetwork::HTTP,
+            false,
+            false,
+        )
+        .await?;
+
+    let body = serde_json::to_string(&json!({
+        "result": general_purpose::STANDARD.encode(data),
+        "signature": signature
+    }))
+    .unwrap_or("".to_owned());
+
+    let header = vec![("Content-Type", "application/json")];
+
+    Ok(build_response(body, header))
 }
 
 async fn generate_token(
@@ -179,16 +214,36 @@ async fn generate_token(
     }
 }
 
-#[derive(Deserialize)]
-struct EpName {
-    ep_name: Option<String>,
+async fn default_query(
+    headers: HeaderMap,
+    AuthQuery(deployment_id): AuthQuery,
+    Path(deployment): Path<String>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_query_handler(
+        headers,
+        deployment_id,
+        deployment,
+        "default".to_owned(),
+        body,
+    )
+    .await
 }
 
 async fn query_handler(
-    mut headers: HeaderMap,
+    headers: HeaderMap,
     AuthQuery(deployment_id): AuthQuery,
-    Path(deployment): Path<String>,
-    ep_name: Query<EpName>,
+    Path((deployment, ep_name)): Path<(String, String)>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_query_handler(headers, deployment_id, deployment, ep_name, body).await
+}
+
+async fn ep_query_handler(
+    mut headers: HeaderMap,
+    deployment_id: String,
+    deployment: String,
+    ep_name: String,
     body: String,
 ) -> Result<Response<String>, Error> {
     if COMMAND.auth() && deployment != deployment_id {
@@ -203,11 +258,15 @@ async fn query_handler(
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
-    let (data, signature) = get_project(&deployment)
-        .await?
+    let project = get_project(&deployment).await?;
+    let endpoint = project.endpoint(&ep_name, true)?;
+    if endpoint.is_ws {
+        return Err(Error::WebSocket(1315));
+    }
+    let (data, signature) = project
         .check_query(
             body,
-            ep_name.0.ep_name,
+            endpoint.endpoint.clone(),
             MetricsQuery::CloseAgreement,
             MetricsNetwork::HTTP,
             false,
@@ -240,72 +299,18 @@ async fn query_handler(
 }
 
 async fn ws_query(
-    mut headers: HeaderMap,
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
-    Path(deployment): Path<String>,
+    Path((deployment, ep_name)): Path<(String, String)>,
     AuthQuery(deployment_id): AuthQuery,
 ) -> impl IntoResponse {
     if COMMAND.auth() && deployment != deployment_id {
         return Error::AuthVerify(1004).into_response();
     };
 
-    if let Err(e) = validate_project(&deployment).await {
-        return e.into_response();
-    }
-
-    let res_sig = headers
-        .remove("X-SQ-No-Resp-Sig")
-        .unwrap_or(HeaderValue::from_static("false"));
-    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
-
-    // Connect to remote
-    let remote_socket = match connect_to_project_ws(&deployment).await {
-        Ok(socket) => socket,
-        Err(e) => return e.into_response(),
-    };
-
-    // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(
-            remote_socket,
-            socket,
-            deployment,
-            QueryType::CloseAgreement,
-            no_sig,
-        )
-    })
-}
-
-async fn ws_payg_query(
-    mut headers: HeaderMap,
-    ws: WebSocketUpgrade,
-    Path(deployment): Path<String>,
-) -> impl IntoResponse {
-    if let Err(e) = validate_project(&deployment).await {
-        return e.into_response();
-    }
-
-    let res_sig = headers
-        .remove("X-SQ-No-Resp-Sig")
-        .unwrap_or(HeaderValue::from_static("false"));
-    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
-
-    // Connect to remote
-    let remote_socket = match connect_to_project_ws(&deployment).await {
-        Ok(socket) => socket,
-        Err(e) => return e.into_response(),
-    };
-
-    // Handle WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| {
-        handle_websocket(
-            remote_socket,
-            socket,
-            deployment,
-            QueryType::PAYG(U256::zero(), U256::zero()),
-            no_sig,
-        )
-    })
+    ws_handler(headers, ws, deployment, ep_name, QueryType::CloseAgreement)
+        .await
+        .into_response()
 }
 
 async fn query_limit_handler(
@@ -319,39 +324,6 @@ async fn query_limit_handler(
     })))
 }
 
-async fn wl_query_handler(
-    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
-    Path(deployment): Path<String>,
-    ep_name: Query<EpName>,
-    body: String,
-) -> Result<Response<String>, Error> {
-    if deployment != deployment_id {
-        return Err(Error::AuthVerify(1004));
-    };
-
-    let (data, signature) = get_project(&deployment)
-        .await?
-        .query(
-            body,
-            ep_name.0.ep_name,
-            MetricsQuery::Free,
-            MetricsNetwork::HTTP,
-            false,
-            false,
-        )
-        .await?;
-
-    let body = serde_json::to_string(&json!({
-        "result": general_purpose::STANDARD.encode(data),
-        "signature": signature
-    }))
-    .unwrap_or("".to_owned());
-
-    let header = vec![("Content-Type", "application/json")];
-
-    Ok(build_response(body, header))
-}
-
 async fn payg_price() -> Result<Json<Value>, Error> {
     let projects = merket_price(None).await?;
     Ok(Json(projects))
@@ -362,11 +334,29 @@ async fn payg_generate(Json(payload): Json<Value>) -> Result<Json<Value>, Error>
     Ok(Json(state))
 }
 
-async fn payg_query(
-    mut headers: HeaderMap,
+async fn default_payg(
+    headers: HeaderMap,
     AuthPayg(auth): AuthPayg,
     Path(deployment): Path<String>,
-    ep_name: Query<EpName>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_payg_handler(headers, auth, deployment, "default".to_owned(), body).await
+}
+
+async fn payg_query(
+    headers: HeaderMap,
+    AuthPayg(auth): AuthPayg,
+    Path((deployment, ep_name)): Path<(String, String)>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_payg_handler(headers, auth, deployment, ep_name, body).await
+}
+
+async fn ep_payg_handler(
+    mut headers: HeaderMap,
+    auth: String,
+    deployment: String,
+    ep_name: String,
     body: String,
 ) -> Result<Response<String>, Error> {
     let res_fmt = headers
@@ -382,13 +372,20 @@ async fn payg_query(
         .remove("X-Channel-Block")
         .unwrap_or(HeaderValue::from_static("single"));
 
+    let project = get_project(&deployment).await?;
+    let endpoint = project.endpoint(&ep_name, true)?;
+
+    if endpoint.is_ws {
+        return Err(Error::WebSocket(1315));
+    }
+
     let (data, signature, state_data) = match block.to_str() {
         Ok("multiple") => {
             let state = MultipleQueryState::from_bs64(auth)?;
             query_multiple_state(
                 &deployment,
                 body,
-                ep_name.0.ep_name,
+                endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
                 no_sig,
@@ -400,7 +397,7 @@ async fn payg_query(
             query_single_state(
                 &deployment,
                 body,
-                ep_name.0.ep_name,
+                endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
                 no_sig,
@@ -433,6 +430,22 @@ async fn payg_query(
     headers.push(("Access-Control-Max-Age", "600"));
 
     Ok(build_response(body, headers))
+}
+
+async fn ws_payg_query(
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+    Path((deployment, ep_name)): Path<(String, String)>,
+) -> impl IntoResponse {
+    ws_handler(
+        headers,
+        ws,
+        deployment,
+        ep_name,
+        QueryType::PAYG(U256::zero(), U256::zero()),
+    )
+    .await
+    .into_response()
 }
 
 async fn payg_pay(body: String) -> Result<String, Error> {
@@ -525,4 +538,33 @@ fn build_response(body: String, headers: Vec<(&str, &str)>) -> Response<String> 
             .body("".to_owned())
             .unwrap(),
     }
+}
+
+async fn ws_handler(
+    mut headers: HeaderMap,
+    ws: WebSocketUpgrade,
+    deployment: String,
+    ep_name: String,
+    query_type: QueryType,
+) -> impl IntoResponse {
+    let endpoint = match validate_project(&deployment, &ep_name).await {
+        Ok(ep) => ep,
+        Err(e) => return e.into_response(),
+    };
+
+    let res_sig = headers
+        .remove("X-SQ-No-Resp-Sig")
+        .unwrap_or(HeaderValue::from_static("false"));
+    let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
+
+    // Connect to remote
+    let remote_socket = match connect_to_project_ws(endpoint).await {
+        Ok(socket) => socket,
+        Err(e) => return e.into_response(),
+    };
+
+    // Handle WebSocket connection
+    ws.on_upgrade(move |socket: WebSocket| {
+        handle_websocket(remote_socket, socket, deployment, query_type, no_sig)
+    })
 }

@@ -8,7 +8,8 @@ use crate::project::Project;
 
 /// rpc evm
 pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Value> {
-    let provider = Provider::<Http>::try_from(project.endpoint())
+    let endpoint = project.endpoint("default", true)?;
+    let provider = Provider::<Http>::try_from(&endpoint.endpoint)
         .map_err(|_e| Error::ServiceException(1200))?;
 
     let now = Instant::now();
