@@ -80,7 +80,8 @@ pub async fn start_server(port: u16) {
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `POST /wl-query/:Qm...955X` goes to query with whitelist account
-        .route("/wl-query/:deployment", post(wl_query_handler))
+        .route("/wl-query/:deployment/:ep_name", post(wl_query_handler))
+        .route("/wl-query/:deployment/:ep_name", get(ws_wl_query))
         // `GET /payg-price` get the payg price
         .route("/payg-price", get(payg_price))
         // `POST /payg-open` goes to open a state channel for payg
@@ -147,6 +148,21 @@ async fn wl_query_handler(
     let header = vec![("Content-Type", "application/json")];
 
     Ok(build_response(body, header))
+}
+
+async fn ws_wl_query(
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+    Path((deployment, ep_name)): Path<(String, String)>,
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
+) -> impl IntoResponse {
+    if deployment != deployment_id {
+        return Error::AuthVerify(1004).into_response();
+    };
+
+    ws_handler(headers, ws, deployment, ep_name, QueryType::Whitelist)
+        .await
+        .into_response()
 }
 
 async fn generate_token(

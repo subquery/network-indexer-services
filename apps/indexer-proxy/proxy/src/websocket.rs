@@ -13,7 +13,7 @@ use tokio_tungstenite::tungstenite::protocol::Message as TMessage;
 
 use crate::{
     account::ACCOUNT,
-    auth::verify_auth_ws,
+    auth::{verify_auth_ws, AuthWhitelistQuery},
     cli::{redis, COMMAND},
     payg::{
         before_query_multiple_state, channel_id_to_keyname, check_multiple_state_balance,
@@ -39,9 +39,12 @@ struct CacheState {
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum QueryType {
+    /// close agreement query with auth token
     CloseAgreement,
-    // multiple query start, end
+    /// multiple query start, end
     PAYG(U256, U256),
+    /// whitelist query with signed payload
+    Whitelist,
 }
 
 struct WebSocketConnection {
@@ -186,6 +189,16 @@ impl WebSocketConnection {
 
                 (inactive, channel_id)
             }
+            QueryType::Whitelist => {
+                if COMMAND.auth() {
+                    let deployment_id = AuthWhitelistQuery::verify_auth(&auth).await?;
+                    if deployment_id != self.deployment {
+                        return Err(Error::AuthVerify(1004));
+                    }
+                }
+
+                return Ok(None);
+            }
         };
 
         self.order_id = channel_id;
@@ -260,6 +273,7 @@ impl WebSocketConnection {
     async fn post_query_sync(&mut self) -> Result<String, Error> {
         match self.query_type {
             QueryType::CloseAgreement => Ok("".to_owned()),
+            QueryType::Whitelist => Ok("".to_owned()),
             QueryType::PAYG(start, end) => {
                 let keyname = channel_id_to_keyname(self.order_id);
 
