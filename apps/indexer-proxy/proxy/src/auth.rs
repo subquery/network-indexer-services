@@ -428,6 +428,28 @@ pub struct AuthWhitelistPayload {
 }
 
 impl AuthWhitelistQuery {
+    pub async fn verify_auth(authorization: &str) -> AuthResult<String> {
+        let payload: AuthWhitelistPayload =
+            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1400))?;
+
+        let is_whitelisted = {
+            let mut whitelist = WHITELIST.lock().await;
+            let account_whitelisted = whitelist.is_whitelisted(&payload.account).await;
+            drop(whitelist);
+
+            account_whitelisted
+        };
+
+        if !is_whitelisted {
+            return Err(Error::Permission(1401));
+        }
+
+        let deployment_id = payload.deployment_id.clone();
+        AuthWhitelistQuery::verify_signature(payload)?;
+
+        Ok(deployment_id)
+    }
+
     fn verify_signature(payload: AuthWhitelistPayload) -> AuthResult<()> {
         let AuthWhitelistPayload {
             deployment_id,
@@ -482,23 +504,7 @@ where
             .to_str()
             .map_err(|_| Error::Permission(1030))?;
 
-        let payload: AuthWhitelistPayload =
-            serde_json::from_str(authorization).map_err(|_| Error::InvalidAuthHeader(1400))?;
-
-        let is_whitelisted = {
-            let mut whitelist = WHITELIST.lock().await;
-            let account_whitelisted = whitelist.is_whitelisted(&payload.account).await;
-            drop(whitelist);
-
-            account_whitelisted
-        };
-
-        if !is_whitelisted {
-            return Err(Error::Permission(1401));
-        }
-
-        let deployment_id = payload.deployment_id.clone();
-        AuthWhitelistQuery::verify_signature(payload)?;
+        let deployment_id = AuthWhitelistQuery::verify_auth(authorization).await?;
 
         Ok(AuthWhitelistQuery(deployment_id))
     }
