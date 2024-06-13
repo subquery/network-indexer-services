@@ -230,9 +230,21 @@ impl Project {
             ProjectType::Subquery | ProjectType::Subgraph => Ok((1, 1)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
-                let s: SimpleJsonrpc =
-                    serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
-                m.unit_times(&s.method)
+                if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
+                    m.unit_times(&s.method)
+                } else {
+                    let ss: Vec<SimpleJsonrpc> =
+                        serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+                    let mut vv = 0;
+                    let mut oo = 0;
+                    for s in ss {
+                        let (v, o) = m.unit_times(&s.method)?;
+                        vv += v;
+                        oo += o;
+                    }
+
+                    Ok((vv, oo))
+                }
             }
         }
     }
