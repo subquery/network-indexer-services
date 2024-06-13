@@ -12,7 +12,7 @@ import { TxType } from './types';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
-  private readonly rewardThreshold = BigNumber.from('1000000000000000000000');
+  private readonly rewardThreshold = BigNumber.from('2000000000000000000000');
   private readonly oneDay = 24 * 60 * 60 * 1000;
   private readonly allocationBypassTimeLimit = 3 * this.oneDay;
   private readonly allocationStartTimes: Map<string, number> = new Map();
@@ -93,5 +93,9 @@ export class RewardService implements OnModuleInit {
         } ${rewards.toString()}`
       );
     }
+  }
+
+  async collectStateChannelRewards(txType: TxType) {
+    // sdk.stateChannel.checkpoint(...)
   }
 }
