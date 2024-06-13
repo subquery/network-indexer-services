@@ -3,12 +3,13 @@
 
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { plainToInstance, instanceToPlain } from 'class-transformer';
+import { DbStatsService } from './db.stats.service';
 import { ProjectStatisticsEntity } from './stats.model';
 import { StatsService } from './stats.service';
 
 @Controller('stats')
 export class StatsController {
-  constructor(private statsService: StatsService) {}
+  constructor(private statsService: StatsService, private dbStatsService: DbStatsService) {}
 
   @Post(':deploymentId/:timestamp')
   async saveStats(
@@ -38,5 +39,10 @@ export class StatsController {
     @Param('to') to: string
   ): Promise<any> {
     return instanceToPlain(await this.statsService.getStatsList(deploymentId, from, to));
+  }
+
+  @Get(':deploymentId')
+  async getProjectDbSize(@Param('deploymentId') deploymentId: string): Promise<string> {
+    return this.dbStatsService.getProjectDbSize(deploymentId);
   }
 }
