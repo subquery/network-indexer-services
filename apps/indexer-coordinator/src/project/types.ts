@@ -19,6 +19,7 @@ export enum ProjectType {
 export enum SubqueryEndpointType {
   Node = 'nodeEndpoint',
   Query = 'queryEndpoint',
+  Admin = 'adminEndpoint',
 }
 
 export enum SubgraphPortType {
