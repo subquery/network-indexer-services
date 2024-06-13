@@ -445,7 +445,7 @@ fn rpc_handler(ledger: Arc<RwLock<Ledger>>) -> RpcHandler<State> {
             if !metrics.is_empty() {
                 let indexer = get_indexer().await;
                 let indexer_network = format!("{}:{}", indexer, COMMAND.network);
-                let event = Event::MetricsQueryCount(indexer_network, metrics).to_bytes();
+                let event = Event::MetricsQueryCount2(indexer_network, metrics).to_bytes();
                 let ledger = state.0.read().await;
                 let telemetries: Vec<PeerId> = ledger.telemetries.iter().map(|(v, _)| *v).collect();
                 drop(ledger);

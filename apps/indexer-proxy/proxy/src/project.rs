@@ -395,7 +395,7 @@ impl Project {
         let res = graphql_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+        add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
 
         match res {
             Ok(data) => {
@@ -423,7 +423,7 @@ impl Project {
         let res = post_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+        add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
 
         match res {
             Ok(data) => {

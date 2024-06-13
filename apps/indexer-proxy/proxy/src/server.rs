@@ -132,7 +132,7 @@ async fn wl_query_handler(
         .query(
             body,
             endpoint.endpoint.clone(),
-            MetricsQuery::Free,
+            MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,

@@ -45,20 +45,34 @@ static UPTIME: Lazy<Instant> = Lazy::new(|| Instant::now());
 struct QueryCounter {
     /// total count spent time
     time: u64,
+    /// total count with time
+    count_time: u64,
     /// failure count
     failure: u64,
     /// free query from http
     free_http: u64,
     /// free query from p2p
     free_p2p: u64,
+    /// free websocket
+    free_ws: u64,
     /// close agreement from http count
     ca_http: u64,
     /// close agreement from p2p count
     ca_p2p: u64,
+    /// close agreement from ws count
+    ca_ws: u64,
     /// payg from http count
     payg_http: u64,
     /// payg from p2p count
     payg_p2p: u64,
+    /// payg from ws_count
+    payg_ws: u64,
+    /// whitelist from http
+    wl_http: u64,
+    /// whitelist from p2p
+    wl_p2p: u64,
+    /// whitelist from ws
+    wl_ws: u64,
 }
 
 impl QueryCounter {
@@ -241,17 +255,19 @@ pub async fn get_status() -> (u64, String) {
     (uptime, info)
 }
 
-pub async fn get_timer_metrics() -> Vec<(String, u64, Vec<(u64, u64, u64)>)> {
+pub async fn get_timer_metrics() -> Vec<(String, u64, u64, Vec<(u64, u64, u64)>)> {
     let mut counter = TIMER_COUNTER.lock().await;
     let mut results = vec![];
     for (project, count) in counter.iter_mut() {
         results.push((
             project.clone(),
             count.time,
+            count.count_time,
             vec![
-                (count.free_http, 0, count.free_p2p),
-                (count.ca_http, 0, count.ca_p2p),
-                (count.payg_http, 0, count.payg_p2p),
+                (count.free_http, count.free_ws, count.free_p2p),
+                (count.ca_http, count.ca_ws, count.ca_p2p),
+                (count.payg_http, count.payg_ws, count.payg_p2p),
+                (count.wl_http, count.wl_ws, count.wl_p2p),
             ],
         ));
         *count = QueryCounter::default(); // only report need clear
@@ -265,34 +281,48 @@ pub enum MetricsQuery {
     Free,
     CloseAgreement,
     PAYG,
+    Whitelist,
 }
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum MetricsNetwork {
     HTTP,
     P2P,
+    WS,
 }
 
 pub fn add_metrics_query(
     deployment: String,
-    time: u64,
+    time: Option<u64>,
     query_type: MetricsQuery,
     network_type: MetricsNetwork,
     success: bool,
 ) {
     tokio::spawn(async move {
         #[rustfmt::skip]
-        let (f0, f1, c0, c1, p0, p1) = match (query_type, network_type) {
-            (MetricsQuery::Free, MetricsNetwork::HTTP)           => (1, 0, 0, 0, 0, 0),
-            (MetricsQuery::Free, MetricsNetwork::P2P)            => (0, 1, 0, 0, 0, 0),
-            (MetricsQuery::CloseAgreement, MetricsNetwork::HTTP) => (0, 0, 1, 0, 0, 0),
-            (MetricsQuery::CloseAgreement, MetricsNetwork::P2P)  => (0, 0, 0, 1, 0, 0),
-            (MetricsQuery::PAYG, MetricsNetwork::HTTP)           => (0, 0, 0, 0, 1, 0),
-            (MetricsQuery::PAYG, MetricsNetwork::P2P)            => (0, 0, 0, 0, 0, 1),
+        let (f0, f1, f2, c0, c1, c2, p0, p1, p2, w0, w1, w2) = match (query_type, network_type) {
+            (MetricsQuery::Free, MetricsNetwork::HTTP)           => (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::Free, MetricsNetwork::P2P)            => (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::Free, MetricsNetwork::WS)             => (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::CloseAgreement, MetricsNetwork::HTTP) => (0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::CloseAgreement, MetricsNetwork::P2P)  => (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::CloseAgreement, MetricsNetwork::WS)   => (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+            (MetricsQuery::PAYG, MetricsNetwork::HTTP)           => (0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+            (MetricsQuery::PAYG, MetricsNetwork::P2P)            => (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0),
+            (MetricsQuery::PAYG, MetricsNetwork::WS)             => (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+            (MetricsQuery::Whitelist, MetricsNetwork::HTTP)      => (0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
+            (MetricsQuery::Whitelist, MetricsNetwork::P2P)       => (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+            (MetricsQuery::Whitelist, MetricsNetwork::WS)        => (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
         };
 
         let label = Labels {
             deployment: deployment.clone(),
+        };
+
+        let (time, count_time) = if let Some(time) = time {
+            (time, 1)
+        } else {
+            (0, 0)
         };
 
         // report not handle failure query
@@ -301,22 +331,36 @@ pub fn add_metrics_query(
             .entry(deployment.clone())
             .and_modify(|f| {
                 f.time += time;
+                f.count_time += count_time;
                 f.free_http += f0;
                 f.free_p2p += f1;
+                f.free_ws += f2;
                 f.ca_http += c0;
                 f.ca_p2p += c1;
+                f.ca_ws += c2;
                 f.payg_http += p0;
                 f.payg_p2p += p1;
+                f.payg_ws += p2;
+                f.wl_http += w0;
+                f.wl_p2p += w1;
+                f.wl_ws += w2;
             })
             .or_insert(QueryCounter {
                 time,
+                count_time,
                 failure: 0,
                 free_http: f0,
                 free_p2p: f1,
+                free_ws: f2,
                 ca_http: c0,
                 ca_p2p: c1,
+                ca_ws: c2,
                 payg_http: p0,
                 payg_p2p: p1,
+                payg_ws: p2,
+                wl_http: w0,
+                wl_p2p: w1,
+                wl_ws: w2,
             });
         drop(counter);
 
@@ -347,22 +391,36 @@ pub fn add_metrics_query(
                 .entry(deployment.clone())
                 .and_modify(|f| {
                     f.time += time;
+                    f.count_time += count_time;
                     f.free_http += f0;
                     f.free_p2p += f1;
+                    f.free_ws += f2;
                     f.ca_http += c0;
                     f.ca_p2p += c1;
+                    f.ca_ws += c2;
                     f.payg_http += p0;
                     f.payg_p2p += p1;
+                    f.payg_ws += p2;
+                    f.wl_http += w0;
+                    f.wl_p2p += w1;
+                    f.wl_ws += w2;
                 })
                 .or_insert(QueryCounter {
                     time,
+                    count_time,
                     failure: 0,
                     free_http: f0,
                     free_p2p: f1,
+                    free_ws: f2,
                     ca_http: c0,
                     ca_p2p: c1,
+                    ca_ws: c2,
                     payg_http: p0,
                     payg_p2p: p1,
+                    payg_ws: p2,
+                    wl_http: w0,
+                    wl_p2p: w1,
+                    wl_ws: w2,
                 });
 
             let family = OWNER_SUCCESS.lock().await;

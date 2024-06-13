@@ -13,7 +13,13 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
     let now = Instant::now();
     let latest_block = jsonrpc_request(url, "chain_getBlock", vec![]).await?;
     let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(project.id.clone(), time, MetricsQuery::Free, network, true);
+    add_metrics_query(
+        project.id.clone(),
+        Some(time),
+        MetricsQuery::Free,
+        network,
+        true,
+    );
 
     let last_height = if let Some(item) = latest_block.pointer("/block/header/number") {
         let raw = item.as_str().unwrap_or("0");
@@ -30,7 +36,13 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         .unwrap_or("")
         .to_owned();
     let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(project.id.clone(), time, MetricsQuery::Free, network, true);
+    add_metrics_query(
+        project.id.clone(),
+        Some(time),
+        MetricsQuery::Free,
+        network,
+        true,
+    );
 
     let now = Instant::now();
     let genesis = jsonrpc_request(url, "chain_getBlockHash", vec![json!(0)])
@@ -39,7 +51,13 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         .unwrap_or("")
         .to_owned();
     let time = now.elapsed().as_millis() as u64;
-    add_metrics_query(project.id.clone(), time, MetricsQuery::Free, network, true);
+    add_metrics_query(
+        project.id.clone(),
+        Some(time),
+        MetricsQuery::Free,
+        network,
+        true,
+    );
 
     Ok(json!({
         "startHeight": 1,

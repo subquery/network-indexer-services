@@ -15,6 +15,7 @@ use crate::{
     account::ACCOUNT,
     auth::{verify_auth_ws, AuthWhitelistQuery},
     cli::{redis, COMMAND},
+    metrics::{add_metrics_query, MetricsNetwork, MetricsQuery},
     payg::{
         before_query_multiple_state, channel_id_to_keyname, check_multiple_state_balance,
         fetch_channel_cache, post_query_multiple_state, StateCache,
@@ -74,6 +75,7 @@ impl WebSocketConnection {
         }
     }
 
+    /// receive message from consumer
     async fn receive_text_msg(&mut self, raw_msg: &str) -> Result<(), Error> {
         let message = from_str::<ReceivedMessage>(raw_msg).map_err(|_| Error::WebSocket(1301))?;
         let ReceivedMessage { body, auth } = message;
@@ -90,6 +92,7 @@ impl WebSocketConnection {
         Ok(())
     }
 
+    /// send message to consumer
     async fn send_text_msg(&mut self, msg: String) -> Result<(), Error> {
         let state = self.post_query_sync().await?;
         let msg_data = msg.into_bytes();
@@ -101,6 +104,19 @@ impl WebSocketConnection {
         };
 
         self.send_msg(msg_data, signature, state).await?;
+
+        let payment = match self.query_type {
+            QueryType::CloseAgreement => MetricsQuery::CloseAgreement,
+            QueryType::PAYG(..) => MetricsQuery::PAYG,
+            QueryType::Whitelist => MetricsQuery::Whitelist,
+        };
+        add_metrics_query(
+            self.deployment.clone(),
+            None,
+            payment,
+            MetricsNetwork::WS,
+            true,
+        );
 
         Ok(())
     }
@@ -369,7 +385,7 @@ async fn handle_client_socket_message(
             }
         }
         Message::Binary(_) => {
-            debug!("Receive binary message to remote");
+            debug!("Receive binary message to client");
             ws_connection
                 .close_all(Some(Error::WebSocket(1310)))
                 .await?
