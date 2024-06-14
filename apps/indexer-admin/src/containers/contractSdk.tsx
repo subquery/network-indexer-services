@@ -3,7 +3,8 @@
 
 import React from 'react';
 import { openNotification } from '@subql/components';
-import { ContractSDK, SdkOptions } from '@subql/contract-sdk';
+import { ContractSDK } from '@subql/contract-sdk/sdk';
+import { SdkOptions } from '@subql/contract-sdk/types';
 import { SQNetworks } from '@subql/network-config';
 import { tipsChainIds } from 'conf/rainbowConf';
 import { intToHex } from 'ethereumjs-util';

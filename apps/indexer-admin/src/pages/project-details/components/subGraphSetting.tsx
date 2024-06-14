@@ -52,17 +52,20 @@ const SubGraphSetting: FC<IProps> = (props) => {
 
     const indexNodeEndpoint = serviceEndpoints.find((i) => i.key === 'index-node-endpoint');
     const httpEndpoint = serviceEndpoints.find((i) => i.key === 'http-endpoint');
-    if (!indexNodeEndpoint || !httpEndpoint) return {};
+    const wsEndpoint = serviceEndpoints.find((i) => i.key === 'ws-endpoint');
+    if (!indexNodeEndpoint || !httpEndpoint || !wsEndpoint) return {};
 
     const host = new URL(indexNodeEndpoint.value).hostname;
     const indexNodePort = new URL(indexNodeEndpoint.value).port;
     const httpPort = new URL(httpEndpoint.value).port;
+    const wsPort = new URL(wsEndpoint.value).port;
 
     return {
       rateLimit,
       host,
       indexNodePort: +indexNodePort,
       httpPort: +httpPort,
+      wsPort: +wsPort,
     };
   }, [projectQuery.data]);
 
@@ -130,7 +133,7 @@ const SubGraphSetting: FC<IProps> = (props) => {
             <Input placeholder="192.168.1.70" />
           </Form.Item>
           <Form.Item
-            label="Index node port"
+            label="Subgraph indexing status (Index node port)"
             name="indexNodePort"
             required
             rules={[
@@ -154,6 +157,20 @@ const SubGraphSetting: FC<IProps> = (props) => {
             ]}
           >
             <InputNumber min="1" max="65535" placeholder="8000" controls={false} />
+          </Form.Item>
+
+          <Form.Item
+            label="Ws port"
+            name="wsPort"
+            required
+            rules={[
+              {
+                required: true,
+                message: 'Please input the port',
+              },
+            ]}
+          >
+            <InputNumber min="1" max="65535" placeholder="8001" controls={false} />
           </Form.Item>
           <HorizeFormItem>
             <Form.Item
@@ -197,6 +214,10 @@ const SubGraphSetting: FC<IProps> = (props) => {
                     {
                       key: 'http-port',
                       value: form.getFieldValue('httpPort'),
+                    },
+                    {
+                      key: 'ws-port',
+                      value: form.getFieldValue('wsPort'),
                     },
                   ],
                   cid: mineId,

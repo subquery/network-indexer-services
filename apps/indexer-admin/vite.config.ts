@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import react from '@vitejs/plugin-react';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 const { resolve } = path;
 
@@ -24,7 +25,13 @@ export default defineConfig({
       conf: resolve(__dirname, 'src/conf/'),
     },
   },
-  plugins: [EnvironmentPlugin('all'), react()],
+  plugins: [
+    EnvironmentPlugin('all'),
+    react(),
+    nodePolyfills({
+      exclude: ['buffer'],
+    }),
+  ],
   build: {
     outDir: 'build',
   },
