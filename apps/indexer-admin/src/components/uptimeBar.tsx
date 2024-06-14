@@ -123,7 +123,11 @@ const UptimeBar: FC<IProps> = (props) => {
                       </Typography>
                       {getUptimeStatus(uptime) === UPTIME_STATUS.OFFLINE &&
                         uptime.latestErrorMsg && (
-                          <Typography variant="medium" weight={900}>
+                          <Typography
+                            variant="medium"
+                            weight={900}
+                            style={{ wordBreak: 'break-word' }}
+                          >
                             {uptime.latestErrorMsg}
                           </Typography>
                         )}
