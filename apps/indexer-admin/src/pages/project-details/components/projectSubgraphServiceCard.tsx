@@ -86,7 +86,9 @@ const ProjectSubgraphServiceCard: FC<Props> = ({ project, metadata, projectStatu
         {subgraphButtons}
       </div>
 
-      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+      <div
+        style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap' }}
+      >
         {project.projectConfig.serviceEndpoints.map((endpoint, index) => {
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }} key={endpoint.key || index}>
