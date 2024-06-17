@@ -21,30 +21,31 @@ export class DbStatsService {
     @InjectEntityManager() private entityManager: EntityManager
   ) {
     // TODO test only
-    this.autoUpdateDbStats();
+    // this.autoUpdateDbStats();
   }
 
-  @Cron('0 0 */12 * * *')
+  // 1 time per day
+  @Cron('2 2 2 * * *')
   async autoUpdateDbStatsCronJob() {
     await this.autoUpdateDbStats();
   }
 
-  async getAllSubqueryProjects(): Promise<string[]> {
+  async getAllSubqueryProjectIds(): Promise<string[]> {
     return (await this.projectService.getAliveProjects())
       .filter((project) => project.projectType === ProjectType.SUBQUERY)
       .map((project) => project.id);
   }
 
   async autoUpdateDbStats(): Promise<void> {
-    const projects = await this.getAllSubqueryProjects();
-    for (const deploymentId of projects) {
-      await this.updateProjectDbStats(deploymentId);
+    const projectIds = await this.getAllSubqueryProjectIds();
+    for (const id of projectIds) {
+      await this.updateProjectDbStats(id);
     }
   }
 
-  async updateProjectDbStats(deploymentId: string): Promise<void> {
+  async updateProjectDbStats(id: string): Promise<void> {
     try {
-      const schema = schemaName(deploymentId);
+      const schema = schemaName(id);
       const sql = `
 SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint AS size
 FROM pg_tables
@@ -52,32 +53,32 @@ WHERE schemaname = '${schema}';
     `;
       const result: DbSizeResultType[] = await this.entityManager.query(sql);
       const size = (result[0]?.size ?? 0).toString();
-      const key = this.getDbStatsKey(deploymentId);
-      this.logger.info(`Updating db size for ${deploymentId} to ${size} bytes`);
+      const key = this.getDbStatsKey(id);
+      this.logger.info(`Updating db size for ${id} to ${size} bytes`);
       await redisSetObj(key, {
         size,
         timestamp: Date.now(),
       } as DbStatsStorageType);
     } catch (e) {
-      this.logger.error(`Failed to update db size for ${deploymentId}`, e);
+      this.logger.error(`Failed to update db size for ${id}`, e);
     }
   }
 
-  async getProjectDbStats(deploymentId: string): Promise<DbStatsStorageType | null> {
-    const key = this.getDbStatsKey(deploymentId);
+  async getProjectDbStats(id: string): Promise<DbStatsStorageType | null> {
+    const key = this.getDbStatsKey(id);
     return await redisGetObj<DbStatsStorageType>(key);
   }
 
-  async getAllSubqueryDbStats(): Promise<{ [deploymentId: string]: DbStatsStorageType }> {
-    const projects = await this.getAllSubqueryProjects();
-    const dbStats: { [deploymentId: string]: DbStatsStorageType } = {};
-    for (const deploymentId of projects) {
-      dbStats[deploymentId] = await this.getProjectDbStats(deploymentId);
+  async getAllSubqueryDbStats(): Promise<{ [id: string]: DbStatsStorageType }> {
+    const projectIds = await this.getAllSubqueryProjectIds();
+    const dbStats: { [id: string]: DbStatsStorageType } = {};
+    for (const id of projectIds) {
+      dbStats[id] = await this.getProjectDbStats(id);
     }
     return dbStats;
   }
 
-  getDbStatsKey(deploymentId: string): string {
-    return `coordinator:db-stats:${deploymentId}`;
+  getDbStatsKey(id: string): string {
+    return `coordinator:db-stats:${id}`;
   }
 }

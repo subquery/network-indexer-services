@@ -55,6 +55,18 @@ export class SubgraphEndpoint {
   value: string;
 }
 
+@ObjectType('SubqueryEndpoint')
+export class DbStatsStorageType {
+  @Field()
+  size: string;
+  @Field()
+  timestamp: number;
+}
+
+export class DbSizeResultType {
+  size: number;
+}
+
 export type TemplateType = {
   deploymentID: string;
   projectID: string;

@@ -7,6 +7,7 @@ import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.s
 import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
+import { DbStatsService } from './db.stats.service';
 import { AggregatedManifest } from './project.manifest';
 import {
   LogType,
@@ -38,7 +39,8 @@ export class ProjectResolver {
     private projectSubgraphService: ProjectSubgraphService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
-    private pubSub: SubscriptionService
+    private pubSub: SubscriptionService,
+    private dbStatsService: DbStatsService
   ) {}
 
   @Query(() => [String])
@@ -301,5 +303,10 @@ export class ProjectResolver {
   @Subscription(() => Project)
   projectChanged() {
     return this.pubSub.asyncIterator([ProjectEvent.ProjectStarted, ProjectEvent.ProjectStopped]);
+  }
+
+  @Query(() => String)
+  async getProjectDbSize(@Args('id') id: string): Promise<string> {
+    return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
   }
 }
