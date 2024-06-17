@@ -19,6 +19,7 @@ import {
   ProjectConfig,
   ValidationResponse,
   ProjectInfo,
+  ProjectWithStats,
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
@@ -124,9 +125,19 @@ export class ProjectResolver {
     );
   }
 
-  @Query(() => [Project])
-  async getAliveProjects(): Promise<Project[]> {
-    return this.projectService.getAliveProjects();
+  @Query(() => [ProjectWithStats])
+  async getAliveProjects(): Promise<ProjectWithStats[]> {
+    const projects: ProjectWithStats[] = [];
+    const aliveProjects = await this.projectService.getAliveProjects();
+    for (const project of aliveProjects) {
+      if (project.projectType === ProjectType.SUBQUERY) {
+        const dbSize = await this.dbStatsService.getProjectDbStats(project.id);
+        projects.push({ ...project, dbSize: dbSize?.size });
+      } else {
+        projects.push(project);
+      }
+    }
+    return projects;
   }
 
   @Query(() => [Payg])

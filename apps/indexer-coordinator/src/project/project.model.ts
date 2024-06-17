@@ -377,6 +377,12 @@ export class PaygEntity {
 @ObjectType('Project')
 export class Project extends ProjectEntity {}
 
+@ObjectType('ProjectWithStats')
+export class ProjectWithStats extends Project {
+  @Field({ nullable: true })
+  dbSize?: string;
+}
+
 @ObjectType('Payg')
 export class Payg extends PaygEntity {}
 
