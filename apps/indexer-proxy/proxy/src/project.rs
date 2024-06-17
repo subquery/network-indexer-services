@@ -612,7 +612,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert("default".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "evmWs" | "polkadotWs" | "wsEndpoint" |"ws-endpoint" => {
+                "evmWs" | "polkadotWs" | "wsEndpoint" | "ws-endpoint" => {
                     e.is_ws = true;
                     endpoints.insert("ws".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
