@@ -3,13 +3,19 @@
 
 import { Controller, Get, Query } from '@nestjs/common';
 import { DbStatsService } from './db.stats.service';
+import { DbStatsStorageType } from './types';
 
 @Controller('db')
 export class DbStatsController {
   constructor(private dbStatsService: DbStatsService) {}
 
+  @Get('all-stats')
+  async getDbStats(): Promise<{ [deploymentId: string]: DbStatsStorageType }> {
+    return this.dbStatsService.getAllSubqueryDbStats();
+  }
+
   @Get('stats')
-  async getProjectDbStat(@Query('deploymentId') deploymentId: string): Promise<any> {
+  async getProjectDbStat(@Query('deploymentId') deploymentId: string): Promise<DbStatsStorageType> {
     return this.dbStatsService.getProjectDbStats(deploymentId);
   }
 
