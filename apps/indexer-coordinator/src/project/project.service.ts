@@ -392,7 +392,9 @@ export class ProjectService {
     try {
       await this.db.createDBSchema(projectSchemaName);
       await generateDockerComposeFile(templateItem);
-      this.docker.up(templateItem.deploymentID);
+      this.docker.up(templateItem.deploymentID).catch((e) => {
+        getLogger('project').error(e, `Failed to start docker: ${id}`);
+      });
     } catch (e) {
       const message = `Failed to start project: ${id}`;
       getLogger('project').error(e, message);
