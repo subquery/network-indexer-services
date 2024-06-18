@@ -25,6 +25,7 @@ import {
   SubgraphPort,
   SubgraphEndpointType,
   ProjectType,
+  SubgraphEndpointAccessType,
 } from './types';
 
 const logger = getLogger('project.subgraph.service');
@@ -64,14 +65,21 @@ export class ProjectSubgraphService {
     );
     indexNodeEndpoint.valid = validateResult.valid;
     indexNodeEndpoint.reason = validateResult.reason;
+    indexNodeEndpoint.access =
+      indexNodeEndpoint.access ||
+      SubgraphEndpointAccessType[SubgraphEndpointType.IndexNodeEndpoint];
 
     const validateResult2 = await this.validateSubgraphHttpProjectEndpoint(httpEndpoint.value);
     httpEndpoint.valid = validateResult2.valid;
     httpEndpoint.reason = validateResult2.reason;
+    httpEndpoint.access =
+      httpEndpoint.access || SubgraphEndpointAccessType[SubgraphEndpointType.HttpEndpoint];
 
     const validateResult3 = await this.validateSubgraphWsProjectEndpoint(wsEndpoint.value);
     wsEndpoint.valid = validateResult3.valid;
     wsEndpoint.reason = validateResult3.reason;
+    wsEndpoint.access =
+      wsEndpoint.access || SubgraphEndpointAccessType[SubgraphEndpointType.WsEndpoint];
   }
 
   getRequiredPortsTypes(): string[] {
@@ -133,6 +141,10 @@ export class ProjectSubgraphService {
         SubgraphEndpointType.WsEndpoint,
       ].includes(endpoint.key as SubgraphEndpointType);
     });
+    for (const endpoint of project.serviceEndpoints) {
+      endpoint.access = SubgraphEndpointAccessType[endpoint.key];
+    }
+
     projectConfig.serviceEndpoints = project.serviceEndpoints;
 
     const validateResult = await this.validateSubgraphNodeEndpoint(
