@@ -87,8 +87,10 @@ export async function generateDockerComposeFile(data: TemplateType) {
     const config = await nodeConfigs(deploymentID);
     const context = { ...data, ...config };
     getTemplateContextValidator().parse(context);
+
     const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
     const template = handlebars.compile(file, { noEscape: true })(context);
+
     fs.writeFileSync(getComposeFilePath(deploymentID), template);
     getLogger('docker').info(`generate new docker compose file: ${deploymentID}.yml`);
   } catch (e) {
