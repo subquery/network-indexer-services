@@ -51,7 +51,13 @@ import {
   ProjectInfo,
   MetadataType,
 } from './project.model';
-import { MmrStoreType, ProjectType, SubqueryEndpointType, TemplateType } from './types';
+import {
+  MmrStoreType,
+  ProjectType,
+  SubqueryEndpointAccessType,
+  SubqueryEndpointType,
+  TemplateType,
+} from './types';
 
 @Injectable()
 export class ProjectService {
@@ -394,9 +400,21 @@ export class ProjectService {
     const nodeConfig = await nodeConfigs(id);
     project.projectConfig = projectConfig;
     project.serviceEndpoints = [
-      new SeviceEndpoint(SubqueryEndpointType.Node, nodeEndpoint(id, templateItem.servicePort)),
-      new SeviceEndpoint(SubqueryEndpointType.Query, queryEndpoint(id, templateItem.servicePort)),
-      new SeviceEndpoint(SubqueryEndpointType.Admin, adminEndpoint(id, templateItem.servicePort)),
+      new SeviceEndpoint(
+        SubqueryEndpointType.Node,
+        nodeEndpoint(id, templateItem.servicePort),
+        SubqueryEndpointAccessType[SubqueryEndpointType.Node]
+      ),
+      new SeviceEndpoint(
+        SubqueryEndpointType.Query,
+        queryEndpoint(id, templateItem.servicePort),
+        SubqueryEndpointAccessType[SubqueryEndpointType.Query]
+      ),
+      new SeviceEndpoint(
+        SubqueryEndpointType.Admin,
+        adminEndpoint(id, templateItem.servicePort),
+        SubqueryEndpointAccessType[SubqueryEndpointType.Admin]
+      ),
     ];
     // project.queryEndpoint = queryEndpoint(id, templateItem.servicePort);
     // project.nodeEndpoint = nodeEndpoint(id, templateItem.servicePort);

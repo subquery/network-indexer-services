@@ -3,7 +3,7 @@
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
-import { ProjectType } from './types';
+import { AccessType, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -241,11 +241,12 @@ const defaultProjectConfig: IProjectConfig = {
 @InputType('SeviceEndpointInput')
 @ObjectType('SeviceEndpoint')
 export class SeviceEndpoint {
-  constructor(key: string, value: string) {
+  constructor(key: string, value: string, access?: AccessType) {
     this.key = key;
     this.value = value;
     this.valid = true;
     this.reason = '';
+    this.access = access;
   }
   @Field()
   key: string;
@@ -255,6 +256,10 @@ export class SeviceEndpoint {
   valid?: boolean;
   @Field({ nullable: true })
   reason?: string;
+  // @Field({ nullable: true })
+  // type?: EndpointType;
+  @Field({ nullable: true })
+  access?: AccessType;
 }
 
 @Entity()
