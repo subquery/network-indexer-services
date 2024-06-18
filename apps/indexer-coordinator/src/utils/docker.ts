@@ -118,7 +118,7 @@ function getTemplateContextValidator() {
   const versionSchema = z.string().refine((v) => v.match(/^v?\d+\.\d+\.\d+(-\d+)?$/), {
     message: 'Invalid version string',
   });
-  const emptyStringSchema = z.string().refine((v) => !v, { message: 'Invalid empty string' });
+  const emptyStringSchema = z.string().refine((v) => v === '', { message: 'Invalid empty string' });
   const urlSchema = z.string().refine(
     (v) => {
       try {
@@ -130,10 +130,12 @@ function getTemplateContextValidator() {
     },
     { message: 'Invalid URL' }
   );
-  return z.object({
-    networkEndpoints: z.array(urlSchema),
-    networkDictionary: urlSchema.or(emptyStringSchema),
-    nodeVersion: versionSchema,
-    queryVersion: versionSchema,
-  });
+  return z
+    .object({
+      networkEndpoints: z.array(urlSchema),
+      networkDictionary: z.nullable(urlSchema.or(emptyStringSchema)),
+      nodeVersion: versionSchema,
+      queryVersion: versionSchema,
+    })
+    .partial();
 }
