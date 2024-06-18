@@ -384,7 +384,9 @@ export class ProjectService {
       await generateDockerComposeFile(templateItem);
       this.docker.up(templateItem.deploymentID);
     } catch (e) {
-      getLogger('project').warn(e, `start project`);
+      const message = `Failed to start project: ${id}`;
+      getLogger('project').error(e, message);
+      throw new Error(message);
     }
 
     const nodeConfig = await nodeConfigs(id);
