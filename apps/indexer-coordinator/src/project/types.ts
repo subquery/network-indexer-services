@@ -19,6 +19,7 @@ export enum ProjectType {
 export enum SubqueryEndpointType {
   Node = 'nodeEndpoint',
   Query = 'queryEndpoint',
+  Admin = 'adminEndpoint',
 }
 
 export enum SubgraphPortType {
@@ -52,6 +53,18 @@ export class SubgraphEndpoint {
   key: SubgraphEndpointType;
   @Field()
   value: string;
+}
+
+@ObjectType('SubqueryEndpoint')
+export class DbStatsStorageType {
+  @Field()
+  size: string;
+  @Field()
+  timestamp: number;
+}
+
+export class DbSizeResultType {
+  size: number;
 }
 
 export type TemplateType = {

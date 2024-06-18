@@ -7,6 +7,7 @@ import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.s
 import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
+import { DbStatsService } from './db.stats.service';
 import { AggregatedManifest } from './project.manifest';
 import {
   LogType,
@@ -18,6 +19,7 @@ import {
   ProjectConfig,
   ValidationResponse,
   ProjectInfo,
+  ProjectWithStats,
 } from './project.model';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
@@ -38,7 +40,8 @@ export class ProjectResolver {
     private projectSubgraphService: ProjectSubgraphService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
-    private pubSub: SubscriptionService
+    private pubSub: SubscriptionService,
+    private dbStatsService: DbStatsService
   ) {}
 
   @Query(() => [String])
@@ -122,9 +125,19 @@ export class ProjectResolver {
     );
   }
 
-  @Query(() => [Project])
-  async getAliveProjects(): Promise<Project[]> {
-    return this.projectService.getAliveProjects();
+  @Query(() => [ProjectWithStats])
+  async getAliveProjects(): Promise<ProjectWithStats[]> {
+    const projects: ProjectWithStats[] = [];
+    const aliveProjects = await this.projectService.getAliveProjects();
+    for (const project of aliveProjects) {
+      if (project.projectType === ProjectType.SUBQUERY) {
+        const dbSize = await this.dbStatsService.getProjectDbStats(project.id);
+        projects.push({ ...project, dbSize: dbSize?.size });
+      } else {
+        projects.push(project);
+      }
+    }
+    return projects;
   }
 
   @Query(() => [Payg])
@@ -301,5 +314,10 @@ export class ProjectResolver {
   @Subscription(() => Project)
   projectChanged() {
     return this.pubSub.asyncIterator([ProjectEvent.ProjectStarted, ProjectEvent.ProjectStopped]);
+  }
+
+  @Query(() => String)
+  async getProjectDbSize(@Args('id') id: string): Promise<string> {
+    return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
   }
 }

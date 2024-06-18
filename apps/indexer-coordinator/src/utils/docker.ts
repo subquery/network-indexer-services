@@ -31,6 +31,10 @@ export function queryEndpoint(cid: string, port: number): string {
   return `http://query_${projectId(cid)}:${port}`;
 }
 
+export function adminEndpoint(cid: string, port: number): string {
+  return `http://node_${projectId(cid)}:${port}/admin`;
+}
+
 export function getComposeFileDirectory(cid: string): string {
   return join(argv['compose-file-directory'], `projects/${cid}`);
 }
