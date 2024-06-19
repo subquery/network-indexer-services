@@ -557,7 +557,7 @@ pub struct ProjectItem {
     #[serde(rename = "overflow")]
     pub payg_overflow: u64,
     #[serde(rename = "dbSize")]
-    pub db_size: Option<u64>,
+    pub db_size: Option<String>,
 }
 
 pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
@@ -575,7 +575,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         } else {
             None
         };
-        let db_size = item.db_size;
+        let db_size = item.db_size.map(|s| s.parse().unwrap_or(0u64));
 
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
