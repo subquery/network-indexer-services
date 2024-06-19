@@ -134,7 +134,7 @@ async fn ep_wl_query(
         .query(
             body,
             endpoint.endpoint.clone(),
-            MetricsQuery::Free,
+            MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,

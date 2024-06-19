@@ -78,15 +78,19 @@ pub enum Event {
     /// params: indexer, [
     ///   project(String),
     ///   query_total_time(u64),
+    ///   query_total_with_time(u64),
     ///   [
     ///     (close_agreement_count_http(u64), close_agreement_count_ws(u64), close_agreement_count_p2p(u64)),
-    ///     (payg_count_http(u64), payg_count_ws(u64), payg_count_p2p(u64))
+    ///     (payg_count_http(u64), payg_count_ws(u64), payg_count_p2p(u64)),
+    ///     (whitelist_http(u64)), whitelitst_ws(u64), whitelist_p2p(u64))
     ///   ],
     /// ]
     MetricsQueryCount(String, Vec<(String, u64, Vec<(u64, u64, u64)>)>),
     /// Report payg conflict info
     /// params: indexer, DeploymentId, channel, total conflict, start time, end time.
     MetricsPaygConflict(String, String, String, i32, i64, i64),
+    /// above
+    MetricsQueryCount2(String, Vec<(String, u64, u64, Vec<(u64, u64, u64)>)>),
 }
 
 impl Event {
