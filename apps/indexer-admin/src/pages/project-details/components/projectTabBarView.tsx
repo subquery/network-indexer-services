@@ -93,7 +93,7 @@ const ProjectTabbarView: FC<Props> = ({ id, project, config }) => {
   }, [config, id, project, value]);
 
   const renderTabs = useMemo(() => {
-    if (project.projectType === ProjectType.Rpc) {
+    if (project.projectType === ProjectType.Rpc || project.projectType === ProjectType.SubGraph) {
       return tabItems.filter((i) => i.key !== TabbarItem.ServiceLogs);
     }
     return tabItems;

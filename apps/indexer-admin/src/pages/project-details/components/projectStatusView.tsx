@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { SubqlProgress } from '@subql/components';
+import { SubqlProgress, Typography } from '@subql/components';
 import styled from 'styled-components';
 
-import { Text } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import { formatValueToFixed } from 'utils/units';
 
@@ -40,9 +39,9 @@ const ProjectStatusView: FC<Props> = ({ percent, metadata }) => {
     <CardContainer>
       <ContentContainer>
         <LabelContainer>
-          <Text size={15} fw="500" mr={10}>
-            Indexing Status
-          </Text>
+          <Typography variant="h6" weight={500}>
+            Syncing Status
+          </Typography>
 
           <span style={{ flex: 1 }} />
         </LabelContainer>

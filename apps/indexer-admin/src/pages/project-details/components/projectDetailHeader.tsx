@@ -29,11 +29,15 @@ type Props = {
   announceStop: () => void;
 };
 
-const projectTitleDict: { [key: number]: string } = {
+const projectTitleDict: { [key: number]: React.ReactNode } = {
   [ProjectType.SubQuery]: 'SubQuery Project',
   [ProjectType.Rpc]: 'RPC Service',
   [ProjectType.Dictionary]: 'Dictionary',
-  [ProjectType.SubGraph]: 'SubGraph Project',
+  [ProjectType.SubGraph]: (
+    <Tag style={{ background: '#6B46EF', color: '#fff', border: '1px solid #DFE3E880' }}>
+      Subgraph
+    </Tag>
+  ),
 };
 
 const ProjectDetailsHeader: FC<Props> = ({
@@ -56,6 +60,7 @@ const ProjectDetailsHeader: FC<Props> = ({
       });
     }
   }, [project, getManifest]);
+
   return (
     <Container>
       <LeftContainer>
