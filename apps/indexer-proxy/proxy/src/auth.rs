@@ -166,7 +166,7 @@ where
                 rate_times,
             ))
         } else {
-            Ok(AuthQueryLimit(CommandLineArgs::free_limit(), 0, 1, 0))
+            Ok(AuthQueryLimit(COMMAND.free_limit(), 0, 1, 0))
         }
     }
 }

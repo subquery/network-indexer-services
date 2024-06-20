@@ -214,7 +214,7 @@ async fn generate_token(
 
     let (checked, daily, rate, free) = if signer == payload.indexer.to_lowercase() {
         // if signer is indexer itself, return the token
-        (true, 0, 0, None)
+        (true, COMMAND.free_limit(), 1, Some(addr))
     } else {
         // if singer is consumer, check signer is consumer,
         // and check whether the agreement is expired and the it is consistent with
