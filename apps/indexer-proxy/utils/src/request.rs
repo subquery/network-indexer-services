@@ -114,7 +114,8 @@ pub async fn post_request_raw(uri: &str, query: String) -> Result<Vec<u8>, Error
     };
 
     let status = res.status();
-    let body = res.bytes()
+    let body = res
+        .bytes()
         .await
         .map(|bytes| bytes.to_vec())
         .map_err(|e| Error::GraphQLQuery(1011, e.to_string()))?;
