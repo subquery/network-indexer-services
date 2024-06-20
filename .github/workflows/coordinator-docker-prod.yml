@@ -1,11 +1,6 @@
 name: 'Coordinator-Docker-Prod'
 on:
   workflow_dispatch:
-    inputs:
-      isLatest:
-        description: 'Add latest tag'
-        default: 'false'
-        # require: false
 
 jobs:
   node-build-push-docker:
@@ -43,7 +38,6 @@ jobs:
           sh .github/workflows/scripts/coordinatorVersion.sh
 
       - name: Build and push
-        if: github.event.inputs.isLatest == 'false'
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -51,17 +45,6 @@ jobs:
           platforms: amd64,arm64
           file: ./Dockerfile
           tags: subquerynetwork/indexer-coordinator:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
-          build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
-
-      - name: Build and push
-        if: github.event.inputs.isLatest == 'true'
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          platforms: amd64,arm64
-          file: ./Dockerfile
-          tags: subquerynetwork/indexer-coordinator:v${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }},subquerynetwork/indexer-coordinator:latest
           build-args: RELEASE_VERSION=${{ steps.get-coordinator-version.outputs.COORDINATOR_VERSION }}
 
       - name: Image digest

@@ -38,7 +38,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: ./apps/indexer-proxy/proxy/Dockerfile
-          tags: subquerynetwork/indexer-proxy-dev:v${{ steps.fetch-version.outputs.VERSION }}
+          tags: subquerynetwork/indexer-proxy-dev:v${{ steps.fetch-version.outputs.VERSION }},subquerynetwork/indexer-proxy-dev:latest
           build-args: RELEASE_VERSION=${{ steps.fetch-version.outputs.VERSION }}
 
       - name: Image digest
