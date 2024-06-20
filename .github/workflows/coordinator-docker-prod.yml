@@ -5,7 +5,6 @@ on:
       isLatest:
         description: 'Add latest tag'
         default: 'false'
-        # require: false
 
 jobs:
   node-build-push-docker:
