@@ -211,6 +211,7 @@ pub struct Project {
     // ep_name, endpoint, is_inernal, is_ws
     pub endpoints: HashMap<String, Endpoint>,
     pub rate_limit: Option<i64>,
+    pub db_size: Option<u64>,
     pub payg_price: U256,
     pub payg_token: Address,
     pub payg_expiration: u64,
@@ -319,6 +320,7 @@ impl Project {
             "deploymentId": self.id,
             "timestamp": timestamp,
             "rateLimit": self.rate_limit.unwrap_or(1000),
+            "dbSize": self.db_size,
             "signature": sign.to_string(),
         });
 
@@ -407,7 +409,7 @@ impl Project {
         let res = graphql_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+        add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
 
         match res {
             Ok(data) => {
@@ -435,7 +437,7 @@ impl Project {
         let res = post_request_raw(&endpoint, query).await;
         let time = now.elapsed().as_millis() as u64;
 
-        add_metrics_query(self.id.clone(), time, payment, network, res.is_ok());
+        add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
 
         match res {
             Ok(data) => {
@@ -554,6 +556,8 @@ pub struct ProjectItem {
     pub payg_expiration: u64,
     #[serde(rename = "overflow")]
     pub payg_overflow: u64,
+    #[serde(rename = "dbSize")]
+    pub db_size: Option<String>,
 }
 
 pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
@@ -571,6 +575,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
         } else {
             None
         };
+        let db_size = item.db_size.map(|s| s.parse().unwrap_or(0u64));
 
         let payg_price = U256::from_dec_str(&item.payg_price).unwrap_or(U256::from(0));
         let payg_token: Address = item.payg_token.parse().unwrap_or(Address::zero());
@@ -612,12 +617,12 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     endpoints.insert("default".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "evmWs" | "polkadotWs" => {
+                "evmWs" | "polkadotWs" | "wsEndpoint" | "ws-endpoint" => {
                     e.is_ws = true;
                     endpoints.insert("ws".to_owned(), e.clone());
                     endpoints.insert(endpoint.key, e);
                 }
-                "nodeEndpoint" | "index-node-endpoint" => {
+                "nodeEndpoint" | "index-node-endpoint" | "adminEndpoint" | "admin-endpoint" => {
                     e.is_internal = true;
                     endpoints.insert(endpoint.key, e);
                 }
@@ -638,6 +643,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             ptype,
             endpoints,
             rate_limit,
+            db_size,
             payg_price,
             payg_token,
             payg_expiration,

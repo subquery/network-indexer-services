@@ -9,6 +9,7 @@ import { DBModule } from '../db/db.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
+import { DbStatsService } from './db.stats.service';
 import { PortService } from './port.service';
 import { PaygEntity, ProjectEntity } from './project.model';
 import { ProjectResolver } from './project.resolver';
@@ -30,6 +31,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     ProjectResolver,
     ProjectRpcService,
     ProjectSubgraphService,
+    DbStatsService,
   ],
   exports: [ProjectService, ProjectRpcService],
 })

@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react';
 import { WarningOutlined } from '@ant-design/icons';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
-import { openNotification, Steps, Typography } from '@subql/components';
+import { openNotification, Steps, Tag, Typography } from '@subql/components';
 import { renderAsync } from '@subql/react-hooks';
 import { Button, Collapse, Drawer, Form, Input } from 'antd';
 import { useForm } from 'antd/es/form/Form';
@@ -159,6 +159,18 @@ const Projects = () => {
     }, 1000);
   }, [validateManifest, getProjectName, getIfUnsafe]);
 
+  const projectType = useMemo(() => {
+    if (manifest.data?.getManifest?.rpcManifest) return 'RPC Endpoint';
+    if (manifest.data?.getManifest?.subqueryManifest) return 'Data Indexer';
+    if (manifest.data?.getManifest?.subgraphManifest)
+      return (
+        <Tag style={{ background: '#6B46EF', color: '#fff', border: '1px solid #DFE3E880' }}>
+          Subgraph
+        </Tag>
+      );
+    return 'Data Indexer';
+  }, [manifest]);
+
   return renderAsync(
     {
       ...projectsQuery,
@@ -205,7 +217,14 @@ const Projects = () => {
                     current={0}
                   />
                   <Typography>
-                    The Deployment ID can be found on project details pages in Explorer
+                    The Deployment ID can be found on project details pages in{' '}
+                    <Typography.Link
+                      href="https://app.subquery.network/"
+                      target="_blank"
+                      type="info"
+                    >
+                      Explorer
+                    </Typography.Link>
                   </Typography>
 
                   <Form layout="vertical" form={form}>
@@ -240,9 +259,7 @@ const Projects = () => {
                                         {projectName.data?.getProjectInfo.name}
                                       </Typography>
                                       <Typography variant="small" type="secondary">
-                                        {manifest.data?.getManifest.rpcManifest
-                                          ? 'RPC Endpoint'
-                                          : 'Data Indexer'}
+                                        {projectType}
                                       </Typography>
                                     </div>
                                   </div>

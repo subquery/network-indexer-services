@@ -17,7 +17,7 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
     let time = now.elapsed().as_millis() as u64;
     add_metrics_query(
         project.id.clone(),
-        time,
+        Some(time),
         MetricsQuery::Free,
         network,
         metadata_res.is_ok(),

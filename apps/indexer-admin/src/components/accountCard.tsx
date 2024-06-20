@@ -51,7 +51,7 @@ const AccountCard: FC<Props> = ({ title, desc, buttons, name, account }) => {
             <Avatar address={account ?? ''} size={100} />
             <DescContainer ml={20}>
               <Text className="overflowEllipsis2">{name}</Text>
-              <Text mt={10}>
+              <Text mt={10} style={{ overflowWrap: 'normal' }}>
                 <Copy value={account}>{account}</Copy>
               </Text>
               <Text mt={10}>{desc}</Text>

@@ -16,10 +16,27 @@ export enum ProjectType {
   SUBGRAPH,
 }
 
+export enum AccessType {
+  DEFAULT = 'default',
+  INTERNAL = 'internal',
+}
+
+// export enum EndpointType {
+//   DEFAULT = 'default',
+//   WS = 'ws',
+// }
+
 export enum SubqueryEndpointType {
   Node = 'nodeEndpoint',
   Query = 'queryEndpoint',
+  Admin = 'adminEndpoint',
 }
+
+export const SubqueryEndpointAccessType = {
+  [SubqueryEndpointType.Node]: AccessType.DEFAULT,
+  [SubqueryEndpointType.Query]: AccessType.DEFAULT,
+  [SubqueryEndpointType.Admin]: AccessType.INTERNAL,
+};
 
 export enum SubgraphPortType {
   HttpPort = 'http-port',
@@ -37,6 +54,14 @@ export enum SubgraphEndpointType {
   MetricsEndpoint = 'metrics-endpoint',
 }
 
+export const SubgraphEndpointAccessType = {
+  [SubgraphEndpointType.HttpEndpoint]: AccessType.DEFAULT,
+  [SubgraphEndpointType.WsEndpoint]: AccessType.DEFAULT,
+  [SubgraphEndpointType.AdminEndpoint]: AccessType.INTERNAL,
+  [SubgraphEndpointType.IndexNodeEndpoint]: AccessType.INTERNAL,
+  [SubgraphEndpointType.MetricsEndpoint]: AccessType.INTERNAL,
+};
+
 @InputType('SubgraphPort')
 @ObjectType('SubgraphPort')
 export class SubgraphPort {
@@ -52,6 +77,18 @@ export class SubgraphEndpoint {
   key: SubgraphEndpointType;
   @Field()
   value: string;
+}
+
+@ObjectType('SubqueryEndpoint')
+export class DbStatsStorageType {
+  @Field()
+  size: string;
+  @Field()
+  timestamp: number;
+}
+
+export class DbSizeResultType {
+  size: number;
 }
 
 export type TemplateType = {

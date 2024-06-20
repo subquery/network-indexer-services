@@ -80,7 +80,8 @@ pub async fn start_server(port: u16) {
         // `GET /query-limit` get the query limit times with agreement
         .route("/query-limit", get(query_limit_handler))
         // `POST /wl-query/:Qm...955X` goes to query with whitelist account
-        .route("/wl-query/:deployment/:ep_name", post(wl_query_handler))
+        .route("/wl-query/:deployment", post(default_wl_query))
+        .route("/wl-query/:deployment/:ep_name", post(wl_query))
         .route("/wl-query/:deployment/:ep_name", get(ws_wl_query))
         // `GET /payg-price` get the payg price
         .route("/payg-price", get(payg_price))
@@ -117,9 +118,10 @@ pub async fn start_server(port: u16) {
         .unwrap();
 }
 
-async fn wl_query_handler(
-    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
-    Path((deployment, ep_name)): Path<(String, String)>,
+async fn ep_wl_query(
+    deployment_id: String,
+    deployment: String,
+    ep_name: String,
     body: String,
 ) -> Result<Response<String>, Error> {
     if deployment != deployment_id {
@@ -132,7 +134,7 @@ async fn wl_query_handler(
         .query(
             body,
             endpoint.endpoint.clone(),
-            MetricsQuery::Free,
+            MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,
@@ -148,6 +150,22 @@ async fn wl_query_handler(
     let header = vec![("Content-Type", "application/json")];
 
     Ok(build_response(body, header))
+}
+
+async fn default_wl_query(
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
+    Path(deployment): Path<String>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_wl_query(deployment_id, deployment, "default".to_owned(), body).await
+}
+
+async fn wl_query(
+    AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
+    Path((deployment, ep_name)): Path<(String, String)>,
+    body: String,
+) -> Result<Response<String>, Error> {
+    ep_wl_query(deployment_id, deployment, ep_name, body).await
 }
 
 async fn ws_wl_query(
