@@ -113,10 +113,20 @@ pub async fn post_request_raw(uri: &str, query: String) -> Result<Vec<u8>, Error
         }
     };
 
-    res.bytes()
+    let status = res.status();
+    let body = res
+        .bytes()
         .await
         .map(|bytes| bytes.to_vec())
-        .map_err(|e| Error::GraphQLQuery(1011, e.to_string()))
+        .map_err(|e| Error::GraphQLQuery(1011, e.to_string()))?;
+
+    // 200~299
+    if status.is_success() {
+        Ok(body)
+    } else {
+        let err = String::from_utf8(body).unwrap_or("Internal request error".to_owned());
+        Err(Error::GraphQLInternal(1011, err))
+    }
 }
 
 // Request to indexer/consumer proxy
