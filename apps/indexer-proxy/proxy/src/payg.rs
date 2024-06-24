@@ -34,9 +34,9 @@ use serde_json::{json, Value};
 use subql_indexer_utils::{
     error::Error,
     payg::{
-        convert_sign_to_string, convert_string_to_sign, extend_recover, extend_sign, price_recover,
-        price_sign, MultipleQueryState, MultipleQueryStateActive, OpenState, QueryState,
-        MULTIPLE_RANGE_MAX,
+        convert_sign_to_string, convert_string_to_sign, extend_recover2, extend_sign2,
+        price_recover, price_sign, MultipleQueryState, MultipleQueryStateActive, OpenState,
+        QueryState, MULTIPLE_RANGE_MAX,
     },
     request::{graphql_request, GraphQLQuery},
     tools::{cid_deployment, deployment_cid},
@@ -46,7 +46,7 @@ use subql_indexer_utils::{
 use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::contracts::{
-    check_consumer_controller, check_convert_price, check_state_channel_consumer,
+    check_consumer_controller, check_convert_price, check_state_channel_consumer, get_convert_price,
 };
 use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
@@ -637,6 +637,7 @@ pub async fn query_multiple_state(
 
 pub async fn extend_channel(
     channel: String,
+    new_price: U256,
     expired: i64,
     expiration: i32,
     signature: String,
@@ -651,7 +652,9 @@ pub async fn extend_channel(
     // check price
     let project_id = deployment_cid(&state_cache.deployment);
     let project = get_project(&project_id).await?;
-    if project.payg_price > state_cache.price {
+
+    let payg_sqt_price = get_convert_price(project.payg_token, project.payg_price).await?;
+    if payg_sqt_price > new_price {
         return Err(Error::InvalidProjectPrice(1049));
     }
 
@@ -668,10 +671,11 @@ pub async fn extend_channel(
     let indexer = account.indexer;
     drop(account);
 
-    let signer = extend_recover(
+    let signer = extend_recover2(
         channel_id,
         indexer,
         state_cache.agent,
+        new_price,
         U256::from(expired),
         U256::from(expiration),
         sign,
@@ -699,10 +703,11 @@ pub async fn extend_channel(
              channelExtend(
                id:"{:#X}",
                expiration:{},
+               price:"{}",
              )
            {{ id, expiredAt }}
         }}"#,
-        channel_id, expired_at
+        channel_id, new_price, expired_at
     );
     let url = COMMAND.graphql_url();
     let query = GraphQLQuery::query(&mdata);
@@ -712,10 +717,11 @@ pub async fn extend_channel(
     })?;
 
     let account = ACCOUNT.read().await;
-    let indexer_sign = extend_sign(
+    let indexer_sign = extend_sign2(
         channel_id,
         indexer,
         state_cache.agent,
+        new_price,
         U256::from(expired),
         U256::from(expiration),
         &account.controller,
@@ -903,6 +909,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         let state_cache = if let Some(mut state_cache) = state_cache_op {
             state_cache.expiration = channel.expired;
             state_cache.total = total;
+            state_cache.price = price;
             if state_cache.remote != remote {
                 debug!(
                     "Proxy remote: {}, coordinator remote: {}",

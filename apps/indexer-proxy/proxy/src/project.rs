@@ -564,6 +564,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
     let url = COMMAND.graphql_url();
     let mut project_ids = vec![];
     let mut new_projects = vec![];
+
     for item in projects {
         let id = item.id.clone();
         let rate_limit = if let Some(n) = item.project_rate_limit {

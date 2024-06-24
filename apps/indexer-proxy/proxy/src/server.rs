@@ -38,7 +38,7 @@ use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
     payg::{MultipleQueryState, QueryState},
-    tools::{hex_u256, u256_hex},
+    tools::{hex_u256, string_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
 
@@ -490,6 +490,7 @@ async fn payg_pay(body: String) -> Result<String, Error> {
 
 #[derive(Deserialize)]
 struct ExtendParams {
+    price: String,
     expired: i64,
     expiration: i32,
     signature: String,
@@ -501,6 +502,7 @@ async fn payg_extend(
 ) -> Result<Json<Value>, Error> {
     let extend = extend_channel(
         channel,
+        string_u256(&payload.price),
         payload.expired,
         payload.expiration,
         payload.signature,
