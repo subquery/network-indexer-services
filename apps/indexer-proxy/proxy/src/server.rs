@@ -509,6 +509,7 @@ async fn payg_extend(
     )
     .await?;
     Ok(Json(json!({
+        "price": payload.price,
         "signature": extend
     })))
 }
