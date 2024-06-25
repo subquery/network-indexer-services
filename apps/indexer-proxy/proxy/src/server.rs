@@ -493,7 +493,7 @@ struct ExtendParams {
     price: String,
     expired: i64,
     expiration: i32,
-    signature: String,
+    signature2: String,
 }
 
 async fn payg_extend(
@@ -505,7 +505,7 @@ async fn payg_extend(
         string_u256(&payload.price),
         payload.expired,
         payload.expiration,
-        payload.signature,
+        payload.signature2,
     )
     .await?;
     Ok(Json(json!({
