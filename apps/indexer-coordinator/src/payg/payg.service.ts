@@ -363,7 +363,7 @@ export class PaygService {
     }
   }
 
-  async extend(id: string, expiration: number): Promise<Channel> {
+  async extend(id: string, expiration: number, price: string): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
@@ -372,6 +372,9 @@ export class PaygService {
     if (channel.expiredAt < expiration) {
       channel.expiredAt = expiration;
     }
+
+    // TIPS: if delete db and restore from chain, it will be wrong
+    channel.price = BigInt(price).toString();
 
     logger.debug(`Extend state channel ${id}`);
 
