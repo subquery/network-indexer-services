@@ -663,7 +663,8 @@ pub async fn extend_channel(
     } else {
         state_cache.expiration - expired
     };
-    if gap > 1200 { // 20min
+    if gap > 1200 {
+        // 20min
         return Err(Error::InvalidProjectPrice(1071));
     }
 
