@@ -51,6 +51,7 @@
 - `1058` - Overflow: paid less that previous paid.
 - `1059` - Overflow: range size overflow.
 - `1060` - Invalid request: query method is deny.
+- `1071` - Invalid project price: expiration too long.
 - `1100` - Serialize: hex convert failure.
 - `1101` - Serialize: rustc_hex convert failure.
 - `1102` - Serialize: uint convert failure.
