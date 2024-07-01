@@ -43,7 +43,7 @@ export class PaygResolver {
   channelExtend(
     @Args('id') id: string,
     @Args('expiration') expiration: number,
-    @Args('price') price: string
+    @Args('price', { nullable: true }) price?: string
   ) {
     return this.paygService.extend(id, expiration, price);
   }
