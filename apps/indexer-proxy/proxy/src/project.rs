@@ -546,6 +546,11 @@ pub async fn list_projects() -> Vec<Project> {
 pub struct ProjectEndpointItem {
     key: String,
     value: String,
+    // internal, default, null
+    access: String,
+    valid: bool,
+    #[serde(rename = "type")]
+    etype: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
