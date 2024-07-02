@@ -386,9 +386,6 @@ export class PaygService {
       return channel;
     }
 
-    // TIPS: if delete db and restore from chain, it will be wrong
-    channel.price = BigInt(price).toString();
-
     logger.debug(`Extend state channel ${id}`);
 
     return this.saveAndPublish(channel, PaygEvent.State);
