@@ -94,4 +94,70 @@ export class RewardService implements OnModuleInit {
       );
     }
   }
+
+  async reduceAllocation() {
+    const indexerId = await this.accountService.getIndexer();
+    if (!indexerId) {
+      return;
+    }
+    const allocation = await this.onChainService.getRunnerAllocation(indexerId);
+
+    if (allocation?.total.lt(allocation.used)) {
+      const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
+        indexerId
+      );
+      deploymentAllocations.sort((a, b) => {
+        return a.totalAmount < b.totalAmount ? -1 : 1;
+      });
+
+      const denominator = allocation.used;
+      const denominatorLength = allocation.used.toString().length;
+
+      const expectTotalReduce = allocation.used.sub(allocation.total);
+
+      let calcTotalReduce = BigNumber.from(0);
+      const calSingleReduce = [];
+      for (const d of deploymentAllocations) {
+        let calc = BigNumber.from(d.totalAmount)
+          .mul(BigNumber.from(10).pow(denominatorLength + 4))
+          .div(denominator);
+
+        calc = expectTotalReduce.mul(calc).div(BigNumber.from(10).pow(denominatorLength + 4));
+        calcTotalReduce = calcTotalReduce.add(calc);
+
+        this.logger.debug(
+          `take from d: ${d.deploymentId} totalAmount: ${d.totalAmount} calc: ${calc.toString()}`
+        );
+        calSingleReduce.push(calc);
+      }
+      let rest = expectTotalReduce.sub(calcTotalReduce);
+
+      this.logger.debug(
+        `expectTotalReduce: ${expectTotalReduce} calcTotalReduce: ${calcTotalReduce.toString()} rest: ${rest.toString()}`
+      );
+      this.logger.debug(`before adjust: ${calSingleReduce.map((v) => v.toString())}`);
+      for (let i = deploymentAllocations.length - 1; i >= 0; i--) {
+        if (rest.eq(BigNumber.from(0))) {
+          break;
+        }
+        const d = deploymentAllocations[i];
+        if (BigNumber.from(d.totalAmount).gte(calSingleReduce[i].add(rest))) {
+          calSingleReduce[i] = calSingleReduce[i].add(rest);
+          break;
+        }
+        const diff = BigNumber.from(d.totalAmount).sub(calSingleReduce[i]);
+        calSingleReduce[i] = calSingleReduce[i].add(diff);
+        rest = rest.sub(diff);
+      }
+      this.logger.debug(
+        'after adjust:',
+        calSingleReduce.map((v) => v.toString())
+      );
+
+      for (let i = 0; i < deploymentAllocations.length; i++) {
+        const d = deploymentAllocations[i];
+        await this.onChainService.removeAllocation(d.deploymentId, indexerId, calSingleReduce[i]);
+      }
+    }
+  }
 }
