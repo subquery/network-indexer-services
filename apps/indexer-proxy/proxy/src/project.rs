@@ -236,12 +236,21 @@ impl Project {
                 } else {
                     let ss: Vec<SimpleJsonrpc> =
                         serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+
+                    if ss.len() > 100 {
+                        return Err(Error::InvalidRequest(1061));
+                    }
+
                     let mut vv = 0;
                     let mut oo = 0;
                     for s in ss {
                         let (v, o) = m.unit_times(&s.method)?;
                         vv += v;
                         oo += o;
+                    }
+
+                    if vv > 1000 {
+                        return Err(Error::InvalidRequest(1062));
                     }
 
                     Ok((vv, oo))
