@@ -124,7 +124,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    channelEntity.price = price;
+    channelEntity.price = channelEntity.price === '0' ? price : channelEntity.price;
     channelEntity.deploymentId = bytes32ToCid(deploymentId);
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -204,7 +204,7 @@ export class PaygService {
     channelEntity.indexer = indexer;
     channelEntity.consumer = consumer;
     channelEntity.agent = agent;
-    channelEntity.price = price.toString();
+    channelEntity.price = channelEntity.price === '0' ? price.toString() : channelEntity.price;
     channelEntity.deploymentId = deployment.id;
     channelEntity.total = total.toString();
     channelEntity.onchain = spent.toString();
@@ -363,14 +363,27 @@ export class PaygService {
     }
   }
 
-  async extend(id: string, expiration: number): Promise<Channel> {
+  async extend(id: string, expiration: number, price?: string): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
     }
 
+    let modified = false;
+
     if (channel.expiredAt < expiration) {
       channel.expiredAt = expiration;
+      modified = true;
+    }
+
+    // TIPS: if delete db and restore from chain, it will be wrong
+    if (price && price !== '0') {
+      channel.price = BigInt(price).toString();
+      modified = true;
+    }
+
+    if (!modified) {
+      return channel;
     }
 
     logger.debug(`Extend state channel ${id}`);
