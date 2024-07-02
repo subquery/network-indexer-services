@@ -26,6 +26,7 @@ import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     MonitorModule,
     StatsModule,
     NetworkModule,
+    ConfigModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })

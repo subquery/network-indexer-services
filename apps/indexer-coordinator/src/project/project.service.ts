@@ -58,6 +58,7 @@ import {
   SubqueryEndpointType,
   TemplateType,
 } from './types';
+import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class ProjectService {
@@ -75,6 +76,7 @@ export class ProjectService {
     private config: Config,
     private portService: PortService,
     private onchainService: OnChainService,
+    private configService: ConfigService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -251,7 +253,21 @@ export class ProjectService {
       manifest,
     });
 
-    const projectPayg = this.paygRepo.create({ id: id.trim() });
+    // load default payg config
+    const flexConfig = await this.configService.getByGroup('flex');
+
+    let paygConfig = {};
+    if (flexConfig.flex_enabled === 'true') {
+      paygConfig = {
+        price: flexConfig.flex_price,
+        expiration: Number(flexConfig.flex_expiration) || 0,
+      };
+    }
+
+    const projectPayg = await this.paygRepo.create({
+      id: id.trim(),
+      ...paygConfig,
+    });
     await this.paygRepo.save(projectPayg);
 
     return this.projectRepo.save(projectEntity);

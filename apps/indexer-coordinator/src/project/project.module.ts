@@ -16,6 +16,7 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
+import { ConfigModule } from 'src/config/config.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     DBModule,
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
+    ConfigModule
   ],
   providers: [
     ProjectService,
