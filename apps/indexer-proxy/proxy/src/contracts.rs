@@ -227,6 +227,11 @@ pub async fn check_convert_price(
     amount_from: U256,
     amount_to: U256,
 ) -> Result<bool, Error> {
+    let check_amount = get_convert_price(asset_from, amount_from).await?;
+    Ok(amount_to >= check_amount)
+}
+
+pub async fn get_convert_price(asset_from: Address, amount_from: U256) -> Result<U256, Error> {
     let client = Arc::new(
         Provider::<Http>::try_from(COMMAND.network_endpoint())
             .map_err(|_| Error::ServiceException(1022))?,
@@ -236,7 +241,7 @@ pub async fn check_convert_price(
     let (_, sqt) = l2_sqtoken_parse(network).map_err(|_| Error::ServiceException(1023))?;
     let check_amount = convert_price(asset_from, sqt, amount_from, client, network).await?;
 
-    Ok(amount_to >= check_amount)
+    Ok(check_amount)
 }
 
 pub async fn check_whitelist_account(account: Address) -> Result<bool, Error> {

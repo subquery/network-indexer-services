@@ -48,6 +48,14 @@ pub fn cid_deployment(cid: &str) -> H256 {
     }
 }
 
+pub fn u256_string(a: &U256) -> String {
+    a.to_string()
+}
+
+pub fn string_u256(a: &str) -> U256 {
+    U256::from_dec_str(a).unwrap_or(U256::zero())
+}
+
 pub fn u256_hex(a: &U256) -> String {
     let mut bytes = [0u8; 32];
     a.to_big_endian(&mut bytes);
