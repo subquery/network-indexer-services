@@ -51,6 +51,8 @@
 - `1058` - Overflow: paid less that previous paid.
 - `1059` - Overflow: range size overflow.
 - `1060` - Invalid request: query method is deny.
+- `1061` - Invalid request: RPC batch more than 100.
+- `1062` - Invalid request: RPC batch compute unit more than 1000.
 - `1071` - Invalid project price: expiration too long.
 - `1100` - Serialize: hex convert failure.
 - `1101` - Serialize: rustc_hex convert failure.

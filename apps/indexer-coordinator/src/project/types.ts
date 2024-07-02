@@ -33,7 +33,7 @@ export enum SubqueryEndpointType {
 }
 
 export const SubqueryEndpointAccessType = {
-  [SubqueryEndpointType.Node]: AccessType.DEFAULT,
+  [SubqueryEndpointType.Node]: AccessType.INTERNAL,
   [SubqueryEndpointType.Query]: AccessType.DEFAULT,
   [SubqueryEndpointType.Admin]: AccessType.INTERNAL,
 };
