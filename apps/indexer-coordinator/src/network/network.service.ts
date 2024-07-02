@@ -188,6 +188,7 @@ export class NetworkService {
             totalCount
             nodes {
               deploymentId
+              totalAmount
             }
           }
         }
