@@ -132,7 +132,7 @@ impl IntoResponse for Error {
                 "id": id,
                 "error": {
                     "code": code,
-                    "error": error_message,
+                    "message": error_message,
                 }
             })
         } else {
