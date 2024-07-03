@@ -381,13 +381,13 @@ export class OnChainService implements OnApplicationBootstrap {
     return allocation;
   }
 
-  async removeAllocation(deploymentId: string, runner: string, amount: BigNumber) {
+  async removeAllocation(deploymentId: string, runner: string, amount: BigNumber, txType: TxType) {
     if (!(await this.checkControllerReady())) return null;
 
     try {
       await this.contractService.sendTransaction({
-        action: `remove allocation for deployment: ${deploymentId} runner:${runner} amount:${amount}`,
-        type: TxType.check,
+        action: `remove allocation for deployment: ${deploymentId} runner: ${runner} amount: ${amount}`,
+        type: txType,
         txFun: (overrides) =>
           this.sdk.stakingAllocation.removeAllocation(
             cidToBytes32(deploymentId),

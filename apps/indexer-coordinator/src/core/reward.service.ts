@@ -12,14 +12,17 @@ import { TxType } from './types';
 
 @Injectable()
 export class RewardService implements OnModuleInit {
-  private readonly rewardThreshold = BigNumber.from('1000000000000000000000');
+  private readonly rewardThreshold = BigNumber.from('2000000000000000000000');
   private readonly oneDay = 24 * 60 * 60 * 1000;
   private readonly allocationBypassTimeLimit = 3 * this.oneDay;
   private readonly allocationStartTimes: Map<string, number> = new Map();
 
   private readonly logger = getLogger('RewardService');
 
-  private txOngoing = false;
+  private txOngoingMap: Record<string, boolean> = {
+    [this.collectAllocationRewards.name]: false,
+    [this.reduceAllocation.name]: false,
+  };
 
   constructor(
     private accountService: AccountService,
@@ -33,14 +36,18 @@ export class RewardService implements OnModuleInit {
   }
 
   @Cron('1 1 1 * * *')
-  async autoCollectAllocationRewards() {
+  async autoRunTasks() {
     await this.collectAllocationRewards(TxType.check);
+    await this.reduceAllocation(TxType.check);
   }
 
   @Cron('0 */30 * * * *')
-  async checkCollectAllocationRewards() {
-    if (this.txOngoing) {
+  async checkTasks() {
+    if (this.txOngoingMap[this.collectAllocationRewards.name]) {
       await this.collectAllocationRewards(TxType.postponed);
+    }
+    if (this.txOngoingMap[this.reduceAllocation.name]) {
+      await this.reduceAllocation(TxType.postponed);
     }
   }
 
@@ -52,7 +59,7 @@ export class RewardService implements OnModuleInit {
     const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
       indexerId
     );
-    this.txOngoing = false;
+    this.txOngoingMap[this.collectAllocationRewards.name] = false;
     for (const allocation of deploymentAllocations) {
       const rewards = await this.onChainService.getAllocationRewards(
         allocation.deploymentId,
@@ -83,7 +90,7 @@ export class RewardService implements OnModuleInit {
         txType
       );
       if (!success) {
-        this.txOngoing = true;
+        this.txOngoingMap[this.collectAllocationRewards.name] = true;
         continue;
       }
       this.allocationStartTimes.delete(allocation.deploymentId);
@@ -95,12 +102,13 @@ export class RewardService implements OnModuleInit {
     }
   }
 
-  async reduceAllocation() {
+  async reduceAllocation(txType: TxType) {
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
+    this.txOngoingMap[this.reduceAllocation.name] = false;
 
     if (allocation?.total.lt(allocation.used)) {
       const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
@@ -156,7 +164,16 @@ export class RewardService implements OnModuleInit {
 
       for (let i = 0; i < deploymentAllocations.length; i++) {
         const d = deploymentAllocations[i];
-        await this.onChainService.removeAllocation(d.deploymentId, indexerId, calSingleReduce[i]);
+        const success = await this.onChainService.removeAllocation(
+          d.deploymentId,
+          indexerId,
+          calSingleReduce[i],
+          txType
+        );
+        if (!success) {
+          this.txOngoingMap[this.reduceAllocation.name] = true;
+          break;
+        }
       }
     }
   }
