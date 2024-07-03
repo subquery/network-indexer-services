@@ -131,7 +131,7 @@ async fn ep_wl_query(
     let project = get_project(&deployment).await?;
     let endpoint = project.endpoint(&ep_name, false)?;
     let (data, signature) = project
-        .query(
+        .check_query(
             body,
             endpoint.endpoint.clone(),
             MetricsQuery::Whitelist,
