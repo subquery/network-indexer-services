@@ -234,7 +234,9 @@ impl Project {
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
-                    let value = m.unit_times(&s.method).map_err(|e| Error::Jsonrpc(s.id, Arc::new(e)))?;
+                    let value = m
+                        .unit_times(&s.method)
+                        .map_err(|e| Error::Jsonrpc(s.id, Arc::new(e)))?;
                     Ok((value, s.id))
                 } else {
                     let ss: Vec<SimpleJsonrpc> =
