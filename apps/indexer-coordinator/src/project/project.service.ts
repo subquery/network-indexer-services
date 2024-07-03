@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import path from 'path';
+import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -28,6 +29,7 @@ import {
   getServicePort,
   nodeEndpoint,
   projectContainers,
+  nodeContainer,
   projectId,
   queryEndpoint,
   schemaName,
@@ -455,7 +457,11 @@ export class ProjectService {
     if (!project) return [];
 
     const projectID = projectId(id);
+    const mounts = await this.docker.getMounts(nodeContainer(id));
+    const rmPath = this.getRmPath(mounts);
+
     await this.docker.stop(projectContainers(id));
+    await this.rmrf([rmPath]);
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
 
@@ -520,5 +526,26 @@ export class ProjectService {
   async stopProjectOnChain(id: string) {
     const indexer = await this.account.getIndexer();
     return this.onchainService.stopProject(id, indexer);
+  }
+
+  async rmrf(paths: string[]) {
+    for (const p of paths) {
+      if (p) {
+        fs.rmSync(p, { recursive: true, force: true });
+      }
+    }
+  }
+
+  getRmPath(
+    mounts: Array<{
+      Name?: string | undefined;
+      Source: string;
+      Destination: string;
+      Mode: string;
+      RW: boolean;
+      Propagation: string;
+    }>
+  ) {
+    return mounts.find((m) => m.Destination === '/app/.monitor')?.Source;
   }
 }
