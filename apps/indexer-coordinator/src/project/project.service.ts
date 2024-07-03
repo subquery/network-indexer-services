@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
+import { ConfigService } from 'src/config/config.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -58,7 +59,6 @@ import {
   SubqueryEndpointType,
   TemplateType,
 } from './types';
-import { ConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class ProjectService {
@@ -264,7 +264,7 @@ export class ProjectService {
       };
     }
 
-    const projectPayg = await this.paygRepo.create({
+    const projectPayg = this.paygRepo.create({
       id: id.trim(),
       ...paygConfig,
     });

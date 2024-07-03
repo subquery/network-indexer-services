@@ -4,8 +4,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigEntity } from './config.model';
-import { ConfigService } from './config.service';
 import { ConfigResolver } from './config.resolver';
+import { ConfigService } from './config.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ConfigEntity])],

@@ -4,6 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ConfigModule } from 'src/config/config.module';
 import { CoreModule } from '../core/core.module';
 import { DBModule } from '../db/db.module';
 import { MetricsModule } from '../metrics/metrics.module';
@@ -16,7 +17,6 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
-import { ConfigModule } from 'src/config/config.module';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { ConfigModule } from 'src/config/config.module';
     DBModule,
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
-    ConfigModule
+    ConfigModule,
   ],
   providers: [
     ProjectService,

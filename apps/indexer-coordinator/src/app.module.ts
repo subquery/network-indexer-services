@@ -14,6 +14,7 @@ import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
 
 import { ChainModule } from './chain/chain.module';
+import { ConfigModule } from './config/config.module';
 import { ConfigureModule } from './configure/configure.module';
 import { CoreModule } from './core/core.module';
 import { dbOption } from './data-source';
@@ -26,7 +27,6 @@ import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
