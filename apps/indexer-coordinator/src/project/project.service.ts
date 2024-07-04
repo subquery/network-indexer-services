@@ -254,13 +254,13 @@ export class ProjectService {
     });
 
     // load default payg config
-    const flexConfig = await this.configService.getByGroup('flex');
+    const flexConfig = await this.configService.getFlexConfig();
 
     let paygConfig = {};
     if (flexConfig.flex_enabled === 'true') {
       paygConfig = {
         price: flexConfig.flex_price,
-        expiration: Number(flexConfig.flex_expiration) || 0,
+        expiration: Number(flexConfig.flex_valid_period) || 0,
       };
     }
 

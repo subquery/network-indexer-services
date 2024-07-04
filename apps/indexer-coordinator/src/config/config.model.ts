@@ -11,11 +11,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-enum Group {
-  Default = 'default',
-  Flex = 'flex',
-}
-
 @Entity('config')
 @Index(['key'], { unique: true })
 @ObjectType()
@@ -39,10 +34,6 @@ export class ConfigEntity {
   @Column({ type: 'varchar', nullable: true, default: '' })
   @Field(() => String, { nullable: true })
   value: string | null;
-
-  @Column({ type: 'varchar', nullable: true, default: Group.Default })
-  @Field(() => String, { nullable: true })
-  group: string | null;
 
   @Column({ type: 'int', nullable: true, default: 0 })
   @Field(() => Int, { nullable: true })

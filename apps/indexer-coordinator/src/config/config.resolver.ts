@@ -14,14 +14,14 @@ export class ConfigResolver {
     return this.configService.get(key);
   }
 
-  @Query(() => [ConfigEntity])
-  async getByGroup(@Args('group') group: string): Promise<Record<string, string>> {
-    return await this.configService.getByGroup(group);
-  }
-
   @Mutation(() => Boolean)
-  async set(@Args ('key') key: string, @Args('value') value: string): Promise<boolean> {
+  async set(@Args('key') key: string, @Args('value') value: string): Promise<boolean> {
     await this.configService.set(key, value);
     return true;
+  }
+
+  @Query(() => [ConfigEntity])
+  async getAll(): Promise<ConfigEntity[]> {
+    return await this.configService.getAll();
   }
 }

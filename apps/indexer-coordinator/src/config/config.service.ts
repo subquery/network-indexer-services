@@ -3,7 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ConfigEntity } from './config.model';
 
 export enum ConfigType {
@@ -13,8 +13,8 @@ export enum ConfigType {
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: '10',
-  [ConfigType.FLEX_VALID_PERIOD]: '10',
+  [ConfigType.FLEX_PRICE]: '1',
+  [ConfigType.FLEX_VALID_PERIOD]: '1',
   [ConfigType.FLEX_ENABLED]: 'true',
 };
 
@@ -30,18 +30,29 @@ export class ConfigService {
     return config?.value ?? (defaultConfig[key] || '');
   }
 
-  async getByGroup(group: string): Promise<Record<string, string>> {
-    const datas = await this.configRepo.find({
-      where: { group },
-    });
-    const res = {};
-    for (const d of datas) {
-      res[d.key] = d.value ?? (defaultConfig[d.key] || '');
-    }
-    return res;
-  }
-
   async set(key: string, value: string): Promise<void> {
     await this.configRepo.upsert({ key, value }, ['key']);
   }
+
+  async getAll(): Promise<ConfigEntity[]> {
+    return await this.configRepo.find();
+  }
+
+  async getFlexConfig(): Promise<Record<string, string>> {
+    const keys = [ConfigType.FLEX_PRICE, ConfigType.FLEX_VALID_PERIOD, ConfigType.FLEX_ENABLED];
+    const config = await this.configRepo.find({
+      where: { key: In(keys) },
+      select: ['key', 'value'],
+    });
+    const defaults = keys.reduce((acc, key) => {
+      acc[key] = defaultConfig[key];
+      return acc;
+    }, {} as Record<string, string>);
+    const data = config.reduce((acc, c) => {
+      acc[c.key] = c.value || defaultConfig[c.key];
+      return acc;
+    }, {} as Record<string, string>);
+    return Object.assign(defaults, data);
+  }
+
 }
