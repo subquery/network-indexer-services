@@ -33,6 +33,7 @@ import {
   projectId,
   queryEndpoint,
   schemaName,
+  getComposeFileDirectory,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
 import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
@@ -457,8 +458,7 @@ export class ProjectService {
     if (!project) return [];
 
     const projectID = projectId(id);
-    const mounts = await this.docker.getMounts(nodeContainer(id));
-    const rmPath = this.getRmPath(mounts);
+    const rmPath = this.getRmPath(id);
 
     await this.docker.stop(projectContainers(id));
     await this.rmrf([rmPath]);
@@ -536,16 +536,7 @@ export class ProjectService {
     }
   }
 
-  getRmPath(
-    mounts: Array<{
-      Name?: string | undefined;
-      Source: string;
-      Destination: string;
-      Mode: string;
-      RW: boolean;
-      Propagation: string;
-    }>
-  ) {
-    return mounts.find((m) => m.Destination === '/app/.monitor')?.Source;
+  getRmPath(cid: string) {
+    return path.join(getComposeFileDirectory(cid), '.monitor');
   }
 }

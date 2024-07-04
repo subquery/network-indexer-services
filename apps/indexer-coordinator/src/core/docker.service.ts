@@ -143,27 +143,6 @@ export class DockerService {
     }
   }
 
-  async getMounts(container: string): Promise<
-    Array<{
-      Name?: string | undefined;
-      Source: string;
-      Destination: string;
-      Mode: string;
-      RW: boolean;
-      Propagation: string;
-    }>
-  > {
-    if (!this.validateContainerName(container)) {
-      return [];
-    }
-    try {
-      const inspect = await this.getContainer(container).inspect();
-      return inspect.Mounts;
-    } catch {
-      return [];
-    }
-  }
-
   private execute(cmd: string): Promise<string> {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
