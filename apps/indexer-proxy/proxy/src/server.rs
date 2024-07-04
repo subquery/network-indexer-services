@@ -129,23 +129,28 @@ async fn ep_wl_query(
     deployment_id: String,
     deployment: String,
     ep_name: String,
-    body: WhiteListBody,
+    body: String,
 ) -> Result<Response<String>, Error> {
     if deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
+    };
+
+    let (new_body, path) = match serde_json::from_str::<WhiteListBody>(&body) {
+        Ok(body) => (body.body, Some((body.path, body.method))),
+        Err(_) => (body, None),
     };
 
     let project = get_project(&deployment).await?;
     let endpoint = project.endpoint(&ep_name, false)?;
     let (data, signature) = project
         .check_query(
-            body.body,
+            new_body,
             endpoint.endpoint.clone(),
             MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,
-            Some((body.path, body.method)),
+            path,
         )
         .await?;
 
@@ -163,7 +168,7 @@ async fn ep_wl_query(
 async fn default_wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
-    Json(body): Json<WhiteListBody>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     ep_wl_query(deployment_id, deployment, "default".to_owned(), body).await
 }
@@ -171,7 +176,7 @@ async fn default_wl_query(
 async fn wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path((deployment, ep_name)): Path<(String, String)>,
-    Json(body): Json<WhiteListBody>,
+    body: String,
 ) -> Result<Response<String>, Error> {
     ep_wl_query(deployment_id, deployment, ep_name, body).await
 }
