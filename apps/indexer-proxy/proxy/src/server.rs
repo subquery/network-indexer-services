@@ -118,11 +118,18 @@ pub async fn start_server(port: u16) {
         .unwrap();
 }
 
+#[derive(Deserialize)]
+struct WhiteListBody {
+    body: String,
+    path: String,
+    method: String,
+}
+
 async fn ep_wl_query(
     deployment_id: String,
     deployment: String,
     ep_name: String,
-    body: String,
+    body: WhiteListBody,
 ) -> Result<Response<String>, Error> {
     if deployment != deployment_id {
         return Err(Error::AuthVerify(1004));
@@ -131,13 +138,14 @@ async fn ep_wl_query(
     let project = get_project(&deployment).await?;
     let endpoint = project.endpoint(&ep_name, false)?;
     let (data, signature) = project
-        .query(
-            body,
+        .check_query(
+            body.body,
             endpoint.endpoint.clone(),
             MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,
+            Some((body.path, body.method)),
         )
         .await?;
 
@@ -155,7 +163,7 @@ async fn ep_wl_query(
 async fn default_wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
-    body: String,
+    Json(body): Json<WhiteListBody>,
 ) -> Result<Response<String>, Error> {
     ep_wl_query(deployment_id, deployment, "default".to_owned(), body).await
 }
@@ -163,7 +171,7 @@ async fn default_wl_query(
 async fn wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path((deployment, ep_name)): Path<(String, String)>,
-    body: String,
+    Json(body): Json<WhiteListBody>,
 ) -> Result<Response<String>, Error> {
     ep_wl_query(deployment_id, deployment, ep_name, body).await
 }
@@ -305,6 +313,7 @@ async fn ep_query_handler(
             MetricsNetwork::HTTP,
             false,
             no_sig,
+            None,
         )
         .await?;
 

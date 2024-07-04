@@ -32,7 +32,9 @@ use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, graphql_request_raw, post_request_raw, GraphQLQuery},
+    request::{
+        graphql_request, graphql_request_raw_with_path, post_request_raw_with_path, GraphQLQuery,
+    },
     tools::merge_json,
     types::Result,
 };
@@ -345,10 +347,11 @@ impl Project {
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
+        path: Option<(String, String)>, // path & method
     ) -> Result<(Vec<u8>, String)> {
         let _ = self.compute_query_method(&body)?;
 
-        self.query(body, endpoint, payment, network, is_limit, no_sig)
+        self.query(body, endpoint, payment, network, is_limit, no_sig, path)
             .await
     }
 
@@ -360,6 +363,7 @@ impl Project {
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
+        path: Option<(String, String)>,
     ) -> Result<(Vec<u8>, String)> {
         if is_limit {
             if let Some(limit) = self.rate_limit {
@@ -389,17 +393,26 @@ impl Project {
         }
 
         match self.ptype {
-            ProjectType::Subquery | ProjectType::Subgraph => {
-                let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, endpoint, payment, network, no_sig)
-                    .await
-            }
+            ProjectType::Subquery | ProjectType::Subgraph => match serde_json::from_str(&body) {
+                Ok(query) => {
+                    self.subquery_raw(&query, endpoint, payment, network, no_sig, path)
+                        .await
+                }
+                Err(_e) => {
+                    if path.is_some() {
+                        self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
+                            .await
+                    } else {
+                        Err(Error::InvalidRequest(1140))
+                    }
+                }
+            },
             ProjectType::RpcEvm(_) => {
-                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
                     .await
             }
             ProjectType::RpcSubstrate(_) => {
-                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
                     .await
             }
         }
@@ -412,10 +425,11 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        path: Option<(String, String)>,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
 
-        let res = graphql_request_raw(&endpoint, query).await;
+        let res = graphql_request_raw_with_path(&endpoint, query, path).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
@@ -440,10 +454,11 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        path: Option<(String, String)>,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
 
-        let res = post_request_raw(&endpoint, query).await;
+        let res = post_request_raw_with_path(&endpoint, query, path).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());

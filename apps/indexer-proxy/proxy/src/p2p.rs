@@ -823,6 +823,7 @@ async fn handle_close_agreement_query(
             MetricsNetwork::P2P,
             false,
             false,
+            None,
         )
         .await?;
     Ok(hex::encode(data))
