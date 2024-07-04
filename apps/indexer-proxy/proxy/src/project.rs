@@ -28,6 +28,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
@@ -222,25 +223,30 @@ pub struct Project {
 
 #[derive(Deserialize)]
 struct SimpleJsonrpc {
+    id: i64,
     method: String,
 }
 
 impl Project {
-    pub fn compute_query_method(&self, query: &str) -> Result<(u64, u64)> {
+    pub fn compute_query_method(&self, query: &str) -> Result<((u64, u64), i64)> {
         // compute unit times
         match &self.ptype {
             // TODO if multiple in single query
-            ProjectType::Subquery | ProjectType::Subgraph => Ok((1, 1)),
+            ProjectType::Subquery | ProjectType::Subgraph => Ok(((1, 1), 0)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
-                    m.unit_times(&s.method)
+                    let value = m
+                        .unit_times(&s.method)
+                        .map_err(|e| Error::Jsonrpc(s.id, Arc::new(e)))?;
+                    Ok((value, s.id))
                 } else {
                     let ss: Vec<SimpleJsonrpc> =
                         serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+                    let id = if ss.is_empty() { 0 } else { ss[0].id };
 
                     if ss.len() > 100 {
-                        return Err(Error::InvalidRequest(1061));
+                        return Err(Error::Jsonrpc(id, Arc::new(Error::InvalidRequest(1061))));
                     }
 
                     let mut vv = 0;
@@ -252,10 +258,10 @@ impl Project {
                     }
 
                     if vv > 1000 {
-                        return Err(Error::InvalidRequest(1062));
+                        return Err(Error::Jsonrpc(id, Arc::new(Error::InvalidRequest(1062))));
                     }
 
-                    Ok((vv, oo))
+                    Ok(((vv, oo), id))
                 }
             }
         }
@@ -349,10 +355,18 @@ impl Project {
         no_sig: bool,
         path: Option<(String, String)>, // path & method
     ) -> Result<(Vec<u8>, String)> {
-        let _ = self.compute_query_method(&body)?;
+        let (_, jid) = self.compute_query_method(&body)?;
+        let is_rpc = self.is_rpc_project();
 
         self.query(body, endpoint, payment, network, is_limit, no_sig, path)
             .await
+            .map_err(|e| {
+                if is_rpc {
+                    Error::Jsonrpc(jid, Arc::new(e))
+                } else {
+                    e
+                }
+            })
     }
 
     pub async fn query(
