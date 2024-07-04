@@ -1,0 +1,15 @@
+// Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import { Module } from '@nestjs/common';
+import { CoreModule } from 'src/core/core.module';
+import { NetworkModule } from 'src/network/network.module';
+import { PaygModule } from 'src/payg/payg.module';
+import { RewardService } from './reward.service';
+
+@Module({
+  imports: [CoreModule, NetworkModule, PaygModule],
+  providers: [RewardService],
+  exports: [RewardService],
+})
+export class RewardModule {}

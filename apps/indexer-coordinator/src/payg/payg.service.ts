@@ -391,7 +391,7 @@ export class PaygService {
     return this.saveAndPublish(channel, PaygEvent.State);
   }
 
-  async checkpoint(id: string): Promise<Channel> {
+  async checkpoint(id: string, txType: TxType = TxType.check): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
@@ -403,7 +403,7 @@ export class PaygService {
     // checkpoint
     await this.contract.sendTransaction({
       action: `state channel checkpoint ${id}`,
-      type: TxType.check,
+      type: txType,
       txFun: (overrides) =>
         this.contract.getSdk().stateChannel.checkpoint(
           {
@@ -533,5 +533,9 @@ export class PaygService {
     const new_channel = await this.channelRepo.save(channel);
     await this.pubSub.publish(event, { channelChanged: new_channel });
     return new_channel;
+  }
+
+  async getOpenChannels() {
+    return await this.channelRepo.find({ where: { status: ChannelStatus.OPEN } });
   }
 }

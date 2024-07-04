@@ -98,20 +98,6 @@ export class PaygSyncService implements OnApplicationBootstrap {
     this.syncingStateChannels = false;
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
-  async collectStateChannelRewards() {
-    // todo: load from config
-    const threshold = BigNumber.from(10).pow(18).mul(2000);
-    const openChannels = await this.channelRepo.find({
-      where: { status: ChannelStatus.OPEN },
-    });
-    for (const channel of openChannels) {
-      const unclaimed = BigNumber.from(channel.remote).sub(channel.onchain);
-      if (unclaimed.lte(threshold)) continue;
-      await this.paygService.checkpoint(channel.id);
-    }
-  }
-
   compareChannel(channel: Channel, channelState: StateChannelOnNetwork): boolean {
     if (!channel || !channelState) return false;
 
