@@ -3,6 +3,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { BigNumber } from 'ethers';
 import { Repository, In } from 'typeorm';
 import { ConfigEntity } from './config.model';
 
@@ -10,12 +11,16 @@ export enum ConfigType {
   FLEX_PRICE = 'flex_price',
   FLEX_VALID_PERIOD = 'flex_valid_period',
   FLEX_ENABLED = 'flex_enabled',
+  ALLOCATION_REWARD_THRESHOLD = 'allocation_reward_threshold',
+  STATE_CHANNEL_REWARD_THRESHOLD = 'state_channel_reward_threshold',
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: '1',
-  [ConfigType.FLEX_VALID_PERIOD]: '1',
+  [ConfigType.FLEX_PRICE]: BigNumber.from(10).pow(15).toString(), // 1 SQT
+  [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24}`, // 1 day
   [ConfigType.FLEX_ENABLED]: 'true',
+  [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000',
+  [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000',
 };
 
 @Injectable()
@@ -54,5 +59,4 @@ export class ConfigService {
     }, {} as Record<string, string>);
     return Object.assign(defaults, data);
   }
-
 }
