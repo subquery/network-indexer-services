@@ -374,4 +374,39 @@ export class OnChainService implements OnApplicationBootstrap {
       throw new Error(`Fail to stop project: ${projectId}`);
     }
   }
+
+  async getRunnerAllocation(runner: string) {
+    if (!(await this.checkControllerReady())) return null;
+    const allocation = await this.sdk.stakingAllocation.runnerAllocation(runner);
+    return allocation;
+  }
+
+  async removeAllocation(deploymentId: string, runner: string, amount: BigNumber, txType: TxType) {
+    if (!(await this.checkControllerReady())) return null;
+
+    try {
+      await this.contractService.sendTransaction({
+        action: `remove allocation for deployment: ${deploymentId} runner: ${runner} amount: ${amount}`,
+        type: txType,
+        txFun: (overrides) =>
+          this.sdk.stakingAllocation.removeAllocation(
+            cidToBytes32(deploymentId),
+            runner,
+            amount,
+            overrides
+          ),
+        gasFun: (overrides) =>
+          this.sdk.stakingAllocation.estimateGas.removeAllocation(
+            cidToBytes32(deploymentId),
+            runner,
+            amount,
+            overrides
+          ),
+      });
+      return true;
+    } catch (e) {
+      logger.warn(e, `Fail to remove allocation for deployment: ${deploymentId} runner:${runner}`);
+      return false;
+    }
+  }
 }
