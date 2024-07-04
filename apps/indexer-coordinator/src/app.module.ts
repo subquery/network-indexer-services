@@ -24,9 +24,9 @@ import { MonitorController } from './monitor.controller';
 import { NetworkModule } from './network/network.module';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
+import { RewardModule } from './reward/reward.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { RewardModule } from './reward/reward.module';
 
 @Module({
   imports: [

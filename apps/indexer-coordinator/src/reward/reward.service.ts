@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import assert from 'assert';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { BigNumber } from 'ethers';
@@ -8,9 +9,8 @@ import { NetworkService } from 'src/network/network.service';
 import { getLogger } from 'src/utils/logger';
 import { AccountService } from '../core/account.service';
 import { OnChainService } from '../core/onchain.service';
-import { PaygService } from '../payg/payg.service';
 import { TxType } from '../core/types';
-import assert from 'assert';
+import { PaygService } from '../payg/payg.service';
 
 enum Status {
   Pending = 'Pending',
@@ -143,7 +143,7 @@ export class RewardService implements OnModuleInit {
 
     if (expectTotalReduce.gt(0)) {
       let calSingleReduce: DeploymentReduce[] = this.lastSingleReduce;
-      let totalReduce = expectTotalReduce;
+      const totalReduce = expectTotalReduce;
 
       if (refetch) {
         const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
