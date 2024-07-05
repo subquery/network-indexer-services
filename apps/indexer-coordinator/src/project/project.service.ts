@@ -1,8 +1,8 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -29,7 +29,6 @@ import {
   getServicePort,
   nodeEndpoint,
   projectContainers,
-  nodeContainer,
   projectId,
   queryEndpoint,
   schemaName,
@@ -461,7 +460,7 @@ export class ProjectService {
     const rmPath = this.getRmPath(id);
 
     await this.docker.stop(projectContainers(id));
-    await this.rmrf([rmPath]);
+    this.rmrf([rmPath]);
     await this.docker.rm(projectContainers(id));
     await this.db.dropDBSchema(schemaName(projectID));
 
@@ -528,7 +527,7 @@ export class ProjectService {
     return this.onchainService.stopProject(id, indexer);
   }
 
-  async rmrf(paths: string[]) {
+  rmrf(paths: string[]) {
     for (const p of paths) {
       if (p) {
         fs.rmSync(p, { recursive: true, force: true });
