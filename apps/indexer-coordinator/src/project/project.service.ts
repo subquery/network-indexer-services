@@ -477,11 +477,11 @@ export class ProjectService {
     if (!project) return [];
 
     const projectID = projectId(id);
-    const rmPath = this.getRmPath(id);
+    // const rmPath = this.getRmPath(id);
 
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
-    this.rmrf([rmPath]);
+    // this.rmrf([rmPath]);
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
