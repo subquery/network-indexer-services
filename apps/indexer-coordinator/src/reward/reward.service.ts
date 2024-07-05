@@ -53,7 +53,11 @@ export class RewardService implements OnModuleInit {
 
   onModuleInit() {
     // FIXME test only
-    // this.collectAllocationRewards();
+    // (async () => {
+    //   await this.collectAllocationRewards(TxType.check);
+    //   await this.reduceAllocation(TxType.check);
+    //   await this.collectStateChannelRewards(TxType.check);
+    // })();
   }
 
   @Cron('1 1 1 * * *')
@@ -136,11 +140,10 @@ export class RewardService implements OnModuleInit {
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
     this.txOngoingMap[this.reduceAllocation.name] = false;
 
-    let expectTotalReduce = allocation.used.sub(allocation.total);
+    const expectTotalReduce = allocation.used.sub(allocation.total);
 
     let refetch = true;
     if (expectTotalReduce.eq(this.lastTotalReduce)) {
-      expectTotalReduce = this.lastTotalReduce;
       refetch = false;
     }
 
@@ -156,25 +159,19 @@ export class RewardService implements OnModuleInit {
           return a.totalAmount < b.totalAmount ? -1 : 1;
         });
 
-        const denominator = allocation.used;
-        const denominatorLength = allocation.used.toString().length;
-
         let calcTotalReduce = BigNumber.from(0);
         calSingleReduce = [];
         for (const d of deploymentAllocations) {
-          let calc = BigNumber.from(d.totalAmount)
-            .mul(BigNumber.from(10).pow(denominatorLength + 4))
-            .div(denominator);
-
-          calc = expectTotalReduce.mul(calc).div(BigNumber.from(10).pow(denominatorLength + 4));
-          calcTotalReduce = calcTotalReduce.add(calc);
-
+          const toReduce = expectTotalReduce.mul(d.totalAmount).div(allocation.used);
+          calcTotalReduce = calcTotalReduce.add(toReduce);
           this.logger.debug(
-            `take from d: ${d.deploymentId} totalAmount: ${d.totalAmount} calc: ${calc.toString()}`
+            `take from d: ${d.deploymentId} totalAmount: ${
+              d.totalAmount
+            } toReduce: ${toReduce.toString()}`
           );
           calSingleReduce.push({
             deploymentId: d.deploymentId,
-            toReduce: calc,
+            toReduce,
             status: Status.Pending,
           });
         }
@@ -211,7 +208,7 @@ export class RewardService implements OnModuleInit {
       this.logger.debug(
         `before call: this.lastSingleReduce: ${calSingleReduce
           .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
-          .join('  ')}`
+          .join(', ')}`
       );
       this.logger.debug(`before call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
 
@@ -236,7 +233,7 @@ export class RewardService implements OnModuleInit {
       this.logger.debug(
         `after call: this.lastSingleReduce: ${calSingleReduce
           .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
-          .join('  ')}`
+          .join(', ')}`
       );
       this.logger.debug(`after call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
     }
