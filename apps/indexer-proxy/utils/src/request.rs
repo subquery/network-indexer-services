@@ -19,7 +19,7 @@
 use once_cell::sync::Lazy;
 use reqwest::{
     header::{CONNECTION, CONTENT_TYPE},
-    Client,
+    Client, RequestBuilder,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -92,10 +92,49 @@ pub async fn graphql_request_raw(uri: &str, query: &GraphQLQuery) -> Result<Vec<
     post_request_raw(uri, serde_json::to_string(query).unwrap_or("".to_owned())).await
 }
 
+// Request to graphql service and response raw bytes with path and method.
+pub async fn graphql_request_raw_with_path(
+    uri: &str,
+    query: &GraphQLQuery,
+    path: Option<(String, String)>,
+) -> Result<Vec<u8>, Error> {
+    post_request_raw_with_path(
+        uri,
+        serde_json::to_string(query).unwrap_or("".to_owned()),
+        path,
+    )
+    .await
+}
+
+// request post raw with path and method
+pub async fn post_request_raw_with_path(
+    uri: &str,
+    query: String,
+    path: Option<(String, String)>,
+) -> Result<Vec<u8>, Error> {
+    let (url, is_post) = if let Some((path, method)) = path {
+        let url = format!("{}{}", uri, path);
+        (url, method.to_lowercase() == "post")
+    } else {
+        (uri.to_owned(), true)
+    };
+
+    if is_post {
+        handle_request_raw(REQUEST_CLIENT.post(url), query).await
+    } else {
+        handle_request_raw(REQUEST_CLIENT.get(url), query).await
+    }
+}
+
 // request post raw
 pub async fn post_request_raw(uri: &str, query: String) -> Result<Vec<u8>, Error> {
-    let response_result = REQUEST_CLIENT
-        .post(uri)
+    handle_request_raw(REQUEST_CLIENT.post(uri), query).await
+}
+
+// handle request
+#[inline]
+async fn handle_request_raw(request: RequestBuilder, query: String) -> Result<Vec<u8>, Error> {
+    let response_result = request
         .timeout(Duration::from_secs(REQUEST_TIMEOUT))
         .header(CONTENT_TYPE, APPLICATION_JSON)
         .header(CONNECTION, KEEP_ALIVE)

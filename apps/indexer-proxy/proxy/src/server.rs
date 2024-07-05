@@ -118,6 +118,13 @@ pub async fn start_server(port: u16) {
         .unwrap();
 }
 
+#[derive(Deserialize)]
+struct WhiteListBody {
+    body: String,
+    path: String,
+    method: String,
+}
+
 async fn ep_wl_query(
     deployment_id: String,
     deployment: String,
@@ -128,16 +135,22 @@ async fn ep_wl_query(
         return Err(Error::AuthVerify(1004));
     };
 
+    let (new_body, path) = match serde_json::from_str::<WhiteListBody>(&body) {
+        Ok(body) => (body.body, Some((body.path, body.method))),
+        Err(_) => (body, None),
+    };
+
     let project = get_project(&deployment).await?;
     let endpoint = project.endpoint(&ep_name, false)?;
     let (data, signature) = project
         .check_query(
-            body,
+            new_body,
             endpoint.endpoint.clone(),
             MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,
+            path,
         )
         .await?;
 
@@ -305,6 +318,7 @@ async fn ep_query_handler(
             MetricsNetwork::HTTP,
             false,
             no_sig,
+            None,
         )
         .await?;
 

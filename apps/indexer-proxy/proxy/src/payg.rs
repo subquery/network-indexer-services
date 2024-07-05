@@ -505,6 +505,7 @@ pub async fn query_single_state(
             network_type,
             true,
             no_sig,
+            None,
         )
         .await
         .map_err(|e| {
@@ -659,6 +660,7 @@ pub async fn query_multiple_state(
             network_type,
             true,
             no_sig,
+            None,
         )
         .await
         .map_err(|e| {
