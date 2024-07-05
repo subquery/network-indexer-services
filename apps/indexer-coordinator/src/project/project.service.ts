@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
+import { ConfigService } from 'src/config/config.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -77,6 +78,7 @@ export class ProjectService {
     private config: Config,
     private portService: PortService,
     private onchainService: OnChainService,
+    private configService: ConfigService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -253,7 +255,21 @@ export class ProjectService {
       manifest,
     });
 
-    const projectPayg = this.paygRepo.create({ id: id.trim() });
+    // load default payg config
+    const flexConfig = await this.configService.getFlexConfig();
+
+    let paygConfig = {};
+    if (flexConfig.flex_enabled === 'true') {
+      paygConfig = {
+        price: flexConfig.flex_price,
+        expiration: Number(flexConfig.flex_valid_period) || 0,
+      };
+    }
+
+    const projectPayg = this.paygRepo.create({
+      id: id.trim(),
+      ...paygConfig,
+    });
     await this.paygRepo.save(projectPayg);
 
     return this.projectRepo.save(projectEntity);

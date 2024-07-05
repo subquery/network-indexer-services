@@ -4,6 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ConfigModule } from 'src/config/config.module';
 import { CoreModule } from '../core/core.module';
 import { DBModule } from '../db/db.module';
 import { MetricsModule } from '../metrics/metrics.module';
@@ -24,6 +25,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     DBModule,
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
+    ConfigModule,
   ],
   providers: [
     ProjectService,
