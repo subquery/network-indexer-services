@@ -460,8 +460,8 @@ export class ProjectService {
     const rmPath = this.getRmPath(id);
 
     await this.docker.stop(projectContainers(id));
-    this.rmrf([rmPath]);
     await this.docker.rm(projectContainers(id));
+    this.rmrf([rmPath]);
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
