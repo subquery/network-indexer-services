@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import fs from 'fs';
 import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -31,6 +32,7 @@ import {
   projectId,
   queryEndpoint,
   schemaName,
+  getComposeFileDirectory,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
 import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
@@ -455,8 +457,11 @@ export class ProjectService {
     if (!project) return [];
 
     const projectID = projectId(id);
+    const rmPath = this.getRmPath(id);
+
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
+    this.rmrf([rmPath]);
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
@@ -520,5 +525,17 @@ export class ProjectService {
   async stopProjectOnChain(id: string) {
     const indexer = await this.account.getIndexer();
     return this.onchainService.stopProject(id, indexer);
+  }
+
+  rmrf(paths: string[]) {
+    for (const p of paths) {
+      if (p) {
+        fs.rmSync(p, { recursive: true, force: true });
+      }
+    }
+  }
+
+  getRmPath(cid: string) {
+    return path.join(getComposeFileDirectory(cid), '.monitor');
   }
 }
