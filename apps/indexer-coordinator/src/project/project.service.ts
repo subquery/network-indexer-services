@@ -261,9 +261,13 @@ export class ProjectService {
     let paygConfig = {};
     if (flexConfig.flex_enabled === 'true') {
       paygConfig = {
+        id: id.trim(),
         price: flexConfig.flex_price,
         expiration: Number(flexConfig.flex_valid_period) || 0,
-      };
+        threshold: 10,
+        overflow: 10,
+        token: this.contract.getSdk().sqToken.address,
+      } as PaygEntity;
     }
 
     const projectPayg = this.paygRepo.create({
