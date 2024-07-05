@@ -15,7 +15,7 @@ export enum ConfigType {
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: '1000000000000000000', // 1 sqt per 1000 requests
+  [ConfigType.FLEX_PRICE]: '1000000000000000', // 0.001 sqt per request
   [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24 * 14}`, // 14 days
   [ConfigType.FLEX_ENABLED]: 'true',
   [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
