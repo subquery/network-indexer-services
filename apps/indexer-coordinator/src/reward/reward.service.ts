@@ -98,7 +98,7 @@ export class RewardService implements OnModuleInit {
         continue;
       }
       const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
-      const threshold = BigNumber.from(10).pow(18).mul(BigNumber.from(thresholdConfig));
+      const threshold = BigNumber.from(thresholdConfig);
       const timeLimit = this.allocationBypassTimeLimit;
       let startTime = this.allocationStartTimes.get(allocation.deploymentId);
       if (!startTime) {
@@ -243,7 +243,7 @@ export class RewardService implements OnModuleInit {
     this.txOngoingMap[this.collectStateChannelRewards.name] = false;
 
     const thresholdConfig = await this.configService.get(ConfigType.STATE_CHANNEL_REWARD_THRESHOLD);
-    const threshold = BigNumber.from(10).pow(18).mul(BigNumber.from(thresholdConfig));
+    const threshold = BigNumber.from(thresholdConfig);
 
     const openChannels = await this.paygService.getOpenChannels();
     for (const channel of openChannels) {

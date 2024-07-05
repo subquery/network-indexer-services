@@ -3,7 +3,6 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BigNumber } from 'ethers';
 import { Repository, In } from 'typeorm';
 import { ConfigEntity } from './config.model';
 
@@ -16,11 +15,11 @@ export enum ConfigType {
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: BigNumber.from(10).pow(18).toString(),
-  [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24}`,
+  [ConfigType.FLEX_PRICE]: '1000000000000000000', // 1 sqt per 1000 requests
+  [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24 * 14}`, // 14 days
   [ConfigType.FLEX_ENABLED]: 'true',
-  [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000',
-  [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000',
+  [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
+  [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
 };
 
 @Injectable()
