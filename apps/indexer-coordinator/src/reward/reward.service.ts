@@ -240,6 +240,8 @@ export class RewardService implements OnModuleInit {
   }
 
   async collectStateChannelRewards(txType: TxType) {
+    this.txOngoingMap[this.collectStateChannelRewards.name] = false;
+
     const thresholdConfig = await this.configService.get(ConfigType.STATE_CHANNEL_REWARD_THRESHOLD);
     const threshold = BigNumber.from(10).pow(18).mul(BigNumber.from(thresholdConfig));
 
