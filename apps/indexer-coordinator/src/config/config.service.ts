@@ -16,8 +16,8 @@ export enum ConfigType {
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: BigNumber.from(10).pow(15).toString(), // 1 SQT
-  [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24}`, // 1 day
+  [ConfigType.FLEX_PRICE]: BigNumber.from(10).pow(18).toString(),
+  [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24}`,
   [ConfigType.FLEX_ENABLED]: 'true',
   [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000',
   [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000',
