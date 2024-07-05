@@ -14,6 +14,7 @@ import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
 
 import { ChainModule } from './chain/chain.module';
+import { ConfigModule } from './config/config.module';
 import { ConfigureModule } from './configure/configure.module';
 import { CoreModule } from './core/core.module';
 import { dbOption } from './data-source';
@@ -73,6 +74,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     StatsModule,
     NetworkModule,
     RewardModule,
+    ConfigModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })

@@ -22,6 +22,7 @@ use axum::{
     Json,
 };
 use serde_json::{json, Value};
+use std::sync::Arc;
 
 /// App error type.
 #[derive(Debug)]
@@ -55,6 +56,8 @@ pub enum Error {
     Serialize(i32),
 
     WebSocket(i32),
+
+    Jsonrpc(i64, Arc<Error>),
 }
 
 impl Error {
@@ -67,7 +70,7 @@ impl Error {
         })
     }
 
-    pub fn to_status_message<'a>(self) -> (StatusCode, i32, &'a str) {
+    pub fn to_status_message<'a>(&self) -> (StatusCode, &i32, &'a str) {
         match self {
             Error::AuthCreate(c) => (StatusCode::UNAUTHORIZED, c, "Auth create failure"),
             Error::AuthVerify(c) => (StatusCode::UNAUTHORIZED, c, "Auth invalid"),
@@ -109,18 +112,37 @@ impl Error {
             Error::Overflow(c) => (StatusCode::BAD_REQUEST, c, "Query overflow"),
             Error::Serialize(c) => (StatusCode::BAD_REQUEST, c, "Invalid serialize"),
             Error::WebSocket(c) => (StatusCode::BAD_REQUEST, c, "WebSocket error"),
+            Error::Jsonrpc(_, e) => e.to_status_message(),
         }
     }
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        let is_jsonrpc = match &self {
+            Error::Jsonrpc(id, _) => Some(*id),
+            _ => None,
+        };
+
         let (status, code, error_message) = self.to_status_message();
-        let body = Json(json!({
-            "code": code,
-            "error": error_message,
-        }));
-        (status, body).into_response()
+
+        let body = if let Some(id) = is_jsonrpc {
+            json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": {
+                    "code": code,
+                    "message": error_message,
+                }
+            })
+        } else {
+            json!({
+                "code": code,
+                "error": error_message,
+            })
+        };
+
+        (status, Json(body)).into_response()
     }
 }
 

@@ -4,6 +4,7 @@ use ethers::types::U256;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use std::result::Result;
+use std::sync::Arc;
 use tokio::{net::TcpStream, select};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
@@ -141,8 +142,21 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn send_error_msg(&mut self, code: i32, reason: String) {
-        let error_msg = json!({ "error": { "code": code, "message": reason } });
+    async fn send_error_msg(&mut self, error: Error) {
+        let id = match &error {
+            Error::Jsonrpc(id, _) => *id,
+            _ => 0,
+        };
+        let (_, code, reason) = error.to_status_message();
+
+        let error_msg = json!(
+            {
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": code, "message": reason }
+            }
+        );
+
         if self
             .client_socket
             .send(Message::Text(error_msg.to_string()))
@@ -181,14 +195,16 @@ impl WebSocketConnection {
         query: &str,
     ) -> Result<Option<String>, Error> {
         let project: Project = get_project(&self.deployment).await?;
-        let (unit_times, unit_overflow) = project.compute_query_method(query)?;
+        let ((unit_times, unit_overflow), jid) = project.compute_query_method(query)?;
 
         let (inactive, channel_id) = match &mut self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
-                    let deployment_id = verify_auth_ws(&auth).await?;
+                    let deployment_id = verify_auth_ws(&auth)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
                     if deployment_id != self.deployment {
-                        return Err(Error::AuthVerify(1004));
+                        return Err(Error::Jsonrpc(jid, Arc::new(Error::AuthVerify(1004))));
                     }
                 }
 
@@ -196,7 +212,9 @@ impl WebSocketConnection {
             }
             QueryType::PAYG(ref mut start, ref mut end) => {
                 let (inactive, channel_id, new_start, new_end) =
-                    Self::before_query_payg_check(auth, project, unit_times, unit_overflow).await?;
+                    Self::before_query_payg_check(auth, project, unit_times, unit_overflow)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
 
                 if inactive.is_none() {
                     *start = new_start;
@@ -207,9 +225,11 @@ impl WebSocketConnection {
             }
             QueryType::Whitelist => {
                 if COMMAND.auth() {
-                    let deployment_id = AuthWhitelistQuery::verify_auth(&auth).await?;
+                    let deployment_id = AuthWhitelistQuery::verify_auth(&auth)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
                     if deployment_id != self.deployment {
-                        return Err(Error::AuthVerify(1004));
+                        return Err(Error::Jsonrpc(jid, Arc::new(Error::AuthVerify(1004))));
                     }
                 }
 
@@ -380,8 +400,7 @@ async fn handle_client_socket_message(
         Message::Text(text) => {
             debug!("Received text message from client");
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
-                let (_, code, reason) = e.to_status_message();
-                ws_connection.send_error_msg(code, reason.to_string()).await;
+                ws_connection.send_error_msg(e).await;
             }
         }
         Message::Binary(_) => {
@@ -471,10 +490,11 @@ pub async fn connect_to_project_ws(endpoint: String) -> Result<SocketConnection,
 }
 
 async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<(), Error> {
-    let (_, code, reason) = error.unwrap_or(Error::WebSocket(1312)).to_status_message();
+    let error = error.unwrap_or(Error::WebSocket(1312));
+    let (_, code, reason) = error.to_status_message();
     socket
         .send(Message::Close(Some(CloseFrame {
-            code: code as u16,
+            code: *code as u16,
             reason: reason.into(),
         })))
         .await

@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import fs from 'fs';
 import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -8,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
+import { ConfigService } from 'src/config/config.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -31,6 +33,7 @@ import {
   projectId,
   queryEndpoint,
   schemaName,
+  getComposeFileDirectory,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
 import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
@@ -75,6 +78,7 @@ export class ProjectService {
     private config: Config,
     private portService: PortService,
     private onchainService: OnChainService,
+    private configService: ConfigService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -251,7 +255,21 @@ export class ProjectService {
       manifest,
     });
 
-    const projectPayg = this.paygRepo.create({ id: id.trim() });
+    // load default payg config
+    const flexConfig = await this.configService.getFlexConfig();
+
+    let paygConfig = {};
+    if (flexConfig.flex_enabled === 'true') {
+      paygConfig = {
+        price: flexConfig.flex_price,
+        expiration: Number(flexConfig.flex_valid_period) || 0,
+      };
+    }
+
+    const projectPayg = this.paygRepo.create({
+      id: id.trim(),
+      ...paygConfig,
+    });
     await this.paygRepo.save(projectPayg);
 
     return this.projectRepo.save(projectEntity);
@@ -455,8 +473,11 @@ export class ProjectService {
     if (!project) return [];
 
     const projectID = projectId(id);
+    const rmPath = this.getRmPath(id);
+
     await this.docker.stop(projectContainers(id));
     await this.docker.rm(projectContainers(id));
+    this.rmrf([rmPath]);
     await this.db.dropDBSchema(schemaName(projectID));
 
     // release port
@@ -520,5 +541,17 @@ export class ProjectService {
   async stopProjectOnChain(id: string) {
     const indexer = await this.account.getIndexer();
     return this.onchainService.stopProject(id, indexer);
+  }
+
+  rmrf(paths: string[]) {
+    for (const p of paths) {
+      if (p) {
+        fs.rmSync(p, { recursive: true, force: true });
+      }
+    }
+  }
+
+  getRmPath(cid: string) {
+    return path.join(getComposeFileDirectory(cid), '.monitor');
   }
 }
