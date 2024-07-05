@@ -143,9 +143,9 @@ export class RewardService implements OnModuleInit {
 
     if (expectTotalReduce.gt(0)) {
       let calSingleReduce: DeploymentReduce[] = this.lastSingleReduce;
-      const totalReduce = expectTotalReduce;
 
       if (refetch) {
+        this.logger.debug(`==== refetch ====`);
         const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
           indexerId
         );
@@ -194,10 +194,7 @@ export class RewardService implements OnModuleInit {
           calSingleReduce[i].toReduce = calSingleReduce[i].toReduce.add(diff);
           rest = rest.sub(diff);
         }
-        this.logger.debug(
-          'after adjust:',
-          calSingleReduce.map((v) => v.toReduce.toString())
-        );
+        this.logger.debug(`after adjust: ${calSingleReduce.map((v) => v.toReduce.toString())}`);
         const adjustedTotalReduce = calSingleReduce.reduce(
           (acc, cur) => acc.add(cur.toReduce),
           BigNumber.from(0)
@@ -206,7 +203,14 @@ export class RewardService implements OnModuleInit {
       }
 
       this.lastSingleReduce = calSingleReduce;
-      this.lastTotalReduce = totalReduce;
+      this.lastTotalReduce = expectTotalReduce;
+
+      this.logger.debug(
+        `before call: this.lastSingleReduce: ${calSingleReduce
+          .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
+          .join('  ')}`
+      );
+      this.logger.debug(`before call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
 
       for (let i = 0; i < calSingleReduce.length; i++) {
         const d = calSingleReduce[i];
@@ -214,17 +218,24 @@ export class RewardService implements OnModuleInit {
         const success = await this.onChainService.removeAllocation(
           d.deploymentId,
           indexerId,
-          calSingleReduce[i].toReduce,
+          d.toReduce,
           txType
         );
         if (!success) {
-          calSingleReduce[i].status = Status.Failed;
+          d.status = Status.Failed;
           this.txOngoingMap[this.reduceAllocation.name] = true;
           break;
         }
-        calSingleReduce[i].status = Status.Success;
+        d.status = Status.Success;
         this.lastTotalReduce = this.lastTotalReduce.sub(d.toReduce);
       }
+
+      this.logger.debug(
+        `after call: this.lastSingleReduce: ${calSingleReduce
+          .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
+          .join('  ')}`
+      );
+      this.logger.debug(`after call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
     }
   }
 
