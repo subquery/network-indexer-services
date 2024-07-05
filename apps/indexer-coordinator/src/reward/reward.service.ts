@@ -5,6 +5,7 @@ import assert from 'assert';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { BigNumber } from 'ethers';
+import { ConfigService, ConfigType } from 'src/config/config.service';
 import { NetworkService } from 'src/network/network.service';
 import { getLogger } from 'src/utils/logger';
 import { AccountService } from '../core/account.service';
@@ -46,7 +47,8 @@ export class RewardService implements OnModuleInit {
     private accountService: AccountService,
     private networkService: NetworkService,
     private onChainService: OnChainService,
-    private paygService: PaygService
+    private paygService: PaygService,
+    private configService: ConfigService
   ) {}
 
   onModuleInit() {
@@ -91,7 +93,8 @@ export class RewardService implements OnModuleInit {
       if (rewards.eq(0)) {
         continue;
       }
-      const threshold = this.rewardThreshold;
+      const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
+      const threshold = BigNumber.from(10).pow(18).mul(BigNumber.from(thresholdConfig));
       const timeLimit = this.allocationBypassTimeLimit;
       let startTime = this.allocationStartTimes.get(allocation.deploymentId);
       if (!startTime) {
@@ -240,8 +243,9 @@ export class RewardService implements OnModuleInit {
   }
 
   async collectStateChannelRewards(txType: TxType) {
-    // todo: load from config
-    const threshold = BigNumber.from(10).pow(18).mul(2000);
+    const thresholdConfig = await this.configService.get(ConfigType.STATE_CHANNEL_REWARD_THRESHOLD);
+    const threshold = BigNumber.from(10).pow(18).mul(BigNumber.from(thresholdConfig));
+
     const openChannels = await this.paygService.getOpenChannels();
     for (const channel of openChannels) {
       const unclaimed = BigNumber.from(channel.remote).sub(channel.onchain);
