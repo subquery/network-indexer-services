@@ -143,6 +143,7 @@ export class ProjectSubgraphService {
     });
     for (const endpoint of project.serviceEndpoints) {
       endpoint.access = SubgraphEndpointAccessType[endpoint.key];
+      endpoint.isWebsocket = endpoint.key === SubgraphEndpointType.WsEndpoint;
     }
 
     projectConfig.serviceEndpoints = project.serviceEndpoints;
