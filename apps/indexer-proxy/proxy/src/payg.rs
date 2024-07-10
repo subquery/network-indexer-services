@@ -478,7 +478,7 @@ pub async fn query_single_state(
     state: QueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(Vec<u8>, String, String, Option<(i64, i64)>)> {
     let project: Project = get_project(project_id).await?;
 
     // compute unit count times
@@ -497,7 +497,7 @@ pub async fn query_single_state(
             })?;
 
     // query the data
-    let (data, signature) = project
+    let (data, signature, limit) = project
         .query(
             query,
             endpoint,
@@ -527,7 +527,7 @@ pub async fn query_single_state(
         })?;
 
     debug!("Handle query channel success");
-    Ok((data, signature, post_state.to_bs64_old2()))
+    Ok((data, signature, post_state.to_bs64_old2(), limit))
 }
 
 // query with multiple state mode
@@ -631,7 +631,7 @@ pub async fn query_multiple_state(
     state: MultipleQueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(Vec<u8>, String, String, Option<(i64, i64)>)> {
     let project = get_project(project_id).await?;
 
     // compute unit count times
@@ -648,11 +648,11 @@ pub async fn query_multiple_state(
             }
         })?;
     if inactive {
-        return Ok((vec![], "".to_owned(), state.to_bs64()));
+        return Ok((vec![], "".to_owned(), state.to_bs64(), None));
     }
 
     // query the data.
-    let (data, signature) = project
+    let (data, signature, limit) = project
         .query(
             query,
             endpoint,
@@ -674,7 +674,7 @@ pub async fn query_multiple_state(
     post_query_multiple_state(keyname, state_cache).await;
 
     debug!("Handle query channel success");
-    Ok((data, signature, state.to_bs64()))
+    Ok((data, signature, state.to_bs64(), limit))
 }
 
 pub async fn extend_channel(

@@ -354,7 +354,7 @@ impl Project {
         is_limit: bool,
         no_sig: bool,
         path: Option<(String, String)>, // path & method
-    ) -> Result<(Vec<u8>, String)> {
+    ) -> Result<(Vec<u8>, String, Option<(i64, i64)>)> {
         let (_, jid) = self.compute_query_method(&body)?;
         let is_rpc = self.is_rpc_project();
 
@@ -378,8 +378,8 @@ impl Project {
         is_limit: bool,
         no_sig: bool,
         path: Option<(String, String)>,
-    ) -> Result<(Vec<u8>, String)> {
-        if is_limit {
+    ) -> Result<(Vec<u8>, String, Option<(i64, i64)>)> {
+        let waterlevel = if is_limit {
             if let Some(limit) = self.rate_limit {
                 // project rate limit
                 let mut conn = redis();
@@ -403,33 +403,40 @@ impl Project {
                     .query_async(&mut conn)
                     .await
                     .map_err(|err| error!("Redis 1 {}", err));
+                Some((limit, used + 1))
+            } else {
+                None
             }
-        }
+        } else {
+            None
+        };
 
-        match self.ptype {
+        let (d, s) = match self.ptype {
             ProjectType::Subquery | ProjectType::Subgraph => match serde_json::from_str(&body) {
                 Ok(query) => {
                     self.subquery_raw(&query, endpoint, payment, network, no_sig, path)
-                        .await
+                        .await?
                 }
                 Err(_e) => {
                     if path.is_some() {
                         self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
-                            .await
+                            .await?
                     } else {
-                        Err(Error::InvalidRequest(1140))
+                        return Err(Error::InvalidRequest(1140));
                     }
                 }
             },
             ProjectType::RpcEvm(_) => {
                 self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
-                    .await
+                    .await?
             }
             ProjectType::RpcSubstrate(_) => {
                 self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
-                    .await
+                    .await?
             }
-        }
+        };
+
+        Ok((d, s, waterlevel))
     }
 
     pub async fn subquery_raw(
