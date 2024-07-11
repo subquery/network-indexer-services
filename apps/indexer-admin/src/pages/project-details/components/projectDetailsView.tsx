@@ -192,7 +192,9 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="flex" style={{ justifyContent: 'space-between' }}>
               <Typography variant="small" type="secondary">
-                {project.projectType === ProjectType.Rpc ? 'Total RPC Providers' : 'Total Indexers'}
+                {project.projectType === ProjectType.Rpc
+                  ? 'Total RPC Providers'
+                  : 'Total Operators'}
               </Typography>
               <Typography variant="small">
                 {projectRewardsDetails.data?.queryProjectDetailsFromNetwork.indexerCount || 0}
