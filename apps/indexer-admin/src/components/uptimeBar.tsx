@@ -55,7 +55,7 @@ const UptimeBar: FC<IProps> = (props) => {
     const total = uptimeData.reduce((previous, current) => previous + current.total, 0);
     const success = uptimeData.reduce((previous, current) => previous + current.success, 0);
 
-    return floor(success / total, 2) * 100;
+    return floor(floor(success / total, 2) * 100, 2);
   }, [uptimeData]);
 
   const notEnoughUptimeChunks = useMemo(() => {
