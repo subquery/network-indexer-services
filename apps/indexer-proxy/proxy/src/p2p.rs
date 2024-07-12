@@ -719,7 +719,7 @@ async fn handle_group(
                                 )
                                 .await
                                 {
-                                    Ok((res_query, res_signature, res_state)) => {
+                                    Ok((res_query, res_signature, res_state, _limit)) => {
                                         json!({
                                             "result": general_purpose::STANDARD.encode(&res_query),
                                             "signature": res_signature,
@@ -815,7 +815,7 @@ async fn handle_close_agreement_query(
 
     let project = get_project(project).await?;
     let endpoint = project.endpoint(&ep_name, true)?;
-    let (data, _signature) = project
+    let (data, _signature, _limit) = project
         .check_query(
             query,
             endpoint.endpoint.clone(),
