@@ -279,32 +279,32 @@ export class ProjectSubgraphService {
   }
 
   async validateSubgraphWsProjectEndpoint(wsEndpointUrl: string): Promise<ValidationResponse> {
-    return Promise.resolve({ valid: true, reason: '' });
-    // const ws = new WebSocket(wsEndpointUrl);
-    // try {
-    //   return await Promise.race<ValidationResponse>([
-    //     new Promise((resolve, reject) => {
-    //       ws.onopen = function open() {
-    //         resolve({ valid: true, reason: '' });
-    //       };
-    //       ws.onerror = function (error) {
-    //         logger.error(`Ws connect error: ${error.message}`);
-    //         reject(error.message);
-    //       };
-    //     }),
-    //     new Promise((_, reject_1) => {
-    //       setTimeout(() => {
-    //         reject_1('Ws connect timeout');
-    //       }, 5000);
-    //     }),
-    //   ]);
-    // } catch (e) {
-    //   return {
-    //     valid: false,
-    //     reason: `Subgraph ws endpoint is not valid: ${wsEndpointUrl}`,
-    //   };
-    // } finally {
-    //   ws.terminate();
-    // }
+    // return Promise.resolve({ valid: true, reason: '' });
+    const ws = new WebSocket(wsEndpointUrl, ['graphql-ws']);
+    try {
+      return await Promise.race<ValidationResponse>([
+        new Promise((resolve, reject) => {
+          ws.onopen = function open() {
+            resolve({ valid: true, reason: '' });
+          };
+          ws.onerror = function (error) {
+            logger.error(`Ws connect error: ${error.message}`);
+            reject(error.message);
+          };
+        }),
+        new Promise((_, reject_1) => {
+          setTimeout(() => {
+            reject_1('Ws connect timeout');
+          }, 5000);
+        }),
+      ]);
+    } catch (e) {
+      return {
+        valid: false,
+        reason: `Subgraph ws endpoint is not valid: ${wsEndpointUrl}`,
+      };
+    } finally {
+      ws.terminate();
+    }
   }
 }
