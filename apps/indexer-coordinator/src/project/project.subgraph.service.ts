@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
 import { Repository } from 'typeorm';
+import WebSocket from 'ws';
 import { SubgraphManifest } from './project.manifest';
 import {
   IProjectConfig,
