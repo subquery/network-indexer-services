@@ -45,6 +45,12 @@ import { SubscriptionModule } from './subscription/subscription.module';
         'subscriptions-transport-ws': true,
       },
       cors: { origin: true, credentials: true },
+      formatError: (error) => {
+        return {
+          message: error.message,
+          code: error.extensions?.code,
+        };
+      },
     }),
     SubscriptionModule,
     CoreModule,
