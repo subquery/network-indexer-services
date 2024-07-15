@@ -16,15 +16,15 @@ import {
 @ObjectType()
 export class ConfigEntity {
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  @Field()
+  @Field({ nullable: true })
   created_at: Date;
 
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  @Field()
+  @Field({ nullable: true })
   updated_at: Date;
 
   @PrimaryGeneratedColumn('increment')
-  @Field(() => ID)
+  @Field(() => ID, { nullable: true })
   id: number;
 
   @Column({ type: 'varchar' })
