@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
 import { Repository } from 'typeorm';
-import WebSocket from 'ws';
 import { SubgraphManifest } from './project.manifest';
 import {
   IProjectConfig,
@@ -143,6 +142,7 @@ export class ProjectSubgraphService {
     });
     for (const endpoint of project.serviceEndpoints) {
       endpoint.access = SubgraphEndpointAccessType[endpoint.key];
+      endpoint.isWebsocket = endpoint.key === SubgraphEndpointType.WsEndpoint;
     }
 
     projectConfig.serviceEndpoints = project.serviceEndpoints;

@@ -247,6 +247,7 @@ export class SeviceEndpoint {
     this.valid = true;
     this.reason = '';
     this.access = access;
+    this.isWebsocket = false;
   }
   @Field()
   key: string;
@@ -260,6 +261,8 @@ export class SeviceEndpoint {
   // type?: EndpointType;
   @Field({ nullable: true })
   access?: AccessType;
+  @Field({ nullable: true })
+  isWebsocket?: boolean;
 }
 
 @Entity()
