@@ -41,7 +41,19 @@ export class ConfigService {
   }
 
   async getAll(): Promise<ConfigEntity[]> {
-    return await this.configRepo.find();
+    const cfs = await this.configRepo.find();
+    const configMap = {};
+    for (const c of cfs) {
+      configMap[c.key] = c;
+    }
+
+    const res = [];
+    for (const key in defaultConfig) {
+      const c = new ConfigEntity();
+      Object.assign(c, configMap[key] || { key, value: defaultConfig[key] });
+      res.push(c);
+    }
+    return res;
   }
 
   async getFlexConfig(): Promise<Record<string, string>> {
