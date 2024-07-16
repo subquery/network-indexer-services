@@ -548,7 +548,8 @@ pub struct ProjectEndpointItem {
     value: String,
     // internal, default, null
     access: String,
-    valid: bool,
+    #[serde(rename = "isWebsocket")]
+    ws: bool,
     #[serde(rename = "type")]
     etype: String,
 }
@@ -611,40 +612,35 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
 
         let mut endpoints: HashMap<String, Endpoint> = HashMap::new();
         for endpoint in item.project_endpoints {
-            let mut e = Endpoint {
+            let is_internal = endpoint.access == "internal";
+            let is_default = endpoint.access == "default";
+            let is_ws = endpoint.ws;
+
+            match endpoint.etype.as_str() {
+                "evm" => {
+                    ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
+                }
+                "polkadot" => {
+                    ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
+                }
+                _ => {}
+            }
+
+            let e = Endpoint {
                 endpoint: endpoint.value,
-                is_internal: false,
-                is_ws: false,
+                is_internal,
+                is_ws,
             };
 
-            match endpoint.key.as_str() {
-                "evmHttp" => {
-                    ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
-                    endpoints.insert("default".to_owned(), e.clone());
-                    endpoints.insert(endpoint.key, e);
-                }
-                "polkadotHttp" => {
-                    ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
-                    endpoints.insert("default".to_owned(), e.clone());
-                    endpoints.insert(endpoint.key, e);
-                }
-                "queryEndpoint" | "http-endpoint" => {
-                    endpoints.insert("default".to_owned(), e.clone());
-                    endpoints.insert(endpoint.key, e);
-                }
-                "evmWs" | "polkadotWs" | "wsEndpoint" | "ws-endpoint" => {
-                    e.is_ws = true;
-                    endpoints.insert("ws".to_owned(), e.clone());
-                    endpoints.insert(endpoint.key, e);
-                }
-                "nodeEndpoint" | "index-node-endpoint" | "adminEndpoint" | "admin-endpoint" => {
-                    e.is_internal = true;
-                    endpoints.insert(endpoint.key, e);
-                }
-                _ => {
-                    endpoints.insert(endpoint.key, e);
-                }
+            if is_default {
+                endpoints.insert("default".to_owned(), e.clone());
             }
+
+            if is_ws {
+                endpoints.insert("ws".to_owned(), e.clone());
+            }
+
+            endpoints.insert(endpoint.key, e);
         }
 
         if endpoints.is_empty() {
