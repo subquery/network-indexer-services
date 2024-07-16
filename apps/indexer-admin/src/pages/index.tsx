@@ -4,6 +4,7 @@
 import Account from './account/account';
 import ControllerManagement from './controllers/controllersPage';
 import Footer from './footer/footer';
+import GlobalConfig from './global-config/GlobalConfig';
 import Header from './header/header';
 import Network from './network/networkPage';
 import ProjectDetail from './project-details/projectDetailsPage';
@@ -19,4 +20,5 @@ export {
   ProjectDetail,
   Register,
   Network,
+  GlobalConfig,
 };
