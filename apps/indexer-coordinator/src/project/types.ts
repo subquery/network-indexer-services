@@ -16,6 +16,12 @@ export enum ProjectType {
   SUBGRAPH,
 }
 
+export enum ProjectKind {
+  UN_RESOLVED = 'un-resolved',
+  SYSTEM_MANAGED = 'system-managed',
+  USER_MANAGED = 'user-managed',
+}
+
 export enum AccessType {
   DEFAULT = 'default',
   INTERNAL = 'internal',

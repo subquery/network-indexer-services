@@ -25,6 +25,7 @@ import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
 import {
+  ProjectKind,
   ProjectType,
   SubgraphEndpoint,
   SubgraphPort,
@@ -229,14 +230,15 @@ export class ProjectResolver {
     @Args('id') id: string,
     @Args('projectConfig') projectConfig: ProjectConfig,
     @Args('rateLimit', { nullable: true }) rateLimit?: number,
-    @Args('projectType', { nullable: true }) projectType?: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType,
+    @Args('projectKind', { nullable: true }) projectKind?: ProjectKind
   ): Promise<Project> {
     if (projectType === undefined) {
       projectType = await this.projectService.getProjectType(id);
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
-        return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0);
+        return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0, projectKind);
       case ProjectType.RPC:
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.SUBGRAPH:

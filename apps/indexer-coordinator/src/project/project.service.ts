@@ -56,6 +56,7 @@ import {
 } from './project.model';
 import {
   MmrStoreType,
+  ProjectKind,
   ProjectType,
   SubqueryEndpointAccessType,
   SubqueryEndpointType,
@@ -251,6 +252,7 @@ export class ProjectService {
       status: DesiredStatus.STOPPED,
       chainType,
       projectType,
+      projectKind: ProjectKind.UN_RESOLVED,
       details: networkInfo,
       manifest,
     });
@@ -302,7 +304,8 @@ export class ProjectService {
   async startSubqueryProject(
     id: string,
     projectConfig: IProjectConfig,
-    rateLimit: number
+    rateLimit: number,
+    projectKind: ProjectKind
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
@@ -311,6 +314,17 @@ export class ProjectService {
     if (project.rateLimit !== rateLimit) {
       project.rateLimit = rateLimit;
       await this.projectRepo.save(project);
+    }
+
+    if (project.projectKind !== projectKind) {
+      if (projectKind !== ProjectKind.UN_RESOLVED) {
+        throw new Error(`change project kind is not allowed: ${projectKind}`);
+      }
+    }
+    project.projectKind = projectKind;
+    if (project.projectKind === ProjectKind.USER_MANAGED) {
+      project.projectConfig = projectConfig;
+      return await this.projectRepo.save(project);
     }
 
     this.setDefaultConfigValue(projectConfig);
