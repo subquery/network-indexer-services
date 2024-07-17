@@ -43,8 +43,7 @@ pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration 
 pub const CHANNEL_QUERY: &str =
     "query { getAliveChannels { id consumer deploymentId agent total spent remote price lastFinal expiredAt } }";
 
-pub const AUTO_REDUCE_ALLOCATION: &str =
-    "query { config(key: \"auto_reduce_allocation_enabled\") }";
+pub const AUTO_REDUCE_ALLOCATION: &str = r#"query { config(key: "auto_reduce_allocation_enabled") }"#;
 
 pub fn project_mainfest(project_type: i64, project_id: &str) -> String {
     format!(
