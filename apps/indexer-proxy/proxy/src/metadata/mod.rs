@@ -17,9 +17,9 @@ pub async fn auto_reduce_allocation_enabled() -> Option<bool> {
     let arae_res = graphql_request(&url, &GraphQLQuery::query(AUTO_REDUCE_ALLOCATION)).await;
     match arae_res {
         Ok(arae) => match arae.pointer("/data/config") {
-            Some(target) => {
-                target.as_bool().or(target.as_str().unwrap_or("").parse().ok())
-            },
+            Some(target) => target
+                .as_bool()
+                .or(target.as_str().unwrap_or("").parse().ok()),
             None => None,
         },
         Err(_) => None,
