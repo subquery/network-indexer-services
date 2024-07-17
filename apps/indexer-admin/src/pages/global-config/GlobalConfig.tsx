@@ -3,7 +3,7 @@
 
 import React, { FC, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
-import { Spinner, Typography } from '@subql/components';
+import { openNotification, Spinner, Typography } from '@subql/components';
 import { Button, Switch } from 'antd';
 
 import { AllConfig, ConfigKey, GET_ALL_CONFIG, SET_CONFIG } from 'utils/queries';
@@ -64,6 +64,13 @@ const GlobalConfig: FC = () => {
                     key: ConfigKey.AutoReduceAllocationEnabled,
                     value: config.autoReduceOverAllocation ? 'false' : 'true',
                   },
+                });
+                openNotification({
+                  type: 'success',
+                  title: `Auto Reduce Over Allocation ${
+                    config.autoReduceOverAllocation ? 'Disabled' : 'Enabled'
+                  }`,
+                  duration: 3,
                 });
                 setConfig({
                   ...config,
