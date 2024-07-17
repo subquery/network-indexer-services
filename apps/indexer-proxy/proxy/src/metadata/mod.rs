@@ -16,7 +16,7 @@ pub async fn auto_reduce_allocation_enabled() -> Option<bool> {
     let url = COMMAND.graphql_url();
     let arae_res = graphql_request(&url, &GraphQLQuery::query(AUTO_REDUCE_ALLOCATION)).await;
     match arae_res {
-        Ok(arae) => match arae.pointer("/data/_metadata/lastProcessedHeight") {
+        Ok(arae) => match arae.pointer("/data/config") {
             Some(target) => target.as_bool(),
             None => None,
         },
