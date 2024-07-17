@@ -19,7 +19,7 @@ pub async fn auto_reduce_allocation_enabled() -> Option<bool> {
     match arae_res {
         Ok(arae) => match arae.pointer("/data/config") {
             Some(target) => {
-                println!("target: {} {:?}", target, target.as_bool())
+                println!("target: {} {:?}", target, target.as_bool());
                 target.as_bool()
             },
             None => None,
