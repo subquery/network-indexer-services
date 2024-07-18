@@ -550,8 +550,8 @@ pub struct ProjectEndpointItem {
     access: String,
     #[serde(rename = "isWebsocket")]
     ws: bool,
-    #[serde(rename = "type")]
-    etype: String,
+    #[serde(rename = "rpcFamily")]
+    rpc_family: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -615,15 +615,16 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             let is_internal = endpoint.access == "internal";
             let is_default = endpoint.access == "default";
             let is_ws = endpoint.ws;
-
-            match endpoint.etype.as_str() {
-                "evm" => {
-                    ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
+            if !endpoint.rpc_family.is_empty() {
+                match endpoint.rpc_family[0].as_str() {
+                    "evm" => {
+                        ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
+                    }
+                    "polkadot" => {
+                        ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
+                    }
+                    _ => {}
                 }
-                "polkadot" => {
-                    ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
-                }
-                _ => {}
             }
 
             let e = Endpoint {
