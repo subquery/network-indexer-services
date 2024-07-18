@@ -24,7 +24,7 @@ use axum::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
     },
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
     routing::{get, post},
     Json, Router,
 };
@@ -102,6 +102,7 @@ pub async fn start_server(port: u16) {
         .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
+        .route("/", get(|| async { Redirect::to("/healthy") }))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
