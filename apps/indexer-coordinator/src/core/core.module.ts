@@ -15,7 +15,6 @@ import { DockerRegistryService } from './docker.registry.service';
 import { DockerService } from './docker.service';
 import { OnChainService } from './onchain.service';
 import { QueryService } from './query.service';
-import { RewardService } from './reward.service';
 import { ServiceResolver } from './service.resolver';
 
 @Module({
@@ -30,7 +29,6 @@ import { ServiceResolver } from './service.resolver';
     DockerService,
     OnChainService,
     QueryService,
-    RewardService,
     ServiceResolver,
     AccountService,
     AccountResolver,
@@ -43,7 +41,6 @@ import { ServiceResolver } from './service.resolver';
     OnChainService,
     QueryService,
     AccountService,
-    RewardService,
   ],
 })
 export class CoreModule {}

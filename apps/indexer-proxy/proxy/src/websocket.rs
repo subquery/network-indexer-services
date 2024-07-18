@@ -1,9 +1,11 @@
 use axum::extract::ws::{CloseFrame, Message, WebSocket};
 use base64::{engine::general_purpose, Engine as _};
+use chrono::Utc;
 use ethers::types::U256;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use std::result::Result;
+use std::sync::Arc;
 use tokio::{net::TcpStream, select};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
@@ -81,7 +83,7 @@ impl WebSocketConnection {
         let ReceivedMessage { body, auth } = message;
         let inactive = self.before_query_check(auth, &body).await?;
         if let Some(state) = inactive {
-            self.send_msg(vec![], "".to_owned(), state).await?;
+            self.send_msg(vec![], "".to_owned(), state, None).await?;
             return Ok(());
         }
 
@@ -94,7 +96,7 @@ impl WebSocketConnection {
 
     /// send message to consumer
     async fn send_text_msg(&mut self, msg: String) -> Result<(), Error> {
-        let state = self.post_query_sync().await?;
+        let (state, limit) = self.post_query_sync().await?;
         let msg_data = msg.into_bytes();
 
         let signature = if self.no_sig {
@@ -103,7 +105,7 @@ impl WebSocketConnection {
             sign_response(&msg_data).await
         };
 
-        self.send_msg(msg_data, signature, state).await?;
+        self.send_msg(msg_data, signature, state, limit).await?;
 
         let payment = match self.query_type {
             QueryType::CloseAgreement => MetricsQuery::CloseAgreement,
@@ -126,12 +128,26 @@ impl WebSocketConnection {
         msg: Vec<u8>,
         signature: String,
         state: String,
+        limit: Option<(i64, i64)>,
     ) -> Result<(), Error> {
         let result = general_purpose::STANDARD.encode(&msg);
-        let response_msg = serde_json::to_string(
-            &json!({ "result": result, "signature": signature, "state": state }),
-        )
-        .unwrap_or("".to_owned());
+        let data = if let Some((t, u)) = limit {
+            json!({
+                "result": result,
+                "signature": signature,
+                "state": state,
+                "X-RateLimit-Limit-Second": t,
+                "X-RateLimit-Remaining-Second": t - u,
+            })
+        } else {
+            json!({
+                "result": result,
+                "signature": signature,
+                "state": state,
+            })
+        };
+
+        let response_msg = serde_json::to_string(&data).unwrap_or("".to_owned());
 
         self.client_socket
             .send(Message::Text(response_msg))
@@ -141,8 +157,21 @@ impl WebSocketConnection {
         Ok(())
     }
 
-    async fn send_error_msg(&mut self, code: i32, reason: String) {
-        let error_msg = json!({ "error": { "code": code, "message": reason } });
+    async fn send_error_msg(&mut self, error: Error) {
+        let id = match &error {
+            Error::Jsonrpc(id, _) => *id,
+            _ => 0,
+        };
+        let (_, code, reason) = error.to_status_message();
+
+        let error_msg = json!(
+            {
+                "jsonrpc": "2.0",
+                "id": id,
+                "error": { "code": code, "message": reason }
+            }
+        );
+
         if self
             .client_socket
             .send(Message::Text(error_msg.to_string()))
@@ -181,14 +210,16 @@ impl WebSocketConnection {
         query: &str,
     ) -> Result<Option<String>, Error> {
         let project: Project = get_project(&self.deployment).await?;
-        let (unit_times, unit_overflow) = project.compute_query_method(query)?;
+        let ((unit_times, unit_overflow), jid) = project.compute_query_method(query)?;
 
         let (inactive, channel_id) = match &mut self.query_type {
             QueryType::CloseAgreement => {
                 if COMMAND.auth() {
-                    let deployment_id = verify_auth_ws(&auth).await?;
+                    let deployment_id = verify_auth_ws(&auth)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
                     if deployment_id != self.deployment {
-                        return Err(Error::AuthVerify(1004));
+                        return Err(Error::Jsonrpc(jid, Arc::new(Error::AuthVerify(1004))));
                     }
                 }
 
@@ -196,7 +227,9 @@ impl WebSocketConnection {
             }
             QueryType::PAYG(ref mut start, ref mut end) => {
                 let (inactive, channel_id, new_start, new_end) =
-                    Self::before_query_payg_check(auth, project, unit_times, unit_overflow).await?;
+                    Self::before_query_payg_check(auth, project, unit_times, unit_overflow)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
 
                 if inactive.is_none() {
                     *start = new_start;
@@ -207,9 +240,11 @@ impl WebSocketConnection {
             }
             QueryType::Whitelist => {
                 if COMMAND.auth() {
-                    let deployment_id = AuthWhitelistQuery::verify_auth(&auth).await?;
+                    let deployment_id = AuthWhitelistQuery::verify_auth(&auth)
+                        .await
+                        .map_err(|e| Error::Jsonrpc(jid, Arc::new(e)))?;
                     if deployment_id != self.deployment {
-                        return Err(Error::AuthVerify(1004));
+                        return Err(Error::Jsonrpc(jid, Arc::new(Error::AuthVerify(1004))));
                     }
                 }
 
@@ -286,10 +321,10 @@ impl WebSocketConnection {
         Ok((state_str, state_cache))
     }
 
-    async fn post_query_sync(&mut self) -> Result<String, Error> {
+    async fn post_query_sync(&mut self) -> Result<(String, Option<(i64, i64)>), Error> {
         match self.query_type {
-            QueryType::CloseAgreement => Ok("".to_owned()),
-            QueryType::Whitelist => Ok("".to_owned()),
+            QueryType::CloseAgreement => Ok(("".to_owned(), None)),
+            QueryType::Whitelist => Ok(("".to_owned(), None)),
             QueryType::PAYG(start, end) => {
                 let keyname = channel_id_to_keyname(self.order_id);
 
@@ -324,8 +359,38 @@ impl WebSocketConnection {
                     (state.to_bs64(), state_cache)
                 };
 
+                // rate limit
+                let project: Project = get_project(&self.deployment).await?;
+                let waterlevel = if let Some(limit) = project.rate_limit {
+                    // project rate limit
+                    let mut conn = redis();
+                    let second = Utc::now().timestamp();
+                    let used_key = format!("{}-rate-{}", project.id, second);
+
+                    let used: i64 = redis::cmd("GET")
+                        .arg(&used_key)
+                        .query_async(&mut conn)
+                        .await
+                        .unwrap_or(0);
+
+                    if used + 1 > limit {
+                        return Err(Error::RateLimit(1057));
+                    }
+
+                    let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+                        .arg(&used_key)
+                        .arg(1)
+                        .arg(used + 1)
+                        .query_async(&mut conn)
+                        .await
+                        .map_err(|err| error!("Redis 1 {}", err));
+                    Some((limit, used + 1))
+                } else {
+                    None
+                };
+
                 post_query_multiple_state(keyname, state_cache).await;
-                Ok(state_str)
+                Ok((state_str, waterlevel))
             }
         }
     }
@@ -380,8 +445,7 @@ async fn handle_client_socket_message(
         Message::Text(text) => {
             debug!("Received text message from client");
             if let Err(e) = ws_connection.receive_text_msg(&text).await {
-                let (_, code, reason) = e.to_status_message();
-                ws_connection.send_error_msg(code, reason.to_string()).await;
+                ws_connection.send_error_msg(e).await;
             }
         }
         Message::Binary(_) => {
@@ -471,10 +535,11 @@ pub async fn connect_to_project_ws(endpoint: String) -> Result<SocketConnection,
 }
 
 async fn close_socket(socket: &mut WebSocket, error: Option<Error>) -> Result<(), Error> {
-    let (_, code, reason) = error.unwrap_or(Error::WebSocket(1312)).to_status_message();
+    let error = error.unwrap_or(Error::WebSocket(1312));
+    let (_, code, reason) = error.to_status_message();
     socket
         .send(Message::Close(Some(CloseFrame {
-            code: code as u16,
+            code: *code as u16,
             reason: reason.into(),
         })))
         .await

@@ -31,6 +31,7 @@ use ethers::{
 use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
     payg::{
@@ -477,17 +478,26 @@ pub async fn query_single_state(
     state: QueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(Vec<u8>, String, String, Option<(i64, i64)>)> {
     let project: Project = get_project(project_id).await?;
 
     // compute unit count times
-    let (unit_times, unit_overflow) = project.compute_query_method(&query)?;
+    let ((unit_times, unit_overflow), jid) = project.compute_query_method(&query)?;
+    let is_rpc_project = project.is_rpc_project();
 
     let (before_state, keyname, state_cache) =
-        before_query_signle_state(&project, state, unit_times, unit_overflow).await?;
+        before_query_signle_state(&project, state, unit_times, unit_overflow)
+            .await
+            .map_err(|e| {
+                if is_rpc_project {
+                    Error::Jsonrpc(jid, Arc::new(e))
+                } else {
+                    e
+                }
+            })?;
 
     // query the data
-    let (data, signature) = project
+    let (data, signature, limit) = project
         .query(
             query,
             endpoint,
@@ -495,13 +505,29 @@ pub async fn query_single_state(
             network_type,
             true,
             no_sig,
+            None,
         )
-        .await?;
+        .await
+        .map_err(|e| {
+            if is_rpc_project {
+                Error::Jsonrpc(jid, Arc::new(e))
+            } else {
+                e
+            }
+        })?;
 
-    let post_state = post_query_signle_state(before_state, state_cache, keyname).await?;
+    let post_state = post_query_signle_state(before_state, state_cache, keyname)
+        .await
+        .map_err(|e| {
+            if is_rpc_project {
+                Error::Jsonrpc(jid, Arc::new(e))
+            } else {
+                e
+            }
+        })?;
 
     debug!("Handle query channel success");
-    Ok((data, signature, post_state.to_bs64_old2()))
+    Ok((data, signature, post_state.to_bs64_old2(), limit))
 }
 
 // query with multiple state mode
@@ -605,20 +631,28 @@ pub async fn query_multiple_state(
     state: MultipleQueryState,
     network_type: MetricsNetwork,
     no_sig: bool,
-) -> Result<(Vec<u8>, String, String)> {
+) -> Result<(Vec<u8>, String, String, Option<(i64, i64)>)> {
     let project = get_project(project_id).await?;
 
     // compute unit count times
-    let (unit_times, _unit_overflow) = project.compute_query_method(&query)?;
+    let ((unit_times, _unit_overflow), jid) = project.compute_query_method(&query)?;
+    let is_rpc_project = project.is_rpc_project();
 
-    let (state, keyname, state_cache, inactive) =
-        before_query_multiple_state(state, unit_times).await?;
+    let (state, keyname, state_cache, inactive) = before_query_multiple_state(state, unit_times)
+        .await
+        .map_err(|e| {
+            if is_rpc_project {
+                Error::Jsonrpc(jid, Arc::new(e))
+            } else {
+                e
+            }
+        })?;
     if inactive {
-        return Ok((vec![], "".to_owned(), state.to_bs64()));
+        return Ok((vec![], "".to_owned(), state.to_bs64(), None));
     }
 
     // query the data.
-    let (data, signature) = project
+    let (data, signature, limit) = project
         .query(
             query,
             endpoint,
@@ -626,13 +660,21 @@ pub async fn query_multiple_state(
             network_type,
             true,
             no_sig,
+            None,
         )
-        .await?;
+        .await
+        .map_err(|e| {
+            if is_rpc_project {
+                Error::Jsonrpc(jid, Arc::new(e))
+            } else {
+                e
+            }
+        })?;
 
     post_query_multiple_state(keyname, state_cache).await;
 
     debug!("Handle query channel success");
-    Ok((data, signature, state.to_bs64()))
+    Ok((data, signature, state.to_bs64(), limit))
 }
 
 pub async fn extend_channel(

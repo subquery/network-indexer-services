@@ -536,6 +536,37 @@ export const GET_PROJECT_REWARDS_DETAILS = gql`
   }
 `;
 
+export enum ConfigKey {
+  FlexPrice = 'flex_price',
+  FlexValidPeriod = 'flex_valid_period',
+  FlexEnabled = 'flex_enabled',
+  AllocationRewardThreshold = 'allocation_reward_threshold',
+  StateChannelRewardThreshold = 'state_channel_reward_threshold',
+  AutoReduceAllocationEnabled = 'auto_reduce_allocation_enabled',
+}
+
+export interface AllConfig {
+  allConfig: {
+    key: ConfigKey;
+    value: string;
+  }[];
+}
+
+export const SET_CONFIG = gql`
+  mutation ($key: String!, $value: String!) {
+    setConfig(key: $key, value: $value)
+  }
+`;
+
+export const GET_ALL_CONFIG = gql`
+  query {
+    allConfig {
+      key
+      value
+    }
+  }
+`;
+
 // excellency gql
 
 export interface IGetIndexerStatus {

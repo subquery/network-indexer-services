@@ -248,6 +248,10 @@ export class ProjectRpcService {
       throw new Error(`Invalid endpoints: ${validateResult.reason}`);
     }
 
+    for (const endpoint of project.serviceEndpoints) {
+      endpoint.isWebsocket = endpoint.key.endsWith('Ws');
+    }
+
     return this.projectRepo.save(project);
   }
 

@@ -118,6 +118,13 @@ pub async fn start_server(port: u16) {
         .unwrap();
 }
 
+#[derive(Deserialize)]
+struct WhiteListBody {
+    body: String,
+    path: String,
+    method: String,
+}
+
 async fn ep_wl_query(
     deployment_id: String,
     deployment: String,
@@ -128,16 +135,22 @@ async fn ep_wl_query(
         return Err(Error::AuthVerify(1004));
     };
 
+    let (new_body, path) = match serde_json::from_str::<WhiteListBody>(&body) {
+        Ok(body) => (body.body, Some((body.path, body.method))),
+        Err(_) => (body, None),
+    };
+
     let project = get_project(&deployment).await?;
     let endpoint = project.endpoint(&ep_name, false)?;
-    let (data, signature) = project
-        .query(
-            body,
+    let (data, signature, _limit) = project
+        .check_query(
+            new_body,
             endpoint.endpoint.clone(),
             MetricsQuery::Whitelist,
             MetricsNetwork::HTTP,
             false,
             false,
+            path,
         )
         .await?;
 
@@ -297,7 +310,7 @@ async fn ep_query_handler(
     if endpoint.is_ws {
         return Err(Error::WebSocket(1315));
     }
-    let (data, signature) = project
+    let (data, signature, limit) = project
         .check_query(
             body,
             endpoint.endpoint.clone(),
@@ -305,6 +318,7 @@ async fn ep_query_handler(
             MetricsNetwork::HTTP,
             false,
             no_sig,
+            None,
         )
         .await?;
 
@@ -328,6 +342,11 @@ async fn ep_query_handler(
     };
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));
+
+    if let Some((t, u)) = limit {
+        headers.push(("X-RateLimit-Limit-Second", t.to_string().leak()));
+        headers.push(("X-RateLimit-Remaining-Second", (t - u).to_string().leak()));
+    }
 
     Ok(build_response(body, headers))
 }
@@ -413,7 +432,7 @@ async fn ep_payg_handler(
         return Err(Error::WebSocket(1315));
     }
 
-    let (data, signature, state_data) = match block.to_str() {
+    let (data, signature, state_data, limit) = match block.to_str() {
         Ok("multiple") => {
             let state = MultipleQueryState::from_bs64(auth)?;
             query_multiple_state(
@@ -462,6 +481,11 @@ async fn ep_payg_handler(
     };
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));
+
+    if let Some((t, u)) = limit {
+        headers.push(("X-RateLimit-Limit-Second", t.to_string().leak()));
+        headers.push(("X-RateLimit-Remaining-Second", (t - u).to_string().leak()));
+    }
 
     Ok(build_response(body, headers))
 }

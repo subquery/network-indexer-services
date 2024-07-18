@@ -28,11 +28,14 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 use subql_indexer_utils::{
     error::Error,
     payg::{convert_sign_to_string, default_sign},
-    request::{graphql_request, graphql_request_raw, post_request_raw, GraphQLQuery},
+    request::{
+        graphql_request, graphql_request_raw_with_path, post_request_raw_with_path, GraphQLQuery,
+    },
     tools::merge_json,
     types::Result,
 };
@@ -43,7 +46,8 @@ use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
 use crate::metadata::{
-    rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
+    auto_reduce_allocation_enabled, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata,
+    subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -220,25 +224,30 @@ pub struct Project {
 
 #[derive(Deserialize)]
 struct SimpleJsonrpc {
+    id: i64,
     method: String,
 }
 
 impl Project {
-    pub fn compute_query_method(&self, query: &str) -> Result<(u64, u64)> {
+    pub fn compute_query_method(&self, query: &str) -> Result<((u64, u64), i64)> {
         // compute unit times
         match &self.ptype {
             // TODO if multiple in single query
-            ProjectType::Subquery | ProjectType::Subgraph => Ok((1, 1)),
+            ProjectType::Subquery | ProjectType::Subgraph => Ok(((1, 1), 0)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
-                    m.unit_times(&s.method)
+                    let value = m
+                        .unit_times(&s.method)
+                        .map_err(|e| Error::Jsonrpc(s.id, Arc::new(e)))?;
+                    Ok((value, s.id))
                 } else {
                     let ss: Vec<SimpleJsonrpc> =
                         serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
+                    let id = if ss.is_empty() { 0 } else { ss[0].id };
 
                     if ss.len() > 100 {
-                        return Err(Error::InvalidRequest(1061));
+                        return Err(Error::Jsonrpc(id, Arc::new(Error::InvalidRequest(1061))));
                     }
 
                     let mut vv = 0;
@@ -250,10 +259,10 @@ impl Project {
                     }
 
                     if vv > 1000 {
-                        return Err(Error::InvalidRequest(1062));
+                        return Err(Error::Jsonrpc(id, Arc::new(Error::InvalidRequest(1062))));
                     }
 
-                    Ok((vv, oo))
+                    Ok(((vv, oo), id))
                 }
             }
         }
@@ -323,6 +332,7 @@ impl Project {
             .await
             .map_err(|_| Error::InvalidSignature(1041))?;
 
+        let arae = auto_reduce_allocation_enabled().await;
         let common = json!({
             "indexer": format!("{:?}", indexer),
             "controller": format!("{:?}", controller_address),
@@ -331,9 +341,11 @@ impl Project {
             "rateLimit": self.rate_limit.unwrap_or(1000),
             "dbSize": self.db_size,
             "signature": sign.to_string(),
+            "autoReduceAllocation": arae,
         });
 
         merge_json(&mut metadata, &common);
+
         Ok(metadata)
     }
 
@@ -345,11 +357,20 @@ impl Project {
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
-    ) -> Result<(Vec<u8>, String)> {
-        let _ = self.compute_query_method(&body)?;
+        path: Option<(String, String)>, // path & method
+    ) -> Result<(Vec<u8>, String, Option<(i64, i64)>)> {
+        let (_, jid) = self.compute_query_method(&body)?;
+        let is_rpc = self.is_rpc_project();
 
-        self.query(body, endpoint, payment, network, is_limit, no_sig)
+        self.query(body, endpoint, payment, network, is_limit, no_sig, path)
             .await
+            .map_err(|e| {
+                if is_rpc {
+                    Error::Jsonrpc(jid, Arc::new(e))
+                } else {
+                    e
+                }
+            })
     }
 
     pub async fn query(
@@ -360,8 +381,9 @@ impl Project {
         network: MetricsNetwork,
         is_limit: bool,
         no_sig: bool,
-    ) -> Result<(Vec<u8>, String)> {
-        if is_limit {
+        path: Option<(String, String)>,
+    ) -> Result<(Vec<u8>, String, Option<(i64, i64)>)> {
+        let waterlevel = if is_limit {
             if let Some(limit) = self.rate_limit {
                 // project rate limit
                 let mut conn = redis();
@@ -385,24 +407,40 @@ impl Project {
                     .query_async(&mut conn)
                     .await
                     .map_err(|err| error!("Redis 1 {}", err));
+                Some((limit, used + 1))
+            } else {
+                None
             }
-        }
+        } else {
+            None
+        };
 
-        match self.ptype {
-            ProjectType::Subquery | ProjectType::Subgraph => {
-                let query = serde_json::from_str(&body).map_err(|_| Error::InvalidRequest(1140))?;
-                self.subquery_raw(&query, endpoint, payment, network, no_sig)
-                    .await
-            }
+        let (d, s) = match self.ptype {
+            ProjectType::Subquery | ProjectType::Subgraph => match serde_json::from_str(&body) {
+                Ok(query) => {
+                    self.subquery_raw(&query, endpoint, payment, network, no_sig, path)
+                        .await?
+                }
+                Err(_e) => {
+                    if path.is_some() {
+                        self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
+                            .await?
+                    } else {
+                        return Err(Error::InvalidRequest(1140));
+                    }
+                }
+            },
             ProjectType::RpcEvm(_) => {
-                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
-                    .await
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
+                    .await?
             }
             ProjectType::RpcSubstrate(_) => {
-                self.rpcquery_raw(body, endpoint, payment, network, no_sig)
-                    .await
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
+                    .await?
             }
-        }
+        };
+
+        Ok((d, s, waterlevel))
     }
 
     pub async fn subquery_raw(
@@ -412,10 +450,11 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        path: Option<(String, String)>,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
 
-        let res = graphql_request_raw(&endpoint, query).await;
+        let res = graphql_request_raw_with_path(&endpoint, query, path).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());
@@ -440,10 +479,11 @@ impl Project {
         payment: MetricsQuery,
         network: MetricsNetwork,
         no_sig: bool,
+        path: Option<(String, String)>,
     ) -> Result<(Vec<u8>, String)> {
         let now = Instant::now();
 
-        let res = post_request_raw(&endpoint, query).await;
+        let res = post_request_raw_with_path(&endpoint, query, path).await;
         let time = now.elapsed().as_millis() as u64;
 
         add_metrics_query(self.id.clone(), Some(time), payment, network, res.is_ok());

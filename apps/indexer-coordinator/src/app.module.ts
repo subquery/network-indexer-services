@@ -14,6 +14,7 @@ import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
 
 import { ChainModule } from './chain/chain.module';
+import { ConfigModule } from './config/config.module';
 import { ConfigureModule } from './configure/configure.module';
 import { CoreModule } from './core/core.module';
 import { dbOption } from './data-source';
@@ -24,6 +25,7 @@ import { MonitorController } from './monitor.controller';
 import { NetworkModule } from './network/network.module';
 import { PaygModule } from './payg/payg.module';
 import { ProjectModule } from './project/project.module';
+import { RewardModule } from './reward/reward.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 
@@ -43,6 +45,12 @@ import { SubscriptionModule } from './subscription/subscription.module';
         'subscriptions-transport-ws': true,
       },
       cors: { origin: true, credentials: true },
+      formatError: (error) => {
+        return {
+          message: error.message,
+          code: error.extensions?.code,
+        };
+      },
     }),
     SubscriptionModule,
     CoreModule,
@@ -71,6 +79,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     MonitorModule,
     StatsModule,
     NetworkModule,
+    RewardModule,
+    ConfigModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })
