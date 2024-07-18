@@ -27,8 +27,8 @@ import { ProjectSubgraphService } from './project.subgraph.service';
 import {
   ProjectType,
   SubgraphEndpoint,
+  SubgraphEndpointType,
   SubgraphPort,
-  SubgraphPortType,
   SubqueryEndpointType,
 } from './types';
 
@@ -137,7 +137,10 @@ export class ProjectResolver {
         const serviceEndpoints = project.serviceEndpoints;
         const manifest = project.manifest as RpcManifest;
         for (const endpoint of serviceEndpoints) {
-          endpoint.isWebsocket = endpoint.key.endsWith('Ws');
+          endpoint.isWebsocket =
+            (project.projectType === ProjectType.SUBGRAPH &&
+              endpoint.key === SubgraphEndpointType.WsEndpoint) ||
+            endpoint.key.endsWith('Ws');
           if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
             continue;
           }

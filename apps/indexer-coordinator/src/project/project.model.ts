@@ -264,7 +264,7 @@ export class SeviceEndpoint {
   access?: AccessType;
   @Field({ nullable: true })
   isWebsocket?: boolean;
-  @Field({ nullable: true })
+  @Field(() => [String], { nullable: true })
   rpcFamily?: string[];
 }
 
