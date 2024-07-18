@@ -8,7 +8,7 @@ import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
-import { AggregatedManifest } from './project.manifest';
+import { AggregatedManifest, RpcManifest } from './project.manifest';
 import {
   LogType,
   MetadataType,
@@ -134,6 +134,18 @@ export class ProjectResolver {
         const dbSize = await this.dbStatsService.getProjectDbStats(project.id);
         projects.push({ ...project, dbSize: dbSize?.size });
       } else {
+        const serviceEndpoints = project.serviceEndpoints;
+        const manifest = project.manifest as RpcManifest;
+        for (const endpoint of serviceEndpoints) {
+          endpoint.isWebsocket = endpoint.key.endsWith('Ws');
+          if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
+            continue;
+          }
+          if (endpoint.rpcFamily?.length > 0) {
+            continue;
+          }
+          endpoint.rpcFamily = manifest.rpcFamily;
+        }
         projects.push(project);
       }
     }
