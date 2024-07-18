@@ -250,6 +250,7 @@ export class ProjectRpcService {
 
     for (const endpoint of project.serviceEndpoints) {
       endpoint.isWebsocket = endpoint.key.endsWith('Ws');
+      endpoint.rpcFamily = manifest.rpcFamily || [];
     }
 
     return this.projectRepo.save(project);

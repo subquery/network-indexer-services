@@ -224,7 +224,7 @@ pub struct Project {
 
 #[derive(Deserialize)]
 struct SimpleJsonrpc {
-    id: i64,
+    id: Value,
     method: String,
 }
 
@@ -237,14 +237,26 @@ impl Project {
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
+                    let id =
+                        s.id.as_i64()
+                            .or(s.id.as_str().unwrap_or("0").parse().ok())
+                            .unwrap_or(0);
                     let value = m
                         .unit_times(&s.method)
-                        .map_err(|e| Error::Jsonrpc(s.id, Arc::new(e)))?;
-                    Ok((value, s.id))
+                        .map_err(|e| Error::Jsonrpc(id, Arc::new(e)))?;
+                    Ok((value, id))
                 } else {
                     let ss: Vec<SimpleJsonrpc> =
                         serde_json::from_str(query).map_err(|_| Error::Serialize(1141))?;
-                    let id = if ss.is_empty() { 0 } else { ss[0].id };
+                    let id = if ss.is_empty() {
+                        0
+                    } else {
+                        ss[0]
+                            .id
+                            .as_i64()
+                            .or(ss[0].id.as_str().unwrap_or("0").parse().ok())
+                            .unwrap_or(0)
+                    };
 
                     if ss.len() > 100 {
                         return Err(Error::Jsonrpc(id, Arc::new(Error::InvalidRequest(1061))));
