@@ -1,6 +1,6 @@
 [package]
 name = "subql-indexer-proxy"
-version = "2.4.1"
+version = "2.4.1-beta.5"
 edition = "2021"
 
 [dependencies]
