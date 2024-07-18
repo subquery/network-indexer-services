@@ -599,7 +599,7 @@ pub struct ProjectEndpointItem {
     key: String,
     value: String,
     // internal, default, null
-    access: String,
+    access: Option<String>,
     #[serde(rename = "isWebsocket")]
     ws: bool,
     #[serde(rename = "rpcFamily")]
@@ -664,8 +664,13 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
 
         let mut endpoints: HashMap<String, Endpoint> = HashMap::new();
         for endpoint in item.project_endpoints {
-            let is_internal = endpoint.access == "internal";
-            let is_default = endpoint.access == "default";
+            let mut is_internal = false;
+            let mut is_default = false;
+            if let Some(access) = &endpoint.access {
+                is_internal = access == "internal";
+                is_default = access == "default";
+            }
+
             let is_ws = endpoint.ws;
             if !endpoint.rpc_family.is_empty() {
                 match endpoint.rpc_family[0].as_str() {
