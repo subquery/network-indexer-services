@@ -3,16 +3,16 @@
 
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddProjectKind1721118564278 implements MigrationInterface {
-  name = 'AddProjectKind1721118564278';
+export class AddHostType1721118564278 implements MigrationInterface {
+  name = 'AddHostType1721118564278';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "project_entity" ADD "projectKind" character varying NOT NULL DEFAULT 'system-managed'`
+      `ALTER TABLE "project_entity" ADD "hostType" character varying NOT NULL DEFAULT 'system-managed'`
     );
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "project_entity" DROP COLUMN "projectKind"`);
+    await queryRunner.query(`ALTER TABLE "project_entity" DROP COLUMN "hostType"`);
   }
 }

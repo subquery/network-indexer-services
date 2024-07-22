@@ -25,11 +25,10 @@ import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
 import {
-  ProjectKind,
+  HostType,
   ProjectType,
   SubgraphEndpoint,
   SubgraphPort,
-  SubgraphPortType,
   SubqueryEndpointType,
 } from './types';
 
@@ -53,7 +52,8 @@ export class ProjectResolver {
   @Query(() => MetadataType)
   async serviceMetadata(
     @Args('id') id: string,
-    @Args('projectType', { nullable: true }) projectType?: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType,
+    @Args('hostType', { nullable: true }) hostType?: HostType
   ) {
     let project: Project;
     if (projectType === undefined) {
@@ -64,7 +64,8 @@ export class ProjectResolver {
         project = await this.projectService.getProject(id);
         return this.queryService.getQueryMetaData(
           id,
-          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value
+          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+          hostType
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
@@ -231,14 +232,19 @@ export class ProjectResolver {
     @Args('projectConfig') projectConfig: ProjectConfig,
     @Args('rateLimit', { nullable: true }) rateLimit?: number,
     @Args('projectType', { nullable: true }) projectType?: ProjectType,
-    @Args('projectKind', { nullable: true }) projectKind?: ProjectKind
+    @Args('hostType', { nullable: true }) hostType?: HostType
   ): Promise<Project> {
     if (projectType === undefined) {
       projectType = await this.projectService.getProjectType(id);
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
-        return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0, projectKind);
+        return this.projectService.startSubqueryProject(
+          id,
+          projectConfig,
+          rateLimit ?? 0,
+          hostType
+        );
       case ProjectType.RPC:
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.SUBGRAPH:

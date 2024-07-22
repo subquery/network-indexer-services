@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import axios from 'axios';
 import { DesiredStatus } from 'src/core/types';
-import { ProjectType, SubqueryEndpointType } from 'src/project/types';
+import { HostType, ProjectType, SubqueryEndpointType } from 'src/project/types';
 import { DockerService } from '../core/docker.service';
 import { ProjectService } from '../project/project.service';
 import { nodeContainer } from '../utils/docker';
@@ -34,6 +34,14 @@ export class MonitorService {
       if (project.projectType !== ProjectType.SUBQUERY) {
         continue;
       }
+
+      if (
+        project.projectType === ProjectType.SUBQUERY &&
+        project.hostType === HostType.USER_MANAGED
+      ) {
+        continue;
+      }
+
       try {
         const result = await axios.get(
           `${

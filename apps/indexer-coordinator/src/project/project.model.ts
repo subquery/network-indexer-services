@@ -3,7 +3,7 @@
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
-import { AccessType, ProjectKind, ProjectType } from './types';
+import { AccessType, HostType, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -151,8 +151,6 @@ export interface IProjectConfig {
   queryVersion: string;
   usePrimaryNetworkEndpoint?: boolean;
   poiEnabled: boolean;
-  indexerService?: string;
-  queryService?: string;
 
   // subquery advanced config
   purgeDB?: boolean;
@@ -291,9 +289,9 @@ export class ProjectEntity {
   @Field()
   projectType: ProjectType;
 
-  @Column({ default: ProjectKind.SYSTEM_MANAGED })
+  @Column({ default: HostType.SYSTEM_MANAGED })
   @Field()
-  projectKind: ProjectKind;
+  hostType: HostType;
 
   @Column({ default: 0 })
   @Field()

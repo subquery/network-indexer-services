@@ -13,6 +13,7 @@ import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { Poi, PoiItem, ServiceStatus } from './types';
+import { HostType } from 'src/project/types';
 
 @Injectable()
 export class QueryService {
@@ -62,8 +63,14 @@ export class QueryService {
     }
   }
 
-  async getQueryMetaData(id: string, endpoint: string): Promise<MetadataType> {
-    const { indexerStatus, queryStatus } = await this.servicesStatus(id);
+  async getQueryMetaData(id: string, endpoint: string, hostType: HostType): Promise<MetadataType> {
+    let indexerStatus: string = ServiceStatus.Healthy;
+    let queryStatus: string = ServiceStatus.Healthy;
+    if (hostType === HostType.SYSTEM_MANAGED) {
+      const status = await this.servicesStatus(id);
+      indexerStatus = status.indexerStatus;
+      queryStatus = status.queryStatus;
+    }
     const queryBody = JSON.stringify({
       query: `{
         _metadata {
@@ -162,12 +169,13 @@ export class QueryService {
   async getValidPoi(project: Project): Promise<Poi> {
     const {
       id,
+      hostType,
       queryEndpoint,
       nodeEndpoint,
       advancedConfig: { poiEnabled },
     } = project;
 
-    const metadata = await this.getQueryMetaData(id, queryEndpoint);
+    const metadata = await this.getQueryMetaData(id, queryEndpoint, hostType);
     const blockHeight = metadata.lastHeight;
     if (blockHeight === 0) return this.emptyPoi;
 

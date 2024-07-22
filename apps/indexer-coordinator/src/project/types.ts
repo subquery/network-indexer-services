@@ -16,7 +16,7 @@ export enum ProjectType {
   SUBGRAPH,
 }
 
-export enum ProjectKind {
+export enum HostType {
   UN_RESOLVED = 'un-resolved',
   SYSTEM_MANAGED = 'system-managed',
   USER_MANAGED = 'user-managed',
