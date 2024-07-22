@@ -27,6 +27,7 @@ use tdn::prelude::PeerKey;
 use tokio::sync::RwLock;
 
 use crate::cli::COMMAND;
+use crate::metadata::auto_reduce_allocation_enabled;
 use crate::metrics::{get_services_version, get_status};
 use crate::p2p::{start_network, stop_network};
 
@@ -147,12 +148,15 @@ pub async fn indexer_healthy() -> Value {
     let proxy_version = decode_proxy_version(u32::from_le_bytes(p_v));
     let coordinator_version = decode_proxy_version(u32::from_le_bytes(c_v));
 
+    let arae = auto_reduce_allocation_enabled().await;
+
     json!({
         "indexer": format!("{:?}", indexer),
         "controller": format!("{:?}", controller),
         "uptime": uptime,
         "proxyVersion": proxy_version,
         "coordinatorVersion": coordinator_version,
-        "os": os
+        "os": os,
+        "autoReduceAllocation": arae
     })
 }
