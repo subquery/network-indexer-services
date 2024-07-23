@@ -44,6 +44,16 @@ export const SubqueryEndpointAccessType = {
   [SubqueryEndpointType.Admin]: AccessType.INTERNAL,
 };
 
+export enum RpcEndpointType {
+  HttpEndpoint = 'evmHttp',
+  WsEndpoint = 'evmWs',
+}
+
+export const RpcEndpointAccessType = {
+  [RpcEndpointType.HttpEndpoint]: AccessType.DEFAULT,
+  [RpcEndpointType.WsEndpoint]: AccessType.DEFAULT,
+};
+
 export enum SubgraphPortType {
   HttpPort = 'http-port',
   WsPort = 'ws-port',

@@ -25,10 +25,15 @@ import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
 import {
+  AccessType,
   HostType,
   ProjectType,
+  RpcEndpointAccessType,
   SubgraphEndpoint,
+  SubgraphEndpointAccessType,
+  SubgraphEndpointType,
   SubgraphPort,
+  SubqueryEndpointAccessType,
   SubqueryEndpointType,
 } from './types';
 
@@ -134,8 +139,25 @@ export class ProjectResolver {
     for (const project of aliveProjects) {
       if (project.projectType === ProjectType.SUBQUERY) {
         const dbSize = await this.dbStatsService.getProjectDbStats(project.id);
+
+        for (const endpoint of project.serviceEndpoints) {
+          endpoint.access = endpoint.access || SubqueryEndpointAccessType[endpoint.key];
+        }
         projects.push({ ...project, dbSize: dbSize?.size });
       } else {
+        if (project.projectType === ProjectType.RPC) {
+          for (const endpoint of project.serviceEndpoints) {
+            endpoint.access =
+              endpoint.access || RpcEndpointAccessType[endpoint.key] || AccessType.DEFAULT;
+            endpoint.isWebsocket = endpoint.isWebsocket || endpoint.key.endsWith('Ws');
+          }
+        } else if (project.projectType === ProjectType.SUBGRAPH) {
+          for (const endpoint of project.serviceEndpoints) {
+            endpoint.access = endpoint.access || SubgraphEndpointAccessType[endpoint.key];
+            endpoint.isWebsocket =
+              endpoint.isWebsocket || endpoint.key === SubgraphEndpointType.WsEndpoint;
+          }
+        }
         projects.push(project);
       }
     }

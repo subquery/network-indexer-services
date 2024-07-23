@@ -19,7 +19,7 @@ import {
 } from './project.model';
 import { ProjectService } from './project.service';
 import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
-import { ProjectType } from './types';
+import { AccessType, ProjectType, RpcEndpointAccessType } from './types';
 
 const logger = getLogger('project.rpc.service');
 
@@ -249,6 +249,7 @@ export class ProjectRpcService {
     }
 
     for (const endpoint of project.serviceEndpoints) {
+      endpoint.access = RpcEndpointAccessType[endpoint.key] || AccessType.DEFAULT;
       endpoint.isWebsocket = endpoint.key.endsWith('Ws');
     }
 
