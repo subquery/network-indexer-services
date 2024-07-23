@@ -37,9 +37,11 @@ use tdn::{
     types::{
         group::hash_to_group_id,
         primitives::{vec_check_push, vec_remove_item},
-        rpc::{json, rpc_request, RpcError, RpcHandler, RpcParam},
+        rpc::{rpc_request, RpcError, RpcHandler, RpcParam},
     },
 };
+
+use serde_json::json;
 use tokio::sync::{mpsc::Sender, RwLock};
 use tokio::time::{sleep, Duration};
 
