@@ -46,8 +46,7 @@ use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
 use crate::metadata::{
-    auto_reduce_allocation_enabled, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata,
-    subquery_metadata,
+    rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -344,7 +343,6 @@ impl Project {
             .await
             .map_err(|_| Error::InvalidSignature(1041))?;
 
-        let arae = auto_reduce_allocation_enabled().await;
         let common = json!({
             "indexer": format!("{:?}", indexer),
             "controller": format!("{:?}", controller_address),
@@ -353,7 +351,6 @@ impl Project {
             "rateLimit": self.rate_limit.unwrap_or(1000),
             "dbSize": self.db_size,
             "signature": sign.to_string(),
-            "autoReduceAllocation": arae,
         });
 
         merge_json(&mut metadata, &common);
