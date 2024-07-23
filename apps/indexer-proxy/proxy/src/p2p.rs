@@ -43,7 +43,7 @@ use tdn::{
 
 use serde_json::json;
 use tokio::sync::{mpsc::Sender, RwLock};
-use tokio::time::{sleep, Duration};
+use tokio::time::sleep;
 
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -55,6 +55,24 @@ use crate::{
     primitives::*,
     project::get_project,
 };
+
+use anyhow::Result as OtherResult;
+use futures::{
+    AsyncReadExt,
+    // AsyncWriteExt,
+    StreamExt,
+};
+use libp2p::{
+    // multiaddr::Protocol, Multiaddr, PeerId,
+    identity,
+    Stream,
+    StreamProtocol,
+    SwarmBuilder,
+};
+use libp2p_stream as stream;
+use std::time::Duration;
+
+const RECV_PROTOCOL: StreamProtocol = StreamProtocol::new("/recv_metrics");
 
 pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock::new(vec![]));
 
@@ -240,6 +258,84 @@ pub async fn start_network(key: PeerKey) {
             }
             ReceiveMessage::Own(_) => {
                 debug!("Nothing about own");
+            }
+        }
+    }
+}
+
+pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
+    let key_string = std::env::var("LIBP2P_KEY").expect("LIBP2P_KEY missing in .env");
+    let hex_data = hex::decode(key_string).unwrap();
+    let keypair = identity::Keypair::from_protobuf_encoding(&hex_data).unwrap();
+
+    let mut swarm = SwarmBuilder::with_existing_identity(keypair)
+        .with_tokio()
+        .with_quic()
+        // .with_relay_client(noise::Config::new, yamux::Config::default)?
+        .with_behaviour(|_| stream::Behaviour::new())?
+        .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(10)))
+        .build();
+
+    swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
+
+    println!("swarm is {:?}", swarm.network_info());
+
+    let mut incoming_streams = swarm
+        .behaviour()
+        .new_control()
+        .accept(RECV_PROTOCOL)
+        .unwrap();
+
+    tokio::spawn(async move {
+        while let Some((_peer, stream)) = incoming_streams.next().await {
+            let network_clone = network.clone();
+            tokio::spawn(async move {
+                handle_msg(stream, network_clone).await;
+            });
+        }
+    });
+    Ok(())
+}
+
+// 外面需要知道网络断开，以便重新发起连接
+async fn handle_msg(mut stream: Stream, network: String) {
+    let (mut rd, mut wr) = stream.split();
+
+    let mut received: usize = 0;
+    let mut buf = [0u8; 4];
+
+    loop {
+        match rd.read(&mut buf).await {
+            Ok(0) => break,
+            Ok(_size) => {
+                let len: usize = u32::from_be_bytes(buf) as usize;
+                let mut read_bytes = vec![0u8; len];
+                while let Ok(bytes_size) = rd.read(&mut read_bytes[received..]).await {
+                    received += bytes_size;
+                    if received > len {
+                        break;
+                    }
+
+                    if received != len {
+                        continue;
+                    }
+
+                    if let Ok(received_json) = String::from_utf8(read_bytes[..received].to_vec()) {
+                        if let Ok(received_struct) = serde_json::from_str::<Event>(&received_json) {
+                            // _ = p2p::handle_event(received_struct, network.clone()).await;
+                            println!("received_struct is {:?}", received_struct);
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                buf = [0u8; 4];
+                received = 0;
+            }
+            _ => {
+                break;
             }
         }
     }
