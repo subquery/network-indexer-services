@@ -197,15 +197,15 @@ impl CommandLineArgs {
             match self.network() {
                 Network::Mainnet => TELEMETRIES_MAINNET
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
                 Network::Kepler => TELEMETRIES_KEPLER
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
                 _ => TELEMETRIES_TESTNET
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
             }
         } else {
