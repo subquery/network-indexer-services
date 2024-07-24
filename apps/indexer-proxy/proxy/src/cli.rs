@@ -30,7 +30,8 @@ use subql_indexer_utils::{
     constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };
-use tdn::prelude::PeerId;
+// use tdn::prelude::PeerId;
+use libp2p::PeerId;
 use tokio::sync::OnceCell;
 
 const DEFAULT_P2P_ADDR: &str = "0.0.0.0:7370";
