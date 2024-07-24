@@ -277,7 +277,7 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(10)))
         .build();
 
-    swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
+    swarm.listen_on("/ip4/0.0.0.0/udp/5500/quic-v1".parse()?)?;
 
     println!("swarm is {:?}", swarm.network_info());
 
@@ -350,7 +350,7 @@ async fn do_handle_reader(rd: &mut ReadHalf<Stream>) {
 
                     if let Ok(received_json) = String::from_utf8(read_bytes[..received].to_vec()) {
                         if let Ok(received_struct) = serde_json::from_str::<Event>(&received_json) {
-                            // _ = p2p::handle_event(received_struct, network.clone()).await;
+                            // _ = handle_event(received_struct, network.clone()).await;
                             println!("received_struct is {:?}", received_struct);
                         } else {
                             break;
@@ -943,7 +943,7 @@ async fn handle_event(
             debug!("Not handle event: {:?}", event);
         }
     }
-  Ok(())
+    Ok(())
 }
 
 async fn bootstrap(sender: &Sender<SendMessage>) {
