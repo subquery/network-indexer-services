@@ -378,7 +378,7 @@ async fn handle_writer(
         tokio::select! {
           _ = do_handle_writer( &mut wr) => {},
           _ = &mut stop_rx => {
-            println!("handle_reader received stop signal.");
+            println!("handle_writer received stop signal.");
             break;
           }
         }
@@ -809,130 +809,141 @@ async fn handle_group(
                 peer_id.short_show()
             );
             let event = Event::from_bytes(&data)?;
-            match event {
-                Event::ProjectJoin(gid) => {
-                    let mut ledger = ledger.write().await;
-                    if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
-                        vec_check_push(peers, peer_id);
-                        let e = Event::ProjectJoinRes;
-                        let msg = SendType::Event(0, peer_id, e.to_bytes());
-                        results.groups.push((gid, msg));
-                    }
-                    drop(ledger);
-                }
-                Event::ProjectJoinRes => {
-                    let mut ledger = ledger.write().await;
-                    if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
-                        vec_check_push(peers, peer_id);
-                    }
-                    drop(ledger);
-                }
-                Event::ProjectLeave => {
-                    // update ledger
-                    let mut ledger = ledger.write().await;
-                    if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
-                        vec_remove_item(peers, &peer_id);
-                    }
-                    drop(ledger);
-                }
-                Event::ProjectMetadata(project, _block) => {
-                    if let Ok(project) = get_project(&project).await {
-                        if let Ok(data) = project.metadata(MetricsNetwork::P2P).await {
-                            let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
-
-                            let msg = SendType::Event(0, peer_id, e.to_bytes());
-                            results.groups.push((gid, msg));
-                        }
-                    }
-                }
-                Event::PaygPrice(project) => {
-                    if let Ok(data) = merket_price(project).await {
-                        let e = Event::PaygPriceRes(serde_json::to_string(&data)?);
-
-                        let msg = SendType::Event(0, peer_id, e.to_bytes());
-                        results.groups.push((gid, msg));
-                    }
-                }
-                Event::PaygOpen(uid, state) => {
-                    let res = match open_state(&serde_json::from_str(&state)?).await {
-                        Ok(state) => state,
-                        Err(err) => err.to_json(),
-                    };
-                    let e = Event::PaygOpenRes(uid, serde_json::to_string(&res)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
-                }
-                Event::PaygQuery(uid, query, ep_name, state) => {
-                    let state: RpcParam = serde_json::from_str(&state)?;
-                    if let Ok(state) = QueryState::from_json(&state) {
-                        let ep_name = ep_name.unwrap_or("default".to_owned());
-                        if let Ok(p) = get_project(&project).await {
-                            if let Ok(endpoint) = p.endpoint(&ep_name, true) {
-                                let result = match query_single_state(
-                                    &project,
-                                    query,
-                                    endpoint.endpoint.clone(),
-                                    state,
-                                    MetricsNetwork::P2P,
-                                    false,
-                                )
-                                .await
-                                {
-                                    Ok((res_query, res_signature, res_state, _limit)) => {
-                                        json!({
-                                            "result": general_purpose::STANDARD.encode(&res_query),
-                                            "signature": res_signature,
-                                            "state": res_state,
-                                        })
-                                    }
-                                    Err(err) => json!({ "error": format!("{:?}", err) }),
-                                };
-
-                                let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
-                                let msg = SendType::Event(0, peer_id, e.to_bytes());
-                                results.groups.push((gid, msg));
-                            }
-                        }
-                    }
-                }
-                Event::CloseAgreementLimit(uid, agreement) => {
-                    let res =
-                        match handle_close_agreement_limit(&peer_id.to_hex(), &agreement).await {
-                            Ok(data) => data,
-                            Err(err) => err.to_json(),
-                        };
-
-                    let e = Event::CloseAgreementLimitRes(uid, serde_json::to_string(&res)?);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
-                }
-                Event::CloseAgreementQuery(uid, agreement, query, ep_name) => {
-                    let res = match handle_close_agreement_query(
-                        &peer_id.to_hex(),
-                        &agreement,
-                        &project,
-                        query,
-                        ep_name,
-                    )
-                    .await
-                    {
-                        Ok(data) => data,
-                        Err(err) => serde_json::to_string(&err.to_json()).unwrap_or("".to_owned()),
-                    };
-
-                    let e = Event::CloseAgreementQueryRes(uid, res);
-                    let msg = SendType::Event(0, peer_id, e.to_bytes());
-                    results.groups.push((gid, msg));
-                }
-                _ => {
-                    debug!("Not handle event: {:?}", event);
-                }
-            }
+            handle_event(event, ledger, peer_id, &mut results, gid, project).await?;
         }
         _ => {}
     }
 
     Ok(results)
+}
+
+async fn handle_event(
+    event: Event,
+    ledger: Arc<RwLock<Ledger>>,
+    peer_id: PeerId,
+    results: &mut HandleResult,
+    gid: GroupId,
+    project: String,
+) -> Result<()> {
+    match event {
+        Event::ProjectJoin(gid) => {
+            let mut ledger = ledger.write().await;
+            if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
+                vec_check_push(peers, peer_id);
+                let e = Event::ProjectJoinRes;
+                let msg = SendType::Event(0, peer_id, e.to_bytes());
+                results.groups.push((gid, msg));
+            }
+            drop(ledger);
+        }
+        Event::ProjectJoinRes => {
+            let mut ledger = ledger.write().await;
+            if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
+                vec_check_push(peers, peer_id);
+            }
+            drop(ledger);
+        }
+        Event::ProjectLeave => {
+            // update ledger
+            let mut ledger = ledger.write().await;
+            if let Some((_, peers)) = ledger.groups.get_mut(&gid) {
+                vec_remove_item(peers, &peer_id);
+            }
+            drop(ledger);
+        }
+        Event::ProjectMetadata(project, _block) => {
+            if let Ok(project) = get_project(&project).await {
+                if let Ok(data) = project.metadata(MetricsNetwork::P2P).await {
+                    let e = Event::ProjectMetadataRes(serde_json::to_string(&data)?);
+
+                    let msg = SendType::Event(0, peer_id, e.to_bytes());
+                    results.groups.push((gid, msg));
+                }
+            }
+        }
+        Event::PaygPrice(project) => {
+            if let Ok(data) = merket_price(project).await {
+                let e = Event::PaygPriceRes(serde_json::to_string(&data)?);
+
+                let msg = SendType::Event(0, peer_id, e.to_bytes());
+                results.groups.push((gid, msg));
+            }
+        }
+        Event::PaygOpen(uid, state) => {
+            let res = match open_state(&serde_json::from_str(&state)?).await {
+                Ok(state) => state,
+                Err(err) => err.to_json(),
+            };
+            let e = Event::PaygOpenRes(uid, serde_json::to_string(&res)?);
+            let msg = SendType::Event(0, peer_id, e.to_bytes());
+            results.groups.push((gid, msg));
+        }
+        Event::PaygQuery(uid, query, ep_name, state) => {
+            let state: RpcParam = serde_json::from_str(&state)?;
+            if let Ok(state) = QueryState::from_json(&state) {
+                let ep_name = ep_name.unwrap_or("default".to_owned());
+                if let Ok(p) = get_project(&project).await {
+                    if let Ok(endpoint) = p.endpoint(&ep_name, true) {
+                        let result = match query_single_state(
+                            &project,
+                            query,
+                            endpoint.endpoint.clone(),
+                            state,
+                            MetricsNetwork::P2P,
+                            false,
+                        )
+                        .await
+                        {
+                            Ok((res_query, res_signature, res_state, _limit)) => {
+                                json!({
+                                    "result": general_purpose::STANDARD.encode(&res_query),
+                                    "signature": res_signature,
+                                    "state": res_state,
+                                })
+                            }
+                            Err(err) => json!({ "error": format!("{:?}", err) }),
+                        };
+
+                        let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
+                        let msg = SendType::Event(0, peer_id, e.to_bytes());
+                        results.groups.push((gid, msg));
+                    }
+                }
+            }
+        }
+        Event::CloseAgreementLimit(uid, agreement) => {
+            let res = match handle_close_agreement_limit(&peer_id.to_hex(), &agreement).await {
+                Ok(data) => data,
+                Err(err) => err.to_json(),
+            };
+
+            let e = Event::CloseAgreementLimitRes(uid, serde_json::to_string(&res)?);
+            let msg = SendType::Event(0, peer_id, e.to_bytes());
+            results.groups.push((gid, msg));
+        }
+        Event::CloseAgreementQuery(uid, agreement, query, ep_name) => {
+            let res = match handle_close_agreement_query(
+                &peer_id.to_hex(),
+                &agreement,
+                &project,
+                query,
+                ep_name,
+            )
+            .await
+            {
+                Ok(data) => data,
+                Err(err) => serde_json::to_string(&err.to_json()).unwrap_or("".to_owned()),
+            };
+
+            let e = Event::CloseAgreementQueryRes(uid, res);
+            let msg = SendType::Event(0, peer_id, e.to_bytes());
+            results.groups.push((gid, msg));
+        }
+        _ => {
+            debug!("Not handle event: {:?}", event);
+        }
+    }
+  Ok(())
 }
 
 async fn bootstrap(sender: &Sender<SendMessage>) {
