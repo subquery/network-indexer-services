@@ -21,6 +21,8 @@ use serde::{Deserialize, Serialize};
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
+use libp2p::PeerId;
+
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";
 
@@ -30,7 +32,8 @@ pub struct JoinData(pub Vec<String>);
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GroupEvent {
     pub group_id: u64,
-    pub data: Vec<String>,
+    pub peer_id: PeerId,
+    pub event: Event,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
