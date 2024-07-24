@@ -42,8 +42,10 @@ use tdn::{
 };
 
 use serde_json::json;
-use tokio::sync::{mpsc::Sender, RwLock};
-use tokio::time::sleep;
+use tokio::{
+    sync::{mpsc::Sender, oneshot, RwLock},
+    time::sleep,
+};
 
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -58,9 +60,8 @@ use crate::{
 
 use anyhow::Result as OtherResult;
 use futures::{
-    AsyncReadExt,
-    // AsyncWriteExt,
-    StreamExt,
+    io::{ReadHalf, WriteHalf},
+    AsyncReadExt, AsyncWriteExt, StreamExt,
 };
 use libp2p::{
     // multiaddr::Protocol, Multiaddr, PeerId,
@@ -298,9 +299,36 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
 }
 
 // 外面需要知道网络断开，以便重新发起连接
-async fn handle_msg(mut stream: Stream, network: String) {
-    let (mut rd, mut wr) = stream.split();
+async fn handle_msg(stream: Stream, network: String) {
+    let (rd, wr) = stream.split();
 
+    let (stop_tx1, stop_rx1) = oneshot::channel();
+    let (stop_tx2, stop_rx2) = oneshot::channel();
+
+    tokio::spawn(handle_reader(rd, stop_rx1, stop_tx2));
+
+    tokio::spawn(handle_writer(wr, stop_rx2, stop_tx1));
+}
+
+async fn handle_reader(
+    mut rd: ReadHalf<Stream>,
+    mut stop_rx: oneshot::Receiver<()>,
+    send_tx: oneshot::Sender<()>,
+) {
+    loop {
+        tokio::select! {
+          _ = do_handle_reader(&mut rd) => {},
+          _ = &mut stop_rx => {
+            println!("handle_reader received stop signal.");
+            break;
+          }
+        }
+    }
+
+    _ = send_tx.send(());
+}
+
+async fn do_handle_reader(rd: &mut ReadHalf<Stream>) {
     let mut received: usize = 0;
     let mut buf = [0u8; 4];
 
@@ -338,6 +366,39 @@ async fn handle_msg(mut stream: Stream, network: String) {
                 break;
             }
         }
+    }
+}
+
+async fn handle_writer(
+    mut wr: WriteHalf<Stream>,
+    mut stop_rx: oneshot::Receiver<()>,
+    send_tx: oneshot::Sender<()>,
+) {
+    loop {
+        tokio::select! {
+          _ = do_handle_writer( &mut wr) => {},
+          _ = &mut stop_rx => {
+            println!("handle_reader received stop signal.");
+            break;
+          }
+        }
+    }
+
+    _ = send_tx.send(());
+}
+
+async fn do_handle_writer(wr: &mut WriteHalf<Stream>) {
+    loop {
+        // let msg = Message::new(MessageKind::Text, "Hello, World!".as_bytes().to_vec());
+        // match wr.write_message(&msg).await {
+        //     Ok(_) => {
+        //         tokio::time::sleep(Duration::from_secs(1)).await;
+        //     }
+        //     Err(e) => {
+        //         eprintln!("Error writing message: {}", e);
+        //         break;
+        //     }
+        // }
     }
 }
 
