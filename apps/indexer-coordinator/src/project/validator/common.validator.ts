@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
+import { getLogger } from '../../utils/logger';
 import { ValidationResponse } from '../project.model';
-import { getLogger } from 'src/utils/logger';
 
 const logger = getLogger('common.validator');
 

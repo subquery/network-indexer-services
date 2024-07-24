@@ -1,11 +1,11 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Project, ValidationResponse } from '../project.model';
-import { getLogger } from 'src/utils/logger';
+import { URL } from 'url';
 import axios from 'axios';
-import path from 'path';
-import { RpcManifest } from '../project.manifest';
+import { getLogger } from '../../utils/logger';
+import { SubqueryManifest } from '../project.manifest';
+import { Project, ValidationResponse } from '../project.model';
 import { validatePrivateEndpoint } from './common.validator';
 
 const logger = getLogger('subquery.validator');
@@ -19,22 +19,25 @@ export async function validateNodeEndpoint(
     if (!validate.valid) {
       return validate;
     }
-
-    const response = await axios.get(path.join(endpoint, 'meta'), {
+    const url = new URL('meta', endpoint);
+    const response = await axios.get(url.toString(), {
       timeout: 5000,
     });
     if (response.status !== 200) {
-      return { valid: false, reason: 'Invalid node endpoint' };
+      return { valid: false, reason: 'Invalid node endpoint. HTTP status should be 200' };
     }
     const data = response.data;
-    const projectManifest = project.manifest as RpcManifest;
+    const projectManifest = project.manifest as SubqueryManifest;
 
-    if (data?.chain !== projectManifest.chain?.chainId) {
-      return { valid: false, reason: 'Invalid chain' };
+    if (data?.genesisHash !== projectManifest.network?.chainId) {
+      logger.error(
+        `Invalid node endpoint chain. genesisHash:${data.genesisHash}, chainId:${projectManifest.network?.chainId}`
+      );
+      return { valid: false, reason: 'Invalid node endpoint chain' };
     }
     return { valid: true, reason: '' };
   } catch (error) {
-    logger.error(error);
+    logger.error(`Failed to validate node endpoint: ${error.message}`);
     return { valid: false, reason: error.message };
   }
 }
@@ -48,9 +51,9 @@ export async function validateQueryEndpoint(
     if (!validate.valid) {
       return validate;
     }
-
+    const url = new URL('graphql', endpoint);
     const response = await axios.request({
-      url: path.join(endpoint, 'graphql'),
+      url: url.toString(),
       method: 'POST',
       timeout: 5000,
       headers: {
@@ -61,24 +64,29 @@ export async function validateQueryEndpoint(
         query {
           _metadata {
             chain
+            genesisHash
           }
         }
       `,
       },
     });
     if (response.status !== 200) {
-      return { valid: false, reason: 'Invalid query endpoint' };
+      return { valid: false, reason: 'Invalid query endpoint. HTTP status should be 200' };
     }
 
     const data = response.data.data;
-    const projectManifest = project.manifest as RpcManifest;
+    const projectManifest = project.manifest as SubqueryManifest;
 
-    if (data?.chain !== projectManifest.chain?.chainId) {
-      return { valid: false, reason: 'Invalid chain' };
+    console.log('data:', data);
+    if (data?._metadata?.genesisHash !== projectManifest.network?.chainId) {
+      logger.error(
+        `Invalid query endpoint chain. genesisHash:${data?._metadata?.genesisHash}, chainId:${projectManifest.network?.chainId}`
+      );
+      return { valid: false, reason: 'Invalid query endpoint chain' };
     }
     return { valid: true, reason: '' };
   } catch (error) {
-    logger.error(error);
+    logger.error(`Failed to validate query endpoint: ${error.message}`);
     return { valid: false, reason: error.message };
   }
 }

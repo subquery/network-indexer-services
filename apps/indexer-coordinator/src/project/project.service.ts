@@ -326,8 +326,7 @@ export class ProjectService {
     }
     project.hostType = hostType;
     if (project.hostType === HostType.USER_MANAGED) {
-      project.projectConfig = projectConfig;
-      return await this.startUserManagedSubqueryProject(project);
+      return await this.startUserManagedSubqueryProject(project, projectConfig);
     }
 
     this.setDefaultConfigValue(projectConfig);
@@ -348,8 +347,11 @@ export class ProjectService {
     return await this.createAndStartSubqueryProject(id, projectConfig);
   }
 
-  async startUserManagedSubqueryProject(project: Project): Promise<Project> {
-    const endpoints = project.serviceEndpoints || [];
+  async startUserManagedSubqueryProject(
+    project: Project,
+    projectConfig: IProjectConfig
+  ): Promise<Project> {
+    const endpoints = projectConfig.serviceEndpoints || [];
     const map = {};
     endpoints.forEach((e) => {
       map[e.key] = e.value;
@@ -369,7 +371,9 @@ export class ProjectService {
       throw new Error(`query endpoint invalid: ${validate.reason}`);
     }
 
+    const adminUrl = new URL('admin', map[SubqueryEndpointType.Node]);
     const nodeConfig = await nodeConfigs(project.id);
+    project.projectConfig = projectConfig;
     project.serviceEndpoints = [
       new SeviceEndpoint(
         SubqueryEndpointType.Node,
@@ -383,7 +387,7 @@ export class ProjectService {
       ),
       new SeviceEndpoint(
         SubqueryEndpointType.Admin,
-        path.join(map[SubqueryEndpointType.Node], 'admin'),
+        adminUrl.toString(),
         SubqueryEndpointAccessType[SubqueryEndpointType.Admin]
       ),
     ];
