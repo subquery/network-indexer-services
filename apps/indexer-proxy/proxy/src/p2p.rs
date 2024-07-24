@@ -19,7 +19,7 @@
 use base64::{engine::general_purpose, Engine as _};
 // use chamomile_types::Peer as ChamomilePeer;
 // use once_cell::sync::Lazy;
-use serde::Serialize;
+// use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Result;
 // use std::path::PathBuf;
@@ -31,15 +31,15 @@ use subql_indexer_utils::{
     payg::QueryState,
 };
 use tdn::{
-//     prelude::{
-//         channel_rpc_channel, start_with_config_and_key, ChannelRpcSender, Config, GroupId,
-//         HandleResult, NetworkType, Peer, PeerId, PeerKey, ReceiveMessage, RecvType, SendMessage,
-//         SendType,
-//     },
+    //     prelude::{
+    //         channel_rpc_channel, start_with_config_and_key, ChannelRpcSender, Config, GroupId,
+    //         HandleResult, NetworkType, Peer, PeerId, PeerKey, ReceiveMessage, RecvType, SendMessage,
+    //         SendType,
+    //     },
     types::{
         // group::hash_to_group_id,
         primitives::{vec_check_push, vec_remove_item},
-//         rpc::{rpc_request, RpcError, RpcHandler, RpcParam},
+        //         rpc::{rpc_request, RpcError, RpcHandler, RpcParam},
     },
 };
 
@@ -420,10 +420,9 @@ async fn handle_group_event(
             project,
         );
 
-      for data in results.iter() {
-        writer_send.send(data.clone());
-      }
-
+        for data in results.iter() {
+            writer_send.send(data.clone());
+        }
     }
 }
 
@@ -1021,9 +1020,8 @@ async fn handle_new_event(
                     peer_id,
                     event: e,
                 };
-              let mut vec_result = vec![];
-              group_event.serialize(&mut vec_result);
-                results.push(vec_result);
+                let response_json = serde_json::to_string(&group_event)?;
+                results.push((*response_json.as_bytes()).to_vec());
             }
             drop(ledger);
         }
@@ -1051,7 +1049,8 @@ async fn handle_new_event(
                         peer_id,
                         event: e,
                     };
-                    results.push(group_event);
+                    let response_json = serde_json::to_string(&group_event)?;
+                    results.push((*response_json.as_bytes()).to_vec());
                 }
             }
         }
@@ -1063,7 +1062,8 @@ async fn handle_new_event(
                     peer_id,
                     event: e,
                 };
-                results.push(group_event);
+                let response_json = serde_json::to_string(&group_event)?;
+                results.push((*response_json.as_bytes()).to_vec());
             }
         }
         Event::PaygOpen(uid, state) => {
@@ -1077,6 +1077,8 @@ async fn handle_new_event(
                 peer_id,
                 event: e,
             };
+            let response_json = serde_json::to_string(&group_event)?;
+            results.push((*response_json.as_bytes()).to_vec());
         }
         Event::PaygQuery(uid, query, ep_name, state) => {
             let state = serde_json::from_str(&state)?;
@@ -1110,13 +1112,14 @@ async fn handle_new_event(
                             peer_id,
                             event: e,
                         };
-                        results.push(group_event);
+                        let response_json = serde_json::to_string(&group_event)?;
+                        results.push((*response_json.as_bytes()).to_vec());
                     }
                 }
             }
         }
         Event::CloseAgreementLimit(uid, agreement) => {
-            let res = match handle_close_agreement_limit(&peer_id.to_hex(), &agreement).await {
+          let res = match handle_close_agreement_limit(&peer_id.to_base58(), &agreement).await {
                 Ok(data) => data,
                 Err(err) => err.to_json(),
             };
@@ -1127,11 +1130,12 @@ async fn handle_new_event(
                 peer_id,
                 event: e,
             };
-            results.push(group_event);
+            let response_json = serde_json::to_string(&group_event)?;
+            results.push((*response_json.as_bytes()).to_vec());
         }
         Event::CloseAgreementQuery(uid, agreement, query, ep_name) => {
             let res = match handle_close_agreement_query(
-                &peer_id.to_hex(),
+              &peer_id.to_base58(),
                 &agreement,
                 &project,
                 query,
@@ -1149,7 +1153,8 @@ async fn handle_new_event(
                 peer_id,
                 event: e,
             };
-            results.push(group_event);
+            let response_json = serde_json::to_string(&group_event)?;
+            results.push((*response_json.as_bytes()).to_vec());
         }
         _ => {
             debug!("Not handle event: {:?}", event);
