@@ -27,6 +27,12 @@ pub const ROOT_NAME: &str = "SubQuery";
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JoinData(pub Vec<String>);
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GroupEvent {
+    pub group_id: u64,
+    pub data: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// Report project healthy,
