@@ -411,17 +411,18 @@ async fn handle_group_event(
         } else {
             continue;
         };
-        handle_new_event(
+        _ = handle_new_event(
             event,
             ledger.clone(),
             peer_id,
             &mut results,
             group_id,
             project,
-        );
+        )
+        .await;
 
         for data in results.iter() {
-            writer_send.send(data.clone());
+            _ = writer_send.send(data.clone()).await;
         }
     }
 }
@@ -1119,7 +1120,7 @@ async fn handle_new_event(
             }
         }
         Event::CloseAgreementLimit(uid, agreement) => {
-          let res = match handle_close_agreement_limit(&peer_id.to_base58(), &agreement).await {
+            let res = match handle_close_agreement_limit(&peer_id.to_base58(), &agreement).await {
                 Ok(data) => data,
                 Err(err) => err.to_json(),
             };
@@ -1135,7 +1136,7 @@ async fn handle_new_event(
         }
         Event::CloseAgreementQuery(uid, agreement, query, ep_name) => {
             let res = match handle_close_agreement_query(
-              &peer_id.to_base58(),
+                &peer_id.to_base58(),
                 &agreement,
                 &project,
                 query,
