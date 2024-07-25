@@ -63,7 +63,10 @@ export class RewardService implements OnModuleInit {
   @Cron('1 1 1 * * *')
   async autoRunTasks() {
     await this.collectAllocationRewards(TxType.check);
-    await this.reduceAllocation(TxType.check);
+    const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
+    if (reduceEnabled) {
+      await this.reduceAllocation(TxType.check);
+    }
     await this.collectStateChannelRewards(TxType.check);
   }
 

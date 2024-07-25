@@ -8,7 +8,7 @@ import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
-import { AggregatedManifest } from './project.manifest';
+import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
 import {
   LogType,
   MetadataType,
@@ -146,15 +146,32 @@ export class ProjectResolver {
         extra = { dbSize: dbSize?.size };
         // projects.push({ ...project, dbSize: dbSize?.size });
       } else if (project.projectType === ProjectType.RPC) {
+        const manifest = project.manifest as RpcManifest;
         for (const endpoint of project.serviceEndpoints) {
           endpoint.access = endpoint.access || AccessType.DEFAULT;
           endpoint.isWebsocket = endpoint.isWebsocket || endpoint.key.endsWith('Ws');
+          if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
+            continue;
+          }
+          if (endpoint.rpcFamily?.length > 0) {
+            continue;
+          }
+          endpoint.rpcFamily = manifest.rpcFamily;
         }
       } else if (project.projectType === ProjectType.SUBGRAPH) {
+        const manifest = project.manifest as SubgraphManifest;
         for (const endpoint of project.serviceEndpoints) {
           endpoint.access = endpoint.access || SubgraphEndpointAccessType[endpoint.key];
           endpoint.isWebsocket =
             endpoint.isWebsocket || endpoint.key === SubgraphEndpointType.WsEndpoint;
+
+          if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
+            continue;
+          }
+          if (endpoint.rpcFamily?.length > 0) {
+            continue;
+          }
+          endpoint.rpcFamily = manifest.rpcFamily;
         }
       }
       projects.push(Object.assign(project, extra));

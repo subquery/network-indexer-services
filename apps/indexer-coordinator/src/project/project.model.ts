@@ -253,6 +253,7 @@ export class SeviceEndpoint {
     this.reason = '';
     this.access = access;
     this.isWebsocket = false;
+    this.rpcFamily = [];
   }
   @Field()
   key: string;
@@ -268,6 +269,8 @@ export class SeviceEndpoint {
   access?: AccessType;
   @Field({ nullable: true })
   isWebsocket?: boolean;
+  @Field(() => [String], { nullable: true })
+  rpcFamily?: string[];
 }
 
 @Entity()
