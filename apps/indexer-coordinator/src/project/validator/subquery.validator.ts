@@ -77,7 +77,6 @@ export async function validateQueryEndpoint(
     const data = response.data.data;
     const projectManifest = project.manifest as SubqueryManifest;
 
-    console.log('data:', data);
     if (data?._metadata?.genesisHash !== projectManifest.network?.chainId) {
       logger.error(
         `Invalid query endpoint chain. genesisHash:${data?._metadata?.genesisHash}, chainId:${projectManifest.network?.chainId}`
