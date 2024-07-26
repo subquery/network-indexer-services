@@ -16,6 +16,11 @@ export enum ProjectType {
   SUBGRAPH,
 }
 
+export enum IntegrationType {
+  SUBGRAPH,
+  LLM,
+}
+
 export enum HostType {
   UN_RESOLVED = 'un-resolved',
   SYSTEM_MANAGED = 'system-managed',

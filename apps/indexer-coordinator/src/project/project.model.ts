@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
-import { AccessType, HostType, ProjectType } from './types';
+import { Column, Entity, PrimaryColumn, BeforeInsert, PrimaryGeneratedColumn } from 'typeorm';
+import { AccessType, HostType, IntegrationType, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -413,4 +413,29 @@ export class ProjectDetails extends ProjectEntity {
 
   @Field(() => Payg, { nullable: true })
   payg?: Payg;
+}
+
+@Entity()
+export class IntegrationEntity {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ type: 'varchar' })
+  title: string;
+
+  @Column()
+  type: IntegrationType;
+
+  @Column('jsonb', { default: {} })
+  @Field(() => [SeviceEndpoint], { nullable: true })
+  serviceEndpoints: SeviceEndpoint[];
+
+  @Column({ type: 'boolean', default: false })
+  enabled: boolean;
+
+  @Column('jsonb', { default: {} })
+  config: any;
+
+  @Column('jsonb', { default: {} })
+  extra: any;
 }
