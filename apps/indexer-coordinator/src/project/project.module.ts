@@ -17,6 +17,8 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
+import { ProjectOllamaService } from './project.ollama.service';
+import { IntegrationModule } from 'src/integration/integration.module';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
     ConfigModule,
+    IntegrationModule,
   ],
   providers: [
     ProjectService,
@@ -33,6 +36,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     ProjectResolver,
     ProjectRpcService,
     ProjectSubgraphService,
+    ProjectOllamaService,
     DbStatsService,
   ],
   exports: [ProjectService, ProjectRpcService],

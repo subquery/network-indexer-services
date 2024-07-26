@@ -260,6 +260,10 @@ export class ProjectService {
       manifest,
     });
 
+    if(manifest?.kind === 'LLM') {
+      return this.projectRepo.save(projectEntity);
+    }
+
     // load default payg config
     const flexConfig = await this.configService.getFlexConfig();
 

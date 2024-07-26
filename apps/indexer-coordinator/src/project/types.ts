@@ -14,6 +14,7 @@ export enum ProjectType {
   RPC,
   DICTIONARY,
   SUBGRAPH,
+  LLM,
 }
 
 export enum IntegrationType {

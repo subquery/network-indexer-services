@@ -414,28 +414,3 @@ export class ProjectDetails extends ProjectEntity {
   @Field(() => Payg, { nullable: true })
   payg?: Payg;
 }
-
-@Entity()
-export class IntegrationEntity {
-  @PrimaryGeneratedColumn('increment')
-  id: number;
-
-  @Column({ type: 'varchar' })
-  title: string;
-
-  @Column()
-  type: IntegrationType;
-
-  @Column('jsonb', { default: {} })
-  @Field(() => [SeviceEndpoint], { nullable: true })
-  serviceEndpoints: SeviceEndpoint[];
-
-  @Column({ type: 'boolean', default: false })
-  enabled: boolean;
-
-  @Column('jsonb', { default: {} })
-  config: any;
-
-  @Column('jsonb', { default: {} })
-  extra: any;
-}
