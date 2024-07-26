@@ -8,6 +8,7 @@ import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
+import { ProjectLLMService } from './project.llm.service';
 import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
 import {
   LogType,
@@ -42,6 +43,7 @@ export class ProjectResolver {
     private projectService: ProjectService,
     private projectRpcService: ProjectRpcService,
     private projectSubgraphService: ProjectSubgraphService,
+    private projectLLMService: ProjectLLMService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService,
@@ -286,6 +288,8 @@ export class ProjectResolver {
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.startSubgraphProject(id, projectConfig, rateLimit ?? 0);
+      case ProjectType.LLM:
+        return this.projectLLMService.startLLMProject(id, projectConfig, rateLimit ?? 0);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }

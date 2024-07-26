@@ -17,7 +17,7 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
-import { ProjectOllamaService } from './project.ollama.service';
+import { ProjectLLMService } from './project.llm.service';
 import { IntegrationModule } from 'src/integration/integration.module';
 
 @Module({
@@ -36,7 +36,7 @@ import { IntegrationModule } from 'src/integration/integration.module';
     ProjectResolver,
     ProjectRpcService,
     ProjectSubgraphService,
-    ProjectOllamaService,
+    ProjectLLMService,
     DbStatsService,
   ],
   exports: [ProjectService, ProjectRpcService],

@@ -21,9 +21,20 @@ import { ProjectService } from './project.service';
 import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
 import { AccessType, ProjectType } from './types';
 
-const logger = getLogger('project.ollama.service');
+const logger = getLogger('project.llm.service');
 
 @Injectable()
-export class ProjectOllamaService {
+export class ProjectLLMService {
   constructor() {}
+
+  async startLLMProject(
+    id: string,
+    projectConfig: IProjectConfig,
+    rateLimit: number
+  ): Promise<Project> {
+    // check ollama model exists
+
+    // ollama run
+    return new Project();
+  }
 }

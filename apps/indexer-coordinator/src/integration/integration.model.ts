@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ID, Field, Int, ObjectType } from '@nestjs/graphql';
-import { IntegrationType } from '../project/types';
 import {
   Column,
   Entity,
@@ -12,6 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { SeviceEndpoint } from '../project/project.model';
+import { IntegrationType } from '../project/types';
 
 @Entity('integration')
 @ObjectType()
