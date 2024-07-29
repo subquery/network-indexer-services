@@ -64,13 +64,19 @@ export class QueryService {
   }
 
   async getQueryMetaData(id: string, endpoint: string, hostType: HostType): Promise<MetadataType> {
-    let indexerStatus: string = ServiceStatus.Healthy;
-    let queryStatus: string = ServiceStatus.Healthy;
+    let indexerStatus: string = ServiceStatus.NotStarted;
+    let queryStatus: string = ServiceStatus.NotStarted;
     if (hostType === HostType.SYSTEM_MANAGED) {
       const status = await this.servicesStatus(id);
       indexerStatus = status.indexerStatus;
       queryStatus = status.queryStatus;
+    } else if (hostType === HostType.USER_MANAGED) {
+      if (endpoint) {
+        indexerStatus = ServiceStatus.UnHealthy;
+        queryStatus = ServiceStatus.UnHealthy;
+      }
     }
+
     const queryBody = JSON.stringify({
       query: `{
         _metadata {
@@ -104,7 +110,11 @@ export class QueryService {
         genesisHash: metadata.genesisHash ?? '',
         indexerNodeVersion: metadata.indexerNodeVersion ?? '',
         queryNodeVersion: metadata.queryNodeVersion ?? '',
-        indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
+        indexerStatus: metadata.indexerHealthy
+          ? hostType === HostType.USER_MANAGED
+            ? ServiceStatus.Healthy
+            : indexerStatus
+          : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
     } catch (e) {
