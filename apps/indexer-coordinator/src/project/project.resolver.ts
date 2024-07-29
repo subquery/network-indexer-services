@@ -310,6 +310,8 @@ export class ProjectResolver {
         return this.projectRpcService.stopRpcProject(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.stopSubgraphProject(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.stopLLMProject(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -330,6 +332,8 @@ export class ProjectResolver {
         return this.projectRpcService.removeRpcProject(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.removeSubgraphProject(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.removeLLMProject(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }

@@ -11,6 +11,7 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { LLMManifest } from './project.manifest';
 import { IProjectConfig, Project, ProjectEntity, ValidationResponse } from './project.model';
 import { ProjectService } from './project.service';
+import { DesiredStatus } from 'src/core/types';
 
 const logger = getLogger('project.llm.service');
 
@@ -55,6 +56,30 @@ export class ProjectLLMService {
       throw new Error(`Failed to start LLM project: ${err.message}`);
     }
     return project;
+  }
+
+  async stopLLMProject(id: string): Promise<Project> {
+    const project = await this.projectService.getProject(id);
+    if (!project) {
+      return;
+    }
+    project.status = DesiredStatus.STOPPED;
+    return this.projectRepo.save(project);
+  }
+
+  async removeLLMProject(id: string): Promise<Project[]> {
+    const project = await this.projectService.getProject(id);
+    if (!project) return [];
+    const endpoints = project.serviceEndpoints;
+    const host = endpoints[0].value;
+
+    const manifest = project.manifest as LLMManifest;
+    const targetModel = manifest.model.name;
+
+    const ollama = new Ollama({ host });
+    await ollama.delete({ model: targetModel });
+
+    return this.projectRepo.remove([project]);
   }
 
   async validate(host): Promise<ValidationResponse> {
