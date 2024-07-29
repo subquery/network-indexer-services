@@ -22,6 +22,20 @@ export enum IntegrationType {
   LLM,
 }
 
+@InputType()
+@ObjectType()
+export class LLMConfig {
+  @Field()
+  foo: string;
+}
+
+@InputType()
+@ObjectType()
+export class LLMExtra {
+  @Field()
+  bar: string;
+}
+
 export enum HostType {
   UN_RESOLVED = 'un-resolved',
   SYSTEM_MANAGED = 'system-managed',
@@ -64,6 +78,10 @@ export enum SubgraphEndpointType {
   AdminEndpoint = 'admin-endpoint',
   IndexNodeEndpoint = 'index-node-endpoint',
   MetricsEndpoint = 'metrics-endpoint',
+}
+
+export enum OllamaEndpointType {
+  HttpEndpoint = 'http-endpoint',
 }
 
 export const SubgraphEndpointAccessType = {

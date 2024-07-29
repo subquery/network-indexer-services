@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ID, Field, Int, ObjectType } from '@nestjs/graphql';
+import { ID, Field, ObjectType } from '@nestjs/graphql';
 import {
   Column,
   Entity,
@@ -14,13 +14,14 @@ import { SeviceEndpoint } from '../project/project.model';
 import { IntegrationType } from '../project/types';
 
 @Entity('integration')
+@Index(['title'], { unique: true })
 @ObjectType()
 export class IntegrationEntity {
   @PrimaryGeneratedColumn('increment')
   @Field(() => ID, { nullable: true })
   id: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 50 })
   @Field()
   title: string;
 

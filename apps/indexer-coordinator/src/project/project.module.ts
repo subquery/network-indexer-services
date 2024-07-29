@@ -18,7 +18,6 @@ import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
 import { ProjectLLMService } from './project.llm.service';
-import { IntegrationModule } from 'src/integration/integration.module';
 
 @Module({
   imports: [
@@ -28,7 +27,6 @@ import { IntegrationModule } from 'src/integration/integration.module';
     MetricsModule,
     TypeOrmModule.forFeature([ProjectEntity, PaygEntity]),
     ConfigModule,
-    IntegrationModule,
   ],
   providers: [
     ProjectService,
@@ -39,6 +37,6 @@ import { IntegrationModule } from 'src/integration/integration.module';
     ProjectLLMService,
     DbStatsService,
   ],
-  exports: [ProjectService, ProjectRpcService],
+  exports: [ProjectService, ProjectRpcService, ProjectLLMService],
 })
 export class ProjectModule {}

@@ -6,7 +6,7 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.service';
 import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { ProjectEvent } from '../utils/subscription';
+import { OllamaEvent, ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
 import { ProjectLLMService } from './project.llm.service';
 import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
@@ -368,5 +368,10 @@ export class ProjectResolver {
   @Query(() => String)
   async getProjectDbSize(@Args('id') id: string): Promise<string> {
     return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
+  }
+
+  @Subscription(() => String)
+  progressChanged() {
+    return this.pubSub.asyncIterator(OllamaEvent.PullProgress);
   }
 }

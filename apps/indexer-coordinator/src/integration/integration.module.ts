@@ -3,12 +3,16 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProjectModule } from '../project/project.module';
 import { IntegrationEntity } from './integration.model';
 import { IntegrationResolver } from './integration.resolver';
 import { IntegrationService } from './integration.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([IntegrationEntity])],
+  imports: [
+    TypeOrmModule.forFeature([IntegrationEntity]),
+    ProjectModule
+  ],
   providers: [IntegrationService, IntegrationResolver],
   exports: [IntegrationService],
 })

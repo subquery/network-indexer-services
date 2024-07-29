@@ -2,39 +2,69 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DesiredStatus } from 'src/core/types';
+import { Ollama } from 'ollama';
 import { getLogger } from 'src/utils/logger';
-import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
+import { OllamaEvent } from 'src/utils/subscription';
 import { Repository } from 'typeorm';
-import { RpcManifest } from './project.manifest';
-import {
-  IProjectConfig,
-  MetadataType,
-  Project,
-  ProjectEntity,
-  SeviceEndpoint,
-  ValidationResponse,
-} from './project.model';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { LLMManifest } from './project.manifest';
+import { IProjectConfig, Project, ProjectEntity, ValidationResponse } from './project.model';
 import { ProjectService } from './project.service';
-import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
-import { AccessType, ProjectType } from './types';
 
 const logger = getLogger('project.llm.service');
 
 @Injectable()
 export class ProjectLLMService {
-  constructor() {}
+  constructor(
+    @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
+    private projectService: ProjectService,
+    private pubSub: SubscriptionService
+  ) {}
 
   async startLLMProject(
     id: string,
     projectConfig: IProjectConfig,
     rateLimit: number
   ): Promise<Project> {
-    // check ollama model exists
+    let project = await this.projectService.getProject(id);
+    if (!project) {
+      project = await this.projectService.addProject(id);
+    }
+    const endpoints = projectConfig.serviceEndpoints;
+    const host = endpoints[0].value;
 
-    // ollama run
-    return new Project();
+    const manifest = project.manifest as LLMManifest;
+    const targetModel = manifest.model.name;
+
+    try {
+      const ollama = new Ollama({ host });
+      const allModels = await ollama.list();
+
+      const model = allModels?.models?.find((m) => m.name === targetModel);
+      if (!model) {
+        ollama.pull({ model: targetModel, stream: true }).then(async (stream) => {
+          for await (const part of stream) {
+            // console.log(part);
+            this.pubSub.publish(OllamaEvent.PullProgress, part);
+          }
+        });
+      }
+    } catch (err) {
+      logger.error(`validate llm host: ${host} failed: ${err.message}`);
+      throw new Error(`Failed to start LLM project: ${err.message}`);
+    }
+    return project;
+  }
+
+  async validate(host): Promise<ValidationResponse> {
+    try {
+      const ollama = new Ollama({ host });
+      await ollama.list();
+      return { valid: true, reason: '' };
+    } catch (err) {
+      logger.error(`validate llm host: ${host} failed: ${err.message}`);
+      return { valid: false, reason: err.message };
+    }
   }
 }
