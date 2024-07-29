@@ -147,6 +147,10 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
     return btns;
   }, [projectStatus, update, stop]);
 
+  const hostType = useMemo(() => {
+    return project.hostType;
+  }, [project.hostType]);
+
   const versionType = useAsyncMemo(async () => {
     try {
       const manifest = await fetchManifest(id);
@@ -177,12 +181,26 @@ const ProjectServiceCard: FC<Props> = ({ id, data, project, projectStatus, updat
         <ContentContainer>
           <ServiceView
             title="Indexer Service"
-            subTitle={`${imageVersion(versionType.data || 'indexer', data.indexerNodeVersion)}`}
+            subTitle={
+              hostType === 'user-managed'
+                ? `${
+                    project?.projectConfig?.serviceEndpoints?.find((i) => i.key === 'nodeEndpoint')
+                      ?.value
+                  }` || ''
+                : `${imageVersion(versionType.data || 'indexer', data.indexerNodeVersion)}`
+            }
             status={data.indexerStatus}
           />
           <ServiceView
             title="Query Endpoint"
-            subTitle={`${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`}
+            subTitle={
+              hostType === 'user-managed'
+                ? `${
+                    project?.projectConfig?.serviceEndpoints?.find((i) => i.key === 'queryEndpoint')
+                      ?.value
+                  }` || ''
+                : `${new URL(`/query/${id}`, indexMetadata?.url || window.location.href)}`
+            }
             status={data.queryStatus}
           />
           <ServiceView title="Rate Limit" subTitle={`${project.rateLimit || '∞'} rps`} />

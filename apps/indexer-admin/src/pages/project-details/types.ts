@@ -154,6 +154,7 @@ export type ProjectDetails = {
   queryEndpoint: string;
   chainType: string;
   rateLimit: number;
+  hostType: 'user-managed' | 'system-managed' | 'un-resolved';
   details: {
     name: string;
     owner: string;
@@ -168,6 +169,10 @@ export type ProjectDetails = {
   };
   metadata: TQueryMetadata;
   projectType: ProjectType;
+  serviceEndpoints: {
+    key: 'nodeEndpoint' | 'queryEndpoint';
+    value: string;
+  }[];
 } & ProjectServiceMetadata;
 
 // manifest types
