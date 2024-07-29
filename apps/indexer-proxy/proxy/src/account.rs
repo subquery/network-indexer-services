@@ -29,7 +29,7 @@ use tokio::sync::RwLock;
 use crate::cli::COMMAND;
 use crate::metadata::auto_reduce_allocation_enabled;
 use crate::metrics::{get_services_version, get_status};
-use crate::p2p::{start_network, stop_network};
+// use crate::p2p::{start_network, stop_network};
 
 // sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
 const EMPTY_CONTROLLER: H160 = H160([
@@ -85,7 +85,7 @@ pub async fn handle_account(value: &Value) -> Result<()> {
         }
     });
 
-    let (controller, peer) = if let Some(sk) = fetch_controller {
+    let (controller, _peer) = if let Some(sk) = fetch_controller {
         let sk = COMMAND.decrypt(sk)?;
 
         let controller = sk[2..]
@@ -116,13 +116,13 @@ pub async fn handle_account(value: &Value) -> Result<()> {
     drop(account);
 
     if old_c != new_c {
-        if let Some(key) = peer {
-            info!("Need restart p2p network...");
-            tokio::spawn(async move {
-                stop_network().await;
-                start_network(key).await;
-            });
-        }
+        // if let Some(key) = peer {
+        //     info!("Need restart p2p network...");
+        //     // tokio::spawn(async move {
+        //     // stop_network().await;
+        //     // start_network(key).await;
+        //     // });
+        // }
     }
 
     Ok(())
