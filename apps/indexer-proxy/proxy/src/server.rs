@@ -442,11 +442,15 @@ async fn ep_payg_handler(
     }
 
     if project.is_ai_project() {
+        let state = match MultipleQueryState::from_bs64(auth) {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
         let v = match serde_json::from_str::<Value>(&body).map_err(|_| Error::Serialize(1142)) {
             Ok(p) => p,
             Err(e) => return e.into_response(),
         };
-        return payg_stream(v).await;
+        return payg_stream(v, state).await;
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
@@ -662,6 +666,6 @@ async fn ws_handler(
     })
 }
 
-async fn payg_stream(v: Value) -> AxumResponse {
-    StreamBodyAs::json_array(api_stream(v)).into_response()
+async fn payg_stream(v: Value, state: MultipleQueryState) -> AxumResponse {
+    StreamBodyAs::json_array(api_stream(v, state)).into_response()
 }

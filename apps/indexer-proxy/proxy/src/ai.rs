@@ -1,11 +1,13 @@
 use futures_util::{Stream, StreamExt};
 use reqwest_streams::*;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use subql_indexer_utils::{error::Error, types::Result};
+use serde_json::{json, Value};
+use subql_indexer_utils::{error::Error, payg::MultipleQueryState, types::Result};
 use tokenizers::tokenizer::Tokenizer;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio_stream::wrappers::ReceiverStream;
+
+use crate::payg::{before_query_multiple_state, post_query_multiple_state};
 
 const SCALE: usize = 10;
 
@@ -20,24 +22,6 @@ struct RequestMessage {
     model: String,
     stream: bool,
     messages: Vec<Message>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct Delta {
-    role: String,
-    content: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct Choice {
-    index: i64,
-    delta: Delta,
-    finish_reason: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct ResponseMessage {
-    choices: Vec<Choice>,
 }
 
 pub fn _tokenize(value: &str) -> Result<usize> {
@@ -69,24 +53,37 @@ fn tokenize_with(value: &str, tokenizer: &Tokenizer, is_scalar: bool) -> Result<
     Ok(real_num)
 }
 
-pub async fn connect_remote(tx: Sender<Value>, req: Value) -> Result<()> {
-    let request: RequestMessage = serde_json::from_value(req).unwrap();
+pub async fn connect_remote(
+    tx: Sender<Value>,
+    req: Value,
+    state: MultipleQueryState,
+) -> Result<()> {
+    let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
+    let request: RequestMessage =
+        serde_json::from_value(req).map_err(|_| Error::Serialize(1142))?;
     let tokenizer = tokenizer_load()?;
 
     let mut req_num = 0;
     for msg in request.messages {
-        req_num += tokenize_with(&msg.content, &tokenizer, false).unwrap();
+        req_num += tokenize_with(&msg.content, &tokenizer, false)?;
     }
-    let real_num = if req_num > SCALE { req_num / SCALE } else { 1 };
+
+    // pay by real count
+    pay_by_token(req_num, &tx, state.clone()).await?;
 
     // open stream and send query to remote
-    let mut stream = reqwest::get("http://localhost:11434/v1/chat/completions")
+    let client = reqwest::Client::new();
+    let mut stream = client
+        .post("http://localhost:11434/v1/chat/completions")
+        .body(req_s)
+        .send()
         .await
         .map_err(|_e| Error::AiTokenizer(1206))?
         .json_array_stream::<Value>(1024);
 
+    let mut count = 0;
     while let Some(Ok(msg)) = stream.next().await {
-        // TODO update spent real_num * price
+        count += 1;
 
         // send to client
         if tx.send(msg).await.is_err() {
@@ -94,14 +91,35 @@ pub async fn connect_remote(tx: Sender<Value>, req: Value) -> Result<()> {
         }
     }
 
+    // pay by real count
+    pay_by_token(count, &tx, state).await?;
+
     Ok(())
 }
 
-pub fn api_stream(req: Value) -> impl Stream<Item = Value> {
+pub fn api_stream(req: Value, state: MultipleQueryState) -> impl Stream<Item = Value> {
     let (tx, rx) = channel::<Value>(1024);
 
-    tokio::spawn(connect_remote(tx, req));
+    tokio::spawn(connect_remote(tx, req, state));
 
     // Create a stream from the channel
     ReceiverStream::new(rx).boxed()
+}
+
+async fn pay_by_token(num: usize, tx: &Sender<Value>, state: MultipleQueryState) -> Result<()> {
+    let real_num = if num > SCALE { num / SCALE } else { 1 };
+
+    let (state, keyname, state_cache, inactive) =
+        before_query_multiple_state(state, real_num as u64).await?;
+
+    if inactive {
+        let state = json!({
+            "state": state.to_bs64()
+        });
+        let _ = tx.send(state).await;
+    }
+
+    post_query_multiple_state(keyname, state_cache).await;
+
+    Ok(())
 }

@@ -660,7 +660,7 @@ impl MultipleQueryStateActive {
 // 100 000000000000000000 (100 SQT)
 pub const MULTIPLE_RANGE_MAX: U256 = U256([7766279631452241920, 5, 0, 0]);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MultipleQueryState {
     pub active: MultipleQueryStateActive,
     pub channel_id: U256,
