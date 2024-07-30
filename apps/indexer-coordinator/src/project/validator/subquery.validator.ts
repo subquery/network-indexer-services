@@ -29,9 +29,12 @@ export async function validateNodeEndpoint(
     const data = response.data;
     const projectManifest = project.manifest as SubqueryManifest;
 
-    if (data?.genesisHash !== projectManifest.network?.chainId) {
+    if (
+      data?.genesisHash !== projectManifest.network?.chainId &&
+      data?.chain !== projectManifest.network?.chainId
+    ) {
       logger.error(
-        `Invalid node endpoint chain. genesisHash:${data.genesisHash}, chainId:${projectManifest.network?.chainId}`
+        `Invalid node endpoint chain. genesisHash:${data.genesisHash}, chain:${data?.chain}, chainId:${projectManifest.network?.chainId}`
       );
       return { valid: false, reason: 'Invalid node endpoint chain' };
     }
@@ -77,9 +80,12 @@ export async function validateQueryEndpoint(
     const data = response.data.data;
     const projectManifest = project.manifest as SubqueryManifest;
 
-    if (data?._metadata?.genesisHash !== projectManifest.network?.chainId) {
+    if (
+      data?._metadata?.genesisHash !== projectManifest.network?.chainId &&
+      data?._metadata?.chain !== projectManifest.network?.chainId
+    ) {
       logger.error(
-        `Invalid query endpoint chain. genesisHash:${data?._metadata?.genesisHash}, chainId:${projectManifest.network?.chainId}`
+        `Invalid query endpoint chain. genesisHash:${data?._metadata?.genesisHash}, chain:${data?._metadata?.chain}, chainId:${projectManifest.network?.chainId}`
       );
       return { valid: false, reason: 'Invalid query endpoint chain' };
     }
