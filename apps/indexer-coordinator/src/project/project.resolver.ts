@@ -56,8 +56,7 @@ export class ProjectResolver {
   @Query(() => MetadataType)
   async serviceMetadata(
     @Args('id') id: string,
-    @Args('projectType', { nullable: true }) projectType?: ProjectType,
-    @Args('hostType', { nullable: true }) hostType?: HostType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType
   ) {
     let project: Project;
     if (projectType === undefined) {
@@ -69,7 +68,8 @@ export class ProjectResolver {
         return this.queryService.getQueryMetaData(
           id,
           project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value,
-          hostType
+          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Node)?.value,
+          project?.hostType,
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
