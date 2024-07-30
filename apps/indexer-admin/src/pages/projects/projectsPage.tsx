@@ -384,6 +384,9 @@ const Projects = () => {
                   setVisible={(val) => {
                     setVisible(val);
                   }}
+                  onSuccess={() => {
+                    projectsQuery.refetch();
+                  }}
                 />
               )}
             {currentStep === 1 && processingProject.projectType === ProjectType.Rpc && (
