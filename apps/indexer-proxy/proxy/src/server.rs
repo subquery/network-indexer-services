@@ -24,11 +24,12 @@ use axum::{
         header::{HeaderMap, HeaderValue},
         Method, Response, StatusCode,
     },
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Response as AxumResponse},
     routing::{get, post},
     Json, Router,
 };
 use axum_auth::AuthBearer;
+use axum_streams::StreamBodyAs;
 use base64::{engine::general_purpose, Engine as _};
 use ethers::prelude::U256;
 use serde::{Deserialize, Serialize};
@@ -42,6 +43,7 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::ai::api_stream;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
@@ -393,7 +395,7 @@ async fn default_payg(
     AuthPayg(auth): AuthPayg,
     Path(deployment): Path<String>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_payg_handler(headers, auth, deployment, "default".to_owned(), body).await
 }
 
@@ -402,7 +404,7 @@ async fn payg_query(
     AuthPayg(auth): AuthPayg,
     Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_payg_handler(headers, auth, deployment, ep_name, body).await
 }
 
@@ -412,7 +414,7 @@ async fn ep_payg_handler(
     deployment: String,
     ep_name: String,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
@@ -426,17 +428,34 @@ async fn ep_payg_handler(
         .remove("X-Channel-Block")
         .unwrap_or(HeaderValue::from_static("single"));
 
-    let project = get_project(&deployment).await?;
-    let endpoint = project.endpoint(&ep_name, true)?;
+    let project = match get_project(&deployment).await {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
+    let endpoint = match project.endpoint(&ep_name, true) {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
 
     if endpoint.is_ws {
-        return Err(Error::WebSocket(1315));
+        return Error::WebSocket(1315).into_response();
+    }
+
+    if project.is_ai_project() {
+        let v = match serde_json::from_str::<Value>(&body).map_err(|_| Error::Serialize(1142)) {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
+        return payg_stream(v).await;
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
         Ok("multiple") => {
-            let state = MultipleQueryState::from_bs64(auth)?;
-            query_multiple_state(
+            let state = match MultipleQueryState::from_bs64(auth) {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            };
+            match query_multiple_state(
                 &deployment,
                 body,
                 endpoint.endpoint.clone(),
@@ -444,11 +463,18 @@ async fn ep_payg_handler(
                 MetricsNetwork::HTTP,
                 no_sig,
             )
-            .await?
+            .await
+            {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            }
         }
         _ => {
-            let state = QueryState::from_bs64_old1(auth)?;
-            query_single_state(
+            let state = match QueryState::from_bs64_old1(auth) {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            };
+            match query_single_state(
                 &deployment,
                 body,
                 endpoint.endpoint.clone(),
@@ -456,7 +482,11 @@ async fn ep_payg_handler(
                 MetricsNetwork::HTTP,
                 no_sig,
             )
-            .await?
+            .await
+            {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            }
         }
     };
 
@@ -488,7 +518,7 @@ async fn ep_payg_handler(
         headers.push(("X-RateLimit-Remaining-Second", (t - u).to_string().leak()));
     }
 
-    Ok(build_response(body, headers))
+    build_response(body, headers).into_response()
 }
 
 async fn ws_payg_query(
@@ -630,4 +660,8 @@ async fn ws_handler(
     ws.on_upgrade(move |socket: WebSocket| {
         handle_websocket(remote_socket, socket, deployment, query_type, no_sig)
     })
+}
+
+async fn payg_stream(v: Value) -> AxumResponse {
+    StreamBodyAs::json_array(api_stream(v)).into_response()
 }
