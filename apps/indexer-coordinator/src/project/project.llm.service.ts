@@ -9,9 +9,16 @@ import { OllamaEvent } from 'src/utils/subscription';
 import { Repository } from 'typeorm';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { LLMManifest } from './project.manifest';
-import { IProjectConfig, Project, ProjectEntity, ValidationResponse } from './project.model';
+import {
+  IProjectConfig,
+  Project,
+  ProjectEntity,
+  SeviceEndpoint,
+  ValidationResponse,
+} from './project.model';
 import { ProjectService } from './project.service';
 import { DesiredStatus } from 'src/core/types';
+import { LLMEndpointAccessType, LLMEndpointType, SubqueryEndpointType } from './types';
 
 const logger = getLogger('project.llm.service');
 
@@ -32,6 +39,10 @@ export class ProjectLLMService {
     if (!project) {
       project = await this.projectService.addProject(id);
     }
+    if (project.rateLimit !== rateLimit) {
+      project.rateLimit = rateLimit;
+    }
+
     const endpoints = projectConfig.serviceEndpoints;
     const host = endpoints[0].value;
 
@@ -44,18 +55,32 @@ export class ProjectLLMService {
 
       const model = allModels?.models?.find((m) => m.name === targetModel);
       if (!model) {
+        project.status = DesiredStatus.PULLING;
+
         ollama.pull({ model: targetModel, stream: true }).then(async (stream) => {
           for await (const part of stream) {
             // console.log(part);
             this.pubSub.publish(OllamaEvent.PullProgress, part);
           }
+          project.status = DesiredStatus.RUNNING;
+          await this.projectRepo.save(project);
         });
       }
+
+      project.projectConfig = projectConfig;
+      project.serviceEndpoints = [
+        new SeviceEndpoint(
+          LLMEndpointType.ApiGenerateEndpoint,
+          this.nodeEndpoint(host, '/v1/chat/completions'),
+          LLMEndpointAccessType[LLMEndpointType.ApiGenerateEndpoint]
+        ),
+      ];
     } catch (err) {
-      logger.error(`validate llm host: ${host} failed: ${err.message}`);
+      logger.error(`Failed to start LLM project host: ${host} failed: ${err.message}`);
       throw new Error(`Failed to start LLM project: ${err.message}`);
     }
-    return project;
+
+    return await this.projectRepo.save(project);
   }
 
   async stopLLMProject(id: string): Promise<Project> {
@@ -91,5 +116,10 @@ export class ProjectLLMService {
       logger.error(`validate llm host: ${host} failed: ${err.message}`);
       return { valid: false, reason: err.message };
     }
+  }
+
+  nodeEndpoint(host: string, input: string): string {
+    const url = new URL(input, host);
+    return url.toString();
   }
 }

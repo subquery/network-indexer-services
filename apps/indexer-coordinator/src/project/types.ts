@@ -80,8 +80,8 @@ export enum SubgraphEndpointType {
   MetricsEndpoint = 'metrics-endpoint',
 }
 
-export enum OllamaEndpointType {
-  HttpEndpoint = 'http-endpoint',
+export enum LLMEndpointType {
+  ApiGenerateEndpoint = 'api-generate-endpoint',
 }
 
 export const SubgraphEndpointAccessType = {
@@ -90,6 +90,10 @@ export const SubgraphEndpointAccessType = {
   [SubgraphEndpointType.AdminEndpoint]: AccessType.INTERNAL,
   [SubgraphEndpointType.IndexNodeEndpoint]: AccessType.INTERNAL,
   [SubgraphEndpointType.MetricsEndpoint]: AccessType.INTERNAL,
+};
+
+export const LLMEndpointAccessType = {
+  [LLMEndpointType.ApiGenerateEndpoint]: AccessType.DEFAULT,
 };
 
 @InputType('SubgraphPort')
