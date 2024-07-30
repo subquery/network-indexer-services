@@ -667,5 +667,7 @@ async fn ws_handler(
 }
 
 async fn payg_stream(v: Value, state: MultipleQueryState) -> AxumResponse {
-    StreamBodyAs::json_array(api_stream(v, state)).into_response()
+    let mut res = StreamBodyAs::json_array(api_stream(v, state)).into_response();
+    res.headers_mut().insert("X-Response-Format", "stream".parse().unwrap());
+    res
 }
