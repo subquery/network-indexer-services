@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
-import {
-  MetadataType,
-  NodeMetadataType,
-  Project,
-  ValidationResponse,
-} from '../project/project.model';
+import { HostType } from 'src/project/types';
+import { MetadataType, NodeMetadataType, Project } from '../project/project.model';
 import { nodeContainer, queryContainer } from '../utils/docker';
 import { ZERO_BYTES32 } from '../utils/project';
 
@@ -18,8 +15,6 @@ import { AccountService } from './account.service';
 import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { Poi, PoiItem, ServiceStatus } from './types';
-import { HostType } from 'src/project/types';
-import axios from 'axios';
 
 @Injectable()
 export class QueryService {
@@ -152,6 +147,13 @@ export class QueryService {
         timeout: 5000,
       });
       if (response.status !== 200) {
+        return {
+          currentProcessingTimestamp: 0,
+          targetHeight: 0,
+          startHeight: 0,
+          bestHeight: 0,
+          indexerNodeVersion: '',
+        };
       }
       return response.data as NodeMetadataType;
     } catch (err) {
