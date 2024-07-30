@@ -73,7 +73,7 @@ async fn main() -> std::io::Result<()> {
     let private_key = args().nth(4).unwrap();
     let signer = private_key.parse::<LocalWallet>().unwrap();
 
-    match get_token(
+    if let Ok(token) = get_token(
         url.clone(),
         indexer.clone(),
         deployment.clone(),
@@ -81,11 +81,13 @@ async fn main() -> std::io::Result<()> {
     )
     .await
     {
-        Ok(token) => {
-            get_price(url, token).await;
-            // open_channel(url, indexer, deployment, signer, token).await;
-        }
-        Err(_) => println!("wrong argument, failed to get token"),
+        get_price(url.clone(), token.clone()).await;
+        println!();
+        println!();
+        println!();
+        open_channel(url, indexer, deployment, signer, token.clone()).await;
+    } else {
+        println!("wrong argument, failed to get token");
     }
     Ok(())
 }
@@ -128,7 +130,6 @@ pub async fn open_channel(
     signer: LocalWallet,
     token: String,
 ) {
-    let consumer = format!("{:?}", signer.address());
     let query_token = format!("Bearer {}", token);
     let payg_open_url = format!("{}/payg-open", url);
     let timestamp = Utc::now().timestamp_millis();
@@ -137,16 +138,53 @@ pub async fn open_channel(
     let sign = hex::encode(signer.sign_hash(msg.into()).unwrap().to_vec());
 
     let mut payload = HashMap::new();
-    payload.insert("indexer", Value::String(indexer));
-    payload.insert("consumer", Value::String(consumer));
     payload.insert("deployment_id", Value::String(deployment.clone()));
-    payload.insert("signature", Value::String(sign));
+    payload.insert("indexer", Value::String(indexer));
+    // TODO
+    payload.insert("sign", Value::String(sign.clone()));
+    payload.insert("signature", Value::String(sign.clone()));
     payload.insert("timestamp", timestamp.into());
-    payload.insert("chain_id", chain_id.into());
+    payload.insert("price_expired", 1000.into());
+    payload.insert("price_price", 10000.into());
+    payload.insert("price_token", 10000.into());
+    payload.insert("price_sign", Value::String(sign));
+    payload.insert("price", 100.into());
+    payload.insert("expiration", 100.into());
 
     let client = reqwest::Client::new();
     let r = client
         .post(payg_open_url)
+        .header("Authorization", query_token.clone())
+        .json(&payload)
+        .send()
+        .await
+        .unwrap();
+    let res: serde_json::Value = r.json().await.unwrap();
+    println!("Res {}", res);
+}
+
+pub async fn extend_channel(
+    url: String,
+    indexer: String,
+    deployment: String,
+    token: String,
+    channel: String,
+) {
+    let query_token = format!("Bearer {}", token);
+    let extend_channel_url = format!("{}/payg-extend/{}", url, channel);
+
+    let mut payload = HashMap::new();
+    payload.insert("deployment_id", Value::String(deployment.clone()));
+    payload.insert("indexer", Value::String(indexer));
+    // TODO
+    payload.insert("price", 1000.into());
+    payload.insert("expired", 1000.into());
+    payload.insert("expiration", 1000.into());
+    payload.insert("signature2", 1000.into());
+
+    let client = reqwest::Client::new();
+    let r = client
+        .post(extend_channel_url)
         .header("Authorization", query_token.clone())
         .json(&payload)
         .send()
