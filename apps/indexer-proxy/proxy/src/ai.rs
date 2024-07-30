@@ -9,7 +9,8 @@ use tokio_stream::wrappers::ReceiverStream;
 
 use crate::payg::{before_query_multiple_state, post_query_multiple_state};
 
-const SCALE: usize = 10;
+const SCALE: usize = 1;
+const BATCH: usize = 10;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Message {
@@ -85,14 +86,21 @@ pub async fn connect_remote(
     while let Some(Ok(msg)) = stream.next().await {
         count += 1;
 
+        // pay by real count
+        if count == BATCH {
+            pay_by_token(count, &tx, state.clone()).await?;
+            count = 0;
+        }
+
         // send to client
         if tx.send(msg).await.is_err() {
             break;
         }
     }
 
-    // pay by real count
-    pay_by_token(count, &tx, state).await?;
+    if count != 0 {
+        pay_by_token(count, &tx, state).await?;
+    }
 
     Ok(())
 }
