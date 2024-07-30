@@ -82,7 +82,8 @@ async fn main() -> std::io::Result<()> {
     .await
     {
         Ok(token) => {
-            open_channel(url, indexer, deployment, signer, token).await;
+            get_price(url, token).await;
+            // open_channel(url, indexer, deployment, signer, token).await;
         }
         Err(_) => println!("wrong argument, failed to get token"),
     }
@@ -120,7 +121,7 @@ async fn get_token(
     }
 }
 
-async fn open_channel(
+pub async fn open_channel(
     url: String,
     indexer: String,
     deployment: String,
@@ -148,6 +149,20 @@ async fn open_channel(
         .post(payg_open_url)
         .header("Authorization", query_token.clone())
         .json(&payload)
+        .send()
+        .await
+        .unwrap();
+    let res: serde_json::Value = r.json().await.unwrap();
+    println!("Res {}", res);
+}
+
+async fn get_price(url: String, token: String) {
+    let query_token = format!("Bearer {}", token);
+    let payg_price_url = format!("{}/payg-price", url);
+    let client = reqwest::Client::new();
+    let r = client
+        .get(payg_price_url)
+        .header("Authorization", query_token.clone())
         .send()
         .await
         .unwrap();
