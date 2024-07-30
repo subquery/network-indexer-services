@@ -43,14 +43,13 @@ export class MonitorService {
       }
 
       try {
-        const result = await axios.get(
-          `${
-            project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node).value
-          }/health`,
-          {
-            timeout: 5000,
-          }
-        );
+        const endpoint = project.serviceEndpoints.find(
+          (e) => e.key === SubqueryEndpointType.Node
+        ).value;
+        const url = new URL('health', endpoint);
+        const result = await axios.get(url.toString(), {
+          timeout: 5000,
+        });
         if (result.status === 200) {
           this.nodeUnhealthTimesMap.set(project.id, 0);
         } else {

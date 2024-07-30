@@ -5,7 +5,12 @@ import { Injectable } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
-import { MetadataType, Project } from '../project/project.model';
+import {
+  MetadataType,
+  NodeMetadataType,
+  Project,
+  ValidationResponse,
+} from '../project/project.model';
 import { nodeContainer, queryContainer } from '../utils/docker';
 import { ZERO_BYTES32 } from '../utils/project';
 
@@ -14,6 +19,7 @@ import { ContractService } from './contract.service';
 import { DockerService } from './docker.service';
 import { Poi, PoiItem, ServiceStatus } from './types';
 import { HostType } from 'src/project/types';
+import axios from 'axios';
 
 @Injectable()
 export class QueryService {
@@ -63,7 +69,12 @@ export class QueryService {
     }
   }
 
-  async getQueryMetaData(id: string, endpoint: string, hostType: HostType): Promise<MetadataType> {
+  async getQueryMetaData(
+    id: string,
+    queryEndpoint: string,
+    nodeEndpoint?: string,
+    hostType?: HostType
+  ): Promise<MetadataType> {
     let indexerStatus: string = ServiceStatus.NotStarted;
     let queryStatus: string = ServiceStatus.NotStarted;
     if (hostType === HostType.SYSTEM_MANAGED) {
@@ -71,9 +82,12 @@ export class QueryService {
       indexerStatus = status.indexerStatus;
       queryStatus = status.queryStatus;
     } else if (hostType === HostType.USER_MANAGED) {
-      if (endpoint) {
-        indexerStatus = ServiceStatus.UnHealthy;
+      if (nodeEndpoint) {
+        // indexerStatus = ServiceStatus.UnHealthy;
         queryStatus = ServiceStatus.UnHealthy;
+        const nodeMetadata = await this.getNodeMetaData(nodeEndpoint);
+        indexerStatus =
+          nodeMetadata.targetHeight > 0 ? ServiceStatus.Healthy : ServiceStatus.UnHealthy;
       }
     }
 
@@ -95,7 +109,7 @@ export class QueryService {
     });
 
     try {
-      const response = await this.queryRequest(endpoint, queryBody);
+      const response = await this.queryRequest(queryEndpoint, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
@@ -110,11 +124,7 @@ export class QueryService {
         genesisHash: metadata.genesisHash ?? '',
         indexerNodeVersion: metadata.indexerNodeVersion ?? '',
         queryNodeVersion: metadata.queryNodeVersion ?? '',
-        indexerStatus: metadata.indexerHealthy
-          ? hostType === HostType.USER_MANAGED
-            ? ServiceStatus.Healthy
-            : indexerStatus
-          : ServiceStatus.UnHealthy,
+        indexerStatus: metadata.indexerHealthy ? indexerStatus : ServiceStatus.UnHealthy,
         queryStatus: ServiceStatus.Healthy,
       };
     } catch (e) {
@@ -131,6 +141,26 @@ export class QueryService {
         queryNodeVersion: '',
         indexerStatus,
         queryStatus,
+      };
+    }
+  }
+
+  async getNodeMetaData(endpoint: string): Promise<NodeMetadataType> {
+    try {
+      const url = new URL('meta', endpoint);
+      const response = await axios.get(url.toString(), {
+        timeout: 5000,
+      });
+      if (response.status !== 200) {
+      }
+      return response.data as NodeMetadataType;
+    } catch (err) {
+      return {
+        currentProcessingTimestamp: 0,
+        targetHeight: 0,
+        startHeight: 0,
+        bestHeight: 0,
+        indexerNodeVersion: '',
       };
     }
   }
@@ -185,7 +215,7 @@ export class QueryService {
       advancedConfig: { poiEnabled },
     } = project;
 
-    const metadata = await this.getQueryMetaData(id, queryEndpoint, hostType);
+    const metadata = await this.getQueryMetaData(id, queryEndpoint, nodeEndpoint, hostType);
     const blockHeight = metadata.lastHeight;
     if (blockHeight === 0) return this.emptyPoi;
 

@@ -122,6 +122,7 @@ export class ProjectService {
     const metadata = await this.query.getQueryMetaData(
       id,
       project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node)?.value,
       project.hostType
     );
 
@@ -136,6 +137,7 @@ export class ProjectService {
     return this.query.getQueryMetaData(
       id,
       project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node)?.value,
       project.hostType
     );
   }
@@ -316,7 +318,7 @@ export class ProjectService {
     }
     if (project.rateLimit !== rateLimit) {
       project.rateLimit = rateLimit;
-      await this.projectRepo.save(project);
+      // await this.projectRepo.save(project);
     }
 
     if (project.hostType !== hostType) {
@@ -325,6 +327,8 @@ export class ProjectService {
       }
     }
     project.hostType = hostType;
+    await this.projectRepo.save(project);
+    
     if (project.hostType === HostType.USER_MANAGED) {
       return await this.startUserManagedSubqueryProject(project, projectConfig);
     }

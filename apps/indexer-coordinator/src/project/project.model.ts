@@ -78,6 +78,34 @@ export class MetadataType {
   queryStatus?: string;
 }
 
+@ObjectType('NodeMetadata')
+export class NodeMetadataType {
+  @Field()
+  currentProcessingTimestamp: number;
+  @Field()
+  targetHeight: number;
+  @Field()
+  startHeight: number;
+  @Field()
+  bestHeight: number;
+  @Field({ nullable: true })
+  indexerNodeVersion?: string;
+  @Field({ nullable: true })
+  uptime?: number;
+  @Field({ nullable: true })
+  processedBlockCount?: number;
+  @Field({ nullable: true })
+  apiConnected?: boolean;
+  @Field({ nullable: true })
+  usingDictionary?: boolean;
+  @Field({ nullable: true })
+  chain?: string;
+  @Field({ nullable: true })
+  specName?: string;
+  @Field({ nullable: true })
+  genesisHash?: string;
+}
+
 export interface IProjectBaseConfig {
   networkEndpoints: string[];
   networkDictionary: string;
