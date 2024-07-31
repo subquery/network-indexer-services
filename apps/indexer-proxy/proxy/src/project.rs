@@ -668,7 +668,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                 is_default = access == "default";
             } else {
                 match endpoint.key.as_str() {
-                    "evmHttp"| "polkadotHttp" | "queryEndpoint" | "http-endpoint" => {
+                    "evmHttp" | "polkadotHttp" | "queryEndpoint" | "http-endpoint" => {
                         is_default = true;
                     }
                     "nodeEndpoint" | "index-node-endpoint" | "adminEndpoint" | "admin-endpoint" => {
