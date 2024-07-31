@@ -45,6 +45,7 @@ export enum ProjectType {
   Rpc = 1,
   Dictionary = 2,
   SubGraph = 3,
+  LLM = 4,
 }
 
 export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceTerminating;

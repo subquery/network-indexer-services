@@ -148,7 +148,8 @@ const Projects = () => {
       if (
         !res.data?.getManifest.rpcManifest &&
         !res.data?.getManifest.subqueryManifest &&
-        !res.data?.getManifest.subgraphManifest
+        !res.data?.getManifest.subgraphManifest &&
+        !res.data?.getManifest.llmManifest
       ) {
         return Promise.reject(new Error("Can't find the manifest information"));
       }
@@ -168,6 +169,7 @@ const Projects = () => {
           Subgraph
         </Tag>
       );
+    if (manifest.data?.getManifest.llmManifest) return 'LLM';
     return 'Data Indexer';
   }, [manifest]);
 

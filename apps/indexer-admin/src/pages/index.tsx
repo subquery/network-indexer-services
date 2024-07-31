@@ -7,6 +7,7 @@ import Footer from './footer/footer';
 import GlobalConfig from './global-config/GlobalConfig';
 import Header from './header/header';
 import Network from './network/networkPage';
+import OllamaServer from './ollama-server/OllamaServer';
 import ProjectDetail from './project-details/projectDetailsPage';
 import Projects from './projects/projectsPage';
 import Register from './register/registerPage';
@@ -21,4 +22,5 @@ export {
   Register,
   Network,
   GlobalConfig,
+  OllamaServer,
 };

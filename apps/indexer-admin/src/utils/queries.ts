@@ -440,6 +440,22 @@ export interface ManiFest {
       rpcDenyList?: string[];
       computeUnit?: { name: string; value: string }[];
     };
+    llmManifest?: {
+      kind: string;
+      specVersion: string;
+      model: {
+        name: string;
+        file: string;
+      };
+      runner: {
+        name: string;
+        parameter: {
+          temperature: number;
+          num_ctx: number;
+        };
+        system: string;
+      };
+    };
   };
 }
 
@@ -500,6 +516,22 @@ export const GET_MANIFEST = gql`
         computeUnit {
           name
           value
+        }
+      }
+      llmManifest {
+        kind
+        specVersion
+        model {
+          name
+          file
+        }
+        runner {
+          name
+          parameter {
+            temperature
+            num_ctx
+          }
+          system
         }
       }
     }
@@ -566,6 +598,54 @@ export const GET_ALL_CONFIG = gql`
     allConfig {
       key
       value
+    }
+  }
+`;
+
+export interface IGetAllIntegration {
+  allIntegration: {
+    id: string;
+    serviceEndpoints: { key: string; value: string }[];
+    models: { name: string; status: 'normal' | 'loaded' }[];
+  }[];
+}
+
+export const GET_ALL_INTEGRATION = gql`
+  query {
+    allIntegration {
+      id
+      serviceEndpoints {
+        key
+        value
+      }
+      models {
+        name
+        status
+      }
+    }
+  }
+`;
+
+export const ADD_INTEGRATION = gql`
+  mutation ($name: String!, $url: String!) {
+    addIntegration(title: $name, type: 1, serviceEndpoints: [{ key: $name, value: $url }]) {
+      id
+    }
+  }
+`;
+
+export const REMOVE_MODEL = gql`
+  mutation ($id: Float!, $modelName: String!) {
+    deleteModel(id: $id, name: $modelName) {
+      id
+    }
+  }
+`;
+
+export const REMOVE_INTEGRATION = gql`
+  mutation ($id: Float!) {
+    deleteIntegration(id: $id) {
+      id
     }
   }
 `;

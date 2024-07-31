@@ -120,6 +120,7 @@ const AppContents = () => {
           <Route component={Pages.ControllerManagement} path="/controller-management" />
           <Route component={Pages.Network} path="/network" />
           <Route component={Pages.GlobalConfig} path="/config" />
+          <Route component={Pages.OllamaServer} path="/ollama-server" />
           <Route component={Pages.Register} path="/register" />
           <Route exact path="/">
             <Redirect to="/account" />
