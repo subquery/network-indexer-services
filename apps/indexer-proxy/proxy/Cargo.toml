@@ -7,7 +7,7 @@ edition = "2021"
 subql-indexer-utils = { version = "2", path = "../utils" }
 subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.3.0" }
 aes-gcm = "0.10"
-axum = { version = "0.6", features = ["ws"] }
+axum = { version = "0.7", features = ["ws"] }
 axum-auth = "0.4"
 base64 = "0.22"
 bincode = "1.3"
