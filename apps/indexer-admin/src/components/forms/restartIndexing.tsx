@@ -20,12 +20,14 @@ import {
   Form,
   Input,
   InputNumber,
+  Radio,
   Row,
   Select,
   Slider,
   Switch,
   Tooltip,
 } from 'antd';
+import { useWatch } from 'antd/es/form/Form';
 import Link from 'antd/es/typography/Link';
 import { cloneDeep } from 'lodash';
 import styled from 'styled-components';
@@ -132,9 +134,10 @@ const NetworkEndpointsTooltip = () => (
 type Props = {
   setVisible?: Dispatch<SetStateAction<boolean>>;
   id?: string;
+  onSuccess?: () => void;
 };
 
-export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
+export const IndexingForm: FC<Props> = ({ setVisible, id: propsId, onSuccess }) => {
   const [form] = Form.useForm();
   const [showInput, setShowInput] = useState(false);
   const { dispatchNotification } = useNotification();
@@ -147,6 +150,12 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
   const nodeVersions = useNodeVersions(mineId);
   const queryVersions = useQueryVersions(mineId);
   const [startProjectRequest] = useMutation(START_PROJECT);
+
+  const hostType = useMemo(() => {
+    return projectQuery.data?.project.hostType;
+  }, [projectQuery.data?.project.hostType]);
+
+  const editHostType = useWatch('hostType', form);
 
   const onSwitchChange = () => {
     setShowInput(!showInput);
@@ -170,19 +179,42 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
       });
     }
 
+    const projectServiceEndpoint =
+      values.hostType === 'user-managed'
+        ? [
+            {
+              key: 'nodeEndpoint',
+              value: values.nodeEndpoint,
+            },
+            {
+              key: 'queryEndpoint',
+              value: values.queryEndpoint,
+            },
+          ]
+        : [];
+
     try {
       await startProjectRequest({
         variables: {
+          queryVersion: '',
+          nodeVersion: '',
+          networkEndpoints: [],
+          batchSize: 0,
+          cache: 0,
+          cpu: 0,
+          memory: 0,
           ...values,
           poiEnabled,
           timeout,
-          workers: values.worker,
+          workers: values.worker || 0,
           networkDictionary: values.networkDictionary ?? '',
           id: mineId,
           projectType: projectQuery.data?.project.projectType,
-          serviceEndpoints: [],
+          serviceEndpoints: projectServiceEndpoint,
         },
       });
+      await projectQuery.refetch();
+      await onSuccess?.();
 
       dispatchNotification({
         type: 'success' as NOTIFICATION_TYPE,
@@ -226,7 +258,18 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
             name="form"
             layout="vertical"
             onFinish={handleSubmit(setVisible)}
-            initialValues={{ ...projectConfig, networkEndpoints, rateLimit: project.rateLimit }}
+            initialValues={{
+              ...projectConfig,
+              networkEndpoints,
+              rateLimit: project.rateLimit,
+              hostType: hostType === 'un-resolved' ? 'system-managed' : hostType,
+              nodeEndpoint: project?.projectConfig?.serviceEndpoints?.find(
+                (i) => i.key === 'nodeEndpoint'
+              )?.value,
+              queryEndpoint: project?.projectConfig?.serviceEndpoints?.find(
+                (i) => i.key === 'queryEndpoint'
+              )?.value,
+            }}
           >
             <Typography variant="medium" style={{ marginBottom: 24 }}>
               <InfoCircleOutlined
@@ -240,51 +283,99 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
                 Indexing project
               </Link>
             </Typography>
-            <Form.List name={ProjectFormKey.networkEndpoints}>
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map((field, index) => (
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}
-                      key={field.name}
-                    >
-                      <Form.Item
-                        {...field}
-                        label={
-                          index === 0 ? (
-                            <div>
-                              Network Endpoints
-                              <NetworkEndpointsTooltip />
+            <Form.Item label="Host type" name="hostType">
+              <Radio.Group disabled={hostType !== 'un-resolved'}>
+                <Radio value="system-managed">System managed</Radio>
+                <Radio value="user-managed">User managed</Radio>
+              </Radio.Group>
+            </Form.Item>
+
+            {editHostType === 'user-managed' && (
+              <>
+                <Form.Item
+                  label="Node Endpoint"
+                  rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
+                  style={{ marginBottom: 10, flex: 1 }}
+                  name="nodeEndpoint"
+                >
+                  <Input placeholder="http://192.168.80.131:3000" />
+                </Form.Item>
+
+                <Form.Item
+                  label="Query Endpoint"
+                  rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
+                  style={{ marginBottom: 10, flex: 1 }}
+                  name="queryEndpoint"
+                >
+                  <Input placeholder="http://192.168.80.131:3001" />
+                </Form.Item>
+              </>
+            )}
+
+            {editHostType === 'system-managed' && (
+              <>
+                <Form.List name={ProjectFormKey.networkEndpoints}>
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map((field, index) => (
+                        <div
+                          style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}
+                          key={field.name}
+                        >
+                          <Form.Item
+                            {...field}
+                            label={
+                              index === 0 ? (
+                                <div>
+                                  Network Endpoints
+                                  <NetworkEndpointsTooltip />
+                                </div>
+                              ) : (
+                                ''
+                              )
+                            }
+                            key={field.key}
+                            rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
+                            style={{ marginBottom: 0, flex: 1 }}
+                          >
+                            <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
+                          </Form.Item>
+                          {index === 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <div className="ant-col ant-form-item-label">&nbsp;</div>
+                              <PlusCircleOutlined
+                                style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                                onClick={() => add()}
+                              />
                             </div>
                           ) : (
-                            ''
-                          )
-                        }
-                        key={field.key}
-                        rules={[getYupRule(ProjectFormKey.networkEndpoints)]}
-                        style={{ marginBottom: 0, flex: 1 }}
-                      >
-                        <Input placeholder="wss://polkadot.api.onfinality.io/public-ws" />
-                      </Form.Item>
-                      {index === 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <div className="ant-col ant-form-item-label">&nbsp;</div>
-                          <PlusCircleOutlined
-                            style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
-                            onClick={() => add()}
-                          />
+                            <MinusCircleOutlined
+                              style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
+                              onClick={() => remove(field.name)}
+                            />
+                          )}
                         </div>
-                      ) : (
-                        <MinusCircleOutlined
-                          style={{ fontSize: 18, color: 'var(--sq-blue600)', marginLeft: 14 }}
-                          onClick={() => remove(field.name)}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </>
-              )}
-            </Form.List>
+                      ))}
+                    </>
+                  )}
+                </Form.List>
+                <HorizonReverse>
+                  <Form.Item label="Override Dictionary" valuePropName="checked">
+                    <Switch onChange={onSwitchChange} checked={showInput} />
+                  </Form.Item>
+                </HorizonReverse>
+                {showInput && (
+                  <Item
+                    label="Dictionary Endpoint"
+                    name={ProjectFormKey.networkDictionary}
+                    rules={[getYupRule(ProjectFormKey.networkDictionary)]}
+                  >
+                    <Input placeholder="https://api.subquery.network/sq/subquery/dictionary-polkadot" />
+                  </Item>
+                )}
+              </>
+            )}
+
             <HorizeFormItem>
               <Form.Item
                 label="Rate Limit"
@@ -295,74 +386,64 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId }) => {
               </Form.Item>
               <Typography style={{ marginBottom: 24 }}>Requests/sec</Typography>
             </HorizeFormItem>
-            <HorizonReverse>
-              <Form.Item label="Override Dictionary" valuePropName="checked">
-                <Switch onChange={onSwitchChange} checked={showInput} />
-              </Form.Item>
-            </HorizonReverse>
 
-            {showInput && (
-              <Item
-                label="Dictionary Endpoint"
-                name={ProjectFormKey.networkDictionary}
-                rules={[getYupRule(ProjectFormKey.networkDictionary)]}
-              >
-                <Input placeholder="https://api.subquery.network/sq/subquery/dictionary-polkadot" />
-              </Item>
-            )}
-            <Row gutter={16}>
-              <Col span={12}>
-                <Item
-                  label="Indexer Version"
-                  name={ProjectFormKey.nodeVersion}
-                  rules={[getYupRule(ProjectFormKey.nodeVersion)]}
-                >
-                  <Select>{displayVersion(nodeVersions)}</Select>
-                </Item>
-              </Col>
-              <Col span={12}>
-                <Item
-                  label="Query Version"
-                  name={ProjectFormKey.queryVersion}
-                  rules={[getYupRule(ProjectFormKey.queryVersion)]}
-                >
-                  <Select>{displayVersion(queryVersions)}</Select>
-                </Item>
-              </Col>
-            </Row>
-            <RowReverse>
-              <Collapse defaultActiveKey="1">
-                <Collapse.Panel
-                  header={
-                    <Typography style={{ display: 'flex', alignItems: 'center' }}>
-                      <SketchOutlined
-                        style={{ fontSize: 16, color: 'var(--sq-blue600)', marginRight: 8 }}
-                      />
-                      Advanced Options
-                    </Typography>
-                  }
-                  key="1"
-                >
-                  {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
-                    <Form.Item
-                      key={id}
-                      name={name}
-                      label={label}
-                      tooltip={defaultTooltipProps(tooltip)}
+            {editHostType === 'system-managed' && (
+              <>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Item
+                      label="Indexer Version"
+                      name={ProjectFormKey.nodeVersion}
+                      rules={[getYupRule(ProjectFormKey.nodeVersion)]}
                     >
-                      <Slider
-                        min={min}
-                        max={max}
-                        marks={{
-                          [min]: min,
-                          [max]: max,
-                        }}
-                      />
-                    </Form.Item>
-                  ))}
-                </Collapse.Panel>
-              </Collapse>
-            </RowReverse>
+                      <Select>{displayVersion(nodeVersions)}</Select>
+                    </Item>
+                  </Col>
+                  <Col span={12}>
+                    <Item
+                      label="Query Version"
+                      name={ProjectFormKey.queryVersion}
+                      rules={[getYupRule(ProjectFormKey.queryVersion)]}
+                    >
+                      <Select>{displayVersion(queryVersions)}</Select>
+                    </Item>
+                  </Col>
+                </Row>
+                <RowReverse>
+                  <Collapse defaultActiveKey="1">
+                    <Collapse.Panel
+                      header={
+                        <Typography style={{ display: 'flex', alignItems: 'center' }}>
+                          <SketchOutlined
+                            style={{ fontSize: 16, color: 'var(--sq-blue600)', marginRight: 8 }}
+                          />
+                          Advanced Options
+                        </Typography>
+                      }
+                      key="1"
+                    >
+                      {advancedOptionsConfig.map(({ name, label, tooltip, min, max }, id) => (
+                        <Form.Item
+                          key={id}
+                          name={name}
+                          label={label}
+                          tooltip={defaultTooltipProps(tooltip)}
+                        >
+                          <Slider
+                            min={min}
+                            max={max}
+                            marks={{
+                              [min]: min,
+                              [max]: max,
+                            }}
+                          />
+                        </Form.Item>
+                      ))}
+                    </Collapse.Panel>
+                  </Collapse>
+                </RowReverse>
+              </>
+            )}
             <Form.Item>
               <ButtonContainer align="right" mt={30}>
                 <Button type="primary" onClick={() => form.submit()} shape="round" size="large">

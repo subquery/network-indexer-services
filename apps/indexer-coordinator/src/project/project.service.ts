@@ -56,11 +56,13 @@ import {
 } from './project.model';
 import {
   MmrStoreType,
+  HostType,
   ProjectType,
   SubqueryEndpointAccessType,
   SubqueryEndpointType,
   TemplateType,
 } from './types';
+import { validateNodeEndpoint, validateQueryEndpoint } from './validator/subquery.validator';
 
 @Injectable()
 export class ProjectService {
@@ -119,7 +121,9 @@ export class ProjectService {
     const payg = await this.paygRepo.findOneBy({ id });
     const metadata = await this.query.getQueryMetaData(
       id,
-      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node)?.value,
+      project.hostType
     );
 
     return { ...project, metadata, payg };
@@ -132,7 +136,9 @@ export class ProjectService {
     }
     return this.query.getQueryMetaData(
       id,
-      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Node)?.value,
+      project.hostType
     );
   }
 
@@ -251,6 +257,7 @@ export class ProjectService {
       status: DesiredStatus.STOPPED,
       chainType,
       projectType,
+      hostType: HostType.UN_RESOLVED,
       details: networkInfo,
       manifest,
     });
@@ -302,7 +309,8 @@ export class ProjectService {
   async startSubqueryProject(
     id: string,
     projectConfig: IProjectConfig,
-    rateLimit: number
+    rateLimit: number,
+    hostType: HostType
   ): Promise<Project> {
     let project = await this.getProject(id);
     if (!project) {
@@ -310,7 +318,19 @@ export class ProjectService {
     }
     if (project.rateLimit !== rateLimit) {
       project.rateLimit = rateLimit;
-      await this.projectRepo.save(project);
+      // await this.projectRepo.save(project);
+    }
+
+    if (project.hostType !== hostType) {
+      if (project.hostType !== HostType.UN_RESOLVED) {
+        throw new Error(`change host type is not allowed`);
+      }
+    }
+    project.hostType = hostType;
+    await this.projectRepo.save(project);
+    
+    if (project.hostType === HostType.USER_MANAGED) {
+      return await this.startUserManagedSubqueryProject(project, projectConfig);
     }
 
     this.setDefaultConfigValue(projectConfig);
@@ -329,6 +349,57 @@ export class ProjectService {
     }
 
     return await this.createAndStartSubqueryProject(id, projectConfig);
+  }
+
+  async startUserManagedSubqueryProject(
+    project: Project,
+    projectConfig: IProjectConfig
+  ): Promise<Project> {
+    const endpoints = projectConfig.serviceEndpoints || [];
+    const map = {};
+    endpoints.forEach((e) => {
+      map[e.key] = e.value;
+    });
+    if (!map[SubqueryEndpointType.Node] || !map[SubqueryEndpointType.Query]) {
+      throw new Error(`node or query endpoint not exist`);
+    }
+
+    let validate = null;
+    validate = await validateNodeEndpoint(map[SubqueryEndpointType.Node], project);
+    if (!validate.valid) {
+      throw new Error(`node endpoint invalid: ${validate.reason}`);
+    }
+
+    validate = await validateQueryEndpoint(map[SubqueryEndpointType.Query], project);
+    if (!validate.valid) {
+      throw new Error(`query endpoint invalid: ${validate.reason}`);
+    }
+
+    const adminUrl = new URL('admin', map[SubqueryEndpointType.Node]);
+    const nodeConfig = await nodeConfigs(project.id);
+    project.projectConfig = projectConfig;
+    project.serviceEndpoints = [
+      new SeviceEndpoint(
+        SubqueryEndpointType.Node,
+        map[SubqueryEndpointType.Node],
+        SubqueryEndpointAccessType[SubqueryEndpointType.Node]
+      ),
+      new SeviceEndpoint(
+        SubqueryEndpointType.Query,
+        map[SubqueryEndpointType.Query],
+        SubqueryEndpointAccessType[SubqueryEndpointType.Query]
+      ),
+      new SeviceEndpoint(
+        SubqueryEndpointType.Admin,
+        adminUrl.toString(),
+        SubqueryEndpointAccessType[SubqueryEndpointType.Admin]
+      ),
+    ];
+    project.status = DesiredStatus.RUNNING;
+    project.chainType = nodeConfig.chainType;
+
+    await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    return this.projectRepo.save(project);
   }
 
   private setDefaultConfigValue(projectConfig: IProjectConfig) {
@@ -459,8 +530,10 @@ export class ProjectService {
     }
 
     getLogger('project').info(`stop project: ${id}`);
-    await this.docker.stop(projectContainers(id));
-    await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    if (project.hostType === HostType.SYSTEM_MANAGED) {
+      await this.docker.stop(projectContainers(id));
+      await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: project });
+    }
     return this.updateProjectStatus(id, DesiredStatus.STOPPED);
   }
 
@@ -476,20 +549,21 @@ export class ProjectService {
     const project = await this.getProject(id);
     if (!project) return [];
 
-    const projectID = projectId(id);
-    // const rmPath = this.getRmPath(id);
+    if (project.hostType === HostType.SYSTEM_MANAGED) {
+      const projectID = projectId(id);
+      // const rmPath = this.getRmPath(id);
 
-    await this.docker.stop(projectContainers(id));
-    await this.docker.rm(projectContainers(id));
-    // this.rmrf([rmPath]);
-    await this.db.dropDBSchema(schemaName(projectID));
+      await this.docker.stop(projectContainers(id));
+      await this.docker.rm(projectContainers(id));
+      // this.rmrf([rmPath]);
+      await this.db.dropDBSchema(schemaName(projectID));
 
-    // release port
-    const port = getServicePort(
-      project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
-    );
-    this.portService.removePort(port);
-
+      // release port
+      const port = getServicePort(
+        project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query)?.value
+      );
+      this.portService.removePort(port);
+    }
     return this.projectRepo.remove([project]);
   }
 

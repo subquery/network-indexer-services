@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { isEmpty } from 'lodash';
 import fetch, { Response } from 'node-fetch';
 
-import { MetadataType, Project } from '../project/project.model';
+import { HostType } from 'src/project/types';
+import { MetadataType, NodeMetadataType, Project } from '../project/project.model';
 import { nodeContainer, queryContainer } from '../utils/docker';
 import { ZERO_BYTES32 } from '../utils/project';
 
@@ -62,8 +64,28 @@ export class QueryService {
     }
   }
 
-  async getQueryMetaData(id: string, endpoint: string): Promise<MetadataType> {
-    const { indexerStatus, queryStatus } = await this.servicesStatus(id);
+  async getQueryMetaData(
+    id: string,
+    queryEndpoint: string,
+    nodeEndpoint?: string,
+    hostType?: HostType
+  ): Promise<MetadataType> {
+    let indexerStatus: string = ServiceStatus.NotStarted;
+    let queryStatus: string = ServiceStatus.NotStarted;
+    if (hostType === HostType.SYSTEM_MANAGED) {
+      const status = await this.servicesStatus(id);
+      indexerStatus = status.indexerStatus;
+      queryStatus = status.queryStatus;
+    } else if (hostType === HostType.USER_MANAGED) {
+      if (nodeEndpoint) {
+        // indexerStatus = ServiceStatus.UnHealthy;
+        queryStatus = ServiceStatus.UnHealthy;
+        const nodeMetadata = await this.getNodeMetaData(nodeEndpoint);
+        indexerStatus =
+          nodeMetadata.targetHeight > 0 ? ServiceStatus.Healthy : ServiceStatus.UnHealthy;
+      }
+    }
+
     const queryBody = JSON.stringify({
       query: `{
         _metadata {
@@ -82,7 +104,7 @@ export class QueryService {
     });
 
     try {
-      const response = await this.queryRequest(endpoint, queryBody);
+      const response = await this.queryRequest(queryEndpoint, queryBody);
       const data = await response.json();
       const metadata = data.data._metadata;
 
@@ -114,6 +136,33 @@ export class QueryService {
         queryNodeVersion: '',
         indexerStatus,
         queryStatus,
+      };
+    }
+  }
+
+  async getNodeMetaData(endpoint: string): Promise<NodeMetadataType> {
+    try {
+      const url = new URL('meta', endpoint);
+      const response = await axios.get(url.toString(), {
+        timeout: 5000,
+      });
+      if (response.status !== 200) {
+        return {
+          currentProcessingTimestamp: 0,
+          targetHeight: 0,
+          startHeight: 0,
+          bestHeight: 0,
+          indexerNodeVersion: '',
+        };
+      }
+      return response.data as NodeMetadataType;
+    } catch (err) {
+      return {
+        currentProcessingTimestamp: 0,
+        targetHeight: 0,
+        startHeight: 0,
+        bestHeight: 0,
+        indexerNodeVersion: '',
       };
     }
   }
@@ -162,12 +211,13 @@ export class QueryService {
   async getValidPoi(project: Project): Promise<Poi> {
     const {
       id,
+      hostType,
       queryEndpoint,
       nodeEndpoint,
       advancedConfig: { poiEnabled },
     } = project;
 
-    const metadata = await this.getQueryMetaData(id, queryEndpoint);
+    const metadata = await this.getQueryMetaData(id, queryEndpoint, nodeEndpoint, hostType);
     const blockHeight = metadata.lastHeight;
     if (blockHeight === 0) return this.emptyPoi;
 

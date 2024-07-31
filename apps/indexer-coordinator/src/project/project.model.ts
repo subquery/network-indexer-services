@@ -3,7 +3,7 @@
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
-import { AccessType, ProjectType } from './types';
+import { AccessType, HostType, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -76,6 +76,34 @@ export class MetadataType {
   indexerStatus?: string;
   @Field({ nullable: true })
   queryStatus?: string;
+}
+
+@ObjectType('NodeMetadata')
+export class NodeMetadataType {
+  @Field()
+  currentProcessingTimestamp: number;
+  @Field()
+  targetHeight: number;
+  @Field()
+  startHeight: number;
+  @Field()
+  bestHeight: number;
+  @Field({ nullable: true })
+  indexerNodeVersion?: string;
+  @Field({ nullable: true })
+  uptime?: number;
+  @Field({ nullable: true })
+  processedBlockCount?: number;
+  @Field({ nullable: true })
+  apiConnected?: boolean;
+  @Field({ nullable: true })
+  usingDictionary?: boolean;
+  @Field({ nullable: true })
+  chain?: string;
+  @Field({ nullable: true })
+  specName?: string;
+  @Field({ nullable: true })
+  genesisHash?: string;
 }
 
 export interface IProjectBaseConfig {
@@ -151,6 +179,7 @@ export interface IProjectConfig {
   queryVersion: string;
   usePrimaryNetworkEndpoint?: boolean;
   poiEnabled: boolean;
+
   // subquery advanced config
   purgeDB?: boolean;
   timeout: number;
@@ -179,6 +208,10 @@ export class ProjectConfig implements IProjectConfig {
   usePrimaryNetworkEndpoint?: boolean;
   @Field()
   poiEnabled: boolean;
+  @Field({ nullable: true, defaultValue: '' })
+  indexerService?: string;
+  @Field({ nullable: true, defaultValue: '' })
+  queryService?: string;
   // subquery advanced config
   @Field({ nullable: true, defaultValue: false })
   purgeDB?: boolean;
@@ -286,6 +319,10 @@ export class ProjectEntity {
   @Column({ default: ProjectType.SUBQUERY })
   @Field()
   projectType: ProjectType;
+
+  @Column({ default: HostType.SYSTEM_MANAGED })
+  @Field()
+  hostType: HostType;
 
   @Column({ default: 0 })
   @Field()

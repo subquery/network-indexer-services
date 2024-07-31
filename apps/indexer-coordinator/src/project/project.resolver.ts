@@ -8,7 +8,7 @@ import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
-import { AggregatedManifest, RpcManifest } from './project.manifest';
+import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
 import {
   LogType,
   MetadataType,
@@ -25,10 +25,14 @@ import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
 import {
+  AccessType,
+  HostType,
   ProjectType,
   SubgraphEndpoint,
+  SubgraphEndpointAccessType,
   SubgraphEndpointType,
   SubgraphPort,
+  SubqueryEndpointAccessType,
   SubqueryEndpointType,
 } from './types';
 
@@ -63,7 +67,9 @@ export class ProjectResolver {
         project = await this.projectService.getProject(id);
         return this.queryService.getQueryMetaData(
           id,
-          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value
+          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value,
+          project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Node)?.value,
+          project?.hostType,
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
@@ -130,17 +136,20 @@ export class ProjectResolver {
     const projects: ProjectWithStats[] = [];
     const aliveProjects = await this.projectService.getAliveProjects();
     for (const project of aliveProjects) {
+      let extra = {};
       if (project.projectType === ProjectType.SUBQUERY) {
         const dbSize = await this.dbStatsService.getProjectDbStats(project.id);
-        projects.push({ ...project, dbSize: dbSize?.size });
-      } else {
-        const serviceEndpoints = project.serviceEndpoints;
+
+        for (const endpoint of project.serviceEndpoints) {
+          endpoint.access = endpoint.access || SubqueryEndpointAccessType[endpoint.key];
+        }
+        extra = { dbSize: dbSize?.size };
+        // projects.push({ ...project, dbSize: dbSize?.size });
+      } else if (project.projectType === ProjectType.RPC) {
         const manifest = project.manifest as RpcManifest;
-        for (const endpoint of serviceEndpoints) {
-          endpoint.isWebsocket =
-            (project.projectType === ProjectType.SUBGRAPH &&
-              endpoint.key === SubgraphEndpointType.WsEndpoint) ||
-            endpoint.key.endsWith('Ws');
+        for (const endpoint of project.serviceEndpoints) {
+          endpoint.access = endpoint.access || AccessType.DEFAULT;
+          endpoint.isWebsocket = endpoint.isWebsocket || endpoint.key.endsWith('Ws');
           if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
             continue;
           }
@@ -149,8 +158,23 @@ export class ProjectResolver {
           }
           endpoint.rpcFamily = manifest.rpcFamily;
         }
-        projects.push(project);
+      } else if (project.projectType === ProjectType.SUBGRAPH) {
+        const manifest = project.manifest as SubgraphManifest;
+        for (const endpoint of project.serviceEndpoints) {
+          endpoint.access = endpoint.access || SubgraphEndpointAccessType[endpoint.key];
+          endpoint.isWebsocket =
+            endpoint.isWebsocket || endpoint.key === SubgraphEndpointType.WsEndpoint;
+
+          if (!manifest.rpcFamily || manifest.rpcFamily.length === 0) {
+            continue;
+          }
+          if (endpoint.rpcFamily?.length > 0) {
+            continue;
+          }
+          endpoint.rpcFamily = manifest.rpcFamily;
+        }
       }
+      projects.push(Object.assign(project, extra));
     }
     return projects;
   }
@@ -244,14 +268,20 @@ export class ProjectResolver {
     @Args('id') id: string,
     @Args('projectConfig') projectConfig: ProjectConfig,
     @Args('rateLimit', { nullable: true }) rateLimit?: number,
-    @Args('projectType', { nullable: true }) projectType?: ProjectType
+    @Args('projectType', { nullable: true }) projectType?: ProjectType,
+    @Args('hostType', { nullable: true }) hostType?: HostType
   ): Promise<Project> {
     if (projectType === undefined) {
       projectType = await this.projectService.getProjectType(id);
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
-        return this.projectService.startSubqueryProject(id, projectConfig, rateLimit ?? 0);
+        return this.projectService.startSubqueryProject(
+          id,
+          projectConfig,
+          rateLimit ?? 0,
+          hostType
+        );
       case ProjectType.RPC:
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.SUBGRAPH:
