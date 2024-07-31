@@ -669,6 +669,16 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             if let Some(access) = &endpoint.access {
                 is_internal = access == "internal";
                 is_default = access == "default";
+            } else {
+                match endpoint.key.as_str() {
+                    "evmHttp"| "polkadotHttp" | "queryEndpoint" | "http-endpoint" => {
+                        is_default = true;
+                    }
+                    "nodeEndpoint" | "index-node-endpoint" | "adminEndpoint" | "admin-endpoint" => {
+                        is_internal = true;
+                    }
+                    _ => {}
+                }
             }
 
             let is_ws = endpoint.ws;
