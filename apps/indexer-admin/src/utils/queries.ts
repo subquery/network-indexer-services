@@ -610,7 +610,7 @@ export interface IGetAllIntegration {
   allIntegration: {
     id: string;
     serviceEndpoints: { key: string; value: string }[];
-    models: { name: string; status: 'normal' | 'loaded' | 'pulling' }[];
+    models: { name: string; status: 'normal' | 'loaded' | 'pulling' | 'notReady' }[];
   }[];
 }
 

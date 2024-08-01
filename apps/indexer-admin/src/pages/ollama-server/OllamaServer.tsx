@@ -67,8 +67,14 @@ export const PullingStatus: FC<{
     pullingProgress.data?.getPullingProgress?.total,
   ]);
 
+  const tagColor = useMemo(() => {
+    if (model.status === 'pulling') return 'info';
+    if (model.status === 'notReady') return 'error';
+    return 'success';
+  }, [model.status]);
+
   return (
-    <Tag color={model.status === 'pulling' ? 'info' : 'success'}>
+    <Tag color={tagColor}>
       {model.status} {model.status === 'pulling' ? `${progress}%` : ''}
     </Tag>
   );

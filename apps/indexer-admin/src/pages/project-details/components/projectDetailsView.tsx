@@ -86,7 +86,7 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
   });
 
   useEffect(() => {
-    if (project.projectType === ProjectType.Rpc) {
+    if (project.projectType === ProjectType.Rpc || project.projectType === ProjectType.LLM) {
       getManifest({
         variables: {
           projectId: project.id,
@@ -165,6 +165,38 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
                 </Typography>
                 <Typography variant="medium">
                   {manifest.data?.getManifest.rpcManifest?.nodeType}
+                </Typography>
+              </div>
+            </div>
+          </>
+        )}
+        {project.projectType === ProjectType.LLM && (
+          <>
+            <SplitLine />
+            <Typography>LLM Details</Typography>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Model:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.llmManifest?.model?.name}
+                </Typography>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  Runner:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.llmManifest?.runner.name}
+                </Typography>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Typography type="secondary" variant="medium">
+                  System prompt:
+                </Typography>
+                <Typography variant="medium">
+                  {manifest.data?.getManifest.llmManifest?.runner.system}
                 </Typography>
               </div>
             </div>
