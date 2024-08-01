@@ -36,10 +36,7 @@ export const PullingStatus: FC<{
       },
     });
 
-    if (
-      res.data?.getPullingProgress?.status &&
-      res.data?.getPullingProgress?.status !== 'success'
-    ) {
+    if (res.data?.getPullingProgress?.status !== 'success') {
       await sleep(1000);
       fetchPullingProcess();
     } else {
