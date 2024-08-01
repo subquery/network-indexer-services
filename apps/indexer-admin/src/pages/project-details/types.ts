@@ -148,6 +148,10 @@ export type TQueryMetadata = {
   indexerStatus: dockerContainerStatus;
   queryStatus: dockerContainerStatus;
   startHeight?: number;
+  model?: {
+    name: string;
+    status: 'pulling' | 'normal' | 'loaded';
+  };
 };
 
 export type ProjectDetails = {

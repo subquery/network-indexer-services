@@ -5,6 +5,8 @@ import { FC, useMemo, useState } from 'react';
 import { Typography } from '@subql/components';
 import { Button, Drawer, Skeleton } from 'antd';
 
+import { PullingStatus } from 'pages/ollama-server/OllamaServer';
+
 import { CardContainer } from '../styles';
 import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
 import LlmSettings from './llmSetting';
@@ -107,6 +109,22 @@ const ProjectLlmServicesCard: FC<Props> = ({ project, metadata, projectStatus, r
             </div>
           );
         })}
+        <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography type="secondary">{metadata.model?.name}</Typography>
+          </div>
+          <PullingStatus
+            model={metadata.model || { name: '', status: 'pulling' }}
+            integration={{
+              id: '1',
+              models: [metadata.model || { name: '', status: 'pulling' }],
+              serviceEndpoints: project.projectConfig.serviceEndpoints,
+            }}
+            onRefresh={refresh}
+          />
+        </div>
 
         {project.projectConfig.serviceEndpoints.length ? (
           <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />

@@ -285,6 +285,10 @@ export const GET_QUERY_METADATA = gql`
       queryNodeVersion
       indexerStatus
       queryStatus
+      model {
+        name
+        status
+      }
     }
   }
 `;
@@ -606,7 +610,7 @@ export interface IGetAllIntegration {
   allIntegration: {
     id: string;
     serviceEndpoints: { key: string; value: string }[];
-    models: { name: string; status: 'normal' | 'loaded' }[];
+    models: { name: string; status: 'normal' | 'loaded' | 'pulling' }[];
   }[];
 }
 
@@ -646,6 +650,30 @@ export const REMOVE_INTEGRATION = gql`
   mutation ($id: Float!) {
     deleteIntegration(id: $id) {
       id
+    }
+  }
+`;
+
+export interface IGetPullingProgress {
+  getPullingProgress: {
+    name: string;
+    status: 'success' | string;
+    host: string;
+    digest: string;
+    total: number;
+    completed: number;
+  };
+}
+
+export const GET_PULLING_PROGRESS = gql`
+  query getPullingProgress($host: String!, $model: String!) {
+    getPullingProgress(host: $host, model: $model) {
+      name
+      status
+      host
+      digest
+      total
+      completed
     }
   }
 `;

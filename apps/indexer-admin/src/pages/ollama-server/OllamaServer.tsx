@@ -1,20 +1,78 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { PlusCircleOutlined } from '@ant-design/icons';
-import { useMutation, useQuery } from '@apollo/client';
-import { Modal, openNotification, Typography } from '@subql/components';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { Modal, openNotification, Tag, Typography } from '@subql/components';
 import { Button, Collapse, Form, Input, Table } from 'antd';
 import { useForm } from 'antd/es/form/Form';
+import { floor } from 'lodash';
 
 import {
   ADD_INTEGRATION,
   GET_ALL_INTEGRATION,
+  GET_PULLING_PROGRESS,
   IGetAllIntegration,
+  IGetPullingProgress,
   REMOVE_INTEGRATION,
   REMOVE_MODEL,
 } from 'utils/queries';
+import { sleep } from 'utils/waitForSomething';
+
+export const PullingStatus: FC<{
+  model: IGetAllIntegration['allIntegration'][number]['models'][number];
+  integration: IGetAllIntegration['allIntegration'][number];
+  onRefresh: () => void;
+}> = ({ model, integration, onRefresh }) => {
+  const ifFetchingProcess = useRef(false);
+  const [getPullingProgress, pullingProgress] =
+    useLazyQuery<IGetPullingProgress>(GET_PULLING_PROGRESS);
+  const fetchPullingProcess = async () => {
+    const res = await getPullingProgress({
+      variables: {
+        host: integration.serviceEndpoints?.[0]?.value,
+        model: model.name,
+      },
+    });
+
+    if (
+      res.data?.getPullingProgress?.status &&
+      res.data?.getPullingProgress?.status !== 'success'
+    ) {
+      await sleep(1000);
+      fetchPullingProcess();
+    } else {
+      onRefresh?.();
+    }
+  };
+
+  useEffect(() => {
+    if (model.status === 'pulling' && !ifFetchingProcess.current) {
+      ifFetchingProcess.current = true;
+      fetchPullingProcess();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model.status]);
+
+  const progress = useMemo(() => {
+    return floor(
+      (+(pullingProgress.data?.getPullingProgress?.completed || 1) /
+        +(pullingProgress.data?.getPullingProgress?.total || 1)) *
+        100,
+      2
+    );
+  }, [
+    pullingProgress.data?.getPullingProgress?.completed,
+    pullingProgress.data?.getPullingProgress?.total,
+  ]);
+
+  return (
+    <Tag color={model.status === 'pulling' ? 'info' : 'success'}>
+      {model.status} {model.status === 'pulling' ? `${progress}%` : ''}
+    </Tag>
+  );
+};
 
 const OllamaServer: FC = () => {
   const [open, setOpen] = useState(false);
@@ -178,6 +236,15 @@ const OllamaServer: FC = () => {
                       key: 'status',
                       title: 'Status',
                       dataIndex: 'status',
+                      render: (_, record) => {
+                        return (
+                          <PullingStatus
+                            model={record}
+                            integration={integration}
+                            onRefresh={allIntegration.refetch}
+                          />
+                        );
+                      },
                     },
                     {
                       key: 'action',
