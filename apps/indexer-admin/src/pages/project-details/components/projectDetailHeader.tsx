@@ -38,6 +38,7 @@ const projectTitleDict: { [key: number]: React.ReactNode } = {
       Subgraph
     </Tag>
   ),
+  [ProjectType.LLM]: 'LLM',
 };
 
 const ProjectDetailsHeader: FC<Props> = ({

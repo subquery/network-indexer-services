@@ -109,22 +109,30 @@ const ProjectLlmServicesCard: FC<Props> = ({ project, metadata, projectStatus, r
             </div>
           );
         })}
-        <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+        {project.projectConfig.serviceEndpoints.length ? (
+          <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
+        ) : (
+          ''
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Typography type="secondary">{metadata.model?.name}</Typography>
+        {metadata.model ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Typography type="secondary">{metadata.model?.name}</Typography>
+            </div>
+            <PullingStatus
+              model={metadata.model || { name: '', status: 'pulling' }}
+              integration={{
+                id: '1',
+                models: [metadata.model || { name: '', status: 'pulling' }],
+                serviceEndpoints: project.projectConfig.serviceEndpoints,
+              }}
+              onRefresh={refresh}
+            />
           </div>
-          <PullingStatus
-            model={metadata.model || { name: '', status: 'pulling' }}
-            integration={{
-              id: '1',
-              models: [metadata.model || { name: '', status: 'pulling' }],
-              serviceEndpoints: project.projectConfig.serviceEndpoints,
-            }}
-            onRefresh={refresh}
-          />
-        </div>
+        ) : (
+          ''
+        )}
 
         {project.projectConfig.serviceEndpoints.length ? (
           <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
