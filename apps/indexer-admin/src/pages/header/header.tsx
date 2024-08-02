@@ -19,6 +19,7 @@ enum TabbarItem {
   network = 'Network',
   projects = 'Projects',
   config = 'Config',
+  ollamaServer = 'LLM Server',
 }
 
 const TabBar = styled(NavLink)`
@@ -98,6 +99,9 @@ const Header = () => {
         )}
         <TabBar to="/config" activeStyle={activeStyle}>
           {TabbarItem.config}
+        </TabBar>
+        <TabBar to="/ollama-server" activeStyle={activeStyle}>
+          {TabbarItem.ollamaServer}
         </TabBar>
       </div>
     );

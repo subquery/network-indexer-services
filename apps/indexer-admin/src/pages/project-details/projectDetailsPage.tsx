@@ -29,6 +29,7 @@ import { isTrue } from 'utils/project';
 import { REMOVE_PROJECT, START_PROJECT, STOP_PROJECT } from 'utils/queries';
 
 import ProjectDetailsHeader from './components/projectDetailHeader';
+import ProjectLlmServicesCard from './components/projectLLMServicesCard';
 import ProjectRpcServiceCard from './components/projectRpcServiceCard';
 import ProjectServiceCard from './components/projectServiceCard';
 import ProjectStatusView from './components/projectStatusView';
@@ -374,7 +375,19 @@ const ProjectDetailsPage = () => {
                 }}
               />
             )}
-            <ProjectStatusView percent={progress} metadata={metadata} />
+            {project.projectType === ProjectType.LLM && (
+              <ProjectLlmServicesCard
+                project={project}
+                metadata={metadata}
+                projectStatus={projectStatus}
+                refresh={() => {
+                  projectQuery.refetch();
+                }}
+              />
+            )}
+            {project.projectType !== ProjectType.LLM && (
+              <ProjectStatusView percent={progress} metadata={metadata} />
+            )}
             <ProjectUptime />
             {projectDetails && (
               <ProjectTabbarView id={id} project={project} config={projectDetails} />

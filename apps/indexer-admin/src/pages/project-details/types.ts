@@ -45,6 +45,7 @@ export enum ProjectType {
   Rpc = 1,
   Dictionary = 2,
   SubGraph = 3,
+  LLM = 4,
 }
 
 export type TransactionType = ProjectAction.AnnounceReady | ProjectAction.AnnounceTerminating;
@@ -147,6 +148,10 @@ export type TQueryMetadata = {
   indexerStatus: dockerContainerStatus;
   queryStatus: dockerContainerStatus;
   startHeight?: number;
+  model?: {
+    name: string;
+    status: 'pulling' | 'normal' | 'loaded';
+  };
 };
 
 export type ProjectDetails = {
