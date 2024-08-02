@@ -3,7 +3,7 @@
 
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SeviceEndpoint } from '../project/project.model';
-import { IntegrationType, LLMConfig, LLMExtra } from '../project/types';
+import { IntegrationType, LLMConfig, LLMExtra, LLMModelPullResult } from '../project/types';
 import { IntegrationEntity } from './integration.model';
 import { IntegrationService } from './integration.service';
 
@@ -40,5 +40,25 @@ export class IntegrationResolver {
     @Args('extra', { nullable: true }) extra?: LLMExtra
   ): Promise<IntegrationEntity> {
     return this.integrationService.update(id, title, serviceEndpoints, enabled, config, extra);
+  }
+
+  @Mutation(() => IntegrationEntity)
+  deleteIntegration(@Args('id') id: number): Promise<IntegrationEntity> {
+    return this.integrationService.delete(id);
+  }
+
+  @Mutation(() => IntegrationEntity)
+  deleteModel(@Args('id') id: number, @Args('name') name: string): Promise<IntegrationEntity> {
+    return this.integrationService.deleteModel(id, name);
+  }
+
+  @Mutation(() => IntegrationEntity)
+  pullModel(@Args('id') id: number, @Args('name') name: string): Promise<IntegrationEntity> {
+    return this.integrationService.pullModel(id, name);
+  }
+
+  @Query(() => [LLMModelPullResult])
+  inspectDownload(): LLMModelPullResult[] {
+    return this.integrationService.inspectDownload();
   }
 }

@@ -143,4 +143,6 @@ export class AggregatedManifest {
   rpcManifest?: RpcManifest;
   @Field(() => SubgraphManifest, { nullable: true })
   subgraphManifest?: SubgraphManifest;
+  @Field(() => LLMManifest, { nullable: true })
+  llmManifest?: LLMManifest;
 }

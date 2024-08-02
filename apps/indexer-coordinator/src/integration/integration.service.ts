@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProjectLLMService } from '../project/project.llm.service';
 import { SeviceEndpoint, ValidationResponse } from '../project/project.model';
-import { IntegrationType, LLMConfig, LLMExtra } from '../project/types';
+import { IntegrationType, LLMConfig, LLMExtra, LLMModelPullResult } from '../project/types';
 import { IntegrationEntity } from './integration.model';
 
 @Injectable()
@@ -22,7 +22,16 @@ export class IntegrationService {
   }
 
   async getAll(): Promise<IntegrationEntity[]> {
-    return this.integrationRepo.find();
+    const integrations = await this.integrationRepo.find();
+
+    for (const it of integrations) {
+      if (it.type === IntegrationType.LLM && it.serviceEndpoints.length > 0) {
+        const models = await this.projectLLMService.getModels(it.serviceEndpoints[0].value);
+        it.models = models;
+      }
+    }
+
+    return integrations;
   }
 
   async create(
@@ -98,5 +107,41 @@ export class IntegrationService {
     integration.config = config || {};
     integration.extra = extra || {};
     return this.integrationRepo.save(integration);
+  }
+
+  async delete(id: number): Promise<IntegrationEntity> {
+    const integration = await this.integrationRepo.findOne({ where: { id } });
+    if (!integration) return;
+    return this.integrationRepo.remove(integration);
+  }
+
+  async deleteModel(id: number, name: string): Promise<IntegrationEntity> {
+    const integration = await this.integrationRepo.findOne({ where: { id } });
+    if (!integration) {
+      throw new Error(`${id} not exist`);
+    }
+    if (integration.type !== IntegrationType.LLM) {
+      throw new Error(`${id} not supported`);
+    }
+    const host = integration.serviceEndpoints[0].value;
+    await this.projectLLMService.deleteModel(host, name);
+    return integration;
+  }
+
+  async pullModel(id: number, name: string) {
+    const integration = await this.integrationRepo.findOne({ where: { id } });
+    if (!integration) {
+      throw new Error(`${id} not exist`);
+    }
+    if (integration.type !== IntegrationType.LLM) {
+      throw new Error(`${id} not supported`);
+    }
+    const host = integration.serviceEndpoints[0].value;
+    this.projectLLMService.pullModel(host, name);
+    return integration;
+  }
+
+  inspectDownload(): LLMModelPullResult[] {
+    return this.projectLLMService.inspectPullingProgress();
   }
 }

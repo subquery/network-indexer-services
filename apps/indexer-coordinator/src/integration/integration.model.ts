@@ -11,7 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { SeviceEndpoint } from '../project/project.model';
-import { IntegrationType } from '../project/types';
+import { IntegrationType, LLMModel } from '../project/types';
 
 @Entity('integration')
 @Index(['title'], { unique: true })
@@ -32,6 +32,9 @@ export class IntegrationEntity {
   @Column('jsonb', { default: {} })
   @Field(() => [SeviceEndpoint], { nullable: true })
   serviceEndpoints: SeviceEndpoint[];
+
+  @Field(() => [LLMModel], { nullable: true })
+  models: LLMModel[];
 
   @Column({ type: 'boolean', default: false })
   @Field()

@@ -22,6 +22,43 @@ export enum IntegrationType {
   LLM,
 }
 
+export enum LLMModelStatus {
+  NOT_READY = 'notReady',
+  NORMAL = 'normal',
+  PULLING = 'pulling',
+  LOADED = 'loaded',
+}
+
+@ObjectType()
+export class LLMModelPullResult {
+  @Field()
+  name: string;
+  @Field()
+  status: string;
+  @Field({ nullable: true })
+  host?: string;
+  @Field({ nullable: true })
+  digest?: string;
+  @Field({ nullable: true })
+  total?: number;
+  @Field({ nullable: true })
+  completed?: number;
+}
+
+@ObjectType()
+export class LLMModel {
+  @Field()
+  name: string;
+  @Field({ nullable: true })
+  size?: number;
+  @Field({ nullable: true })
+  digest?: string;
+  @Field()
+  status: LLMModelStatus;
+  @Field({ nullable: true })
+  pullStatus?: LLMModelPullResult;
+}
+
 @InputType()
 @ObjectType()
 export class LLMConfig {

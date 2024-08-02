@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn, BeforeInsert, PrimaryGeneratedColumn } from 'typeorm';
-import { AccessType, HostType, IntegrationType, ProjectType } from './types';
+import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
+import { AccessType, HostType, LLMModel, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -76,6 +76,8 @@ export class MetadataType {
   indexerStatus?: string;
   @Field({ nullable: true })
   queryStatus?: string;
+  @Field({ nullable: true })
+  model?: LLMModel;
 }
 
 export interface IProjectBaseConfig {

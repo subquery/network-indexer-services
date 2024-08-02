@@ -28,6 +28,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
 import {
   AccessType,
   HostType,
+  LLMModelPullResult,
   ProjectType,
   SubgraphEndpoint,
   SubgraphEndpointAccessType,
@@ -63,7 +64,9 @@ export class ProjectResolver {
   ) {
     let project: Project;
     if (projectType === undefined) {
-      projectType = await this.projectService.getProjectType(id);
+      // todo: remove
+      // projectType = await this.projectService.getProjectType(id);
+      projectType = ProjectType.LLM;
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
@@ -77,6 +80,8 @@ export class ProjectResolver {
         return this.projectRpcService.getRpcMetadata(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.getSubgraphMetadata(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.getLLMMetadata(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -125,6 +130,11 @@ export class ProjectResolver {
             return {
               ...project,
               metadata: await this.projectSubgraphService.getSubgraphMetadata(project.id),
+            };
+          case ProjectType.LLM:
+            return {
+              ...project,
+              metadata: await this.projectLLMService.getLLMMetadata(project.id),
             };
           default:
             throw new Error(`Unknown project type ${project.projectType}`);
@@ -193,7 +203,9 @@ export class ProjectResolver {
   ): Promise<AggregatedManifest> {
     const manifest = new AggregatedManifest();
     if (projectType === undefined) {
-      projectType = await this.projectService.getProjectType(projectId);
+      // todo: remove
+      // projectType = await this.projectService.getProjectType(projectId);
+      projectType = ProjectType.LLM;
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
@@ -204,6 +216,9 @@ export class ProjectResolver {
         break;
       case ProjectType.SUBGRAPH:
         manifest.subgraphManifest = await this.projectService.getManifest(projectId);
+        break;
+      case ProjectType.LLM:
+        manifest.llmManifest = await this.projectService.getManifest(projectId);
         break;
       default:
         throw new Error(`Unknown project type ${projectType}`);
@@ -372,6 +387,14 @@ export class ProjectResolver {
   @Query(() => String)
   async getProjectDbSize(@Args('id') id: string): Promise<string> {
     return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
+  }
+
+  @Query(() => LLMModelPullResult, { nullable: true })
+  getPullingProgress(
+    @Args('host') host: string,
+    @Args('model') model: string
+  ): LLMModelPullResult {
+    return this.projectLLMService.getPullingProgress(host, model);
   }
 
   @Subscription(() => String)
