@@ -14,6 +14,63 @@ export enum ProjectType {
   RPC,
   DICTIONARY,
   SUBGRAPH,
+  LLM,
+}
+
+export enum IntegrationType {
+  SUBGRAPH,
+  LLM,
+}
+
+export enum LLMModelStatus {
+  NOT_READY = 'notReady',
+  NORMAL = 'normal',
+  PULLING = 'pulling',
+  LOADED = 'loaded',
+}
+
+@ObjectType()
+export class LLMModelPullResult {
+  @Field()
+  name: string;
+  @Field()
+  status: string;
+  @Field({ nullable: true })
+  host?: string;
+  @Field({ nullable: true })
+  digest?: string;
+  @Field({ nullable: true })
+  total?: number;
+  @Field({ nullable: true })
+  completed?: number;
+}
+
+@ObjectType()
+export class LLMModel {
+  @Field()
+  name: string;
+  @Field({ nullable: true })
+  size?: number;
+  @Field({ nullable: true })
+  digest?: string;
+  @Field()
+  status: LLMModelStatus;
+  @Field({ nullable: true })
+  pullStatus?: LLMModelPullResult;
+}
+
+@InputType()
+@ObjectType()
+export class LLMConfig {
+  @Field()
+  foo: string;
+}
+
+@InputType()
+@ObjectType()
+export class LLMExtra {
+  @Field()
+  bar: string;
 }
 
 export enum HostType {
@@ -60,12 +117,20 @@ export enum SubgraphEndpointType {
   MetricsEndpoint = 'metrics-endpoint',
 }
 
+export enum LLMEndpointType {
+  ApiGenerateEndpoint = 'api-generate-endpoint',
+}
+
 export const SubgraphEndpointAccessType = {
   [SubgraphEndpointType.HttpEndpoint]: AccessType.DEFAULT,
   [SubgraphEndpointType.WsEndpoint]: AccessType.DEFAULT,
   [SubgraphEndpointType.AdminEndpoint]: AccessType.INTERNAL,
   [SubgraphEndpointType.IndexNodeEndpoint]: AccessType.INTERNAL,
   [SubgraphEndpointType.MetricsEndpoint]: AccessType.INTERNAL,
+};
+
+export const LLMEndpointAccessType = {
+  [LLMEndpointType.ApiGenerateEndpoint]: AccessType.DEFAULT,
 };
 
 @InputType('SubgraphPort')

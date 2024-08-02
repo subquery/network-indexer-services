@@ -17,6 +17,7 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
+import { ProjectLLMService } from './project.llm.service';
 
 @Module({
   imports: [
@@ -33,8 +34,9 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     ProjectResolver,
     ProjectRpcService,
     ProjectSubgraphService,
+    ProjectLLMService,
     DbStatsService,
   ],
-  exports: [ProjectService, ProjectRpcService],
+  exports: [ProjectService, ProjectRpcService, ProjectLLMService],
 })
 export class ProjectModule {}

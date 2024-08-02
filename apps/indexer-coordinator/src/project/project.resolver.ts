@@ -6,8 +6,9 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { DockerRegistry, DockerRegistryService } from '../core/docker.registry.service';
 import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { ProjectEvent } from '../utils/subscription';
+import { OllamaEvent, ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
+import { ProjectLLMService } from './project.llm.service';
 import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
 import {
   LogType,
@@ -27,6 +28,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
 import {
   AccessType,
   HostType,
+  LLMModelPullResult,
   ProjectType,
   SubgraphEndpoint,
   SubgraphEndpointAccessType,
@@ -42,6 +44,7 @@ export class ProjectResolver {
     private projectService: ProjectService,
     private projectRpcService: ProjectRpcService,
     private projectSubgraphService: ProjectSubgraphService,
+    private projectLLMService: ProjectLLMService,
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService,
@@ -60,7 +63,9 @@ export class ProjectResolver {
   ) {
     let project: Project;
     if (projectType === undefined) {
-      projectType = await this.projectService.getProjectType(id);
+      // todo: remove
+      // projectType = await this.projectService.getProjectType(id);
+      projectType = ProjectType.LLM;
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
@@ -75,6 +80,8 @@ export class ProjectResolver {
         return this.projectRpcService.getRpcMetadata(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.getSubgraphMetadata(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.getLLMMetadata(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -123,6 +130,11 @@ export class ProjectResolver {
             return {
               ...project,
               metadata: await this.projectSubgraphService.getSubgraphMetadata(project.id),
+            };
+          case ProjectType.LLM:
+            return {
+              ...project,
+              metadata: await this.projectLLMService.getLLMMetadata(project.id),
             };
           default:
             throw new Error(`Unknown project type ${project.projectType}`);
@@ -191,7 +203,9 @@ export class ProjectResolver {
   ): Promise<AggregatedManifest> {
     const manifest = new AggregatedManifest();
     if (projectType === undefined) {
-      projectType = await this.projectService.getProjectType(projectId);
+      // todo: remove
+      // projectType = await this.projectService.getProjectType(projectId);
+      projectType = ProjectType.LLM;
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
@@ -202,6 +216,9 @@ export class ProjectResolver {
         break;
       case ProjectType.SUBGRAPH:
         manifest.subgraphManifest = await this.projectService.getManifest(projectId);
+        break;
+      case ProjectType.LLM:
+        manifest.llmManifest = await this.projectService.getManifest(projectId);
         break;
       default:
         throw new Error(`Unknown project type ${projectType}`);
@@ -286,6 +303,8 @@ export class ProjectResolver {
         return this.projectRpcService.startRpcProject(id, projectConfig, rateLimit ?? 0);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.startSubgraphProject(id, projectConfig, rateLimit ?? 0);
+      case ProjectType.LLM:
+        return this.projectLLMService.startLLMProject(id, projectConfig, rateLimit ?? 0);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -306,6 +325,8 @@ export class ProjectResolver {
         return this.projectRpcService.stopRpcProject(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.stopSubgraphProject(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.stopLLMProject(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -326,6 +347,8 @@ export class ProjectResolver {
         return this.projectRpcService.removeRpcProject(id);
       case ProjectType.SUBGRAPH:
         return this.projectSubgraphService.removeSubgraphProject(id);
+      case ProjectType.LLM:
+        return this.projectLLMService.removeLLMProject(id);
       default:
         throw new Error(`Unknown project type ${projectType}`);
     }
@@ -364,5 +387,18 @@ export class ProjectResolver {
   @Query(() => String)
   async getProjectDbSize(@Args('id') id: string): Promise<string> {
     return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
+  }
+
+  @Query(() => LLMModelPullResult, { nullable: true })
+  getPullingProgress(
+    @Args('host') host: string,
+    @Args('model') model: string
+  ): LLMModelPullResult {
+    return this.projectLLMService.getPullingProgress(host, model);
+  }
+
+  @Subscription(() => String)
+  progressChanged() {
+    return this.pubSub.asyncIterator(OllamaEvent.PullProgress);
   }
 }
