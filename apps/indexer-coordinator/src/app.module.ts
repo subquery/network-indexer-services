@@ -28,6 +28,7 @@ import { ProjectModule } from './project/project.module';
 import { RewardModule } from './reward/reward.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { IntegrationModule } from './integration/integration.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     NetworkModule,
     RewardModule,
     ConfigModule,
+    IntegrationModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })

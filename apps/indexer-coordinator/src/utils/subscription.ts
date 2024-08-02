@@ -16,3 +16,7 @@ export enum AccountEvent {
   Indexer = 'account_indexer',
   Controller = 'account_controller',
 }
+
+export enum OllamaEvent {
+  PullProgress = 'pull_progress',
+}

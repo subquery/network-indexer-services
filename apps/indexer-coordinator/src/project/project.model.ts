@@ -3,7 +3,7 @@
 
 import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn, BeforeInsert } from 'typeorm';
-import { AccessType, HostType, ProjectType } from './types';
+import { AccessType, HostType, LLMModel, ProjectType } from './types';
 
 // TODO: temp place to put these types
 @ObjectType('ProjectInfo')
@@ -76,6 +76,8 @@ export class MetadataType {
   indexerStatus?: string;
   @Field({ nullable: true })
   queryStatus?: string;
+  @Field({ nullable: true })
+  model?: LLMModel;
 }
 
 @ObjectType('NodeMetadata')

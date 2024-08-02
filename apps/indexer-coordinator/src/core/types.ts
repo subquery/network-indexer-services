@@ -6,6 +6,9 @@ import { BigNumber, ContractTransaction, Overrides } from 'ethers';
 export enum DesiredStatus {
   STOPPED,
   RUNNING,
+
+  // LLM
+  PULLING,
 }
 
 export enum IndexerDeploymentStatus {

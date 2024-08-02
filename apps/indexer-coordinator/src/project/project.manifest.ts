@@ -95,6 +95,46 @@ export class SubgraphManifest {
   computeUnit?: ComputeUnitClass[];
 }
 
+@ObjectType('ModelClass')
+class ModelClass {
+  @Field(() => String, { nullable: true })
+  name?: string;
+  @Field(() => String, { nullable: true })
+  file?: string;
+}
+
+@ObjectType('ParameterClass')
+class ParameterClass {
+  @Field(() => Number, { nullable: true })
+  temperature?: number;
+  @Field(() => Number, { nullable: true })
+  num_ctx?: number;
+}
+
+@ObjectType('RunnerClass')
+class RunnerClass {
+  @Field(() => String, { nullable: true })
+  name?: string;
+  @Field(() => ParameterClass, { nullable: true })
+  parameter?: ParameterClass;
+  @Field(() => String, { nullable: true })
+  system?: string;
+}
+
+@ObjectType('LLMManifest')
+export class LLMManifest {
+  @Field(() => String, { nullable: true })
+  kind?: string;
+  @Field(() => String, { nullable: true })
+  specVersion?: string;
+
+  @Field(() => ModelClass, { nullable: true })
+  model: ModelClass;
+
+  @Field(() => RunnerClass, { nullable: true })
+  runner?: RunnerClass;
+}
+
 @ObjectType('AggregatedManifest')
 export class AggregatedManifest {
   @Field(() => SubqueryManifest, { nullable: true })
@@ -103,4 +143,6 @@ export class AggregatedManifest {
   rpcManifest?: RpcManifest;
   @Field(() => SubgraphManifest, { nullable: true })
   subgraphManifest?: SubgraphManifest;
+  @Field(() => LLMManifest, { nullable: true })
+  llmManifest?: LLMManifest;
 }
