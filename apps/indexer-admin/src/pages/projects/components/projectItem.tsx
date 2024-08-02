@@ -81,6 +81,7 @@ const ProjectItem: FC<Props> = (props) => {
               [ProjectType.SubQuery]: 'DATA INDEXER',
               [ProjectType.Rpc]: 'RPC ENDPOINT',
               [ProjectType.Dictionary]: 'DICTIONARY',
+              [ProjectType.LLM]: 'LLM',
             }[projectType]
           }
         </Typography>
