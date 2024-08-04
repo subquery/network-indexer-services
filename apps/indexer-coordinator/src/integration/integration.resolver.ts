@@ -3,7 +3,13 @@
 
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { SeviceEndpoint } from '../project/project.model';
-import { IntegrationType, LLMConfig, LLMExtra, LLMModelPullResult } from '../project/types';
+import {
+  IntegrationType,
+  LLMConfig,
+  LLMExtra,
+  LLMModelPullResult,
+  LLMOngoingStreamRequestMeta,
+} from '../project/types';
 import { IntegrationEntity } from './integration.model';
 import { IntegrationService } from './integration.service';
 
@@ -60,5 +66,10 @@ export class IntegrationResolver {
   @Query(() => [LLMModelPullResult])
   inspectDownload(): LLMModelPullResult[] {
     return this.integrationService.inspectDownload();
+  }
+
+  @Query(() => [LLMOngoingStreamRequestMeta])
+  inspectOngoingStreamedRequests(): LLMOngoingStreamRequestMeta[] {
+    return this.integrationService.inspectOngoingStreamedRequests();
   }
 }

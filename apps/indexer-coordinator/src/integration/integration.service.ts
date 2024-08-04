@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProjectLLMService } from '../project/project.llm.service';
 import { SeviceEndpoint, ValidationResponse } from '../project/project.model';
-import { IntegrationType, LLMConfig, LLMExtra, LLMModelPullResult } from '../project/types';
+import { IntegrationType, LLMConfig, LLMExtra, LLMModelPullResult, LLMOngoingStreamRequestMeta } from '../project/types';
 import { IntegrationEntity } from './integration.model';
 
 @Injectable()
@@ -143,5 +143,9 @@ export class IntegrationService {
 
   inspectDownload(): LLMModelPullResult[] {
     return this.projectLLMService.inspectPullingProgress();
+  }
+
+  inspectOngoingStreamedRequests(): LLMOngoingStreamRequestMeta[] {
+    return this.projectLLMService.inspectOngoingStreamedRequests();
   }
 }

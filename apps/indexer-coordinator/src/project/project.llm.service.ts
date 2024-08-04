@@ -3,11 +3,12 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Ollama } from 'ollama';
+// import { Ollama } from 'ollama';
+import fetch from 'node-fetch';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
+import { AbortableAsyncIterator, Ollama, normalizeModelName } from 'src/utils/ollama';
 import { Repository } from 'typeorm';
-import { SubscriptionService } from '../subscription/subscription.service';
 import { LLMManifest } from './project.manifest';
 import {
   IProjectConfig,
@@ -28,14 +29,65 @@ import {
 
 const logger = getLogger('project.llm.service');
 
+async function fetchAdapter(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  let url: string;
+  if (input instanceof URL) {
+    url = input.toString();
+  } else if (typeof input === 'string') {
+    url = input;
+  } else {
+    url = input.url;
+  }
+
+  const r = await fetch(url, {
+    method: init.method,
+    headers: init?.headers as any,
+    body: init?.body as any,
+  });
+
+  // const t = await r.text();
+  const sstream: NodeJS.ReadableStream = r.body;
+
+  const dstream: ReadableStream<Uint8Array> = new ReadableStream<Uint8Array>({
+    start(controller) {
+      sstream.on('readable', function () {
+        let data;
+        while ((data = this.read()) !== null) {
+          console.log('data:', data.toString());
+          controller.enqueue(data);
+        }
+      });
+      sstream.on('end', () => {
+        console.log('end');
+        controller.close();
+      });
+      sstream.on('error', (err) => {
+        console.log('error:', err);
+        controller.error(err);
+      });
+    },
+    cancel(reason) {
+      if ((sstream as any).destroy) {
+        (sstream as any).destroy.destroy(new Error(reason));
+      }
+    },
+  });
+  const res = new Response(dstream, {
+    headers: r.headers as any,
+    status: r.status,
+    statusText: r.statusText,
+  });
+  return res;
+}
+
 @Injectable()
 export class ProjectLLMService {
   private pullingProgress = new Map<string, LLMModelPullResult[]>();
+  private ongoingStreamedRequests: AbortableAsyncIterator[] = [];
 
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
-    private projectService: ProjectService,
-    private pubSub: SubscriptionService
+    private projectService: ProjectService
   ) {}
 
   async startLLMProject(
@@ -50,39 +102,16 @@ export class ProjectLLMService {
     if (project.rateLimit !== rateLimit) {
       project.rateLimit = rateLimit;
     }
-    const host = new URL(projectConfig.serviceEndpoints[0].value).toString();
+    const host = projectConfig.serviceEndpoints[0].value;
     const targetModel = (project.manifest as LLMManifest).model.name;
-    const normalizedModel = this.normalizeModelName(targetModel);
 
     try {
-      const ollama = new Ollama({ host });
-      const allModels = await ollama.list();
-
-      const model = allModels?.models?.find((m) => m.name === normalizedModel);
-      if (!model) {
-        if (!this.getOnPullingModels(host).find((m) => m.name === normalizedModel)) {
-          project.status = DesiredStatus.PULLING;
-
-          ollama
-            .pull({ model: normalizedModel, stream: true })
-            .then(async (stream) => {
-              for await (const part of stream) {
-                this.updatePullingProgress(host, { name: normalizedModel, ...part });
-              }
-              this.removePullingProgress(host, normalizedModel);
-              project.status = DesiredStatus.RUNNING;
-              await this.projectRepo.save(project);
-            })
-            .catch((err) => {
-              this.removePullingProgress(host, normalizedModel);
-              logger.error(`${id} pull model:${normalizedModel} host: ${host} failed: ${err.message}`);
-            });
-        }
-      }
+      this.pullModel(host, targetModel);
     } catch (err) {
       logger.error(`startLLMProject id: ${id} failed: ${err.message}`);
     }
 
+    project.status = DesiredStatus.RUNNING;
     project.projectConfig = projectConfig;
     project.serviceEndpoints = [
       new SeviceEndpoint(
@@ -133,7 +162,7 @@ export class ProjectLLMService {
     try {
       host = new URL(host).toString();
       const ollama = new Ollama({ host });
-
+      // const aaa = await fetch('http://127.0.0.1:11434/api/tags');
       const downloadedModels = await ollama.list();
       const loadedModels = await ollama.ps();
       const pullingModels = this.getOnPullingModels(host);
@@ -162,26 +191,49 @@ export class ProjectLLMService {
 
   async deleteModel(host: string, model: string): Promise<void> {
     host = new URL(host).toString();
-    model = this.normalizeModelName(model);
+    model = normalizeModelName(model);
     const ollama = new Ollama({ host });
     await ollama.delete({ model });
+
+    const onPulling = this.ongoingStreamedRequests.find((iterator) => {
+      return iterator.meta.host === host && iterator.meta.model === model;
+    });
+    onPulling?.abort();
   }
 
-  pullModel(host: string, model: string): void {
+  async pullModel(host: string, model: string): Promise<void> {
     host = new URL(host).toString();
+    model = normalizeModelName(model);
+
+    const onPulllingModels = this.pullingProgress.get(host) || [];
+    const existPulling = onPulllingModels.find((m) => m.name === model);
+    if (existPulling) {
+      return;
+    }
+
     const ollama = new Ollama({ host });
+    const allModels = await ollama.list();
+
+    const existModel = allModels?.models?.find((m) => m.name === model);
+    if (existModel) {
+      return;
+    }
+    let it: AbortableAsyncIterator;
     ollama
       .pull({ model, stream: true })
-      .then(async (stream) => {
-        for await (const part of stream) {
-          console.log(part);
-          this.updatePullingProgress(host, { name: model, ...part });
+      .then(async (iterator) => {
+        it = iterator;
+        this.ongoingStreamedRequests.push(iterator);
+        for await (const message of iterator) {
+          this.updatePullingProgress(host, { name: model, ...message });
         }
         this.removePullingProgress(host, model);
+        this.removeOngoingStreamedRequests(it);
       })
       .catch((err) => {
         this.removePullingProgress(host, model);
-        logger.error(`pull model:${model} host: ${host} failed: ${err.message}`);
+        this.removeOngoingStreamedRequests(it);
+        logger.error(`pull error model:${model} host: ${host} failed: ${err.message}`);
       });
   }
 
@@ -234,7 +286,7 @@ export class ProjectLLMService {
       status: LLMModelStatus.NOT_READY,
     };
     try {
-      const normalizedModel = this.normalizeModelName(model);
+      const normalizedModel = normalizeModelName(model);
       host = new URL(host).toString();
       const pullingModels = this.getOnPullingModels(host);
       const pullingModel = pullingModels.find((m) => m.name === normalizedModel);
@@ -262,7 +314,7 @@ export class ProjectLLMService {
   // todo: remove
   getPullingProgress(host: string, model: string): LLMModelPullResult {
     host = new URL(host).toString();
-    model = this.normalizeModelName(model);
+    model = normalizeModelName(model);
     const progress = this.pullingProgress.get(host) || [];
     return progress.find((p) => p.name === model);
   }
@@ -284,6 +336,13 @@ export class ProjectLLMService {
     }
   }
 
+  private removeOngoingStreamedRequests(iterator: AbortableAsyncIterator) {
+    const i = this.ongoingStreamedRequests.indexOf(iterator);
+    if (i > -1) {
+      this.ongoingStreamedRequests.splice(i, 1);
+    }
+  }
+
   inspectPullingProgress(): LLMModelPullResult[] {
     const res = [];
     for (const [host, pulls] of this.pullingProgress.entries()) {
@@ -295,15 +354,16 @@ export class ProjectLLMService {
     return res;
   }
 
+  inspectOngoingStreamedRequests() {
+    const res = [];
+    for (const it of this.ongoingStreamedRequests) {
+      res.push(it.meta);
+    }
+    return res;
+  }
+
   nodeEndpoint(host: string, input: string): string {
     const url = new URL(input, host);
     return url.toString();
-  }
-
-  normalizeModelName(model: string): string {
-    if (model.lastIndexOf(':') === -1) {
-      return model + ':latest';
-    }
-    return model;
   }
 }
