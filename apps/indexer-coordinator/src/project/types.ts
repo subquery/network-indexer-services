@@ -73,6 +73,16 @@ export class LLMExtra {
   bar: string;
 }
 
+@ObjectType()
+export class LLMOngoingStreamRequestMeta {
+  @Field()
+  model: string;
+  @Field()
+  host: string;
+  @Field({ nullable: true })
+  progress?: LLMModelPullResult;
+}
+
 export enum HostType {
   UN_RESOLVED = 'un-resolved',
   SYSTEM_MANAGED = 'system-managed',
