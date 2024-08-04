@@ -18,6 +18,7 @@ import { LoadingSpinner } from 'components/loading';
 import { Text } from 'components/primary';
 import { useIsIndexer } from 'hooks/indexerHook';
 import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
+import LlmSettings from 'pages/project-details/components/llmSetting';
 import RpcSetting from 'pages/project-details/components/rpcSetting';
 import SubGraphSetting from 'pages/project-details/components/subGraphSetting';
 import { ProjectDetails, ProjectType, TQueryMetadata } from 'pages/project-details/types';
@@ -404,6 +405,17 @@ const Projects = () => {
             )}
             {currentStep === 1 && processingProject.projectType === ProjectType.SubGraph && (
               <SubGraphSetting
+                id={processingId}
+                onCancel={() => {
+                  setCurrentStep(0);
+                }}
+                onSubmit={() => {
+                  setVisible(false);
+                }}
+              />
+            )}
+            {currentStep === 1 && processingProject.projectType === ProjectType.LLM && (
+              <LlmSettings
                 id={processingId}
                 onCancel={() => {
                   setCurrentStep(0);
