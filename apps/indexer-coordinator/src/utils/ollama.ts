@@ -1,8 +1,8 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import fetch from 'node-fetch';
-import { LLMOngoingStreamRequestMeta } from 'src/project/types';
+import fetch, { Response } from 'node-fetch';
+import { LLMModelPullResult, LLMOngoingStreamRequestMeta } from 'src/project/types';
 
 export interface Config {
   host: string;
@@ -63,6 +63,14 @@ export class AbortableAsyncIterator {
 
   abort() {
     this.abortController.abort();
+  }
+
+  updateProgress(progress: LLMModelPullResult) {
+    this.meta.progress = progress;
+  }
+
+  getProgress() {
+    return this.meta.progress;
   }
 
   async *[Symbol.asyncIterator]() {
@@ -128,6 +136,7 @@ export class Ollama {
       method: 'GET',
       headers: defaultHeaders,
     });
+    await checkOk(response);
     return (await response.json()) as ListResponse;
   }
 
@@ -137,24 +146,26 @@ export class Ollama {
       method: 'GET',
       headers: defaultHeaders,
     });
+    await checkOk(response);
     return (await response.json()) as ListResponse;
   }
 
   async delete(request: DeleteRequest) {
     const url = new URL('api/delete', this.config.host).toString();
-    await fetch(url, {
+    const response = await fetch(url, {
       method: 'DELETE',
       body: JSON.stringify({
         name: request.model,
       }),
       headers: defaultHeaders,
     });
+    await checkOk(response);
     return { status: 'success' };
   }
 
   async pull(request: PullRequest) {
     const host = new URL(this.config.host).toString();
-    const url = new URL('api/pull', this.config.host).toString();
+    const url = new URL('api/pull', host).toString();
     const model = normalizeModelName(request.model);
     const abortController = new AbortController();
     const response = await fetch(url, {
@@ -167,7 +178,7 @@ export class Ollama {
       headers: defaultHeaders,
       signal: abortController.signal,
     });
-
+    await checkOk(response);
     const abortableAsyncIterator = new AbortableAsyncIterator(abortController, response.body, {
       model,
       host,
@@ -182,3 +193,30 @@ export function normalizeModelName(model: string): string {
   }
   return model;
 }
+
+const checkOk = async (response: Response): Promise<void> => {
+  if (response.ok) {
+    return;
+  }
+  let message = `Error ${response.status}: ${response.statusText}`;
+  let errorData: ErrorResponse | null = null;
+
+  if (response.headers.get('content-type')?.includes('application/json')) {
+    try {
+      errorData = (await response.json()) as ErrorResponse;
+      message = errorData.error || message;
+    } catch (error) {
+      console.log('Failed to parse error response as JSON');
+    }
+  } else {
+    try {
+      console.log('Getting text from response');
+      const textResponse = await response.text();
+      message = textResponse || message;
+    } catch (error) {
+      console.log('Failed to get text from error response');
+    }
+  }
+
+  throw new Error(message);
+};

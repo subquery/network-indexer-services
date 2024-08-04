@@ -141,10 +141,6 @@ export class IntegrationService {
     return integration;
   }
 
-  inspectDownload(): LLMModelPullResult[] {
-    return this.projectLLMService.inspectPullingProgress();
-  }
-
   inspectOngoingStreamedRequests(): LLMOngoingStreamRequestMeta[] {
     return this.projectLLMService.inspectOngoingStreamedRequests();
   }

@@ -79,6 +79,8 @@ export class LLMOngoingStreamRequestMeta {
   model: string;
   @Field()
   host: string;
+  @Field({ nullable: true })
+  progress?: LLMModelPullResult;
 }
 
 export enum HostType {

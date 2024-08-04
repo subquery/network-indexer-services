@@ -3,7 +3,6 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-// import { Ollama } from 'ollama';
 import fetch from 'node-fetch';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
@@ -82,7 +81,6 @@ async function fetchAdapter(input: string | URL | Request, init?: RequestInit): 
 
 @Injectable()
 export class ProjectLLMService {
-  private pullingProgress = new Map<string, LLMModelPullResult[]>();
   private ongoingStreamedRequests: AbortableAsyncIterator[] = [];
 
   constructor(
@@ -162,7 +160,6 @@ export class ProjectLLMService {
     try {
       host = new URL(host).toString();
       const ollama = new Ollama({ host });
-      // const aaa = await fetch('http://127.0.0.1:11434/api/tags');
       const downloadedModels = await ollama.list();
       const loadedModels = await ollama.ps();
       const pullingModels = this.getOnPullingModels(host);
@@ -205,9 +202,10 @@ export class ProjectLLMService {
     host = new URL(host).toString();
     model = normalizeModelName(model);
 
-    const onPulllingModels = this.pullingProgress.get(host) || [];
-    const existPulling = onPulllingModels.find((m) => m.name === model);
-    if (existPulling) {
+    const onPulling = this.ongoingStreamedRequests.find((iterator) => {
+      return iterator.meta.host === host && iterator.meta.model === model;
+    });
+    if (onPulling) {
       return;
     }
 
@@ -223,15 +221,13 @@ export class ProjectLLMService {
       .pull({ model, stream: true })
       .then(async (iterator) => {
         it = iterator;
-        this.ongoingStreamedRequests.push(iterator);
+        this.addOngoinStreamedRequests(iterator);
         for await (const message of iterator) {
-          this.updatePullingProgress(host, { name: model, ...message });
+          iterator.updateProgress({ name: model, ...message });
         }
-        this.removePullingProgress(host, model);
         this.removeOngoingStreamedRequests(it);
       })
       .catch((err) => {
-        this.removePullingProgress(host, model);
         this.removeOngoingStreamedRequests(it);
         logger.error(`pull error model:${model} host: ${host} failed: ${err.message}`);
       });
@@ -269,17 +265,6 @@ export class ProjectLLMService {
     };
   }
 
-  private updatePullingProgress(host: string, part: LLMModelPullResult) {
-    const progress = this.pullingProgress.get(host) || [];
-    const index = progress.findIndex((p) => p.name === part.name);
-    if (index >= 0) {
-      progress[index] = part;
-    } else {
-      progress.push(part);
-    }
-    this.pullingProgress.set(host, progress);
-  }
-
   async getModel(host: string, model: string): Promise<LLMModel> {
     const res: LLMModel = {
       name: model,
@@ -315,25 +300,25 @@ export class ProjectLLMService {
   getPullingProgress(host: string, model: string): LLMModelPullResult {
     host = new URL(host).toString();
     model = normalizeModelName(model);
-    const progress = this.pullingProgress.get(host) || [];
-    return progress.find((p) => p.name === model);
+
+    const onPulling = this.ongoingStreamedRequests.find((iterator) => {
+      return iterator.meta.host === host && iterator.meta.model === model;
+    });
+    return onPulling?.meta.progress;
   }
 
   private getOnPullingModels(host: string): LLMModelPullResult[] {
-    return this.pullingProgress.get(host) || [];
+    const res = [];
+    for (const iter of this.ongoingStreamedRequests) {
+      if (iter.meta.host === host && iter.meta.progress) {
+        res.push(iter.meta.progress);
+      }
+    }
+    return res;
   }
 
-  private removePullingProgress(host: string, model: string) {
-    const progress = this.pullingProgress.get(host) || [];
-    const index = progress.findIndex((p) => p.name === model);
-    if (index >= 0) {
-      progress.splice(index, 1);
-    }
-    if (progress.length === 0) {
-      this.pullingProgress.delete(host);
-    } else {
-      this.pullingProgress.set(host, progress);
-    }
+  private addOngoinStreamedRequests(iterator: AbortableAsyncIterator) {
+    this.ongoingStreamedRequests.push(iterator);
   }
 
   private removeOngoingStreamedRequests(iterator: AbortableAsyncIterator) {
@@ -341,17 +326,6 @@ export class ProjectLLMService {
     if (i > -1) {
       this.ongoingStreamedRequests.splice(i, 1);
     }
-  }
-
-  inspectPullingProgress(): LLMModelPullResult[] {
-    const res = [];
-    for (const [host, pulls] of this.pullingProgress.entries()) {
-      for (const pull of pulls) {
-        res.push({ host, ...pull });
-      }
-    }
-    console.log('inspectPullingProgress:', res);
-    return res;
   }
 
   inspectOngoingStreamedRequests() {

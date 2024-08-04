@@ -7,7 +7,6 @@ import {
   IntegrationType,
   LLMConfig,
   LLMExtra,
-  LLMModelPullResult,
   LLMOngoingStreamRequestMeta,
 } from '../project/types';
 import { IntegrationEntity } from './integration.model';
@@ -61,11 +60,6 @@ export class IntegrationResolver {
   @Mutation(() => IntegrationEntity)
   pullModel(@Args('id') id: number, @Args('name') name: string): Promise<IntegrationEntity> {
     return this.integrationService.pullModel(id, name);
-  }
-
-  @Query(() => [LLMModelPullResult])
-  inspectDownload(): LLMModelPullResult[] {
-    return this.integrationService.inspectDownload();
   }
 
   @Query(() => [LLMOngoingStreamRequestMeta])
