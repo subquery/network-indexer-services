@@ -189,9 +189,11 @@ export class ProjectLLMService {
   async deleteModel(host: string, model: string): Promise<void> {
     host = new URL(host).toString();
     model = normalizeModelName(model);
-    const ollama = new Ollama({ host });
-    await ollama.delete({ model });
 
+    try {
+      const ollama = new Ollama({ host });
+      await ollama.delete({ model });
+    } catch (err) {}
     const onPulling = this.ongoingStreamedRequests.find((iterator) => {
       return iterator.meta.host === host && iterator.meta.model === model;
     });
