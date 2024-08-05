@@ -660,7 +660,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
             3 => ProjectType::Subgraph,
-            4 => ProjectType::Ai, // TODO
+            4 => ProjectType::Ai,
             _ => {
                 error!("Invalid project type");
                 return Ok(());
