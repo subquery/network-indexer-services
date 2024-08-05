@@ -13,6 +13,7 @@ const ProjectFields = `
   chainType
   projectType
   rateLimit
+  hostType
   details {
     name
     owner
@@ -102,6 +103,7 @@ export const START_PROJECT = gql`
     $projectType: Float!
     $serviceEndpoints: [SeviceEndpointInput!]!
     $rateLimit: Float!
+    $hostType: String! = "system-managed"
   ) {
     startProject(
       id: $id
@@ -121,6 +123,7 @@ export const START_PROJECT = gql`
         serviceEndpoints: $serviceEndpoints
       }
       projectType: $projectType
+      hostType: $hostType
     ) {
       ${ProjectFields}
     }
