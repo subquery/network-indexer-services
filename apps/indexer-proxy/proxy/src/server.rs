@@ -450,7 +450,7 @@ async fn ep_payg_handler(
             Ok(p) => p,
             Err(e) => return e.into_response(),
         };
-        return payg_stream(v, state).await;
+        return payg_stream(endpoint.endpoint.clone(), v, state).await;
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
@@ -666,8 +666,8 @@ async fn ws_handler(
     })
 }
 
-async fn payg_stream(v: Value, state: MultipleQueryState) -> AxumResponse {
-    let mut res = StreamBodyAs::json_array(api_stream(v, state)).into_response();
+async fn payg_stream(endpoint: String, v: Value, state: MultipleQueryState) -> AxumResponse {
+    let mut res = StreamBodyAs::json_array(api_stream(endpoint, v, state)).into_response();
     res.headers_mut()
         .insert("X-Response-Format", "stream".parse().unwrap());
     res

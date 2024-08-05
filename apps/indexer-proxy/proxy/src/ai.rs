@@ -55,6 +55,7 @@ fn tokenize_with(value: &str, tokenizer: &Tokenizer, is_scalar: bool) -> Result<
 }
 
 pub async fn connect_remote(
+    endpoint: String,
     tx: Sender<Value>,
     req: Value,
     state: MultipleQueryState,
@@ -73,9 +74,10 @@ pub async fn connect_remote(
     pay_by_token(req_num, &tx, state.clone()).await?;
 
     // open stream and send query to remote
+    // http://localhost:11434/v1/chat/completions
     let client = reqwest::Client::new();
     let mut stream = client
-        .post("http://localhost:11434/v1/chat/completions")
+        .post(endpoint)
         .body(req_s)
         .send()
         .await
@@ -105,10 +107,14 @@ pub async fn connect_remote(
     Ok(())
 }
 
-pub fn api_stream(req: Value, state: MultipleQueryState) -> impl Stream<Item = Value> {
+pub fn api_stream(
+    endpoint: String,
+    req: Value,
+    state: MultipleQueryState,
+) -> impl Stream<Item = Value> {
     let (tx, rx) = channel::<Value>(1024);
 
-    tokio::spawn(connect_remote(tx, req, state));
+    tokio::spawn(connect_remote(endpoint, tx, req, state));
 
     // Create a stream from the channel
     ReceiverStream::new(rx).boxed()
