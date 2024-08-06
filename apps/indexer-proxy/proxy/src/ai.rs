@@ -59,6 +59,7 @@ pub async fn connect_remote(
     tx: Sender<Value>,
     req: Value,
     state: MultipleQueryState,
+    is_test: bool
 ) -> Result<()> {
     let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
     let request: RequestMessage =
@@ -71,7 +72,9 @@ pub async fn connect_remote(
     }
 
     // pay by real count
-    pay_by_token(req_num, &tx, state.clone()).await?;
+    if !is_test {
+        pay_by_token(req_num, &tx, state.clone()).await?;
+    }
 
     // open stream and send query to remote
     // http://localhost:11434/v1/chat/completions
@@ -90,7 +93,9 @@ pub async fn connect_remote(
 
         // pay by real count
         if count == BATCH {
-            pay_by_token(count, &tx, state.clone()).await?;
+            if !is_test {
+                pay_by_token(count, &tx, state.clone()).await?;
+            }
             count = 0;
         }
 
@@ -100,7 +105,7 @@ pub async fn connect_remote(
         }
     }
 
-    if count != 0 {
+    if count != 0 && !is_test {
         pay_by_token(count, &tx, state).await?;
     }
 
@@ -111,10 +116,11 @@ pub fn api_stream(
     endpoint: String,
     req: Value,
     state: MultipleQueryState,
+    is_test: bool,
 ) -> impl Stream<Item = Value> {
     let (tx, rx) = channel::<Value>(1024);
 
-    tokio::spawn(connect_remote(endpoint, tx, req, state));
+    tokio::spawn(connect_remote(endpoint, tx, req, state, is_test));
 
     // Create a stream from the channel
     ReceiverStream::new(rx).boxed()

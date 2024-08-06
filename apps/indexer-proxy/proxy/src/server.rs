@@ -73,6 +73,7 @@ pub struct QueryToken {
 
 pub async fn start_server(port: u16) {
     let app = Router::new()
+        .route("/test-ai", post(test_ai))
         // `POST /token` goes to create token for query
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
@@ -450,7 +451,7 @@ async fn ep_payg_handler(
             Ok(p) => p,
             Err(e) => return e.into_response(),
         };
-        return payg_stream(endpoint.endpoint.clone(), v, state).await;
+        return payg_stream(endpoint.endpoint.clone(), v, state, false).await;
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
@@ -666,9 +667,15 @@ async fn ws_handler(
     })
 }
 
-async fn payg_stream(endpoint: String, v: Value, state: MultipleQueryState) -> AxumResponse {
-    let mut res = StreamBodyAs::json_array(api_stream(endpoint, v, state)).into_response();
+async fn payg_stream(endpoint: String, v: Value, state: MultipleQueryState, is_test: bool) -> AxumResponse {
+    let mut res = StreamBodyAs::json_array(api_stream(endpoint, v, state, is_test)).into_response();
     res.headers_mut()
         .insert("X-Response-Format", "stream".parse().unwrap());
     res
+}
+
+async fn test_ai(Json(v): Json<Value>.) -> AxumResponse {
+    let endpoint = "http://localhost:11434/v1/chat/completions".to_owned();
+    let state = MultipleQueryState::empty();
+    payg_stream(endpoint, v, state, true).await
 }
