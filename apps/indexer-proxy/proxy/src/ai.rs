@@ -120,7 +120,13 @@ pub fn api_stream(
 ) -> impl Stream<Item = String> {
     let (tx, rx) = channel::<String>(1024);
 
-    tokio::spawn(connect_remote(endpoint, tx, req, state, is_test));
+    tokio::spawn(async move {
+        let tx1 = tx.clone();
+        if let Err(err) = connect_remote(endpoint, tx1, req, state, is_test).await {
+            let state = build_data(err.to_json());
+            let _ = tx.send(state).await;
+        }
+    });
 
     // Create a stream from the channel
     ReceiverStream::new(rx).boxed()
