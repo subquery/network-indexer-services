@@ -56,7 +56,7 @@ fn tokenize_with(value: &str, tokenizer: &Tokenizer, is_scalar: bool) -> Result<
 
 pub async fn connect_remote(
     endpoint: String,
-    tx: Sender<Value>,
+    tx: Sender<String>,
     req: Value,
     state: MultipleQueryState,
     is_test: bool,
@@ -100,7 +100,7 @@ pub async fn connect_remote(
         }
 
         // send to client
-        if tx.send(msg).await.is_err() {
+        if tx.send(build_data(msg)).await.is_err() {
             break;
         }
     }
@@ -117,8 +117,8 @@ pub fn api_stream(
     req: Value,
     state: MultipleQueryState,
     is_test: bool,
-) -> impl Stream<Item = Value> {
-    let (tx, rx) = channel::<Value>(1024);
+) -> impl Stream<Item = String> {
+    let (tx, rx) = channel::<String>(1024);
 
     tokio::spawn(connect_remote(endpoint, tx, req, state, is_test));
 
@@ -126,16 +126,21 @@ pub fn api_stream(
     ReceiverStream::new(rx).boxed()
 }
 
-async fn pay_by_token(num: usize, tx: &Sender<Value>, state: MultipleQueryState) -> Result<()> {
+fn build_data(raw: Value) -> String {
+    let s = serde_json::to_string(&raw).unwrap_or("".to_owned());
+    format!("data: {} \n\n", s)
+}
+
+async fn pay_by_token(num: usize, tx: &Sender<String>, state: MultipleQueryState) -> Result<()> {
     let real_num = if num > SCALE { num / SCALE } else { 1 };
 
     let (state, keyname, state_cache, inactive) =
         before_query_multiple_state(state, real_num as u64).await?;
 
     if inactive {
-        let state = json!({
+        let state = build_data(json!({
             "state": state.to_bs64()
-        });
+        }));
         let _ = tx.send(state).await;
     }
 

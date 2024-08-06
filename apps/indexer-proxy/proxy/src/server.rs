@@ -673,7 +673,9 @@ async fn payg_stream(
     state: MultipleQueryState,
     is_test: bool,
 ) -> AxumResponse {
-    let mut res = StreamBodyAs::json_array(api_stream(endpoint, v, state, is_test)).into_response();
+    let mut res = StreamBodyAs::text(api_stream(endpoint, v, state, is_test)).into_response();
+    res.headers_mut()
+        .insert("Content-Type", "text/event-stream".parse().unwrap());
     res.headers_mut()
         .insert("X-Response-Format", "stream".parse().unwrap());
     res
