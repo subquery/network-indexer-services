@@ -59,7 +59,7 @@ pub async fn connect_remote(
     tx: Sender<Value>,
     req: Value,
     state: MultipleQueryState,
-    is_test: bool
+    is_test: bool,
 ) -> Result<()> {
     let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
     let request: RequestMessage =
