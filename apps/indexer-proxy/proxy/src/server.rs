@@ -680,7 +680,7 @@ async fn payg_stream(
 }
 
 async fn test_ai(Json(v): Json<Value>) -> AxumResponse {
-    let endpoint = "http://localhost:11434/v1/chat/completions".to_owned();
+    let endpoint = "http://192.168.1.32:11434/v1/chat/completions".to_owned();
     let state = MultipleQueryState::empty();
     payg_stream(endpoint, v, state, true).await
 }
