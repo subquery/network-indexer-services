@@ -84,7 +84,7 @@ pub async fn connect_remote(
         .body(req_s)
         .send()
         .await
-        .map_err(|_e| Error::AiTokenizer(1206))?
+        .map_err(|_e| Error::AiModel(1206))?
         .json_array_stream::<Value>(1024);
 
     let mut count = 0;
