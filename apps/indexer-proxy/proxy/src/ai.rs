@@ -64,11 +64,16 @@ pub async fn connect_remote(
     let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
     let request: RequestMessage =
         serde_json::from_value(req).map_err(|_| Error::Serialize(1142))?;
-    let tokenizer = tokenizer_load()?;
 
     let mut req_num = 0;
-    for msg in request.messages {
-        req_num += tokenize_with(&msg.content, &tokenizer, false)?;
+    if let Ok(tokenizer) = tokenizer_load() {
+        for msg in request.messages {
+            req_num += tokenize_with(&msg.content, &tokenizer, false)?;
+        }
+    } else {
+        for msg in request.messages {
+            req_num += msg.content.len();
+        }
     }
 
     // pay by real count
