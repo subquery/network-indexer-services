@@ -1,6 +1,6 @@
 [package]
 name = "subql-indexer-proxy"
-version = "2.5.0-beta.5"
+version = "2.5.0-beta.6"
 edition = "2021"
 
 [dependencies]
@@ -32,7 +32,7 @@ sysinfo = "0.29"
 tdn = { version = "0.10", default-features = false, features = ["multiple"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tokenizers = { version = "0.19", features = ["http"] }
+tokenizers = "0.20"
 tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.4", features = ["cors"] }
 tokio-stream = { version = "0.1" }

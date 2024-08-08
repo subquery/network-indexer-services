@@ -11,6 +11,7 @@ use crate::payg::{before_query_multiple_state, post_query_multiple_state};
 
 const SCALE: usize = 1;
 const BATCH: usize = 10;
+const BERT_BASE_MULTILINGUAL_UNCASED: &[u8] = include_bytes!("../tokenizer.json");
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Message {
@@ -31,8 +32,7 @@ pub fn _tokenize(value: &str) -> Result<usize> {
 }
 
 fn tokenizer_load() -> Result<Tokenizer> {
-    Tokenizer::from_pretrained("bert-base-multilingual-uncased", None)
-        .map_err(|_e| Error::AiTokenizer(1204))
+    Tokenizer::from_bytes(BERT_BASE_MULTILINGUAL_UNCASED).map_err(|_e| Error::AiTokenizer(1204))
 }
 
 fn tokenize_with(value: &str, tokenizer: &Tokenizer, is_scalar: bool) -> Result<usize> {
