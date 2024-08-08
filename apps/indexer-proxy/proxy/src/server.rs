@@ -73,7 +73,6 @@ pub struct QueryToken {
 
 pub async fn start_server(port: u16) {
     let app = Router::new()
-        .route("/test-ai", post(test_ai))
         // `POST /token` goes to create token for query
         .route("/token", post(generate_token))
         // `POST /query/Qm...955X` goes to query with agreement
@@ -681,8 +680,9 @@ async fn payg_stream(
     res
 }
 
-async fn test_ai(Json(v): Json<Value>) -> AxumResponse {
-    let endpoint = "http://192.168.1.32:11434/v1/chat/completions".to_owned();
-    let state = MultipleQueryState::empty();
-    payg_stream(endpoint, v, state, true).await
-}
+// cleanup future
+// async fn test_ai(Json(v): Json<Value>) -> AxumResponse {
+//     let endpoint = "http://127.0.0.1:11434/v1/chat/completions".to_owned();
+//     let state = MultipleQueryState::empty();
+//     payg_stream(endpoint, v, state, true).await
+// }
