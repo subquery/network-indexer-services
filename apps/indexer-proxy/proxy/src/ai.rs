@@ -142,7 +142,12 @@ fn build_data(raw: Value) -> String {
     format!("data: {} \n\n", s)
 }
 
-async fn pay_by_token(num: usize, tx: &Sender<String>, state: MultipleQueryState, must_send: bool) -> Result<()> {
+async fn pay_by_token(
+    num: usize,
+    tx: &Sender<String>,
+    state: MultipleQueryState,
+    must_send: bool,
+) -> Result<()> {
     let real_num = if num > SCALE { num / SCALE } else { 1 };
 
     let (state, keyname, state_cache, inactive) =
