@@ -660,7 +660,7 @@ impl MultipleQueryStateActive {
 // 100 000000000000000000 (100 SQT)
 pub const MULTIPLE_RANGE_MAX: U256 = U256([7766279631452241920, 5, 0, 0]);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MultipleQueryState {
     pub active: MultipleQueryStateActive,
     pub channel_id: U256,
@@ -670,6 +670,16 @@ pub struct MultipleQueryState {
 }
 
 impl MultipleQueryState {
+    pub fn empty() -> Self {
+        Self {
+            active: MultipleQueryStateActive::Active,
+            channel_id: U256::zero(),
+            start: U256::zero(),
+            end: U256::zero(),
+            sign: convert_bytes_to_sign(vec![0u8; 65]),
+        }
+    }
+
     pub async fn consumer_generate(
         channel_id: U256,
         start: U256,

@@ -58,6 +58,9 @@ pub enum Error {
     WebSocket(i32),
 
     Jsonrpc(i64, Arc<Error>),
+
+    AiTokenizer(i32),
+    AiModel(i32),
 }
 
 impl Error {
@@ -112,6 +115,8 @@ impl Error {
             Error::Overflow(c) => (StatusCode::BAD_REQUEST, c, "Query overflow"),
             Error::Serialize(c) => (StatusCode::BAD_REQUEST, c, "Invalid serialize"),
             Error::WebSocket(c) => (StatusCode::BAD_REQUEST, c, "WebSocket error"),
+            Error::AiTokenizer(c) => (StatusCode::INTERNAL_SERVER_ERROR, c, "AI Tokenizer missing"),
+            Error::AiModel(c) => (StatusCode::INTERNAL_SERVER_ERROR, c, "AI model missing"),
             Error::Jsonrpc(_, e) => e.to_status_message(),
         }
     }

@@ -21,6 +21,7 @@
 extern crate tracing;
 
 mod account;
+mod ai;
 mod auth;
 mod cli;
 mod contracts;
