@@ -78,7 +78,7 @@ pub async fn connect_remote(
 
     // pay by real count
     if !is_test {
-        pay_by_token(req_num, &tx, state.clone()).await?;
+        pay_by_token(req_num, &tx, state.clone(), true).await?;
     }
 
     // open stream and send query to remote
@@ -99,7 +99,7 @@ pub async fn connect_remote(
         // pay by real count
         if count == BATCH {
             if !is_test {
-                pay_by_token(count, &tx, state.clone()).await?;
+                pay_by_token(count, &tx, state.clone(), false).await?;
             }
             count = 0;
         }
@@ -111,7 +111,7 @@ pub async fn connect_remote(
     }
 
     if count != 0 && !is_test {
-        pay_by_token(count, &tx, state).await?;
+        pay_by_token(count, &tx, state, true).await?;
     }
 
     Ok(())
@@ -142,13 +142,13 @@ fn build_data(raw: Value) -> String {
     format!("data: {} \n\n", s)
 }
 
-async fn pay_by_token(num: usize, tx: &Sender<String>, state: MultipleQueryState) -> Result<()> {
+async fn pay_by_token(num: usize, tx: &Sender<String>, state: MultipleQueryState, must_send: bool) -> Result<()> {
     let real_num = if num > SCALE { num / SCALE } else { 1 };
 
     let (state, keyname, state_cache, inactive) =
         before_query_multiple_state(state, real_num as u64).await?;
 
-    if inactive {
+    if must_send || inactive {
         let state = build_data(json!({
             "state": state.to_bs64()
         }));
