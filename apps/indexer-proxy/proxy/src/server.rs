@@ -114,9 +114,9 @@ pub async fn start_server(port: u16) {
         );
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port);
-    info!("HTTP server bind: {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+  info!("HTTP server bind: {}", addr);
+  let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+  axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
         .unwrap();
 }
