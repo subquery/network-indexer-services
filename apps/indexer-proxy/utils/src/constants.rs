@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use axum::http::header::{HeaderName, CONTENT_TYPE, USER_AGENT};
+use http::header::{HeaderName, USER_AGENT, CONTENT_TYPE};
 use once_cell::sync::Lazy;
 
 // encode proxy(u32) & coordinator(u32)
