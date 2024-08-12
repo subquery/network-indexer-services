@@ -95,10 +95,13 @@
 - `1139` - Serialize: payg price signature.
 - `1140` - Serialize: subquery's query is invalid.
 - `1141` - Serialize: cannot parse rpc query method.
+- `1142` - Serialize: aisend data must be json.
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
 - `1203` - Service exception: Coordinator RPC mainfest is invalid
+- `1204` - Service exception: AI tokenizer missing or cannot download
+- `1205` - Service exception: AI tokenizer cannot encode
 - `1300` - Websocket connection: project not support websocket
 - `1301` - Websocket connection: invalid message
 - `1302` - Websocket connection: failed to send message to remote socket
