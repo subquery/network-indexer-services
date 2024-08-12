@@ -750,14 +750,18 @@ pub async fn extend_channel(
              )
            {{ id, expiredAt }}
         }}"#,
-        channel_id, new_price, expired_at
+        channel_id, expired_at, new_price,
     );
     let url = COMMAND.graphql_url();
     let query = GraphQLQuery::query(&mdata);
-    graphql_request(&url, &query).await.map_err(|e| {
+    let query_result = graphql_request(&url, &query).await.map_err(|e| {
         error!("{:?}", e);
         Error::ServiceException(1202)
     })?;
+    // println!("query_result : {:?}", query_result);
+    if query_result.get("errors").is_some() {
+        return Err(Error::ServiceException(1202));
+    }
 
     let account = ACCOUNT.read().await;
     let indexer_sign = extend_sign2(
