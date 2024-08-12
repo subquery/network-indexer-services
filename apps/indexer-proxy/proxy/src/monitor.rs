@@ -18,7 +18,7 @@
 
 use redis::RedisResult;
 use subql_indexer_utils::request::REQUEST_CLIENT;
-use sysinfo::{CpuExt, DiskExt, System, SystemExt};
+use sysinfo::{Disks, System};
 use tokio::sync::{Mutex, OnceCell};
 
 use crate::{
@@ -85,7 +85,7 @@ pub fn listen() {
 /// get the cpu%, memory_total, memory%, disk_total, disk%
 async fn fetch_sysinfo() -> (u64, f64, u64, f64, u64) {
     let mut sys = SYS.get_or_init(init_sys).await.lock().await;
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
     let cpu_num = sys.cpus().len() as f32;
     let cpu_total: f32 = sys.cpus().iter().map(|c| c.cpu_usage()).sum();
     let p_cpu = (cpu_total / cpu_num) as u64;
@@ -96,10 +96,10 @@ async fn fetch_sysinfo() -> (u64, f64, u64, f64, u64) {
     let p_mem = mem_used * 100 / mem_total;
     let mem_gb = (mem_total * 100 / 1073741824) as f64 / 100f64; // GB
 
-    sys.refresh_disks_list();
+    let disks = Disks::new_with_refreshed_list();
     let mut disk_total = 0u64;
     let mut disk_used = 0u64;
-    for disk in sys.disks() {
+    for disk in disks.list() {
         disk_total += disk.total_space();
         disk_used += disk.available_space();
     }
