@@ -925,9 +925,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
     let remote = U256::from_dec_str(&channel.remote).map_err(|_e| Error::Serialize(1124))?;
     let price = U256::from_dec_str(&channel.price).map_err(|_e| Error::Serialize(1125))?;
 
-    let mut keybytes = [0u8; 32];
-    channel_id.to_little_endian(&mut keybytes);
-    let keyname = format!("{}-channel", hex::encode(keybytes));
+    let keyname = channel_id_to_keyname(channel_id);
 
     let mut conn = redis();
 
