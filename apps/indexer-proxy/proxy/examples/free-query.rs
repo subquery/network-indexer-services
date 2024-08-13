@@ -7,11 +7,11 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use std::env::args;
 use subql_contracts::CURRENT_NETWORK;
-use subql_indexer_utils::request::GraphQLQuery;
+// use subql_indexer_utils::request::GraphQLQuery;
 
-const METADATA_QUERY: &str = r#"query {
-  _metadata { indexerHealthy }
-}"#;
+// const METADATA_QUERY: &str = r#"query {
+//   _metadata { indexerHealthy }
+// }"#;
 
 fn payload_712(indexer: &str, deployment_id: &str, timestamp: i64, chain_id: i64) -> [u8; 32] {
     let mut types = BTreeMap::new();
@@ -103,10 +103,10 @@ async fn main() -> std::io::Result<()> {
 
     let query_token = format!("Bearer {}", token["token"].as_str().unwrap());
     let query_url = format!("{}/query/{}", url, deployment);
-    let query_body = serde_json::to_string(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
-    let _query_body =
-        r#"{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}"#;
+    // let query_body = serde_json::to_string(&GraphQLQuery::query(METADATA_QUERY)).unwrap();
 
+    let query_body =
+        r#"{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}"#;
     println!("Loop to query, preiod: 100ms");
     let mut i = 1;
     loop {
@@ -115,7 +115,7 @@ async fn main() -> std::io::Result<()> {
         let r = client
             .post(&query_url)
             .header("Authorization", query_token.clone())
-            .body(query_body.clone())
+            .body(query_body)
             .send()
             .await
             .unwrap();

@@ -276,7 +276,7 @@ pub async fn get_timer_metrics() -> Vec<(String, u64, u64, Vec<(u64, u64, u64)>)
     results
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum MetricsQuery {
     Free,
     CloseAgreement,
@@ -284,7 +284,7 @@ pub enum MetricsQuery {
     Whitelist,
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum MetricsNetwork {
     HTTP,
     P2P,
