@@ -108,7 +108,7 @@ const RECV_PROTOCOL: StreamProtocol = StreamProtocol::new("/recv_metrics");
 pub static GOSSIPSUB_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
     Lazy::new(|| RwLock::new(None));
 
-pub async fn add_gossipsub_sender(sender: mpsc::Sender<Vec<u8>>) {
+pub async fn setup_gossipsub_sender(sender: mpsc::Sender<Vec<u8>>) {
     let mut senders = GOSSIPSUB_P2P_SENDER.write().await;
     *senders = Some(sender);
     drop(senders);
@@ -347,6 +347,10 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         .accept(RECV_PROTOCOL)
         .unwrap();
 
+    let topic = gossipsub::IdentTopic::new("test-net");
+    // subscribes to our topic
+    swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
+
     tokio::spawn(async move {
         while let Some((_peer, stream)) = incoming_streams.next().await {
             let network_clone = network.clone();
@@ -357,24 +361,35 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         }
     });
 
-    tokio::spawn(async move { handle_swarm_event(keypair, swarm) });
+    let (tx, mut rx) = mpsc::channel(100);
+    setup_gossipsub_sender(tx).await;
+    tokio::spawn(async move {
+        loop {
+            tokio::select! {
+              _ = handle_swarm_event(keypair.clone(), &mut swarm) => {},
+              Some(line) = rx.recv() => {
+                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), line){
+                    println!("Publish error: {e:?}");
+                  }
+              },
+            }
+        }
+    });
 
     Ok(())
 }
 
-async fn handle_swarm_event(local_key: Keypair, mut swarm: Swarm<AgentBehavior>) {
-    loop {
-        match swarm.select_next_some().await {
-            SwarmEvent::Behaviour(AgentBehaviorEvent::Gossipsub(event)) => {
-                handle_gossipsub_event(event).await
-            }
-            SwarmEvent::NewListenAddr {
-                listener_id,
-                address,
-            } => info!("NewListenAddr: {listener_id:?} | {address:?}"),
-            _event => {
-                println!("Unhandled swarm event: {:?}", _event);
-            }
+async fn handle_swarm_event(local_key: Keypair, swarm: &mut Swarm<AgentBehavior>) {
+    match swarm.select_next_some().await {
+        SwarmEvent::Behaviour(AgentBehaviorEvent::Gossipsub(event)) => {
+            handle_gossipsub_event(event).await
+        }
+        SwarmEvent::NewListenAddr {
+            listener_id,
+            address,
+        } => info!("NewListenAddr: {listener_id:?} | {address:?}"),
+        _event => {
+            println!("Unhandled swarm event: {:?}", _event);
         }
     }
 }
