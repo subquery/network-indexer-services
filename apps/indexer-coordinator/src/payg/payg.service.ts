@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
 import { bytes32ToCid } from '@subql/network-clients';
@@ -537,5 +538,31 @@ export class PaygService {
 
   async getOpenChannels() {
     return await this.channelRepo.find({ where: { status: ChannelStatus.OPEN } });
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async closeOutdatedAndNotExtended() {
+    const channels = await this.channelRepo.find();
+    for (const c of channels) {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        const channelState = await this.channelFromContract(BigNumber.from(c.id));
+
+        // terminating
+        if (
+          !channelState ||
+          channelState.status === ChannelStatus.TERMINATING ||
+          c.expiredAt <= now ||
+          c.status === ChannelStatus.TERMINATING
+        ) {
+          continue;
+          // return this.updateChannelFromNetwork(c.id, altChannelData, true);
+        }
+        // outdated
+        await this.terminate(c.id);
+      } catch (e) {
+        logger.debug(`closeOutdatedAndNotExtended state channel error: ${c.id}`);
+      }
+    }
   }
 }
