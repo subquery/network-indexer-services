@@ -364,11 +364,11 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
 
     tokio::spawn(async move {
-        while let Some((_peer, stream)) = incoming_streams.next().await {
+        while let Some((peer, stream)) = incoming_streams.next().await {
             let network_clone = network.clone();
             let ledger_clone = ledger.clone();
             tokio::spawn(async move {
-                handle_msg(stream, network_clone, ledger_clone).await;
+                handle_msg(peer, stream, network_clone, ledger_clone).await;
             });
         }
     });
@@ -410,7 +410,7 @@ async fn handle_gossipsub_event(event: gossipsub::Event) {
     println!("gossipsub event is {:?}", event);
 }
 
-async fn handle_msg(stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>>) {
+async fn handle_msg(peer: PeerId, stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>>) {
     let (rd, wr) = stream.split();
 
     let (stop_tx1, stop_rx1) = oneshot::channel();
@@ -419,9 +419,18 @@ async fn handle_msg(stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>
     let (reader_send, reader_recv) = mpsc::channel(128);
     let (wirter_send, writer_recv) = mpsc::channel(128);
 
+    let (stream_send, stream_recv) = mpsc::channel(128);
+    add_peer_stream(peer, stream_send).await;
+
     tokio::spawn(handle_reader(rd, stop_rx1, stop_tx2, reader_send));
     tokio::spawn(handle_group_event(reader_recv, wirter_send, ledger));
-    tokio::spawn(handle_writer(wr, stop_rx2, stop_tx1, writer_recv));
+    tokio::spawn(handle_writer(
+        wr,
+        stop_rx2,
+        stop_tx1,
+        writer_recv,
+        stream_recv,
+    ));
 }
 
 async fn handle_reader(
@@ -525,10 +534,23 @@ async fn handle_writer(
     mut stop_rx: oneshot::Receiver<()>,
     send_tx: oneshot::Sender<()>,
     mut writer_recv: Receiver<Vec<u8>>,
+    mut stream_recv: Receiver<Vec<u8>>,
 ) {
     loop {
         tokio::select! {
           Some(bytes) = writer_recv.recv() => {
+            if wr
+              .write(&(bytes.len() as u32).to_be_bytes())
+              .await
+              .is_ok()
+            {
+              _ = wr.write_all(&bytes[..]).await;
+            } else {
+              break;
+            }
+
+          },
+          Some(bytes) = stream_recv.recv() => {
             if wr
               .write(&(bytes.len() as u32).to_be_bytes())
               .await
