@@ -16,12 +16,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use libp2p::{
+    gossipsub::Behaviour as GossipsubBehavior,
+    identify::Behaviour as IdentifyBehavior,
+    kad::{store::MemoryStore as KademliaInMemory, Behaviour as KademliaBehavior, RoutingUpdate},
+    mdns::tokio::Behaviour as MdnsBehavior,
+    request_response::{
+        cbor::Behaviour as RequestResponseBehavior, OutboundRequestId,
+        ResponseChannel as RequestResponseChannel,
+    },
+    swarm::NetworkBehaviour,
+    Multiaddr, PeerId,
+};
+use libp2p_stream::Behaviour as StreamBehavior;
 use serde::{Deserialize, Serialize};
 
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
-
-use libp2p::PeerId;
 
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";
@@ -111,5 +122,65 @@ impl Event {
         bincode::deserialize(data).map_err(|_| {
             std::io::Error::new(std::io::ErrorKind::Other, "P2P Event deserialize failure")
         })
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GreeRequest {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GreetResponse {
+    pub message: String,
+}
+
+#[derive(NetworkBehaviour)]
+pub struct Behavior {
+    pub identify: IdentifyBehavior,
+    pub kad: KademliaBehavior<KademliaInMemory>,
+    pub rr: RequestResponseBehavior<GreeRequest, GreetResponse>,
+    pub gossipsub: GossipsubBehavior,
+    pub mdns: MdnsBehavior,
+    pub stream: StreamBehavior,
+}
+
+impl Behavior {
+    pub fn new(
+        kad: KademliaBehavior<KademliaInMemory>,
+        identify: IdentifyBehavior,
+        rr: RequestResponseBehavior<GreeRequest, GreetResponse>,
+        gossipsub: GossipsubBehavior,
+        mdns: MdnsBehavior,
+        stream: StreamBehavior,
+    ) -> Self {
+        Self {
+            kad,
+            identify,
+            rr,
+            gossipsub,
+            mdns,
+            stream,
+        }
+    }
+
+    pub fn register_addr_kad(&mut self, peer_id: &PeerId, addr: Multiaddr) -> RoutingUpdate {
+        self.kad.add_address(peer_id, addr)
+    }
+
+    pub fn send_message(&mut self, peer_id: &PeerId, message: GreeRequest) -> OutboundRequestId {
+        self.rr.send_request(peer_id, message)
+    }
+
+    pub fn send_response(
+        &mut self,
+        ch: RequestResponseChannel<GreetResponse>,
+        rs: GreetResponse,
+    ) -> Result<(), GreetResponse> {
+        self.rr.send_response(ch, rs)
+    }
+
+    pub fn set_server_mode(&mut self) {
+        self.kad.set_mode(Some(libp2p::kad::Mode::Server))
     }
 }
