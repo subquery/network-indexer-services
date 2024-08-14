@@ -18,16 +18,19 @@
 
 use base64::{engine::general_purpose, Engine as _};
 // use chamomile_types::Peer as ChamomilePeer;
-// use once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
 // use serde::Serialize;
-use std::collections::HashMap;
 use std::io::Result;
-// use std::path::PathBuf;
-use libp2p::PeerId;
 use std::sync::Arc;
+use std::{collections::HashMap, env, env::args, fs, path::Path, str::FromStr, time::Duration};
+
 use subql_indexer_utils::{
     error::Error,
-    p2p::{Event, GroupEvent, ROOT_GROUP_ID, ROOT_NAME},
+    p2p::{
+        generate_swarm, AgentBehavior, AgentBehaviorEvent, Event, GreeRequest, GreetResponse,
+        GroupEvent, ROOT_GROUP_ID, ROOT_NAME,
+    },
     payg::QueryState,
 };
 use tdn::{
@@ -70,30 +73,70 @@ use crate::{
 use anyhow::Result as OtherResult;
 use futures::{
     io::{ReadHalf, WriteHalf},
-    AsyncReadExt, AsyncWriteExt, StreamExt,
+    AsyncReadExt, AsyncWriteExt,
 };
 use libp2p::{
-    // multiaddr::Protocol, Multiaddr, PeerId,
-    identity,
-    Stream,
-    StreamProtocol,
-    SwarmBuilder,
+    core::transport::upgrade::Version,
+    futures::StreamExt,
+    gossipsub,
+    identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig, Event as IdentifyEvent},
+    identity::{self, Keypair},
+    kad::{
+        store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig,
+        Event as KadEvent, RoutingUpdate,
+    },
+    mdns,
+    noise::Config as NoiseConfig,
+    pnet::{PnetConfig, PreSharedKey},
+    request_response::{
+        cbor::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
+        Event as RequestResponseEvent, Message as RequestResponseMessage,
+        ProtocolSupport as RequestResponseProtocolSupport,
+    },
+    swarm::SwarmEvent,
+    tcp,
+    yamux::Config as YamuxConfig,
+    Multiaddr, PeerId, Stream, StreamProtocol, Swarm, SwarmBuilder, Transport,
 };
-use libp2p_stream as stream;
-use std::time::Duration;
+use libp2p_stream::{self as stream, Behaviour as StreamBehaviour};
+
+use either::Either;
 
 const RECV_PROTOCOL: StreamProtocol = StreamProtocol::new("/recv_metrics");
 
-// pub static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock::new(vec![]));
+// p2p sender via libp2p gossipsub
+pub static GOSSIPSUB_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
+    Lazy::new(|| RwLock::new(None));
 
-// pub async fn send(method: &str, params: Vec<RpcParam>, gid: GroupId) {
-//     let senders = P2P_SENDER.read().await;
-//     if !senders.is_empty() {
-//         senders[0]
-//             .send_timeout(rpc_request(0, method, params, gid), 100)
-//             .await;
-//     }
-// }
+pub async fn add_gossipsub_sender(sender: mpsc::Sender<Vec<u8>>) {
+    let mut senders = GOSSIPSUB_P2P_SENDER.write().await;
+    *senders = Some(sender);
+    drop(senders);
+}
+
+// (peer_id sender) via libp2p_stream
+pub static STREAM_P2P_SENDER: Lazy<RwLock<BTreeMap<PeerId, mpsc::Sender<Vec<u8>>>>> =
+    Lazy::new(|| RwLock::new(BTreeMap::new()));
+
+pub async fn add_peer_stream(peer: PeerId, sender: mpsc::Sender<Vec<u8>>) {
+    let mut senders = STREAM_P2P_SENDER.write().await;
+    senders.insert(peer, sender);
+    drop(senders);
+}
+
+pub async fn remove_peer_stream(peer: &PeerId) {
+    let mut senders = STREAM_P2P_SENDER.write().await;
+    senders.remove(peer);
+}
+
+// send message to one peerid via libp2p_stream
+pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) {
+    let senders = STREAM_P2P_SENDER.read().await;
+    if let Some(stream_sender) = senders.get(peer) {
+        _ = stream_sender.try_send(payload);
+    }
+    drop(senders);
+}
 
 // pub async fn stop_network() {
 //     let senders = P2P_SENDER.read().await;
@@ -285,14 +328,13 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         telemetries: COMMAND.telemetries().iter().map(|v| (*v, false)).collect(),
         groups: init_groups,
     }));
+    let ipfs_path = get_ipfs_path();
+    // println!("using IPFS_PATH {ipfs_path:?}");
+    let psk: Option<PreSharedKey> = get_psk(&ipfs_path)?
+        .map(|text| PreSharedKey::from_str(&text))
+        .transpose()?;
 
-    let mut swarm = SwarmBuilder::with_existing_identity(keypair)
-        .with_tokio()
-        .with_quic()
-        // .with_relay_client(noise::Config::new, yamux::Config::default)?
-        .with_behaviour(|_| stream::Behaviour::new())?
-        .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(10)))
-        .build();
+    let mut swarm = generate_swarm(keypair.clone(), psk).unwrap();
 
     swarm.listen_on("/ip4/0.0.0.0/udp/5500/quic-v1".parse()?)?;
 
@@ -300,6 +342,7 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
 
     let mut incoming_streams = swarm
         .behaviour()
+        .stream
         .new_control()
         .accept(RECV_PROTOCOL)
         .unwrap();
@@ -316,7 +359,6 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     Ok(())
 }
 
-// 外面需要知道网络断开，以便重新发起连接
 async fn handle_msg(stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>>) {
     let (rd, wr) = stream.split();
 
@@ -1215,4 +1257,25 @@ async fn handle_close_agreement_query(
         )
         .await?;
     Ok(hex::encode(data))
+}
+
+fn get_ipfs_path() -> Box<Path> {
+    env::var("IPFS_PATH")
+        .map(|ipfs_path| Path::new(&ipfs_path).into())
+        .unwrap_or_else(|_| {
+            env::var("HOME")
+                .map(|home| Path::new(&home).join(".ipfs"))
+                .expect("could not determine home directory")
+                .into()
+        })
+}
+
+/// Read the pre shared key file from the given ipfs directory
+fn get_psk(path: &Path) -> std::io::Result<Option<String>> {
+    let swarm_key_file = path.join("swarm.key");
+    match fs::read_to_string(swarm_key_file) {
+        Ok(text) => Ok(Some(text)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
 }
