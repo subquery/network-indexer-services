@@ -70,7 +70,7 @@ use crate::{
     project::get_project,
 };
 
-use anyhow::Result as OtherResult;
+use anyhow::{anyhow, Result as OtherResult};
 use futures::{
     io::{ReadHalf, WriteHalf},
     AsyncReadExt, AsyncWriteExt,
@@ -112,6 +112,18 @@ pub async fn setup_gossipsub_sender(sender: mpsc::Sender<Vec<u8>>) {
     let mut senders = GOSSIPSUB_P2P_SENDER.write().await;
     *senders = Some(sender);
     drop(senders);
+}
+
+pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
+    let guard = GOSSIPSUB_P2P_SENDER.read().await;
+    if let Some(sender) = &*guard {
+        sender
+            .try_send(payload)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        Ok(())
+    } else {
+        Err(anyhow!("no sender found, may be network broken")) // Use anyhow to create the error
+    }
 }
 
 // (peer_id sender) via libp2p_stream
