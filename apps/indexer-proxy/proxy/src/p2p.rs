@@ -356,7 +356,31 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
             });
         }
     });
+
+    tokio::spawn(async move { handle_swarm_event(keypair, swarm) });
+
     Ok(())
+}
+
+async fn handle_swarm_event(local_key: Keypair, mut swarm: Swarm<AgentBehavior>) {
+    loop {
+        match swarm.select_next_some().await {
+            SwarmEvent::Behaviour(AgentBehaviorEvent::Gossipsub(event)) => {
+                handle_gossipsub_event(event).await
+            }
+            SwarmEvent::NewListenAddr {
+                listener_id,
+                address,
+            } => info!("NewListenAddr: {listener_id:?} | {address:?}"),
+            _event => {
+                println!("Unhandled swarm event: {:?}", _event);
+            }
+        }
+    }
+}
+
+async fn handle_gossipsub_event(event: gossipsub::Event) {
+    println!("gossipsub event is {:?}", event);
 }
 
 async fn handle_msg(stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>>) {
