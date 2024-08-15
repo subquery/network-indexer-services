@@ -129,13 +129,13 @@ pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
 }
 
 // (peer_id sender) via libp2p_stream
-pub static STREAM_P2P_SENDER: Lazy<RwLock<BTreeMap<PeerId, mpsc::Sender<Vec<u8>>>>> =
-    Lazy::new(|| RwLock::new(BTreeMap::new()));
+pub static STREAM_P2P_SENDER: Lazy<RwLock<(PeerId, mpsc::Sender<Vec<u8>>)>> =
+    Lazy::new(|| RwLock::new(None));
 
-pub async fn add_peer_stream(peer: PeerId, sender: mpsc::Sender<Vec<u8>>) {
-    let mut senders = STREAM_P2P_SENDER.write().await;
-    senders.insert(peer, sender);
-    drop(senders);
+pub async fn setup_peer_stream(peer: PeerId, sender: mpsc::Sender<Vec<u8>>) {
+    let mut sender = STREAM_P2P_SENDER.write().await;
+    *sender = (peer, sender);
+    drop(sender);
 }
 
 pub async fn remove_peer_stream(peer: &PeerId) {
