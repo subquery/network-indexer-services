@@ -124,32 +124,39 @@ pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
         Ok(())
     } else {
         drop(guard);
-        Err(anyhow!("no sender found, may be network broken")) // Use anyhow to create the error
+        Err(anyhow!("no sender found, may be network broken"))
     }
 }
 
 // (peer_id sender) via libp2p_stream
-pub static STREAM_P2P_SENDER: Lazy<RwLock<(PeerId, mpsc::Sender<Vec<u8>>)>> =
+pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<(PeerId, mpsc::Sender<Vec<u8>>)>>> =
     Lazy::new(|| RwLock::new(None));
 
 pub async fn setup_peer_stream(peer: PeerId, sender: mpsc::Sender<Vec<u8>>) {
-    let mut sender = STREAM_P2P_SENDER.write().await;
-    *sender = (peer, sender);
-    drop(sender);
+    let mut stream_sender = STREAM_P2P_SENDER.write().await;
+    *stream_sender = Some((peer, sender));
+    drop(stream_sender);
 }
 
-pub async fn remove_peer_stream(peer: &PeerId) {
-    let mut senders = STREAM_P2P_SENDER.write().await;
-    senders.remove(peer);
+pub async fn remove_peer_stream() {
+    let mut stream_sender = STREAM_P2P_SENDER.write().await;
+    *stream_sender = None;
+    drop(stream_sender);
 }
 
 // send message to one peerid via libp2p_stream
-pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) {
-    let senders = STREAM_P2P_SENDER.read().await;
-    if let Some(stream_sender) = senders.get(peer) {
-        _ = stream_sender.try_send(payload);
+pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) -> OtherResult<()> {
+    let guard = STREAM_P2P_SENDER.read().await;
+    if let Some((_peer, sender)) = &*guard {
+        sender
+            .try_send(payload)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        drop(guard);
+        Ok(())
+    } else {
+        drop(guard);
+        Err(anyhow!("no sender found, may be network broken"))
     }
-    drop(senders);
 }
 
 // pub async fn stop_network() {
@@ -422,7 +429,7 @@ async fn handle_msg(peer: PeerId, stream: Stream, _network: String, ledger: Arc<
     let (wirter_send, writer_recv) = mpsc::channel(128);
 
     let (stream_send, stream_recv) = mpsc::channel(128);
-    add_peer_stream(peer, stream_send).await;
+    setup_peer_stream(peer, stream_send).await;
 
     tokio::spawn(handle_reader(rd, stop_rx1, stop_tx2, reader_send));
     tokio::spawn(handle_group_event(reader_recv, wirter_send, ledger));
