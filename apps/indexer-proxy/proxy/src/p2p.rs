@@ -28,8 +28,8 @@ use std::{collections::HashMap, env, env::args, fs, path::Path, str::FromStr, ti
 use subql_indexer_utils::{
     error::Error,
     p2p::{
-        generate_swarm, AgentBehavior, AgentBehaviorEvent, Event, GreeRequest, GreetResponse,
-        GroupEvent, ROOT_GROUP_ID, ROOT_NAME,
+        generate_swarm, get_ipfs_path, get_psk, AgentBehavior, AgentBehaviorEvent, Event,
+        GreeRequest, GreetResponse, GroupEvent, ROOT_GROUP_ID, ROOT_NAME,
     },
     payg::QueryState,
 };
@@ -1330,25 +1330,4 @@ async fn handle_close_agreement_query(
         )
         .await?;
     Ok(hex::encode(data))
-}
-
-fn get_ipfs_path() -> Box<Path> {
-    env::var("IPFS_PATH")
-        .map(|ipfs_path| Path::new(&ipfs_path).into())
-        .unwrap_or_else(|_| {
-            env::var("HOME")
-                .map(|home| Path::new(&home).join(".ipfs"))
-                .expect("could not determine home directory")
-                .into()
-        })
-}
-
-/// Read the pre shared key file from the given ipfs directory
-fn get_psk(path: &Path) -> std::io::Result<Option<String>> {
-    let swarm_key_file = path.join("swarm.key");
-    match fs::read_to_string(swarm_key_file) {
-        Ok(text) => Ok(Some(text)),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(e),
-    }
 }

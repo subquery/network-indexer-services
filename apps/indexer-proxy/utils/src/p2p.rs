@@ -42,6 +42,7 @@ use libp2p::{
 };
 use libp2p_stream::Behaviour as StreamBehavior;
 use serde::{Deserialize, Serialize};
+use std::{env, fs, path::Path};
 use std::{error::Error, time::Duration};
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
@@ -195,6 +196,27 @@ pub fn generate_swarm(
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(30)))
         .build())
+}
+
+pub fn get_ipfs_path() -> Box<Path> {
+    env::var("IPFS_PATH")
+        .map(|ipfs_path| Path::new(&ipfs_path).into())
+        .unwrap_or_else(|_| {
+            env::var("HOME")
+                .map(|home| Path::new(&home).join(".ipfs"))
+                .expect("could not determine home directory")
+                .into()
+        })
+}
+
+/// Read the pre shared key file from the given ipfs directory
+pub fn get_psk(path: &Path) -> std::io::Result<Option<String>> {
+    let swarm_key_file = path.join("swarm.key");
+    match fs::read_to_string(swarm_key_file) {
+        Ok(text) => Ok(Some(text)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
