@@ -73,3 +73,5 @@ pub const BOOTSTRAP: [&str; 3] = [
     "/ip4/8.219.198.62/tcp/7371",
     "/ip4/8.219.198.62/quic/7370",
 ];
+
+pub const LIBP2P_BOOTSTRAP: [&str; 1] = ["/ip4/0.0.0.0/tcp/4001"];
