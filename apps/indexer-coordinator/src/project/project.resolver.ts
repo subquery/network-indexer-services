@@ -64,9 +64,7 @@ export class ProjectResolver {
   ) {
     let project: Project;
     if (projectType === undefined) {
-      // todo: remove
-      // projectType = await this.projectService.getProjectType(id);
-      projectType = ProjectType.LLM;
+      projectType = await this.projectService.getProjectType(id);
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
@@ -203,9 +201,7 @@ export class ProjectResolver {
   ): Promise<AggregatedManifest> {
     const manifest = new AggregatedManifest();
     if (projectType === undefined) {
-      // todo: remove
-      // projectType = await this.projectService.getProjectType(projectId);
-      projectType = ProjectType.LLM;
+      projectType = await this.projectService.getProjectType(projectId);
     }
     switch (projectType) {
       case ProjectType.SUBQUERY:
