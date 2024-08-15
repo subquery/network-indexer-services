@@ -57,15 +57,11 @@ use tokio::{
 };
 
 use crate::{
-    // account::{get_indexer, indexer_healthy},
+    account::{get_indexer, indexer_healthy},
     auth::{check_and_get_agreement_limit, check_and_save_agreement},
     cli::COMMAND,
     // contracts::get_consumer_host_peer,
-    metrics::{
-        // get_timer_metrics,
-        MetricsNetwork,
-        MetricsQuery,
-    },
+    metrics::{get_timer_metrics, MetricsNetwork, MetricsQuery},
     payg::{merket_price, open_state, query_single_state},
     // primitives::*,
     project::get_project,
@@ -104,6 +100,14 @@ use libp2p_stream::{self as stream, Behaviour as StreamBehaviour};
 use either::Either;
 
 const RECV_PROTOCOL: StreamProtocol = StreamProtocol::new("/recv_metrics");
+
+pub static LOCAL_PEER_ID: Lazy<RwLock<Option<PeerId>>> = Lazy::new(|| RwLock::new(None));
+
+pub async fn setup_local_peer_id(peer_id: PeerId) {
+    let mut local_peer_id = LOCAL_PEER_ID.write().await;
+    *local_peer_id = Some(peer_id);
+    drop(local_peer_id);
+}
 
 // p2p sender via libp2p gossipsub
 pub static GOSSIPSUB_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
@@ -146,7 +150,7 @@ pub async fn remove_peer_stream() {
 }
 
 // send message to one peerid via libp2p_stream
-pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) -> OtherResult<()> {
+pub async fn stream_send(payload: Vec<u8>) -> OtherResult<()> {
     let guard = STREAM_P2P_SENDER.read().await;
     if let Some(sender) = &*guard {
         sender
@@ -221,22 +225,27 @@ pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) -> OtherResult<()> {
 //     }
 // }
 
-// async fn report_metrics() {
-//     loop {
-//         sleep(Duration::from_secs(P2P_METRICS_TIME)).await;
-//         let senders = P2P_SENDER.read().await;
-//         if senders.is_empty() {
-//             drop(senders);
-//             continue;
-//         } else {
-//             debug!("Report projects metrics");
-//             senders[0]
-//                 .send(rpc_request(0, "project-report-metrics", vec![], 0))
-//                 .await;
-//         }
-//         drop(senders);
-//     }
-// }
+async fn report_metrics() {
+    loop {
+        sleep(Duration::from_secs(3)).await;
+        let metrics = get_timer_metrics().await;
+        if !metrics.is_empty() {
+            let indexer = get_indexer().await;
+            let indexer_network = format!("{}:{}", indexer, COMMAND.network);
+            let event = Event::MetricsQueryCount2(indexer_network, metrics);
+            let peer_id = LOCAL_PEER_ID.read().await;
+            let group_event = GroupEvent {
+                group_id: 0,
+                peer_id: (*peer_id).unwrap(),
+                event,
+            };
+            drop(peer_id);
+            if let Ok(response_json) = serde_json::to_string(&group_event) {
+                _ = stream_send(response_json.into()).await;
+            }
+        }
+    }
+}
 
 // async fn report_status() {
 //     loop {
@@ -342,6 +351,9 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     let key_string = std::env::var("LIBP2P_KEY").expect("LIBP2P_KEY missing in .env");
     let hex_data = hex::decode(key_string).unwrap();
     let keypair = identity::Keypair::from_protobuf_encoding(&hex_data).unwrap();
+
+    let peer_id = keypair.public().to_peer_id();
+    setup_local_peer_id(peer_id).await;
 
     let mut init_groups = HashMap::new();
     init_groups.insert(ROOT_GROUP_ID, (ROOT_NAME.to_owned(), vec![]));
