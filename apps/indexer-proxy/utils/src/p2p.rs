@@ -49,6 +49,8 @@ pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
 pub const GOSSIPSUB_TOPIC_NAME: &str = "test-net";
 pub const STREAM_PROTOCOL: StreamProtocol = StreamProtocol::new("/echo");
+pub const METRICS_PEER_PUBLIC_KEY: &str =
+    "08011220b80a80f5c102a27190cc72d768f67eb781092b285838078e1e0d259fb96c9f04";
 
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";

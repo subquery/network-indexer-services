@@ -29,8 +29,8 @@ use subql_indexer_utils::{
     error::Error,
     p2p::{
         generate_swarm, get_ipfs_path, get_psk, AgentBehavior, AgentBehaviorEvent, Event,
-        GreeRequest, GreetResponse, GroupEvent, GOSSIPSUB_TOPIC_NAME, ROOT_GROUP_ID, ROOT_NAME,
-        STREAM_PROTOCOL,
+        GreeRequest, GreetResponse, GroupEvent, GOSSIPSUB_TOPIC_NAME, METRICS_PEER_PUBLIC_KEY,
+        ROOT_GROUP_ID, ROOT_NAME, STREAM_PROTOCOL,
     },
     payg::QueryState,
 };
@@ -53,7 +53,7 @@ use tokio::{
         mpsc::{self, Receiver, Sender},
         oneshot, RwLock,
     },
-    // time::sleep,
+    time::sleep,
 };
 
 use crate::{
@@ -81,7 +81,7 @@ use libp2p::{
     futures::StreamExt,
     gossipsub,
     identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig, Event as IdentifyEvent},
-    identity::{self, Keypair},
+    identity::{self, Keypair, PublicKey},
     kad::{
         store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig,
         Event as KadEvent, RoutingUpdate,
@@ -367,6 +367,7 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
     let (tx, mut rx) = mpsc::channel(100);
     setup_gossipsub_sender(tx).await;
+    let mut control = swarm.behaviour_mut().stream.new_control();
     tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -380,14 +381,17 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         }
     });
 
-    let control = swarm.behaviour_mut().stream.new_control();
-    let (stream_tx, stream_rx) = mpsc::channel(100);
+    let (stream_tx, mut stream_rx) = mpsc::channel(100);
+
+    let metrics_public_key_bytes = hex::decode(METRICS_PEER_PUBLIC_KEY).unwrap();
+    let metrics_public_key = PublicKey::try_decode_protobuf(&metrics_public_key_bytes).unwrap();
+    let metrics_peer_id = metrics_public_key.to_peer_id();
 
     tokio::spawn(async move {
         loop {
-            match control.open_stream(peer, STREAM_PROTOCOL).await {
-                Ok(stream) => handle_stream(stream, stream_rx.clone()).await,
-                Err(error @ stream::OpenStreamError::UnsupportedProtocol(_)) => {
+            match control.open_stream(metrics_peer_id, STREAM_PROTOCOL).await {
+                Ok(mut stream) => handle_stream(&mut stream, &mut stream_rx).await,
+                Err(_) => {
                     sleep(Duration::from_secs(3)).await;
                 }
             }
@@ -397,8 +401,9 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     Ok(())
 }
 
-async fn handle_stream(mut stream: Stream, mut stream_rx: Receiver<Vec<u8>>) {
+async fn handle_stream(stream: &mut Stream, stream_rx: &mut Receiver<Vec<u8>>) {
     loop {
+        let mut buf = [0u8; 1024];
         tokio::select! {
           Some(line) = stream_rx.recv() => {
             if let Err(e) = stream.write_all(&line).await {
@@ -406,11 +411,12 @@ async fn handle_stream(mut stream: Stream, mut stream_rx: Receiver<Vec<u8>>) {
               break;
             }
           },
-          Ok(0) = stream.read(&mut [0u8; 1024]) => {
-            println!("Stream closed");
-            break;
+          Ok(size) = stream.read(&mut buf) => {
+            if size == 0 {
+              println!("Stream closed");
+              break;
+            }
           },
-          Ok(_) = stream.read(&mut [0u8; 1024]) => {},
         }
     }
 }
@@ -444,7 +450,7 @@ async fn handle_msg(peer: PeerId, stream: Stream, _network: String, ledger: Arc<
     let (wirter_send, writer_recv) = mpsc::channel(128);
 
     let (stream_send, stream_recv) = mpsc::channel(128);
-    setup_peer_stream(peer, stream_send).await;
+    setup_peer_stream(stream_send).await;
 
     tokio::spawn(handle_reader(rd, stop_rx1, stop_tx2, reader_send));
     tokio::spawn(handle_group_event(reader_recv, wirter_send, ledger));
@@ -791,6 +797,7 @@ struct State(Arc<RwLock<Ledger>>);
 //     );
 
 //     rpc_handler.add_method(
+
 //         "project-report-metrics",
 //         |_, _, state: Arc<State>| async move {
 //             let mut results = HandleResult::new();
