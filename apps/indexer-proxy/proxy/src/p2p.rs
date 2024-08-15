@@ -120,8 +120,10 @@ pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
         sender
             .try_send(payload)
             .map_err(|e| anyhow!(e.to_string()))?;
+        drop(guard);
         Ok(())
     } else {
+        drop(guard);
         Err(anyhow!("no sender found, may be network broken")) // Use anyhow to create the error
     }
 }
