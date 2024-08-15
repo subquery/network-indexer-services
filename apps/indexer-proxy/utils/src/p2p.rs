@@ -47,6 +47,8 @@ use std::{error::Error, time::Duration};
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
+pub const GOSSIPSUB_TOPIC_NAME: &str = "test-net";
+
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";
 
