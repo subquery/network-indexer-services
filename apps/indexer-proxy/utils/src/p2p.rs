@@ -48,6 +48,7 @@ use std::{error::Error, time::Duration};
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
 pub const GOSSIPSUB_TOPIC_NAME: &str = "test-net";
+pub const STREAM_PROTOCOL: StreamProtocol = StreamProtocol::new("/echo");
 
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";

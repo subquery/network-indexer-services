@@ -29,7 +29,8 @@ use subql_indexer_utils::{
     error::Error,
     p2p::{
         generate_swarm, get_ipfs_path, get_psk, AgentBehavior, AgentBehaviorEvent, Event,
-        GreeRequest, GreetResponse, GroupEvent, ROOT_GROUP_ID, ROOT_NAME,
+        GreeRequest, GreetResponse, GroupEvent, GOSSIPSUB_TOPIC_NAME, ROOT_GROUP_ID, ROOT_NAME,
+        STREAM_PROTOCOL,
     },
     payg::QueryState,
 };
@@ -129,12 +130,12 @@ pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
 }
 
 // (peer_id sender) via libp2p_stream
-pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<(PeerId, mpsc::Sender<Vec<u8>>)>>> =
+pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
     Lazy::new(|| RwLock::new(None));
 
-pub async fn setup_peer_stream(peer: PeerId, sender: mpsc::Sender<Vec<u8>>) {
+pub async fn setup_peer_stream(sender: mpsc::Sender<Vec<u8>>) {
     let mut stream_sender = STREAM_P2P_SENDER.write().await;
-    *stream_sender = Some((peer, sender));
+    *stream_sender = Some(sender);
     drop(stream_sender);
 }
 
@@ -147,7 +148,7 @@ pub async fn remove_peer_stream() {
 // send message to one peerid via libp2p_stream
 pub async fn stream_send(peer: &PeerId, payload: Vec<u8>) -> OtherResult<()> {
     let guard = STREAM_P2P_SENDER.read().await;
-    if let Some((_peer, sender)) = &*guard {
+    if let Some(sender) = &*guard {
         sender
             .try_send(payload)
             .map_err(|e| anyhow!(e.to_string()))?;
@@ -361,27 +362,9 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
 
     println!("swarm is {:?}", swarm.network_info());
 
-    let mut incoming_streams = swarm
-        .behaviour()
-        .stream
-        .new_control()
-        .accept(RECV_PROTOCOL)
-        .unwrap();
-
-    let topic = gossipsub::IdentTopic::new("test-net");
+    let topic = gossipsub::IdentTopic::new(GOSSIPSUB_TOPIC_NAME);
     // subscribes to our topic
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
-
-    tokio::spawn(async move {
-        while let Some((peer, stream)) = incoming_streams.next().await {
-            let network_clone = network.clone();
-            let ledger_clone = ledger.clone();
-            tokio::spawn(async move {
-                handle_msg(peer, stream, network_clone, ledger_clone).await;
-            });
-        }
-    });
-
     let (tx, mut rx) = mpsc::channel(100);
     setup_gossipsub_sender(tx).await;
     tokio::spawn(async move {
@@ -397,7 +380,39 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         }
     });
 
+    let control = swarm.behaviour_mut().stream.new_control();
+    let (stream_tx, stream_rx) = mpsc::channel(100);
+
+    tokio::spawn(async move {
+        loop {
+            match control.open_stream(peer, STREAM_PROTOCOL).await {
+                Ok(stream) => handle_stream(stream, stream_rx.clone()).await,
+                Err(error @ stream::OpenStreamError::UnsupportedProtocol(_)) => {
+                    sleep(Duration::from_secs(3)).await;
+                }
+            }
+        }
+    });
+
     Ok(())
+}
+
+async fn handle_stream(mut stream: Stream, mut stream_rx: Receiver<Vec<u8>>) {
+    loop {
+        tokio::select! {
+          Some(line) = stream_rx.recv() => {
+            if let Err(e) = stream.write_all(&line).await {
+              println!("Write error: {e:?}");
+              break;
+            }
+          },
+          Ok(0) = stream.read(&mut [0u8; 1024]) => {
+            println!("Stream closed");
+            break;
+          },
+          Ok(_) = stream.read(&mut [0u8; 1024]) => {},
+        }
+    }
 }
 
 async fn handle_swarm_event(local_key: Keypair, swarm: &mut Swarm<AgentBehavior>) {
