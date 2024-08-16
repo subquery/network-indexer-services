@@ -58,8 +58,7 @@ pub async fn connect_remote(
     endpoint: String,
     tx: Sender<String>,
     req: Value,
-    state: MultipleQueryState,
-    is_test: bool,
+    state: Option<MultipleQueryState>,
 ) -> Result<()> {
     let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
     let request: RequestMessage =
@@ -77,8 +76,8 @@ pub async fn connect_remote(
     }
 
     // pay by real count
-    if !is_test {
-        pay_by_token(req_num, &tx, state.clone(), true).await?;
+    if state.is_some() {
+        pay_by_token(req_num, &tx, state.as_ref().unwrap().clone(), true).await?;
     }
 
     // open stream and send query to remote
@@ -98,8 +97,8 @@ pub async fn connect_remote(
 
         // pay by real count
         if count == BATCH {
-            if !is_test {
-                pay_by_token(count, &tx, state.clone(), false).await?;
+            if state.is_some() {
+                pay_by_token(count, &tx, state.as_ref().unwrap().clone(), false).await?;
             }
             count = 0;
         }
@@ -110,8 +109,8 @@ pub async fn connect_remote(
         }
     }
 
-    if count != 0 && !is_test {
-        pay_by_token(count, &tx, state, true).await?;
+    if count != 0 && state.is_some() {
+        pay_by_token(count, &tx, state.unwrap(), true).await?;
     }
 
     Ok(())
@@ -120,14 +119,13 @@ pub async fn connect_remote(
 pub fn api_stream(
     endpoint: String,
     req: Value,
-    state: MultipleQueryState,
-    is_test: bool,
+    state: Option<MultipleQueryState>,
 ) -> impl Stream<Item = String> {
     let (tx, rx) = channel::<String>(1024);
 
     tokio::spawn(async move {
         let tx1 = tx.clone();
-        if let Err(err) = connect_remote(endpoint, tx1, req, state, is_test).await {
+        if let Err(err) = connect_remote(endpoint, tx1, req, state).await {
             let state = build_data(err.to_json());
             let _ = tx.send(state).await;
         }
