@@ -229,20 +229,24 @@ async fn report_metrics() {
     loop {
         sleep(Duration::from_secs(3)).await;
         let metrics = get_timer_metrics().await;
-        if !metrics.is_empty() {
-            let indexer = get_indexer().await;
-            let indexer_network = format!("{}:{}", indexer, COMMAND.network);
-            let event = Event::MetricsQueryCount2(indexer_network, metrics);
-            let peer_id = LOCAL_PEER_ID.read().await;
-            let group_event = GroupEvent {
-                group_id: 0,
-                peer_id: (*peer_id).unwrap(),
-                event,
-            };
-            drop(peer_id);
-            if let Ok(response_json) = serde_json::to_string(&group_event) {
-                _ = stream_send(response_json.into()).await;
-            }
+        if metrics.is_empty() {
+            continue;
+        }
+        let indexer = get_indexer().await;
+        let indexer_network = format!("{}:{}", indexer, COMMAND.network);
+        let event = Event::MetricsQueryCount2(indexer_network, metrics);
+        let peer_id = LOCAL_PEER_ID.read().await;
+        if peer_id.is_none() {
+            continue;
+        }
+        let group_event = GroupEvent {
+            group_id: 0,
+            peer_id: (*peer_id).unwrap(),
+            event,
+        };
+        drop(peer_id);
+        if let Ok(response_json) = serde_json::to_string(&group_event) {
+            _ = stream_send(response_json.into()).await;
         }
     }
 }
