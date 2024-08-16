@@ -584,19 +584,29 @@ pub fn check_multiple_state_balance(
     let remote_prev = state_cache.remote;
     let used_amount = price * unit_times;
 
-    let local_next = state_cache.spent + used_amount;
+    let (local_next, flag) = state_cache.spent.overflowing_add(used_amount);
+    if flag {
+        return Err(Error::Overflow(1058));
+    }
 
     if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    let range = end - start;
+    let (range, flag) = end.overflowing_sub(start);
+    if flag {
+        return Err(Error::Overflow(1058));
+    }
+
     if range > MULTIPLE_RANGE_MAX {
         return Err(Error::Overflow(1059));
     }
 
-    let middle = start + range / 2;
+    let (middle, flag) = start.overflowing_add(range / 2);
+    if flag {
+        return Err(Error::Overflow(1058));
+    }
     let mut mpqsa = if local_next < middle {
         MultipleQueryStateActive::Active
     } else if local_next > end {
