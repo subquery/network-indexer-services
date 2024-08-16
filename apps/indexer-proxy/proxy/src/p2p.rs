@@ -29,8 +29,8 @@ use subql_indexer_utils::{
     error::Error,
     p2p::{
         generate_swarm, get_ipfs_path, get_psk, AgentBehavior, AgentBehaviorEvent, Event,
-        GreeRequest, GreetResponse, GroupEvent, GOSSIPSUB_TOPIC_NAME, METRICS_PEER_PUBLIC_KEY,
-        ROOT_GROUP_ID, ROOT_NAME, STREAM_PROTOCOL,
+        GreeRequest, GreetResponse, GroupEvent, SendType, GOSSIPSUB_TOPIC_NAME,
+        METRICS_PEER_PUBLIC_KEY, ROOT_GROUP_ID, ROOT_NAME, STREAM_PROTOCOL,
     },
     payg::QueryState,
 };
@@ -110,16 +110,16 @@ pub async fn setup_local_peer_id(peer_id: PeerId) {
 }
 
 // p2p sender via libp2p gossipsub
-pub static GOSSIPSUB_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
+pub static GOSSIPSUB_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<SendType>>>> =
     Lazy::new(|| RwLock::new(None));
 
-pub async fn setup_gossipsub_sender(sender: mpsc::Sender<Vec<u8>>) {
+pub async fn setup_gossipsub_sender(sender: mpsc::Sender<SendType>) {
     let mut senders = GOSSIPSUB_P2P_SENDER.write().await;
     *senders = Some(sender);
     drop(senders);
 }
 
-pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
+pub async fn gossipsub_send_msg(payload: SendType) -> OtherResult<()> {
     let guard = GOSSIPSUB_P2P_SENDER.read().await;
     if let Some(sender) = &*guard {
         sender
@@ -134,10 +134,10 @@ pub async fn gossipsub_send_msg(payload: Vec<u8>) -> OtherResult<()> {
 }
 
 // (peer_id sender) via libp2p_stream
-pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<Vec<u8>>>>> =
+pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<GroupEvent>>>> =
     Lazy::new(|| RwLock::new(None));
 
-pub async fn setup_peer_stream(sender: mpsc::Sender<Vec<u8>>) {
+pub async fn setup_peer_stream(sender: mpsc::Sender<GroupEvent>) {
     let mut stream_sender = STREAM_P2P_SENDER.write().await;
     *stream_sender = Some(sender);
     drop(stream_sender);
@@ -150,7 +150,7 @@ pub async fn remove_peer_stream() {
 }
 
 // send message to one peerid via libp2p_stream
-pub async fn stream_send(payload: Vec<u8>) -> OtherResult<()> {
+pub async fn stream_send(payload: GroupEvent) -> OtherResult<()> {
     let guard = STREAM_P2P_SENDER.read().await;
     if let Some(sender) = &*guard {
         sender
@@ -244,10 +244,9 @@ async fn report_metrics() {
             peer_id: (*peer_id).unwrap(),
             event,
         };
-        drop(peer_id);
-        if let Ok(response_json) = serde_json::to_string(&group_event) {
-            _ = stream_send(response_json.into()).await;
-        }
+      drop(peer_id);
+      stream_send(group_event).await;
+
     }
 }
 
@@ -389,7 +388,7 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
             tokio::select! {
               _ = handle_swarm_event(keypair.clone(), &mut swarm) => {},
               Some(line) = rx.recv() => {
-                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), line){
+                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), serde_json::to_string(line)){
                     println!("Publish error: {e:?}");
                   }
               },
