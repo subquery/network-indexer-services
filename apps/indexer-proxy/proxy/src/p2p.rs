@@ -19,33 +19,20 @@
 use base64::{engine::general_purpose, Engine as _};
 // use chamomile_types::Peer as ChamomilePeer;
 use once_cell::sync::Lazy;
-use std::collections::BTreeMap;
-// use serde::Serialize;
 use std::io::Result;
 use std::sync::Arc;
-use std::{collections::HashMap, env, env::args, fs, path::Path, str::FromStr, time::Duration};
+use std::{collections::HashMap, str::FromStr, time::Duration};
 
 use subql_indexer_utils::{
     error::Error,
     p2p::{
         generate_swarm, get_ipfs_path, get_psk, AgentBehavior, AgentBehaviorEvent, Event,
-        GreeRequest, GreetResponse, GroupEvent, SendType, GOSSIPSUB_TOPIC_NAME,
-        METRICS_PEER_PUBLIC_KEY, ROOT_GROUP_ID, ROOT_NAME, STREAM_PROTOCOL,
+        GroupEvent, SendType, GOSSIPSUB_TOPIC_NAME, METRICS_PEER_PUBLIC_KEY, ROOT_GROUP_ID,
+        ROOT_NAME, STREAM_PROTOCOL,
     },
     payg::QueryState,
 };
-use tdn::{
-    //     prelude::{
-    //         channel_rpc_channel, start_with_config_and_key, ChannelRpcSender, Config, GroupId,
-    //         HandleResult, NetworkType, Peer, PeerId, PeerKey, ReceiveMessage, RecvType, SendMessage,
-    //         SendType,
-    //     },
-    types::{
-        // group::hash_to_group_id,
-        primitives::{vec_check_push, vec_remove_item},
-        //         rpc::{rpc_request, RpcError, RpcHandler, RpcParam},
-    },
-};
+use tdn::types::primitives::{vec_check_push, vec_remove_item};
 
 use serde_json::{json, Value};
 use tokio::{
@@ -73,31 +60,13 @@ use futures::{
     AsyncReadExt, AsyncWriteExt,
 };
 use libp2p::{
-    core::transport::upgrade::Version,
     futures::StreamExt,
     gossipsub,
-    identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig, Event as IdentifyEvent},
     identity::{self, Keypair, PublicKey},
-    kad::{
-        store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig,
-        Event as KadEvent, RoutingUpdate,
-    },
-    mdns,
-    noise::Config as NoiseConfig,
-    pnet::{PnetConfig, PreSharedKey},
-    request_response::{
-        cbor::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
-        Event as RequestResponseEvent, Message as RequestResponseMessage,
-        ProtocolSupport as RequestResponseProtocolSupport,
-    },
+    pnet::PreSharedKey,
     swarm::SwarmEvent,
-    tcp,
-    yamux::Config as YamuxConfig,
-    Multiaddr, PeerId, Stream, StreamProtocol, Swarm, SwarmBuilder, Transport,
+    PeerId, Stream, StreamProtocol, Swarm, Transport,
 };
-use libp2p_stream::{self as stream, Behaviour as StreamBehaviour};
-
-use either::Either;
 
 const RECV_PROTOCOL: StreamProtocol = StreamProtocol::new("/recv_metrics");
 
@@ -244,9 +213,8 @@ async fn report_metrics() {
             peer_id: (*peer_id).unwrap(),
             event,
         };
-      drop(peer_id);
-      stream_send(group_event).await;
-
+        drop(peer_id);
+        _ = stream_send(group_event).await;
     }
 }
 
@@ -387,16 +355,20 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         loop {
             tokio::select! {
               _ = handle_swarm_event(keypair.clone(), &mut swarm) => {},
-              Some(line) = rx.recv() => {
-                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), serde_json::to_string(line)){
+              Some(send_type) = rx.recv() => {
+                if let Ok(send_string) = serde_json::to_string(&send_type) {
+                  if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), send_string.as_bytes()){
                     println!("Publish error: {e:?}");
                   }
+                }
+
               },
             }
         }
     });
 
     let (stream_tx, mut stream_rx) = mpsc::channel(100);
+    setup_peer_stream(stream_tx).await;
 
     let metrics_public_key_bytes = hex::decode(METRICS_PEER_PUBLIC_KEY).unwrap();
     let metrics_public_key = PublicKey::try_decode_protobuf(&metrics_public_key_bytes).unwrap();
@@ -416,15 +388,18 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     Ok(())
 }
 
-async fn handle_stream(stream: &mut Stream, stream_rx: &mut Receiver<Vec<u8>>) {
+async fn handle_stream(stream: &mut Stream, stream_rx: &mut Receiver<GroupEvent>) {
     loop {
         let mut buf = [0u8; 1024];
         tokio::select! {
-          Some(line) = stream_rx.recv() => {
-            if let Err(e) = stream.write_all(&line).await {
-              println!("Write error: {e:?}");
-              break;
+          Some(group_event) = stream_rx.recv() => {
+            if let Ok(group_event_string) = serde_json::to_string(&group_event) {
+              if let Err(e) = stream.write_all(group_event_string.as_bytes()).await {
+                println!("Write error: {e:?}");
+                break;
+              }
             }
+
           },
           Ok(size) = stream.read(&mut buf) => {
             if size == 0 {
@@ -579,7 +554,7 @@ async fn handle_writer(
     mut stop_rx: oneshot::Receiver<()>,
     send_tx: oneshot::Sender<()>,
     mut writer_recv: Receiver<Vec<u8>>,
-    mut stream_recv: Receiver<Vec<u8>>,
+    mut stream_recv: Receiver<GroupEvent>,
 ) {
     loop {
         tokio::select! {
@@ -595,16 +570,20 @@ async fn handle_writer(
             }
 
           },
-          Some(bytes) = stream_recv.recv() => {
-            if wr
-              .write(&(bytes.len() as u32).to_be_bytes())
-              .await
-              .is_ok()
-            {
-              _ = wr.write_all(&bytes[..]).await;
-            } else {
-              break;
+          Some(group_event) = stream_recv.recv() => {
+            if let Ok(group_event_string) = serde_json::to_string(&group_event) {
+              let bytes = group_event_string.as_bytes();
+              if wr
+                .write(&(bytes.len() as u32).to_be_bytes())
+                .await
+                .is_ok()
+              {
+                _ = wr.write_all(&bytes[..]).await;
+              } else {
+                break;
+              }
             }
+
 
           },
 
