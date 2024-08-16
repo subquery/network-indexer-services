@@ -390,18 +390,22 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
 
 async fn handle_stream(stream: &mut Stream, stream_rx: &mut Receiver<GroupEvent>) {
     loop {
-        let mut buf = [0u8; 1024];
+        let mut recv_buf = [0u8; 1024];
         tokio::select! {
           Some(group_event) = stream_rx.recv() => {
             if let Ok(group_event_string) = serde_json::to_string(&group_event) {
-              if let Err(e) = stream.write_all(group_event_string.as_bytes()).await {
+              let bytes = group_event_string.as_bytes();
+              let mut send_buffer = Vec::with_capacity(4 + bytes.len());
+              send_buffer.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
+              send_buffer.extend_from_slice(&bytes[..]);
+              if let Err(e) = stream.write_all(&send_buffer).await {
                 println!("Write error: {e:?}");
                 break;
               }
             }
 
           },
-          Ok(size) = stream.read(&mut buf) => {
+          Ok(size) = stream.read(&mut recv_buf) => {
             if size == 0 {
               println!("Stream closed");
               break;
