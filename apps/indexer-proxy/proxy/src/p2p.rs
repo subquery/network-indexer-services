@@ -102,6 +102,34 @@ pub async fn gossipsub_send_msg(payload: SendType) -> OtherResult<()> {
     }
 }
 
+// group event sender
+pub static GROUP_EVENT_SENDER: Lazy<RwLock<Option<mpsc::Sender<GroupEvent>>>> =
+    Lazy::new(|| RwLock::new(None));
+
+pub async fn setup_group_event_sender(sender: mpsc::Sender<GroupEvent>) {
+    let mut group_sender = GROUP_EVENT_SENDER.write().await;
+    *group_sender = Some(sender);
+    drop(group_sender);
+}
+
+pub async fn remove_group_event_sender() {
+    let mut group_sender = GROUP_EVENT_SENDER.write().await;
+    *group_sender = None;
+    drop(group_sender);
+}
+
+pub async fn send_group_event_via_sender(event: GroupEvent) {
+    let group_sender = GROUP_EVENT_SENDER.read().await;
+    if let Some(sender) = &*group_sender {
+        if let Err(err) = sender.try_send(event) {
+            println!("send_group_event_via_sender error: {err}");
+        }
+        drop(group_sender);
+    } else {
+        drop(group_sender);
+    }
+}
+
 // (peer_id sender) via libp2p_stream
 pub static STREAM_P2P_SENDER: Lazy<RwLock<Option<mpsc::Sender<GroupEvent>>>> =
     Lazy::new(|| RwLock::new(None));
@@ -413,6 +441,22 @@ async fn handle_gossipsub_event(event: gossipsub::Event) {
             if let Ok(received_json) = String::from_utf8(message.data) {
                 if let Ok(send_type) = serde_json::from_str::<SendType>(&received_json) {
                     println!("send_type is {:?}", send_type);
+                    match send_type {
+                        SendType::Event(groupd_id, peer_id, bytes) => {
+                            if let Ok(event) = serde_json::from_slice::<Event>(&bytes) {
+                                println!("event is {:?}", event);
+                                let group_event = GroupEvent {
+                                    group_id: groupd_id,
+                                    peer_id,
+                                    event,
+                                };
+                                send_group_event_via_sender(group_event).await;
+                            }
+                        }
+                        _ => {
+                            // todo!()
+                        }
+                    }
                 }
             }
         }
@@ -428,6 +472,7 @@ async fn handle_msg(stream: Stream, ledger: Arc<RwLock<Ledger>>) {
 
     let (reader_send, reader_recv) = mpsc::channel(128);
     let (wirter_send, writer_recv) = mpsc::channel(128);
+    setup_group_event_sender(reader_send.clone()).await;
 
     let (stream_send, stream_recv) = mpsc::channel(128);
     setup_peer_stream(stream_send).await;
