@@ -15,10 +15,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-use std::hash::{Hash, Hasher};
-use std::{time::Duration, error::Error};
-use tokio::io;
-use std::collections::hash_map::DefaultHasher;
 use either::Either;
 use libp2p::{
     core::transport::upgrade::Version,
@@ -45,7 +41,11 @@ use libp2p::{
 };
 use libp2p_stream::Behaviour as StreamBehavior;
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::{env, fs, path::Path};
+use std::{error::Error, time::Duration};
+use tokio::io;
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
@@ -216,7 +216,8 @@ pub fn generate_swarm(
                 .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message signing)
                 .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
                 .build()
-                .map_err(|msg| io::Error::new(io::ErrorKind::Other, msg)).unwrap(); // Temporary hack because `build` does not return a proper `std::error::Error`.
+                .map_err(|msg| io::Error::new(io::ErrorKind::Other, msg))
+                .unwrap(); // Temporary hack because `build` does not return a proper `std::error::Error`.
 
             // build a gossipsub network behaviour
             let gossipsub = gossipsub::Behaviour::new(

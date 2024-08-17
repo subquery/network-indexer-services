@@ -404,7 +404,20 @@ async fn handle_swarm_event(local_key: Keypair, swarm: &mut Swarm<AgentBehavior>
 }
 
 async fn handle_gossipsub_event(event: gossipsub::Event) {
-    println!("gossipsub event is {:?}", event);
+    match event {
+        gossipsub::Event::Message {
+            propagation_source,
+            message_id,
+            message,
+        } => {
+            if let Ok(received_json) = String::from_utf8(message.data) {
+                if let Ok(send_type) = serde_json::from_str::<SendType>(&received_json) {
+                    println!("send_type is {:?}", send_type);
+                }
+            }
+        }
+        _ => println!("gossipsub event is {:?}", event),
+    }
 }
 
 async fn handle_msg(stream: Stream, ledger: Arc<RwLock<Ledger>>) {
