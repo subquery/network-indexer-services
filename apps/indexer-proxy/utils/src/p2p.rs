@@ -70,7 +70,7 @@ pub struct GreetResponse {
 pub enum SendType {
     /// when need stable connect to a peer, send to TDN from outside.
     /// params: `delivery_id`, `peer` and `join_data`.
-    // Connect(u64, Peer, Vec<u8>),
+    Connect(u64, PeerId, Vec<u8>),
     /// when peer request for stable, outside decide connect or not.
     /// params: `delivery_id`, `peer_id`, `is_connect`, `is_force_close`, `result_data`.
     /// if `is_connect` is true, it will add to allow directly list.
@@ -78,7 +78,7 @@ pub enum SendType {
     /// if `is_connect` is false, but `is_force_close` if true, we
     /// will use this peer to build our DHT for better connection.
     /// if false, we will force close it.
-    // Result(u64, Peer, bool, bool, Vec<u8>),
+    Result(u64, PeerId, bool, bool, Vec<u8>),
     /// when outside want to close a connectioned peer. use it force close.
     /// params: `peer_id`.
     Disconnect(PeerId),
