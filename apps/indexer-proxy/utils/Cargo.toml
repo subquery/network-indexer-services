@@ -25,3 +25,4 @@ http = "1.1.0"
 libp2p = { version = "0.54.0", features = ["gossipsub", "kad", "mdns", "request-response", "tokio", "identify", "cbor", "serde", "noise", "pnet", "tcp", "yamux", "quic"] }
 libp2p-stream = "0.2.0-alpha"
 either = "1.13.0"
+tokio = "1.39.2"

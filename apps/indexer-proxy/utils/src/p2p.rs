@@ -15,7 +15,10 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-
+use std::hash::{Hash, Hasher};
+use std::{time::Duration, error::Error};
+use tokio::io;
+use std::collections::hash_map::DefaultHasher;
 use either::Either;
 use libp2p::{
     core::transport::upgrade::Version,
@@ -43,7 +46,6 @@ use libp2p::{
 use libp2p_stream::Behaviour as StreamBehavior;
 use serde::{Deserialize, Serialize};
 use std::{env, fs, path::Path};
-use std::{error::Error, time::Duration};
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
 
@@ -201,7 +203,22 @@ pub fn generate_swarm(
 
             let identify = IdentifyBehavior::new(identify_config);
 
-            let gossipsub_config = gossipsub::ConfigBuilder::default().build().unwrap();
+            // To content-address message, we can take the hash of message and use it as an ID.
+            let message_id_fn = |message: &gossipsub::Message| {
+                let mut s = DefaultHasher::new();
+                message.data.hash(&mut s);
+                gossipsub::MessageId::from(s.finish().to_string())
+            };
+
+            // Set a custom gossipsub configuration
+            let gossipsub_config = gossipsub::ConfigBuilder::default()
+                .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
+                .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message signing)
+                .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
+                .build()
+                .map_err(|msg| io::Error::new(io::ErrorKind::Other, msg)).unwrap(); // Temporary hack because `build` does not return a proper `std::error::Error`.
+
+            // build a gossipsub network behaviour
             let gossipsub = gossipsub::Behaviour::new(
                 gossipsub::MessageAuthenticity::Signed(key.clone()),
                 gossipsub_config,
