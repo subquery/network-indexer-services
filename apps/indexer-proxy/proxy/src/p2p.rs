@@ -324,12 +324,12 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     let keypair = identity::Keypair::from_protobuf_encoding(&hex_data).unwrap();
 
     let peer_id = keypair.public().to_peer_id();
-    setup_local_peer_id(peer_id).await;
+    setup_local_peer_id(peer_id.clone()).await;
 
     let mut init_groups = HashMap::new();
     init_groups.insert(ROOT_GROUP_ID, (ROOT_NAME.to_owned(), vec![]));
     let ledger = Arc::new(RwLock::new(Ledger {
-        consumer_host_service: (PeerId::random(), false),
+        consumer_host_service: (peer_id.clone(), false),
         telemetries: COMMAND.telemetries().iter().map(|v| (*v, false)).collect(),
         groups: init_groups,
     }));
@@ -367,8 +367,8 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
         }
     });
 
-    let (stream_tx, mut stream_rx) = mpsc::channel(100);
-    setup_peer_stream(stream_tx).await;
+    // let (stream_tx, mut stream_rx) = mpsc::channel(100);
+    // setup_peer_stream(stream_tx).await;
 
     let metrics_public_key_bytes = hex::decode(METRICS_PEER_PUBLIC_KEY).unwrap();
     let metrics_public_key = PublicKey::try_decode_protobuf(&metrics_public_key_bytes).unwrap();
@@ -377,7 +377,7 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     tokio::spawn(async move {
         loop {
             match control.open_stream(metrics_peer_id, STREAM_PROTOCOL).await {
-                Ok(mut stream) => handle_stream(&mut stream, &mut stream_rx).await,
+                Ok(stream) => handle_msg(stream, ledger.clone()).await,
                 Err(_) => {
                     sleep(Duration::from_secs(3)).await;
                 }
@@ -386,33 +386,6 @@ pub async fn libp2p_start_network(network: String) -> OtherResult<()> {
     });
 
     Ok(())
-}
-
-async fn handle_stream(stream: &mut Stream, stream_rx: &mut Receiver<GroupEvent>) {
-    loop {
-        let mut recv_buf = [0u8; 1024];
-        tokio::select! {
-          Some(group_event) = stream_rx.recv() => {
-            if let Ok(group_event_string) = serde_json::to_string(&group_event) {
-              let bytes = group_event_string.as_bytes();
-              let mut send_buffer = Vec::with_capacity(4 + bytes.len());
-              send_buffer.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
-              send_buffer.extend_from_slice(&bytes[..]);
-              if let Err(e) = stream.write_all(&send_buffer).await {
-                println!("Write error: {e:?}");
-                break;
-              }
-            }
-
-          },
-          Ok(size) = stream.read(&mut recv_buf) => {
-            if size == 0 {
-              println!("Stream closed");
-              break;
-            }
-          },
-        }
-    }
 }
 
 async fn handle_swarm_event(local_key: Keypair, swarm: &mut Swarm<AgentBehavior>) {
@@ -434,7 +407,7 @@ async fn handle_gossipsub_event(event: gossipsub::Event) {
     println!("gossipsub event is {:?}", event);
 }
 
-async fn handle_msg(peer: PeerId, stream: Stream, _network: String, ledger: Arc<RwLock<Ledger>>) {
+async fn handle_msg(stream: Stream, ledger: Arc<RwLock<Ledger>>) {
     let (rd, wr) = stream.split();
 
     let (stop_tx1, stop_rx1) = oneshot::channel();
@@ -563,27 +536,23 @@ async fn handle_writer(
     loop {
         tokio::select! {
           Some(bytes) = writer_recv.recv() => {
-            if wr
-              .write(&(bytes.len() as u32).to_be_bytes())
-              .await
-              .is_ok()
-            {
-              _ = wr.write_all(&bytes[..]).await;
-            } else {
+            let mut send_buffer = Vec::with_capacity(4 + bytes.len());
+            send_buffer.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
+            send_buffer.extend_from_slice(&bytes[..]);
+            if let Err(e) = wr.write_all(&send_buffer).await {
+              println!("Write error: {e:?}");
               break;
             }
-
           },
           Some(group_event) = stream_recv.recv() => {
+
             if let Ok(group_event_string) = serde_json::to_string(&group_event) {
               let bytes = group_event_string.as_bytes();
-              if wr
-                .write(&(bytes.len() as u32).to_be_bytes())
-                .await
-                .is_ok()
-              {
-                _ = wr.write_all(&bytes[..]).await;
-              } else {
+              let mut send_buffer = Vec::with_capacity(4 + bytes.len());
+              send_buffer.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
+              send_buffer.extend_from_slice(&bytes[..]);
+              if let Err(e) = wr.write_all(&send_buffer).await {
+                println!("Write error: {e:?}");
                 break;
               }
             }
