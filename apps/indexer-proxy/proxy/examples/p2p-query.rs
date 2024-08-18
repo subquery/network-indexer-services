@@ -22,9 +22,12 @@ use tdn::{
     types::{
         group::hash_to_group_id,
         primitives::{new_io_error, vec_check_push, vec_remove_item},
-        rpc::{json, rpc_request, RpcError, RpcHandler, RpcParam},
+        rpc::{rpc_request, RpcError, RpcHandler, RpcParam},
     },
 };
+
+use serde_json::json;
+
 use tokio::sync::{mpsc::Sender, RwLock};
 
 static P2P_SENDER: Lazy<RwLock<Vec<ChannelRpcSender>>> = Lazy::new(|| RwLock::new(vec![]));

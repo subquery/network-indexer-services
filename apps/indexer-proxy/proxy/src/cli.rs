@@ -30,7 +30,8 @@ use subql_indexer_utils::{
     constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
     error::Error,
 };
-use tdn::prelude::PeerId;
+// use tdn::prelude::PeerId;
+use libp2p::PeerId;
 use tokio::sync::OnceCell;
 
 const DEFAULT_P2P_ADDR: &str = "0.0.0.0:7370";
@@ -196,15 +197,15 @@ impl CommandLineArgs {
             match self.network() {
                 Network::Mainnet => TELEMETRIES_MAINNET
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
                 Network::Kepler => TELEMETRIES_KEPLER
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
                 _ => TELEMETRIES_TESTNET
                     .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+                    .filter_map(|p| PeerId::from_bytes(p.trim().as_bytes()).ok())
                     .collect(),
             }
         } else {

@@ -49,7 +49,7 @@ use crate::metadata::{
     ai_metadata, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
-use crate::p2p::send;
+// use crate::p2p::send;
 
 pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -561,9 +561,9 @@ async fn update_projects(deployments: Vec<Project>) {
             let gid = hash_to_group_id(o.as_bytes());
             lock.remove(o);
             // project leave
-            tokio::spawn(async move {
-                send("project-leave", vec![], gid).await;
-            });
+            // tokio::spawn(async move {
+            //     send("project-leave", vec![], gid).await;
+            // });
         }
     }
 
@@ -571,9 +571,9 @@ async fn update_projects(deployments: Vec<Project>) {
         let did = n.id.clone();
         lock.insert(did.clone(), n);
         // project join
-        tokio::spawn(async move {
-            send("project-join", vec![json!(did)], 0).await;
-        });
+        // tokio::spawn(async move {
+        //     send("project-join", vec![json!(did)], 0).await;
+        // });
     }
 
     drop(lock);

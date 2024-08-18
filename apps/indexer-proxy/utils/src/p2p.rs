@@ -15,17 +15,265 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-
+use either::Either;
+use libp2p::{
+    core::transport::upgrade::Version,
+    gossipsub::{self, Behaviour as GossipsubBehavior},
+    identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig},
+    identity::Keypair,
+    kad::{
+        store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig,
+        RoutingUpdate,
+    },
+    mdns,
+    mdns::tokio::Behaviour as MdnsBehavior,
+    noise::Config as NoiseConfig,
+    pnet::{PnetConfig, PreSharedKey},
+    request_response::{
+        cbor::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
+        OutboundRequestId, ProtocolSupport as RequestResponseProtocolSupport,
+        ResponseChannel as RequestResponseChannel,
+    },
+    swarm::NetworkBehaviour,
+    tcp,
+    yamux::Config as YamuxConfig,
+    Multiaddr, PeerId, StreamProtocol, Swarm, SwarmBuilder, Transport,
+};
+use libp2p_stream::Behaviour as StreamBehavior;
 use serde::{Deserialize, Serialize};
-
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::{env, fs, path::Path};
+use std::{error::Error, time::Duration};
+use tokio::io;
 /// "SubQuery" hash to group id as root group id.
 pub const ROOT_GROUP_ID: u64 = 12408845626691334533;
+
+pub const GOSSIPSUB_TOPIC_NAME: &str = "test-net";
+pub const STREAM_PROTOCOL: StreamProtocol = StreamProtocol::new("/echo");
+pub const METRICS_PEER_PUBLIC_KEY: &str =
+    "08011220b80a80f5c102a27190cc72d768f67eb781092b285838078e1e0d259fb96c9f04";
 
 /// Root name for projects
 pub const ROOT_NAME: &str = "SubQuery";
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GreeRequest {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GreetResponse {
+    pub message: String,
+}
+
+/// copy from tdn, use to gossipsub message
+#[derive(Debug, Deserialize, Serialize)]
+pub enum SendType {
+    /// when need stable connect to a peer, send to TDN from outside.
+    /// params: `delivery_id`, `peer` and `join_data`.
+    Connect(u64, PeerId, Vec<u8>),
+    /// when peer request for stable, outside decide connect or not.
+    /// params: `delivery_id`, `peer_id`, `is_connect`, `is_force_close`, `result_data`.
+    /// if `is_connect` is true, it will add to allow directly list.
+    /// we want to build a better network, add a `is_force_close`.
+    /// if `is_connect` is false, but `is_force_close` if true, we
+    /// will use this peer to build our DHT for better connection.
+    /// if false, we will force close it.
+    Result(u64, PeerId, bool, bool, Vec<u8>),
+    /// when outside want to close a connectioned peer. use it force close.
+    /// params: `peer_id`.
+    Disconnect(PeerId),
+    /// when need send a data to a peer, only need know the peer_id,
+    /// the TDN will help you send data to there.
+    /// params: `delivery_id`, `peer_id`, `data_bytes`.
+    Event(u64, PeerId, Vec<u8>),
+}
+
+#[derive(NetworkBehaviour)]
+pub struct AgentBehavior {
+    pub identify: IdentifyBehavior,
+    pub kad: KadBehavior<KadInMemory>,
+    pub rr: RequestResponseBehavior<GreeRequest, GreetResponse>,
+    pub gossipsub: GossipsubBehavior,
+    pub mdns: MdnsBehavior,
+    pub stream: StreamBehavior,
+}
+
+impl AgentBehavior {
+    pub fn new(
+        kad: KadBehavior<KadInMemory>,
+        identify: IdentifyBehavior,
+        rr: RequestResponseBehavior<GreeRequest, GreetResponse>,
+        gossipsub: GossipsubBehavior,
+        mdns: MdnsBehavior,
+        stream: StreamBehavior,
+    ) -> Self {
+        Self {
+            kad,
+            identify,
+            rr,
+            gossipsub,
+            mdns,
+            stream,
+        }
+    }
+
+    pub fn register_addr_kad(&mut self, peer_id: &PeerId, addr: Multiaddr) -> RoutingUpdate {
+        self.kad.add_address(peer_id, addr)
+    }
+
+    pub fn send_message(&mut self, peer_id: &PeerId, message: GreeRequest) -> OutboundRequestId {
+        self.rr.send_request(peer_id, message)
+    }
+
+    pub fn send_response(
+        &mut self,
+        ch: RequestResponseChannel<GreetResponse>,
+        rs: GreetResponse,
+    ) -> Result<(), GreetResponse> {
+        self.rr.send_response(ch, rs)
+    }
+
+    pub fn set_server_mode(&mut self) {
+        self.kad.set_mode(Some(libp2p::kad::Mode::Server))
+    }
+}
+
+pub fn generate_swarm(
+    local_key: Keypair,
+    psk: Option<PreSharedKey>,
+) -> Result<Swarm<AgentBehavior>, Box<dyn Error>> {
+    Ok(SwarmBuilder::with_existing_identity(local_key)
+        .with_tokio()
+        .with_tcp(
+            tcp::Config::default().nodelay(true),
+            NoiseConfig::new,
+            YamuxConfig::default,
+        )?
+        .with_quic()
+        .with_other_transport(|k| {
+            let base_transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true));
+            let maybe_encrypted = match psk {
+                Some(psk) => Either::Left(
+                    base_transport
+                        .and_then(move |socket, _| PnetConfig::new(psk).handshake(socket)),
+                ),
+                None => Either::Right(base_transport),
+            };
+            maybe_encrypted
+                .upgrade(Version::V1Lazy)
+                .authenticate(NoiseConfig::new(k).unwrap())
+                .multiplex(YamuxConfig::default())
+        })?
+        .with_other_transport(|k| {
+            let base_transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true));
+            let maybe_encrypted = match psk {
+                Some(psk) => Either::Left(
+                    base_transport
+                        .and_then(move |socket, _| PnetConfig::new(psk).handshake(socket)),
+                ),
+                None => Either::Right(base_transport),
+            };
+            maybe_encrypted
+                .upgrade(Version::V1)
+                .authenticate(NoiseConfig::new(k).unwrap())
+                .multiplex(YamuxConfig::default())
+        })?
+        .with_behaviour(|key| {
+            let local_peer_id = PeerId::from(key.clone().public());
+            // info!("LocalPeerID: {local_peer_id}");
+
+            let kad_config = KadConfig::new(StreamProtocol::new("/agent/connection/1.0.0"));
+
+            let kad_memory = KadInMemory::new(local_peer_id);
+            let kad = KadBehavior::with_config(local_peer_id, kad_memory, kad_config);
+
+            let identify_config =
+                IdentifyConfig::new("/agent/connection/1.0.0".to_string(), key.clone().public())
+                    .with_push_listen_addr_updates(true)
+                    .with_interval(Duration::from_secs(30));
+
+            let rr_config = RequestResponseConfig::default();
+            let rr_protocol = StreamProtocol::new("/agent/message/1.0.0");
+            let rr_behavior = RequestResponseBehavior::<GreeRequest, GreetResponse>::new(
+                [(rr_protocol, RequestResponseProtocolSupport::Full)],
+                rr_config,
+            );
+
+            let identify = IdentifyBehavior::new(identify_config);
+
+            // To content-address message, we can take the hash of message and use it as an ID.
+            let message_id_fn = |message: &gossipsub::Message| {
+                let mut s = DefaultHasher::new();
+                message.data.hash(&mut s);
+                gossipsub::MessageId::from(s.finish().to_string())
+            };
+
+            // Set a custom gossipsub configuration
+            let gossipsub_config = gossipsub::ConfigBuilder::default()
+                .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
+                .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message signing)
+                .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
+                .build()
+                .map_err(|msg| io::Error::new(io::ErrorKind::Other, msg))
+                .unwrap(); // Temporary hack because `build` does not return a proper `std::error::Error`.
+
+            // build a gossipsub network behaviour
+            let gossipsub = gossipsub::Behaviour::new(
+                gossipsub::MessageAuthenticity::Signed(key.clone()),
+                gossipsub_config,
+            )
+            .unwrap();
+
+            let mdns = mdns::tokio::Behaviour::new(
+                mdns::Config {
+                    ttl: Duration::from_secs(5),
+                    query_interval: Duration::from_secs(1),
+                    ..Default::default()
+                },
+                key.public().to_peer_id(),
+            )
+            .unwrap();
+
+            let stream = StreamBehavior::new();
+
+            AgentBehavior::new(kad, identify, rr_behavior, gossipsub, mdns, stream)
+        })?
+        .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(30)))
+        .build())
+}
+
+pub fn get_ipfs_path() -> Box<Path> {
+    env::var("IPFS_PATH")
+        .map(|ipfs_path| Path::new(&ipfs_path).into())
+        .unwrap_or_else(|_| {
+            env::var("HOME")
+                .map(|home| Path::new(&home).join(".ipfs"))
+                .expect("could not determine home directory")
+                .into()
+        })
+}
+
+/// Read the pre shared key file from the given ipfs directory
+pub fn get_psk(path: &Path) -> std::io::Result<Option<String>> {
+    let swarm_key_file = path.join("swarm.key");
+    match fs::read_to_string(swarm_key_file) {
+        Ok(text) => Ok(Some(text)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JoinData(pub Vec<String>);
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GroupEvent {
+    pub group_id: u64,
+    pub peer_id: PeerId,
+    pub event: Event,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {

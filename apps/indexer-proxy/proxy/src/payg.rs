@@ -50,7 +50,7 @@ use crate::contracts::{
     check_consumer_controller, check_convert_price, check_state_channel_consumer, get_convert_price,
 };
 use crate::metrics::{MetricsNetwork, MetricsQuery};
-use crate::p2p::report_conflict;
+// use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 
 const CURRENT_VERSION: u8 = 3;
@@ -396,12 +396,12 @@ pub async fn before_query_signle_state(
             local_next, remote_next, price, state_cache.conflict_times
         );
 
-        let project_id = project.id.clone();
-        let channel = format!("{:#x}", channel_id);
-        let times = state_cache.conflict_times;
-        let start = state_cache.conflict_start;
-        let end = Utc::now().timestamp();
-        tokio::spawn(report_conflict(project_id, channel, times, start, end));
+        // let project_id = project.id.clone();
+        // let channel = format!("{:#x}", channel_id);
+        // let times = state_cache.conflict_times;
+        // let start = state_cache.conflict_start;
+        // let end = Utc::now().timestamp();
+        // tokio::spawn(report_conflict(project_id, channel, times, start, end));
 
         // overflow the conflict
         return Err(Error::PaygConflict(1050));
