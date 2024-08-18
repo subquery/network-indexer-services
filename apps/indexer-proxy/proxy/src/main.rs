@@ -54,7 +54,7 @@ async fn main() {
 
     subscriber::subscribe();
     monitor::listen();
-    // p2p::listen();
+    p2p::listen();
     metrics::listen();
     whitelist::listen();
 
