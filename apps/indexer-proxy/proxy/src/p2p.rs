@@ -280,12 +280,12 @@ async fn report_metrics() {
 //     }
 // }
 
-// pub fn listen() {
-//     tokio::spawn(report_metrics());
-//     tokio::spawn(report_status());
-//     tokio::spawn(check_stable());
-//     tokio::spawn(broadcast_healthy());
-// }
+pub fn listen() {
+    tokio::spawn(report_metrics());
+    // tokio::spawn(report_status());
+    // tokio::spawn(check_stable());
+    // tokio::spawn(broadcast_healthy());
+}
 
 // pub async fn start_network(key: PeerKey) {
 //     // start new network
