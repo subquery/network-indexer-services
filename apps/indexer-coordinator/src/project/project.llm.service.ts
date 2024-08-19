@@ -133,15 +133,17 @@ export class ProjectLLMService {
   async removeLLMProject(id: string): Promise<Project[]> {
     const project = await this.projectService.getProject(id);
     if (!project) return [];
-    const endpoints = project.serviceEndpoints;
-    const host = endpoints[0]?.value;
     const manifest = project.manifest as LLMManifest;
     const targetModel = manifest?.model?.name;
+
+    const endpoints = project.projectConfig.serviceEndpoints;
+    const host = endpoints[0]?.value;
+
     if (host && targetModel) {
-      const ollama = new Ollama({ host });
-      await ollama.delete({ model: targetModel });
+      await this.deleteModel(host, targetModel);
     }
-    return this.projectRepo.remove([project]);
+    const res = await this.projectRepo.remove([project]);
+    return res;
   }
 
   async validate(host): Promise<ValidationResponse> {
@@ -193,7 +195,9 @@ export class ProjectLLMService {
     try {
       const ollama = new Ollama({ host });
       await ollama.delete({ model });
-    } catch (err) {}
+    } catch (err) {
+      logger.warn(`delete model error: ${err.message}`);
+    }
     const onPulling = this.ongoingStreamedRequests.find((iterator) => {
       return iterator.meta.host === host && iterator.meta.model === model;
     });
