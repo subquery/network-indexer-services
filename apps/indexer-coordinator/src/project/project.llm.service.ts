@@ -133,15 +133,15 @@ export class ProjectLLMService {
   async removeLLMProject(id: string): Promise<Project[]> {
     const project = await this.projectService.getProject(id);
     if (!project) return [];
-    const manifest = project.manifest as LLMManifest;
-    const targetModel = manifest?.model?.name;
+    // const manifest = project.manifest as LLMManifest;
+    // const targetModel = manifest?.model?.name;
 
-    const endpoints = project.projectConfig.serviceEndpoints;
-    const host = endpoints[0]?.value;
+    // const endpoints = project.projectConfig.serviceEndpoints;
+    // const host = endpoints[0]?.value;
 
-    if (host && targetModel) {
-      await this.deleteModel(host, targetModel);
-    }
+    // if (host && targetModel) {
+    //   await this.deleteModel(host, targetModel);
+    // }
     const res = await this.projectRepo.remove([project]);
     return res;
   }
