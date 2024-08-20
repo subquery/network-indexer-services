@@ -117,6 +117,12 @@ export class ProjectLLMService {
         this.nodeEndpoint(host, '/v1/chat/completions'),
         LLMEndpointAccessType[LLMEndpointType.ApiGenerateEndpoint]
       ),
+
+      new SeviceEndpoint(
+        LLMEndpointType.AdminShowEndpoint,
+        this.nodeEndpoint(host, '/api/show'),
+        LLMEndpointAccessType[LLMEndpointType.AdminShowEndpoint]
+      ),
     ];
     return await this.projectRepo.save(project);
   }
