@@ -129,6 +129,7 @@ export enum SubgraphEndpointType {
 
 export enum LLMEndpointType {
   ApiGenerateEndpoint = 'api-generate-endpoint',
+  AdminShowEndpoint = 'api-show-endpoint',
 }
 
 export const SubgraphEndpointAccessType = {
@@ -141,6 +142,7 @@ export const SubgraphEndpointAccessType = {
 
 export const LLMEndpointAccessType = {
   [LLMEndpointType.ApiGenerateEndpoint]: AccessType.DEFAULT,
+  [LLMEndpointType.AdminShowEndpoint]: AccessType.INTERNAL,
 };
 
 @InputType('SubgraphPort')
