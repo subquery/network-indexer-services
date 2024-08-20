@@ -295,12 +295,16 @@ impl Project {
     pub fn is_rpc_project(&self) -> bool {
         matches!(
             self.ptype,
-            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_) | ProjectType::Subgraph
         )
     }
 
     pub fn is_ai_project(&self) -> bool {
         matches!(self.ptype, ProjectType::Ai)
+    }
+
+    pub fn is_subgraph_project(&self) -> bool {
+        matches!(self.ptype, ProjectType::Subgraph)
     }
 
     pub fn open_payg(&self) -> bool {
