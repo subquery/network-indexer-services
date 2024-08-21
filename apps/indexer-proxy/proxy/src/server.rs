@@ -21,7 +21,7 @@ use axum::extract::ws::WebSocket;
 use axum::{
     extract::{ConnectInfo, Path, WebSocketUpgrade},
     http::{
-        header::{HeaderMap, HeaderValue},
+        header::{self, HeaderMap, HeaderValue},
         Method, Response, StatusCode,
     },
     response::{IntoResponse, Redirect, Response as AxumResponse},
@@ -656,11 +656,39 @@ async fn ws_handler(
         .remove("X-SQ-No-Resp-Sig")
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
-
-    // Connect to remote
-    let remote_socket = match connect_to_project_ws(endpoint).await {
-        Ok(socket) => socket,
+    let project = match get_project(&deployment).await {
+        Ok(project) => project,
         Err(e) => return e.into_response(),
+    };
+
+    let remote_socket = if project.is_subgraph_project() {
+        let request = match tokio_tungstenite::tungstenite::http::Request::builder()
+            .method("GET")
+            .uri(endpoint)
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "graphql-ws")
+            .header(header::SEC_WEBSOCKET_KEY, "graphql-ws-key")
+            .header(header::SEC_WEBSOCKET_VERSION, "13")
+            .header(header::HOST, "localhost")
+            .header(header::CONNECTION, "Upgrade")
+            .header(header::UPGRADE, "websocket")
+            .body(())
+        {
+            Ok(request) => request,
+            Err(_) => return Error::WebSocket(1300).into_response(),
+        };
+
+        match tokio_tungstenite::connect_async(request).await {
+            Ok((socket, _)) => socket,
+            Err(_e) => {
+                // info!("_e: {:?}", _e);
+                return Error::WebSocket(1308).into_response();
+            }
+        }
+    } else {
+        match connect_to_project_ws(endpoint).await {
+            Ok(socket) => socket,
+            Err(e) => return e.into_response(),
+        }
     };
 
     // Handle WebSocket connection
