@@ -253,7 +253,7 @@ export class RewardService implements OnModuleInit {
     const openChannels = await this.paygService.getOpenChannels();
     for (const channel of openChannels) {
       const unclaimed = BigNumber.from(channel.remote).sub(channel.onchain);
-      // if (unclaimed.eq(0)) continue;
+      if (unclaimed.lte(0)) continue;
 
       let startTime = this.channelRewardsStartTimes.get(channel.id);
       if (!startTime) {
