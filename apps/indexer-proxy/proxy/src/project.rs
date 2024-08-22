@@ -46,7 +46,7 @@ use crate::account::ACCOUNT;
 use crate::cli::{redis, COMMAND};
 use crate::graphql::project_mainfest;
 use crate::metadata::{
-    rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
+    ai_metadata, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
 use crate::p2p::send;
@@ -60,6 +60,7 @@ pub enum ProjectType {
     RpcEvm(RpcMainfest),
     RpcSubstrate(RpcMainfest),
     Subgraph,
+    Ai,
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -232,7 +233,7 @@ impl Project {
         // compute unit times
         match &self.ptype {
             // TODO if multiple in single query
-            ProjectType::Subquery | ProjectType::Subgraph => Ok(((1, 1), 0)),
+            ProjectType::Subquery | ProjectType::Subgraph | ProjectType::Ai => Ok(((1, 1), 0)),
             ProjectType::RpcEvm(m) | ProjectType::RpcSubstrate(m) => {
                 // parse the jsonrpc method
                 if let Ok(s) = serde_json::from_str::<SimpleJsonrpc>(query) {
@@ -294,8 +295,16 @@ impl Project {
     pub fn is_rpc_project(&self) -> bool {
         matches!(
             self.ptype,
-            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_) | ProjectType::Subgraph
         )
+    }
+
+    pub fn is_ai_project(&self) -> bool {
+        matches!(self.ptype, ProjectType::Ai)
+    }
+
+    pub fn is_subgraph_project(&self) -> bool {
+        matches!(self.ptype, ProjectType::Subgraph)
     }
 
     pub fn open_payg(&self) -> bool {
@@ -316,6 +325,7 @@ impl Project {
                 data
             }
             ProjectType::Subgraph => subgraph_metadata(&self, network).await?,
+            ProjectType::Ai => ai_metadata(&self).await?,
         };
 
         let timestamp: u64 = SystemTime::now()
@@ -447,6 +457,7 @@ impl Project {
                 self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
                     .await?
             }
+            ProjectType::Ai => (vec![], String::new()),
         };
 
         Ok((d, s, waterlevel))
@@ -653,6 +664,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
             0 => ProjectType::Subquery,
             1 => ProjectType::RpcEvm(rpc_mainfest.clone()),
             3 => ProjectType::Subgraph,
+            4 => ProjectType::Ai,
             _ => {
                 error!("Invalid project type");
                 return Ok(());

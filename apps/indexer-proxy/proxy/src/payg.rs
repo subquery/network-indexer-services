@@ -750,14 +750,18 @@ pub async fn extend_channel(
              )
            {{ id, expiredAt }}
         }}"#,
-        channel_id, new_price, expired_at
+        channel_id, expired_at, new_price,
     );
     let url = COMMAND.graphql_url();
     let query = GraphQLQuery::query(&mdata);
-    graphql_request(&url, &query).await.map_err(|e| {
+    let query_result = graphql_request(&url, &query).await.map_err(|e| {
         error!("{:?}", e);
         Error::ServiceException(1202)
     })?;
+    // println!("query_result : {:?}", query_result);
+    if query_result.get("errors").is_some() {
+        return Err(Error::ServiceException(1202));
+    }
 
     let account = ACCOUNT.read().await;
     let indexer_sign = extend_sign2(
@@ -925,9 +929,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
     let remote = U256::from_dec_str(&channel.remote).map_err(|_e| Error::Serialize(1124))?;
     let price = U256::from_dec_str(&channel.price).map_err(|_e| Error::Serialize(1125))?;
 
-    let mut keybytes = [0u8; 32];
-    channel_id.to_little_endian(&mut keybytes);
-    let keyname = format!("{}-channel", hex::encode(keybytes));
+    let keyname = channel_id_to_keyname(channel_id);
 
     let mut conn = redis();
 

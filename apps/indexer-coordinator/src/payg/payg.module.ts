@@ -4,6 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ConfigModule } from 'src/config/config.module';
 import { CoreModule } from '../core/core.module';
 import { PaygEntity } from '../project/project.model';
 import { SubscriptionModule } from '../subscription/subscription.module';
@@ -19,6 +20,7 @@ import { PaygSyncService } from './payg.sync.service';
     SubscriptionModule,
     CoreModule,
     TypeOrmModule.forFeature([Channel, ChannelLabor, ChainInfo, PaygEntity]),
+    ConfigModule,
   ],
   providers: [PaygService, PaygSyncService, PaygQueryService, PaygResolver],
   exports: [PaygService],

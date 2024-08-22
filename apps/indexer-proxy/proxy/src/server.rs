@@ -21,14 +21,15 @@ use axum::extract::ws::WebSocket;
 use axum::{
     extract::{ConnectInfo, Path, WebSocketUpgrade},
     http::{
-        header::{HeaderMap, HeaderValue},
+        header::{self, HeaderMap, HeaderValue},
         Method, Response, StatusCode,
     },
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Response as AxumResponse},
     routing::{get, post},
     Json, Router,
 };
 use axum_auth::AuthBearer;
+use axum_streams::StreamBodyAs;
 use base64::{engine::general_purpose, Engine as _};
 use ethers::prelude::U256;
 use serde::{Deserialize, Serialize};
@@ -42,6 +43,7 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::ai::api_stream;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
 use crate::contracts::check_agreement_and_consumer;
@@ -113,10 +115,13 @@ pub async fn start_server(port: u16) {
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port);
     info!("HTTP server bind: {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
 #[derive(Deserialize)]
@@ -393,7 +398,7 @@ async fn default_payg(
     AuthPayg(auth): AuthPayg,
     Path(deployment): Path<String>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_payg_handler(headers, auth, deployment, "default".to_owned(), body).await
 }
 
@@ -402,7 +407,7 @@ async fn payg_query(
     AuthPayg(auth): AuthPayg,
     Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_payg_handler(headers, auth, deployment, ep_name, body).await
 }
 
@@ -412,7 +417,7 @@ async fn ep_payg_handler(
     deployment: String,
     ep_name: String,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     let res_fmt = headers
         .remove("X-Indexer-Response-Format")
         .unwrap_or(HeaderValue::from_static("inline"));
@@ -426,17 +431,38 @@ async fn ep_payg_handler(
         .remove("X-Channel-Block")
         .unwrap_or(HeaderValue::from_static("single"));
 
-    let project = get_project(&deployment).await?;
-    let endpoint = project.endpoint(&ep_name, true)?;
+    let project = match get_project(&deployment).await {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
+    let endpoint = match project.endpoint(&ep_name, true) {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
 
     if endpoint.is_ws {
-        return Err(Error::WebSocket(1315));
+        return Error::WebSocket(1315).into_response();
+    }
+
+    if project.is_ai_project() {
+        let state = match MultipleQueryState::from_bs64(auth) {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
+        let v = match serde_json::from_str::<Value>(&body).map_err(|_| Error::Serialize(1142)) {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
+        return payg_stream(endpoint.endpoint.clone(), v, state, false).await;
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
         Ok("multiple") => {
-            let state = MultipleQueryState::from_bs64(auth)?;
-            query_multiple_state(
+            let state = match MultipleQueryState::from_bs64(auth) {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            };
+            match query_multiple_state(
                 &deployment,
                 body,
                 endpoint.endpoint.clone(),
@@ -444,11 +470,18 @@ async fn ep_payg_handler(
                 MetricsNetwork::HTTP,
                 no_sig,
             )
-            .await?
+            .await
+            {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            }
         }
         _ => {
-            let state = QueryState::from_bs64_old1(auth)?;
-            query_single_state(
+            let state = match QueryState::from_bs64_old1(auth) {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            };
+            match query_single_state(
                 &deployment,
                 body,
                 endpoint.endpoint.clone(),
@@ -456,7 +489,11 @@ async fn ep_payg_handler(
                 MetricsNetwork::HTTP,
                 no_sig,
             )
-            .await?
+            .await
+            {
+                Ok(p) => p,
+                Err(e) => return e.into_response(),
+            }
         }
     };
 
@@ -488,7 +525,7 @@ async fn ep_payg_handler(
         headers.push(("X-RateLimit-Remaining-Second", (t - u).to_string().leak()));
     }
 
-    Ok(build_response(body, headers))
+    build_response(body, headers).into_response()
 }
 
 async fn ws_payg_query(
@@ -619,11 +656,39 @@ async fn ws_handler(
         .remove("X-SQ-No-Resp-Sig")
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
-
-    // Connect to remote
-    let remote_socket = match connect_to_project_ws(endpoint).await {
-        Ok(socket) => socket,
+    let project = match get_project(&deployment).await {
+        Ok(project) => project,
         Err(e) => return e.into_response(),
+    };
+
+    let remote_socket = if project.is_subgraph_project() {
+        let request = match tokio_tungstenite::tungstenite::http::Request::builder()
+            .method("GET")
+            .uri(endpoint)
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "graphql-ws")
+            .header(header::SEC_WEBSOCKET_KEY, "graphql-ws-key")
+            .header(header::SEC_WEBSOCKET_VERSION, "13")
+            .header(header::HOST, "localhost")
+            .header(header::CONNECTION, "Upgrade")
+            .header(header::UPGRADE, "websocket")
+            .body(())
+        {
+            Ok(request) => request,
+            Err(_) => return Error::WebSocket(1300).into_response(),
+        };
+
+        match tokio_tungstenite::connect_async(request).await {
+            Ok((socket, _)) => socket,
+            Err(_e) => {
+                // info!("_e: {:?}", _e);
+                return Error::WebSocket(1308).into_response();
+            }
+        }
+    } else {
+        match connect_to_project_ws(endpoint).await {
+            Ok(socket) => socket,
+            Err(e) => return e.into_response(),
+        }
     };
 
     // Handle WebSocket connection
@@ -631,3 +696,24 @@ async fn ws_handler(
         handle_websocket(remote_socket, socket, deployment, query_type, no_sig)
     })
 }
+
+async fn payg_stream(
+    endpoint: String,
+    v: Value,
+    state: MultipleQueryState,
+    is_test: bool,
+) -> AxumResponse {
+    let mut res = StreamBodyAs::text(api_stream(endpoint, v, state, is_test)).into_response();
+    res.headers_mut()
+        .insert("Content-Type", "text/event-stream".parse().unwrap());
+    res.headers_mut()
+        .insert("X-Response-Format", "stream".parse().unwrap());
+    res
+}
+
+// cleanup future
+// async fn test_ai(Json(v): Json<Value>) -> AxumResponse {
+//     let endpoint = "http://127.0.0.1:11434/v1/chat/completions".to_owned();
+//     let state = MultipleQueryState::empty();
+//     payg_stream(endpoint, v, state, true).await
+// }

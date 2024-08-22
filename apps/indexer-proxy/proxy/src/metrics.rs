@@ -28,7 +28,7 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::time::Instant;
 use subql_indexer_utils::request::REQUEST_CLIENT;
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
@@ -244,8 +244,8 @@ pub async fn get_services_version() -> u64 {
 pub async fn get_status() -> (u64, String) {
     let uptime = UPTIME.elapsed().as_secs();
     let sys = System::new();
-    let name = sys.name().unwrap_or("NULL".to_owned());
-    let os = sys.os_version().unwrap_or("NULL".to_owned());
+    let name = System::name().unwrap_or("NULL".to_owned());
+    let os = System::os_version().unwrap_or("NULL".to_owned());
     let cpu_count = sys
         .physical_core_count()
         .map(|v| v.to_string())
@@ -276,7 +276,7 @@ pub async fn get_timer_metrics() -> Vec<(String, u64, u64, Vec<(u64, u64, u64)>)
     results
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum MetricsQuery {
     Free,
     CloseAgreement,
@@ -284,7 +284,7 @@ pub enum MetricsQuery {
     Whitelist,
 }
 
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum MetricsNetwork {
     HTTP,
     P2P,
