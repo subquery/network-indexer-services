@@ -283,7 +283,7 @@ impl WebSocketConnection {
         let cache_key = format!("{}-ws", keyname);
 
         let mut conn = redis();
-        redis::cmd("SETEX")
+        let _: () = redis::cmd("SETEX")
             .arg(&cache_key)
             .arg(600) // 10min
             .arg(value)
@@ -307,7 +307,7 @@ impl WebSocketConnection {
             .query_async(&mut conn)
             .await
             .map_err(|_| Error::WebSocket(1306))?;
-        let _ = redis::cmd("DEL")
+        let _: () = redis::cmd("DEL")
             .arg(&cache_key)
             .query_async(&mut conn)
             .await
