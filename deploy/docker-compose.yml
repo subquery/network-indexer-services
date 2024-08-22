@@ -18,7 +18,7 @@ services:
       retries: 5
 
   coordinator:
-    image: subquerynetwork/indexer-coordinator:v2.2.3
+    image: subquerynetwork/indexer-coordinator:v2.4.0
     container_name: indexer_coordinator
     restart: always
     ports:
@@ -76,7 +76,7 @@ services:
       test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
 
   proxy:
-    image: subquerynetwork/indexer-proxy:v2.4.1
+    image: subquerynetwork/indexer-proxy:v2.5.0
     container_name: indexer_proxy
     restart: always
     ports:
