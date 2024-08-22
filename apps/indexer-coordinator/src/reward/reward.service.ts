@@ -31,6 +31,7 @@ export class RewardService implements OnModuleInit {
   private readonly oneDay = 24 * 60 * 60 * 1000;
   private readonly allocationBypassTimeLimit = 3 * this.oneDay;
   private readonly allocationStartTimes: Map<string, number> = new Map();
+  private readonly channelRewardsStartTimes: Map<string, number> = new Map();
 
   private readonly logger = getLogger('RewardService');
 
@@ -248,12 +249,31 @@ export class RewardService implements OnModuleInit {
     const thresholdConfig = await this.configService.get(ConfigType.STATE_CHANNEL_REWARD_THRESHOLD);
     const threshold = BigNumber.from(thresholdConfig);
 
+    const timeLimit = this.allocationBypassTimeLimit;
     const openChannels = await this.paygService.getOpenChannels();
     for (const channel of openChannels) {
       const unclaimed = BigNumber.from(channel.remote).sub(channel.onchain);
-      if (unclaimed.lte(threshold)) continue;
+      // if (unclaimed.eq(0)) continue;
+
+      let startTime = this.channelRewardsStartTimes.get(channel.id);
+      if (!startTime) {
+        startTime = Date.now();
+        this.channelRewardsStartTimes.set(channel.id, startTime);
+      }
+
+      if (unclaimed.lte(threshold) && Date.now() - startTime < timeLimit) {
+        this.logger.debug(
+          `Bypassed channel rewards [${unclaimed.toString()}] for channel ${channel.id} ${(
+            (Date.now() - startTime) /
+            this.oneDay
+          ).toFixed(2)}/${timeLimit / this.oneDay} days`
+        );
+        continue;
+      }
+
       try {
         await this.paygService.checkpoint(channel.id, txType);
+        this.channelRewardsStartTimes.delete(channel.id);
       } catch (e) {
         this.logger.error(`Failed to checkpoint for channel ${channel.id}: ${e}`);
         this.txOngoingMap[this.collectStateChannelRewards.name] = true;
