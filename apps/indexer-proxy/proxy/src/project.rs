@@ -457,7 +457,10 @@ impl Project {
                 self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
                     .await?
             }
-            ProjectType::Ai => (vec![], String::new()),
+            ProjectType::Ai => {
+                self.rpcquery_raw(body, endpoint, payment, network, no_sig, path)
+                    .await?
+            }
         };
 
         Ok((d, s, waterlevel))
