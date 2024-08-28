@@ -13,6 +13,7 @@ export enum ConfigType {
   ALLOCATION_REWARD_THRESHOLD = 'allocation_reward_threshold',
   STATE_CHANNEL_REWARD_THRESHOLD = 'state_channel_reward_threshold',
   AUTO_REDUCE_ALLOCATION_ENABLED = 'auto_reduce_allocation_enabled',
+  ADMIN_PASSWORD = 'admin_password',
 }
 
 const defaultConfig: Record<string, string> = {
@@ -71,5 +72,13 @@ export class ConfigService {
       return acc;
     }, {} as Record<string, string>);
     return Object.assign(defaults, data);
+  }
+
+  async setPassword(password: string) {
+    await this.set(ConfigType.ADMIN_PASSWORD, password);
+  }
+
+  async getPassword() {
+    return await this.get(ConfigType.ADMIN_PASSWORD);
   }
 }
