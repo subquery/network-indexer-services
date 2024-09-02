@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
@@ -27,7 +27,7 @@ export type ChannelState = StateChannelOnChain.ChannelStateStructOutput;
 const logger = getLogger('payg');
 
 @Injectable()
-export class PaygService {
+export class PaygService implements OnModuleInit {
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
@@ -37,6 +37,10 @@ export class PaygService {
     private onChain: OnChainService,
     private account: AccountService
   ) {}
+
+  onModuleInit() {
+    // this.closeOutdatedAndNotExtended();
+  }
 
   async channelFromContract(id: BigNumber): Promise<ChannelState> {
     const channel = await this.contract.getSdk().stateChannel.channel(id);
@@ -445,6 +449,9 @@ export class PaygService {
     if (channel.onchain === channel.remote) {
       return channel;
     }
+    if (!channel.lastIndexerSign || !channel.lastConsumerSign) {
+      return channel;
+    }
 
     // terminate
     await this.contract.sendTransaction({
@@ -540,28 +547,20 @@ export class PaygService {
     return await this.channelRepo.find({ where: { status: ChannelStatus.OPEN } });
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async closeOutdatedAndNotExtended() {
     const channels = await this.channelRepo.find();
     for (const c of channels) {
       try {
         const now = Math.floor(Date.now() / 1000);
-        const channelState = await this.channelFromContract(BigNumber.from(c.id));
-
-        // terminating
-        if (
-          !channelState ||
-          channelState.status === ChannelStatus.TERMINATING ||
-          c.expiredAt <= now ||
-          c.status === ChannelStatus.TERMINATING
-        ) {
+        if (c.expiredAt > now || c.status === ChannelStatus.TERMINATING) {
           continue;
-          // return this.updateChannelFromNetwork(c.id, altChannelData, true);
         }
-        // outdated
         await this.terminate(c.id);
       } catch (e) {
-        logger.debug(`closeOutdatedAndNotExtended state channel error: ${c.id}`);
+        logger.error(
+          `closeOutdatedAndNotExtended state channel(${c.id} ${c.deploymentId}) error: ${e.stack}`
+        );
       }
     }
   }
