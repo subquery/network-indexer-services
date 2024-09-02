@@ -8,8 +8,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
+import * as handlebars from 'handlebars';
 import _ from 'lodash';
 import { ConfigService } from 'src/config/config.service';
+import { DockerRegistry, DockerRegistryService } from 'src/core/docker.registry.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -36,7 +38,13 @@ import {
   getComposeFileDirectory,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
+import {
+  ChainType,
+  IPFS_URL,
+  dockerRegistryFromChain,
+  nodeConfigs,
+  projectConfigChanged,
+} from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -81,6 +89,7 @@ export class ProjectService {
     private portService: PortService,
     private onchainService: OnChainService,
     private configService: ConfigService,
+    private dockerRegistry: DockerRegistryService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -328,7 +337,7 @@ export class ProjectService {
     }
     project.hostType = hostType;
     await this.projectRepo.save(project);
-    
+
     if (project.hostType === HostType.USER_MANAGED) {
       return await this.startUserManagedSubqueryProject(project, projectConfig);
     }
@@ -619,6 +628,68 @@ export class ProjectService {
   async stopProjectOnChain(id: string) {
     const indexer = await this.account.getIndexer();
     return this.onchainService.stopProject(id, indexer);
+  }
+
+  async getDockerCompose(id?: string): Promise<string> {
+    return await this.buildTemplateItem(id);
+  }
+
+  async buildTemplateItem(id?: string) {
+    const nodeVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.node, '*');
+    const queryVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.query, '*');
+    id = id || '$deploymentId';
+
+    const data: any = {
+      deploymentID: id,
+      dbSchema: `schema_${id}`,
+      projectID: `${id}`,
+      servicePort: 3100,
+      postgres: {
+        host: '$DB_HOST',
+        port: 5432,
+        user: '$DB_USER',
+        pass: '$DB_PASS',
+        db: '$DB_DB',
+      },
+      mmrStoreType: 'postgres' as MmrStoreType,
+      dockerNetwork: 'indexer_services',
+      ipfsUrl: 'https://unauthipfs.subquery.network/ipfs/api/v0',
+      mmrPath: '/work/network-indexer-services/mmr',
+      networkEndpoints: [],
+      networkDictionary: '',
+      nodeVersion: nodeVersions[0] || 'v5.2.3',
+      queryVersion: queryVersions[0] || 'v2.15.1',
+      usePrimaryNetworkEndpoint: true,
+      poiEnabled: true,
+
+      indexerService: '',
+      queryService: '',
+      purgeDB: false,
+      timeout: 1800,
+      worker: 2,
+      batchSize: 50,
+      cache: 300,
+      cpu: 2,
+      memory: 2046,
+      serviceEndpoints: [],
+      primaryNetworkEndpoint: '',
+      hostCertsPath: '',
+      certsPath: '/usr/certs',
+      pgCa: '',
+      pgKey: '',
+      pgCert: '',
+    };
+
+    const chainType = 'substrate' as ChainType;
+    const config = { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
+    const context = { ...data, ...config };
+
+    const file = fs.readFileSync(path.join(__dirname, '..', 'utils', 'template.yml'), 'utf8');
+    handlebars.registerHelper('eq', (a, b) => a === b);
+    handlebars.registerHelper('ge', (a, b) => a >= b);
+    // getTemplateContextValidator().parse(context);
+    const template = handlebars.compile(file, { noEscape: true })(context);
+    return template;
   }
 
   rmrf(paths: string[]) {

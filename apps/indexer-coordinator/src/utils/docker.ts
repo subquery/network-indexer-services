@@ -114,7 +114,7 @@ export function canContainersRestart(id: string, containerStates: any[]): boolea
   return containersExist && !isContainerAborted;
 }
 
-function getTemplateContextValidator() {
+export function getTemplateContextValidator() {
   const versionSchema = z.string().refine((v) => v.match(/^v?\d+\.\d+\.\d+(-\d+)?$/), {
     message: 'Invalid version string',
   });
