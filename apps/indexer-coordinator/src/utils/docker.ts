@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { TemplateType } from '../project/types';
 import { argv } from '../yargs';
 import { getLogger } from './logger';
-import { nodeConfigs } from './project';
+import { ChainType, dockerRegistryFromChain, nodeConfigs } from './project';
 
 export function bytesToMegabytes(bytes: number): number {
   return bytes / (1024 * 1024);
@@ -102,6 +102,21 @@ export async function generateDockerComposeFile(data: TemplateType) {
     getLogger('docker').error(e, message);
     throw new Error(message);
   }
+}
+
+export function generateDockerComposeContent(data: TemplateType) {
+  const chainType = 'substrate' as ChainType;
+  const config = { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
+  const context = { ...data, ...config };
+
+  const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
+  handlebars.registerHelper('eq', (a, b) => a === b);
+  handlebars.registerHelper('ge', (a, b) => a >= b);
+  const template = handlebars.compile(file, { noEscape: true })(context);
+
+  console.log(template);
+  // getTemplateContextValidator().parse(context);
+  return template;
 }
 
 export function canContainersRestart(id: string, containerStates: any[]): boolean {

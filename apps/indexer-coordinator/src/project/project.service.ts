@@ -36,15 +36,10 @@ import {
   queryEndpoint,
   schemaName,
   getComposeFileDirectory,
+  generateDockerComposeContent,
 } from '../utils/docker';
 import { debugLogger, getLogger } from '../utils/logger';
-import {
-  ChainType,
-  IPFS_URL,
-  dockerRegistryFromChain,
-  nodeConfigs,
-  projectConfigChanged,
-} from '../utils/project';
+import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
@@ -637,24 +632,24 @@ export class ProjectService {
   async buildTemplateItem(id?: string) {
     const nodeVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.node, '*');
     const queryVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.query, '*');
-    id = id || '$deploymentId';
+    id = id || '$deploymentId$';
 
     const data: any = {
       deploymentID: id,
-      dbSchema: `schema_${id}`,
+      dbSchema: `$dbSchema$`,
       projectID: `${id}`,
       servicePort: 3100,
       postgres: {
-        host: '$DB_HOST',
+        host: '$host$',
         port: 5432,
-        user: '$DB_USER',
-        pass: '$DB_PASS',
-        db: '$DB_DB',
+        user: '$user$',
+        pass: '$pass$',
+        db: '$db$',
       },
       mmrStoreType: 'postgres' as MmrStoreType,
       dockerNetwork: 'indexer_services',
-      ipfsUrl: 'https://unauthipfs.subquery.network/ipfs/api/v0',
-      mmrPath: '/work/network-indexer-services/mmr',
+      ipfsUrl: '$ipfs$',
+      mmrPath: '$mmrPath$',
       networkEndpoints: [],
       networkDictionary: '',
       nodeVersion: nodeVersions[0] || 'v5.2.3',
@@ -679,17 +674,7 @@ export class ProjectService {
       pgKey: '',
       pgCert: '',
     };
-
-    const chainType = 'substrate' as ChainType;
-    const config = { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
-    const context = { ...data, ...config };
-
-    const file = fs.readFileSync(path.join(__dirname, '..', 'utils', 'template.yml'), 'utf8');
-    handlebars.registerHelper('eq', (a, b) => a === b);
-    handlebars.registerHelper('ge', (a, b) => a >= b);
-    // getTemplateContextValidator().parse(context);
-    const template = handlebars.compile(file, { noEscape: true })(context);
-    return template;
+    return generateDockerComposeContent(data);
   }
 
   rmrf(paths: string[]) {
