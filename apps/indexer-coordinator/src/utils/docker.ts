@@ -104,7 +104,7 @@ export async function generateDockerComposeFile(data: TemplateType) {
   }
 }
 
-export function generateDockerComposeContent(data: TemplateType) {
+export async function generateDockerComposeContent(data: TemplateType) {
   const chainType = 'substrate' as ChainType;
   const config = { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
   const context = { ...data, ...config };
@@ -114,7 +114,6 @@ export function generateDockerComposeContent(data: TemplateType) {
   handlebars.registerHelper('ge', (a, b) => a >= b);
   const template = handlebars.compile(file, { noEscape: true })(context);
 
-  console.log(template);
   // getTemplateContextValidator().parse(context);
   return template;
 }

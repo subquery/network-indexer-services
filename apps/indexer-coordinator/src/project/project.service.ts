@@ -632,24 +632,24 @@ export class ProjectService {
   async buildTemplateItem(id?: string) {
     const nodeVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.node, '*');
     const queryVersions = await this.dockerRegistry.getRegistryVersions(DockerRegistry.query, '*');
-    id = id || '$deploymentId$';
+    id = id || '<replace with deployment id>';
 
     const data: any = {
       deploymentID: id,
-      dbSchema: `$dbSchema$`,
+      dbSchema: `<replace with dbSchema>`,
       projectID: `${id}`,
       servicePort: 3100,
       postgres: {
-        host: '$host$',
+        host: '<replace with db host>',
         port: 5432,
-        user: '$user$',
-        pass: '$pass$',
-        db: '$db$',
+        user: '<replace with db user>',
+        pass: '<replace with db password>',
+        db: '<replace with db name>',
       },
       mmrStoreType: 'postgres' as MmrStoreType,
       dockerNetwork: 'indexer_services',
-      ipfsUrl: '$ipfs$',
-      mmrPath: '$mmrPath$',
+      ipfsUrl: '<replace with local ipfs url>',
+      mmrPath: '<replace with mmr path>',
       networkEndpoints: [],
       networkDictionary: '',
       nodeVersion: nodeVersions[0] || 'v5.2.3',
@@ -673,6 +673,11 @@ export class ProjectService {
       pgCa: '',
       pgKey: '',
       pgCert: '',
+
+      isUserManaged: true,
+      localIP: '<replace with local ip>',
+      localServiceNodePort: 3101,
+      localServiceQueryPort: 3102,
     };
     return generateDockerComposeContent(data);
   }
