@@ -7,14 +7,19 @@ import _ from 'lodash';
 import * as semver from 'semver';
 import { getLogger } from 'src/utils/logger';
 import { WebSocket } from 'ws';
+import { ENDPOINT_KEY } from './types';
+import { safeJSONParse } from 'src/utils/json';
 
 const logger = getLogger('rpc.factory');
 
-export function getRpcFamilyObject(rpcFamily: string): IRpcFamily | undefined {
+export function getRpcFamilyObject(
+  rpcFamily: string,
+  endpointKey: ENDPOINT_KEY
+): IRpcFamily | undefined {
   let family: IRpcFamily;
   switch (rpcFamily) {
     case 'evm':
-      family = new RpcFamilyEvm();
+      family = new RpcFamilyEvm(endpointKey);
       break;
     case 'substrate':
       family = new RpcFamilyPolkadot();
@@ -98,6 +103,8 @@ async function jsonWsRpcRequest(endpoint: string, method: string, params: any[])
   }
 }
 
+async function jsonMetricsRpcRequest(endpoint: string) {}
+
 function getRpcRequestFunction(endpoint: string) {
   if (!endpoint) {
     throw new Error('Endpoint is empty');
@@ -130,6 +137,11 @@ abstract class RpcFamily implements IRpcFamily {
   protected actions: (() => Promise<any>)[] = [];
   protected endpoint: string;
   protected requiredRpcType: RequiredRpcType = RequiredRpcType.http;
+  protected targetEndpointKey: ENDPOINT_KEY;
+
+  constructor(targetEndpointKey: ENDPOINT_KEY) {
+    this.targetEndpointKey = targetEndpointKey;
+  }
 
   async validate(endpoint: string) {
     this.endpoint = endpoint;
@@ -172,16 +184,35 @@ abstract class RpcFamily implements IRpcFamily {
 
 export class RpcFamilyEvm extends RpcFamily {
   getEndpointKeys(): string[] {
-    return ['evmWs', 'evmHttp'];
+    return [ENDPOINT_KEY.evmWs, ENDPOINT_KEY.evmHttp, ENDPOINT_KEY.evmHttpMetrics];
   }
 
   withChainId(chainId: string): IRpcFamily {
     this.actions.push(async () => {
-      const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'eth_chainId', []);
+      let p = null;
+      switch (this.targetEndpointKey) {
+        case ENDPOINT_KEY.evmHttp:
+          p = jsonRpcRequest(this.endpoint, 'eth_chainId', []);
+          break;
+        case ENDPOINT_KEY.evmWs:
+          p = jsonWsRpcRequest(this.endpoint, 'eth_chainId', []);
+          break;
+        case ENDPOINT_KEY.evmHttpMetrics:
+          p = jsonMetricsRpcRequest(this.endpoint);
+          break;
+        default:
+          throw new Error('Invalid endpointKey');
+      }
+      const result = await p;
       if (result.data.error) {
         throw new Error(`Request eth_chainId failed: ${result.data.error.message}`);
       }
-      const chainIdFromRpc = result.data.result;
+      let chainIdFromRpc = result.data.result;
+      if (this.targetEndpointKey === ENDPOINT_KEY.evmHttpMetrics) {
+        const info = safeJSONParse(result.data['chain/info']);
+        chainIdFromRpc = info?.chain_id;
+      }
+
       if (!BigNumber.from(chainIdFromRpc).eq(BigNumber.from(chainId || 0))) {
         throw new Error(
           `ChainId mismatch: ${BigNumber.from(chainIdFromRpc).toString()} != ${BigNumber.from(

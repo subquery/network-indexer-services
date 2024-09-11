@@ -126,3 +126,10 @@ export type TemplateType = {
   pgKey?: string;
   pgCert?: string;
 };
+
+
+export enum ENDPOINT_KEY {
+  evmHttp = 'evmHttp',
+  evmWs = 'evmWs',
+  evmHttpMetrics = 'evmHttpMetrics',
+}

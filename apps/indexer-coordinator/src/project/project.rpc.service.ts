@@ -19,7 +19,7 @@ import {
 } from './project.model';
 import { ProjectService } from './project.service';
 import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
-import { AccessType, ProjectType } from './types';
+import { AccessType, ENDPOINT_KEY, ProjectType } from './types';
 
 const logger = getLogger('project.rpc.service');
 
@@ -202,7 +202,7 @@ export class ProjectRpcService {
       const projectManifest = project.manifest as RpcManifest;
       const rpcFamily = projectManifest.rpcFamily.find((family) => endpointKey.startsWith(family));
       // const protocolType = endpointKey.replace(rpcFamily, '').toLowerCase();
-      await getRpcFamilyObject(rpcFamily)
+      await getRpcFamilyObject(rpcFamily, endpointKey as ENDPOINT_KEY)
         .withChainId(projectManifest.chain?.chainId)
         .withGenesisHash(projectManifest.chain?.genesisHash)
         .withNodeType(projectManifest.nodeType)
