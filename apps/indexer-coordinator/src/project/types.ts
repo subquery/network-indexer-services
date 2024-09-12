@@ -127,9 +127,30 @@ export type TemplateType = {
   pgCert?: string;
 };
 
-
 export enum ENDPOINT_KEY {
   evmHttp = 'evmHttp',
   evmWs = 'evmWs',
-  evmHttpMetrics = 'evmHttpMetrics',
+  evmMetricsHttp = 'evmMetricsHttp',
+
+  polkadotWs = 'polkadotWs',
+  polkadotHttp = 'polkadotHttp',
+  polkadotMetricsHttp = 'polkadotMetricsHttp',
+
+  substrateWs = 'substrateWs',
+  substrateHttp = 'substrateHttp',
+}
+
+export enum ErrorLevel {
+  none = '',
+  warn = 'warn',
+  error = 'error',
+}
+
+export class ValidateRpcEndpointError extends Error {
+  level: string;
+  constructor(message: string, level: string = ErrorLevel.none) {
+    super(message);
+    this.name = 'ValidateRpcEndpointError';
+    this.level = level;
+  }
 }
