@@ -222,6 +222,7 @@ export class ProjectRpcService {
         .withChainId(projectManifest.chain?.chainId)
         .withGenesisHash(projectManifest.chain?.genesisHash)
         .withNodeType(projectManifest.nodeType)
+        .withHeight()
         .withClientNameAndVersion(projectManifest.client?.name, projectManifest.client?.version)
         .validate(endpoint, endpointKey as ENDPOINT_KEY);
       return this.formatResponse(true);

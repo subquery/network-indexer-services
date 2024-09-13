@@ -132,6 +132,7 @@ export interface IRpcFamily {
   withNodeType(nodeType: string): IRpcFamily;
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
+  withHeight(height?: number): IRpcFamily;
   validate(endpoint: string, endpointKey: ENDPOINT_KEY): Promise<void>;
   getStartHeight(endpoint: string): Promise<number>;
   getTargetHeight(endpoint: string): Promise<number>;
@@ -148,7 +149,12 @@ abstract class RpcFamily implements IRpcFamily {
   async validate(endpoint: string, endpointKey: ENDPOINT_KEY) {
     this.endpoint = endpoint;
     this.targetEndpointKey = endpointKey;
-    await Promise.all(this.actions.map((action) => action()));
+
+    while (this.actions.length) {
+      const action = this.actions.shift();
+      await action();
+    }
+    // await Promise.all(this.actions.map((action) => action()));
   }
   getEndpointKeys(): string[] {
     throw new Error('Method not implemented.');
@@ -169,6 +175,9 @@ abstract class RpcFamily implements IRpcFamily {
     throw new Error('Method not implemented.');
   }
   withClientVersion(clientVersion: string): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
+  withHeight(height?: number): IRpcFamily {
     throw new Error('Method not implemented.');
   }
   getStartHeight(endpoint: string): Promise<number> {
@@ -306,6 +315,10 @@ export class RpcFamilyEvm extends RpcFamily {
     return this;
   }
 
+  withHeight(height?: number): IRpcFamily {
+    return this;
+  }
+
   async getStartHeight(endpoint: string): Promise<number> {
     const result = await getRpcRequestFunction(endpoint)(endpoint, 'eth_syncing', []);
     if (result.data.error) {
@@ -431,6 +444,10 @@ export class RpcFamilySubstrate extends RpcFamily {
     return this;
   }
 
+  withHeight(height?: number): IRpcFamily {
+    return this;
+  }
+
   async getStartHeight(endpoint: string): Promise<number> {
     if (this.startHeight) {
       return Promise.resolve(this.startHeight);
@@ -483,16 +500,63 @@ export class RpcFamilyPolkadot extends RpcFamilySubstrate {
   }
 
   withGenesisHash(genesisHash: string): IRpcFamily {
-    if (this.targetEndpointKey === ENDPOINT_KEY.polkadotMetricsHttp) {
-      return this;
-    }
-    return super.withGenesisHash(genesisHash);
+    this.actions.push(async () => {
+      if (this.targetEndpointKey === ENDPOINT_KEY.polkadotMetricsHttp) {
+        return this;
+      }
+      return super.withGenesisHash(genesisHash);
+    });
+    return this;
   }
 
   withNodeType(nodeType: string): IRpcFamily {
-    if (this.targetEndpointKey === ENDPOINT_KEY.polkadotMetricsHttp) {
-      return this;
+    this.actions.push(async () => {
+      if (this.targetEndpointKey === ENDPOINT_KEY.polkadotMetricsHttp) {
+        return this;
+      }
+      return super.withNodeType(nodeType);
+    });
+    return this;
+  }
+
+  withHeight(height?: number): IRpcFamily {
+    this.actions.push(async () => {
+      if (this.targetEndpointKey === ENDPOINT_KEY.polkadotMetricsHttp) {
+        const result = await jsonMetricsHttpRpcRequest(this.endpoint);
+        if (result.data.error) {
+          throw new ValidateRpcEndpointError(
+            `Request metrics failed: ${result.data.error.message}`,
+            ErrorLevel.warn
+          );
+        }
+        const height = this.parseBestBlockHeight(result.data);
+        if (!Number(height)) {
+          throw new ValidateRpcEndpointError(
+            `parse metrics height fail. current: ${height}`,
+            ErrorLevel.warn
+          );
+        }
+      }
+    });
+    return this;
+  }
+
+  parseBestBlockHeight(metrics: string) {
+    for (const line of metrics.split('\n')) {
+      if (line.startsWith('substrate_block_height')) {
+        const match = line.slice(22).match(/\{(.*)\}/);
+        if (match) {
+          const jsonObject: { [key: string]: string } = {};
+          for (const pair of match[1].split(',')) {
+            const [key, value] = pair.split('=');
+            jsonObject[key.trim()] = value.replace(/"/g, '').trim();
+          }
+          if (jsonObject.status === 'best') {
+            return line.split(/\s+/).pop();
+          }
+        }
+      }
     }
-    return super.withNodeType(nodeType);
+    return '';
   }
 }
