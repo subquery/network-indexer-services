@@ -3,11 +3,12 @@
 
 import assert from 'assert';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { BigNumber } from 'ethers';
 import { ConfigService, ConfigType } from 'src/config/config.service';
 import { NetworkService } from 'src/network/network.service';
 import { getLogger } from 'src/utils/logger';
+import { Config } from '../configure/configure.module';
 import { AccountService } from '../core/account.service';
 import { OnChainService } from '../core/onchain.service';
 import { TxType } from '../core/types';
@@ -24,6 +25,15 @@ export type DeploymentReduce = {
   toReduce: BigNumber;
   status: string;
 };
+
+const isTestNet = (Config.fromArgs().network as string) === 'testnet';
+const AUTO_RUN_TASK_CRON = isTestNet
+  ? CronExpression.EVERY_10_MINUTES
+  : CronExpression.EVERY_DAY_AT_1AM;
+
+const CHECK_TASKS_CRON = isTestNet
+  ? CronExpression.EVERY_5_MINUTES
+  : CronExpression.EVERY_30_MINUTES;
 
 @Injectable()
 export class RewardService implements OnModuleInit {
@@ -61,7 +71,7 @@ export class RewardService implements OnModuleInit {
     // })();
   }
 
-  @Cron('1 1 1 * * *')
+  @Cron(AUTO_RUN_TASK_CRON)
   async autoRunTasks() {
     await this.collectAllocationRewards(TxType.check);
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
@@ -71,7 +81,7 @@ export class RewardService implements OnModuleInit {
     await this.collectStateChannelRewards(TxType.check);
   }
 
-  @Cron('0 */30 * * * *')
+  @Cron(CHECK_TASKS_CRON)
   async checkTasks() {
     if (this.txOngoingMap[this.collectAllocationRewards.name]) {
       await this.collectAllocationRewards(TxType.postponed);
