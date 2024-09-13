@@ -4,6 +4,7 @@
 import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
 import { getLogger } from '../../utils/logger';
 import { ValidationResponse } from '../project.model';
+import { ErrorLevel } from '../types';
 
 const logger = getLogger('common.validator');
 
@@ -11,7 +12,7 @@ export async function validatePrivateEndpoint(endpoint: string): Promise<Validat
   try {
     const domain = getDomain(endpoint);
     if (!domain) {
-      return { valid: false, reason: 'Invalid domain' };
+      return { valid: false, reason: 'Invalid domain', level: ErrorLevel.error };
     }
     let ip: string;
     if (isIp(domain)) {
@@ -20,14 +21,14 @@ export async function validatePrivateEndpoint(endpoint: string): Promise<Validat
       ip = await getIpAddress(domain);
     }
     if (!ip) {
-      return { valid: false, reason: 'Invalid ip address' };
+      return { valid: false, reason: 'Invalid ip address', level: ErrorLevel.error };
     }
     if (!isPrivateIp(ip)) {
-      return { valid: false, reason: 'Endpoint is not private ip' };
+      return { valid: false, reason: 'Endpoint is not private ip', level: ErrorLevel.error };
     }
     return { valid: true, reason: '' };
   } catch (e) {
     logger.error(e);
-    return { valid: false, reason: e.message };
+    return { valid: false, reason: e.message, level: ErrorLevel.error };
   }
 }

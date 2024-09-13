@@ -48,8 +48,8 @@ export class ValidationResponse {
   valid: boolean;
   @Field()
   reason: string;
-  @Field()
-  level: string;
+  @Field({ nullable: true })
+  level?: string;
 }
 
 @ObjectType('Metadata')
