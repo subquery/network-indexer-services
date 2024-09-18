@@ -768,28 +768,6 @@ pub async fn extend_channel(
 
     // send to coordinator
     let expired_at = expired + expiration as i64;
-    let mdata = format!(
-        r#"mutation {{
-             channelExtend(
-               id:"{:#X}",
-               expiration:{},
-               price:"{}",
-             )
-           {{ id, expiredAt }}
-        }}"#,
-        channel_id, expired_at, new_price,
-    );
-    let url = COMMAND.graphql_url();
-    let query = GraphQLQuery::query(&mdata);
-    let query_result = graphql_request(&url, &query).await.map_err(|e| {
-        error!("{:?}", e);
-        Error::ServiceException(1202)
-    })?;
-    // println!("query_result : {:?}", query_result);
-    if query_result.get("errors").is_some() {
-        return Err(Error::ServiceException(1202));
-    }
-
     let account = ACCOUNT.read().await;
     let indexer_sign = extend_sign2(
         channel_id,
@@ -802,8 +780,31 @@ pub async fn extend_channel(
     )
     .await?;
     drop(account);
+    let indexer_sign = convert_sign_to_string(&indexer_sign);
+    let mdata = format!(
+        r#"mutation {{
+             channelExtend(
+               id:"{:#X}",
+               expiration:{},
+               price:"{}",
+               indexerSign:{},
+               consumerSign:{}
+           {{ id, expiredAt }}
+        }}"#,
+        channel_id, expired_at, new_price, indexer_sign, signature
+    );
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    let query_result = graphql_request(&url, &query).await.map_err(|e| {
+        error!("{:?}", e);
+        Error::ServiceException(1202)
+    })?;
+    // println!("query_result : {:?}", query_result);
+    if query_result.get("errors").is_some() {
+        return Err(Error::ServiceException(1202));
+    }
 
-    Ok(convert_sign_to_string(&indexer_sign))
+    Ok(indexer_sign)
 }
 
 pub async fn pay_channel(mut state: QueryState) -> Result<String> {
