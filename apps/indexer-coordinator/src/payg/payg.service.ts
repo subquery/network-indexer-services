@@ -400,6 +400,10 @@ export class PaygService implements OnModuleInit {
       throw new Error(`channel not exist: ${id}`);
     }
 
+    if (channel.status !== ChannelStatus.OPEN) {
+      throw new Error(`channel not open: ${id}`);
+    }
+
     let modified = false;
 
     const preExpirationAt = channel.expiredAt;
@@ -426,8 +430,12 @@ export class PaygService implements OnModuleInit {
       return channel;
     }
 
+    const expr = expiration - preExpirationAt;
+
     logger.debug(
-      `Extend state channel ${id}. ${JSON.stringify(channel)} preExpirationAt:${preExpirationAt}`
+      `Extend state channel ${id}. ${JSON.stringify(
+        channel
+      )} preExpirationAt:${preExpirationAt} expr:${expr}`
     );
 
     if (signed) {
@@ -440,7 +448,7 @@ export class PaygService implements OnModuleInit {
             .stateChannel.extend(
               id,
               preExpirationAt,
-              expiration - channel.expiredAt,
+              expr,
               channel.lastIndexerSign,
               channel.lastConsumerSign,
               channel.price,
@@ -452,7 +460,7 @@ export class PaygService implements OnModuleInit {
             .stateChannel.estimateGas.extend(
               id,
               preExpirationAt,
-              expiration - channel.expiredAt,
+              expr,
               channel.lastIndexerSign,
               channel.lastConsumerSign,
               channel.price,
