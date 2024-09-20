@@ -34,29 +34,79 @@ mod payg;
 mod primitives;
 mod project;
 mod response;
+mod sentry_log;
 mod server;
 mod subscriber;
 mod websocket;
 mod whitelist;
 
 use cli::COMMAND;
+use sentry_log::before_send;
+use std::sync::Arc;
 use tracing::Level;
 
-#[tokio::main]
-async fn main() {
-    let port = COMMAND.port();
-    let debug = COMMAND.debug();
+const GITHUB_SENTRY_DSN: Option<&'static str> = option_env!("SECRETS_SENTRY_DSN");
 
-    let log_filter = if debug { Level::DEBUG } else { Level::WARN };
-    tracing_subscriber::fmt().with_max_level(log_filter).init();
+fn main() {
+    if let Some(sentry_dsn) = GITHUB_SENTRY_DSN {
+        let sentry_option = sentry::ClientOptions {
+            before_send: Some(Arc::new(Box::new(before_send))),
+            release: sentry::release_name!(),
+            debug: true,
+            auto_session_tracking: true,
+            attach_stacktrace: true,
+            ..Default::default()
+        };
 
-    cli::init_redis().await;
+        let _sentry = sentry::init((sentry_dsn, sentry_option));
 
-    subscriber::subscribe();
-    monitor::listen();
-    p2p::listen();
-    metrics::listen();
-    whitelist::listen();
-
-    server::start_server(port).await;
+        start_tokio_main();
+    } else {
+        start_tokio_main();
+    }
 }
+
+fn start_tokio_main() {
+    let body = async {
+        let port = COMMAND.port();
+        let debug = COMMAND.debug();
+
+        let log_filter = if debug { Level::DEBUG } else { Level::WARN };
+        tracing_subscriber::fmt().with_max_level(log_filter).init();
+
+        cli::init_redis().await;
+
+        subscriber::subscribe();
+        monitor::listen();
+        p2p::listen();
+        metrics::listen();
+        whitelist::listen();
+        // tokio::spawn(test_sentry());
+
+        server::start_server(port).await;
+    };
+
+    #[allow(clippy::expect_used, clippy::diverging_sub_expression)]
+    {
+        return tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed building the Runtime")
+            .block_on(body);
+    }
+}
+
+// async fn test_sentry() {
+//     loop {
+//         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+//         let sentry_msg = format!(
+//             "ep_query_handler, not inline or wrapped, ep_name: {} ||| sabc",
+//             "test_end_point"
+//         );
+//         sentry::capture_message(&sentry_msg, sentry::Level::Error);
+
+//         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+//         let maybe_number: Result<i32, &str> = Err("This will crash");
+//         let _number = maybe_number.unwrap(); // This will panic
+//     }
+// }

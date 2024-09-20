@@ -53,6 +53,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::sentry_log::make_sentry_message;
 use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -318,7 +319,7 @@ async fn ep_query_handler(
     }
     let (data, signature, limit) = project
         .check_query(
-            body,
+            body.clone(),
             endpoint.endpoint.clone(),
             MetricsQuery::CloseAgreement,
             MetricsNetwork::HTTP,
@@ -344,7 +345,19 @@ async fn ep_query_handler(
             .unwrap_or("".to_owned()),
             vec![("X-Indexer-Response-Format", "wrapped")],
         ),
-        _ => ("".to_owned(), vec![]),
+        _ => {
+            let unique_title = format!(
+                "ep_query_handler, not inline or wrapped, deployment_id: {}, ep_name: {}",
+                deployment_id, ep_name
+            );
+            let msg = format!(
+                "res_fmt: {:#?}, headers: {:#?}, body: {}",
+                res_fmt, headers, body
+            );
+            let sentry_msg = make_sentry_message(&unique_title, &msg);
+            sentry::capture_message(&sentry_msg, sentry::Level::Error);
+            ("".to_owned(), vec![])
+        }
     };
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));

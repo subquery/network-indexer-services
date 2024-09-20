@@ -31,7 +31,7 @@ jobs:
           sh .github/workflows/scripts/proxyVersion.sh
 
       - name: Build and push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           push: true
           platforms: amd64,arm64
@@ -40,6 +40,8 @@ jobs:
           file: ./apps/indexer-proxy/proxy/Dockerfile
           tags: subquerynetwork/indexer-proxy:v${{ steps.fetch-version.outputs.VERSION }}
           build-args: RELEASE_VERSION=${{ steps.fetch-version.outputs.VERSION }}
+          secrets: |
+            SECRETS_SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
