@@ -330,13 +330,30 @@ async fn ep_query_handler(
         .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
-        Ok("inline") => (
-            String::from_utf8(data).unwrap_or("".to_owned()),
-            vec![
-                ("X-Indexer-Sig", signature.as_str()),
-                ("X-Indexer-Response-Format", "inline"),
-            ],
-        ),
+        Ok("inline") => {
+            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
+                return_data
+            } else {
+                let unique_title = format!(
+                    "ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
+                    deployment_id, ep_name
+                );
+                let msg = format!(
+                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                    res_fmt, headers, body, data
+                );
+                let sentry_msg = make_sentry_message(&unique_title, &msg);
+                sentry::capture_message(&sentry_msg, sentry::Level::Error);
+                "".to_owned()
+            };
+            (
+                return_body,
+                vec![
+                    ("X-Indexer-Sig", signature.as_str()),
+                    ("X-Indexer-Response-Format", "inline"),
+                ],
+            )
+        }
         Ok("wrapped") => (
             serde_json::to_string(&json!({
                 "result": general_purpose::STANDARD.encode(&data),
@@ -477,7 +494,7 @@ async fn ep_payg_handler(
             };
             match query_multiple_state(
                 &deployment,
-                body,
+                body.clone(),
                 endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
@@ -496,7 +513,7 @@ async fn ep_payg_handler(
             };
             match query_single_state(
                 &deployment,
-                body,
+                body.clone(),
                 endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
@@ -511,14 +528,31 @@ async fn ep_payg_handler(
     };
 
     let (body, mut headers) = match res_fmt.to_str() {
-        Ok("inline") => (
-            String::from_utf8(data).unwrap_or("".to_owned()),
-            vec![
-                ("X-Indexer-Sig", signature.as_str()),
-                ("X-Channel-State", state_data.as_str()),
-                ("X-Indexer-Response-Format", "inline"),
-            ],
-        ),
+        Ok("inline") => {
+            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
+                return_data
+            } else {
+                let unique_title = format!(
+                    "payg ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
+                    deployment, ep_name
+                );
+                let msg = format!(
+                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                    res_fmt, headers, body, data
+                );
+                let sentry_msg = make_sentry_message(&unique_title, &msg);
+                sentry::capture_message(&sentry_msg, sentry::Level::Error);
+                "".to_owned()
+            };
+            (
+                return_body,
+                vec![
+                    ("X-Indexer-Sig", signature.as_str()),
+                    ("X-Channel-State", state_data.as_str()),
+                    ("X-Indexer-Response-Format", "inline"),
+                ],
+            )
+        }
         // `wrapped` or other res format
         _ => (
             serde_json::to_string(&json!({
