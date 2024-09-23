@@ -404,6 +404,10 @@ export class PaygService implements OnModuleInit {
       throw new Error(`channel not open: ${id}`);
     }
 
+    if (!indexerSign || !consumerSign) {
+      throw new Error(`require indexerSign and consumerSign: ${id}`);
+    }
+
     let modified = false;
 
     const preExpirationAt = channel.expiredAt;
@@ -420,8 +424,8 @@ export class PaygService implements OnModuleInit {
 
     let signed = false;
     if (indexerSign && consumerSign) {
-      channel.lastConsumerSign = consumerSign;
-      channel.lastIndexerSign = indexerSign;
+      // channel.lastConsumerSign = consumerSign;
+      // channel.lastIndexerSign = indexerSign;
       modified = true;
       signed = true;
     }
@@ -449,8 +453,8 @@ export class PaygService implements OnModuleInit {
               id,
               preExpirationAt,
               expr,
-              channel.lastIndexerSign,
-              channel.lastConsumerSign,
+              indexerSign,
+              consumerSign,
               channel.price,
               overrides
             ),
@@ -461,8 +465,8 @@ export class PaygService implements OnModuleInit {
               id,
               preExpirationAt,
               expr,
-              channel.lastIndexerSign,
-              channel.lastConsumerSign,
+              indexerSign,
+              consumerSign,
               channel.price,
               overrides
             ),
