@@ -3,6 +3,9 @@ FROM rust:buster AS builder
 RUN update-ca-certificates
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
+ARG SECRETS_SENTRY_DSN
+ENV SECRETS_SENTRY_DSN=${SECRETS_SENTRY_DSN}
+
 WORKDIR /subql
 
 COPY . .
