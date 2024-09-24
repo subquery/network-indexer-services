@@ -342,8 +342,7 @@ async fn ep_query_handler(
                     "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
                     res_fmt, headers, body, data
                 );
-                let sentry_msg = make_sentry_message(&unique_title, &msg);
-                sentry::capture_message(&sentry_msg, sentry::Level::Error);
+                make_sentry_message(&unique_title, &msg);
                 "".to_owned()
             };
             (
@@ -371,8 +370,7 @@ async fn ep_query_handler(
                 "res_fmt: {:#?}, headers: {:#?}, body: {}",
                 res_fmt, headers, body
             );
-            let sentry_msg = make_sentry_message(&unique_title, &msg);
-            sentry::capture_message(&sentry_msg, sentry::Level::Error);
+            make_sentry_message(&unique_title, &msg);
             ("".to_owned(), vec![])
         }
     };
@@ -540,8 +538,7 @@ async fn ep_payg_handler(
                     "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
                     res_fmt, headers, body, data
                 );
-                let sentry_msg = make_sentry_message(&unique_title, &msg);
-                sentry::capture_message(&sentry_msg, sentry::Level::Error);
+                make_sentry_message(&unique_title, &msg);
                 "".to_owned()
             };
             (

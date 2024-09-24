@@ -45,7 +45,7 @@ use sentry_log::before_send;
 use std::sync::Arc;
 use tracing::Level;
 
-const GITHUB_SENTRY_DSN: Option<&'static str> = option_env!("SECRETS_SENTRY_DSN");
+pub const GITHUB_SENTRY_DSN: Option<&'static str> = option_env!("SECRETS_SENTRY_DSN");
 
 fn main() {
     if let Some(sentry_dsn) = GITHUB_SENTRY_DSN {
