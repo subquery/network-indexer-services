@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::COMMAND;
+use crate::GITHUB_SENTRY_DSN;
 use cached::{stores::TimedSizedCache, Cached};
 use once_cell::sync::Lazy;
 use sentry::{protocol::Event, types::protocol::v7::Exception};
@@ -27,8 +28,11 @@ static GLOBAL_MSG_SET: Lazy<Mutex<TimedSizedCache<String, ()>>> =
 static GLOBAL_HASH_SET: Lazy<Mutex<TimedSizedCache<String, ()>>> =
     Lazy::new(|| Mutex::new(TimedSizedCache::with_size_and_lifespan(1000, 600)));
 
-pub fn make_sentry_message(unique_title: &str, msg: &str) -> String {
-    format!("{} ||| {}", unique_title, msg)
+pub fn make_sentry_message(unique_title: &str, msg: &str) {
+    if GITHUB_SENTRY_DSN.is_some() {
+        let sentry_msg = format!("{} ||| {}", unique_title, msg);
+        sentry::capture_message(&sentry_msg, sentry::Level::Error);
+    }
 }
 
 pub fn before_send(mut event: Event<'static>) -> Option<Event<'static>> {

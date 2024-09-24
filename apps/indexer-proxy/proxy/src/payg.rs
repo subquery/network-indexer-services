@@ -588,13 +588,11 @@ pub fn check_multiple_state_balance(
 
     let (local_next, flag) = state_cache.spent.overflowing_add(used_amount);
     if flag {
-        let sentry_msg = make_sentry_message("overflowing_add used_amount overflow",
-            &format!("state_cache is {:#?}, used_amount is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", state_cache, used_amount, state_cache,
-                                 unit_times,
-                                 start,
-                                 end));
-
-        sentry::capture_message(&sentry_msg, sentry::Level::Error);
+        make_sentry_message("overflowing_add used_amount overflow",
+                            &format!("state_cache is {:#?}, used_amount is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", state_cache, used_amount, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
         return Err(Error::Overflow(1058));
     }
 
@@ -605,12 +603,11 @@ pub fn check_multiple_state_balance(
 
     let (range, flag) = end.overflowing_sub(start);
     if flag {
-        let sentry_msg = make_sentry_message("overflowing_sub start overflow",
-                                             &format!("start is {:#?}, end is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, end, state_cache,
-                                 unit_times,
-                                 start,
-                                 end));
-        sentry::capture_message(&sentry_msg, sentry::Level::Error);
+        make_sentry_message("overflowing_sub start overflow",
+                            &format!("start is {:#?}, end is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, end, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
         return Err(Error::Overflow(1058));
     }
 
@@ -620,12 +617,11 @@ pub fn check_multiple_state_balance(
 
     let (middle, flag) = start.overflowing_add(range / 2);
     if flag {
-        let sentry_msg = make_sentry_message("overflowing_add range overflow",
-                                             &format!("start is {:#?}, range is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, range, state_cache,
-                                 unit_times,
-                                 start,
-                                 end));
-        sentry::capture_message(&sentry_msg, sentry::Level::Error);
+        make_sentry_message("overflowing_add range overflow",
+                            &format!("start is {:#?}, range is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, range, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
         return Err(Error::Overflow(1058));
     }
     let mut mpqsa = if local_next < middle {
