@@ -52,7 +52,7 @@ fn main() {
         let sentry_option = sentry::ClientOptions {
             before_send: Some(Arc::new(Box::new(before_send))),
             release: sentry::release_name!(),
-            debug: true,
+            debug: false,
             auto_session_tracking: true,
             attach_stacktrace: true,
             ..Default::default()
@@ -81,7 +81,8 @@ fn start_tokio_main() {
         p2p::listen();
         metrics::listen();
         whitelist::listen();
-        // tokio::spawn(test_sentry());
+
+        tokio::spawn(check_sentry_status());
 
         server::start_server(port).await;
     };
@@ -96,17 +97,29 @@ fn start_tokio_main() {
     }
 }
 
-// async fn test_sentry() {
-//     loop {
-//         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-//         let sentry_msg = format!(
-//             "ep_query_handler, not inline or wrapped, ep_name: {} ||| sabc",
-//             "test_end_point"
-//         );
-//         sentry::capture_message(&sentry_msg, sentry::Level::Error);
+async fn check_sentry_status() {
+    if let Some(sentry_dsn) = GITHUB_SENTRY_DSN {
+        if sentry_dsn.len() > 20 {
+            info!(
+                "sentry is enabled, sentry_dsn top 20 characters is {}",
+                &sentry_dsn[0..20]
+            );
+        } else {
+            info!("sentry is enabled, sentry_dsn is {}", sentry_dsn);
+        }
+        // loop {
+        //     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        //     let sentry_msg = format!(
+        //         "ep_query_handler, not inline or wrapped, ep_name: {} ||| sabc",
+        //         "test_end_point"
+        //     );
+        //     sentry::capture_message(&sentry_msg, sentry::Level::Error);
 
-//         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-//         let maybe_number: Result<i32, &str> = Err("This will crash");
-//         let _number = maybe_number.unwrap(); // This will panic
-//     }
-// }
+        //     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        //     let maybe_number: Result<i32, &str> = Err("This will crash");
+        //     let _number = maybe_number.unwrap(); // This will panic
+        // }
+    } else {
+        info!("sentry is disabled");
+    }
+}
