@@ -68,6 +68,24 @@ export const SubgraphEndpointAccessType = {
   [SubgraphEndpointType.MetricsEndpoint]: AccessType.INTERNAL,
 };
 
+export enum RpcEndpointType {
+  evmHttp = 'evmHttp',
+  evmWs = 'evmWs',
+  evmMetricsHttp = 'evmMetricsHttp',
+
+  polkadotWs = 'polkadotWs',
+  polkadotHttp = 'polkadotHttp',
+  polkadotMetricsHttp = 'polkadotMetricsHttp',
+
+  substrateWs = 'substrateWs',
+  substrateHttp = 'substrateHttp',
+}
+
+export const RpcEndpointAccessType = {
+  [RpcEndpointType.evmMetricsHttp]: AccessType.INTERNAL,
+  [RpcEndpointType.polkadotMetricsHttp]: AccessType.INTERNAL,
+};
+
 @InputType('SubgraphPort')
 @ObjectType('SubgraphPort')
 export class SubgraphPort {
@@ -126,19 +144,6 @@ export type TemplateType = {
   pgKey?: string;
   pgCert?: string;
 };
-
-export enum ENDPOINT_KEY {
-  evmHttp = 'evmHttp',
-  evmWs = 'evmWs',
-  evmMetricsHttp = 'evmMetricsHttp',
-
-  polkadotWs = 'polkadotWs',
-  polkadotHttp = 'polkadotHttp',
-  polkadotMetricsHttp = 'polkadotMetricsHttp',
-
-  substrateWs = 'substrateWs',
-  substrateHttp = 'substrateHttp',
-}
 
 export enum ErrorLevel {
   none = '',

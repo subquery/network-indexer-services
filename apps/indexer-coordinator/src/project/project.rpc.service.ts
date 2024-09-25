@@ -19,7 +19,13 @@ import {
 } from './project.model';
 import { ProjectService } from './project.service';
 import { RequiredRpcType, getRpcFamilyObject } from './rpc.factory';
-import { AccessType, ENDPOINT_KEY, ErrorLevel, ProjectType } from './types';
+import {
+  AccessType,
+  RpcEndpointType,
+  ErrorLevel,
+  ProjectType,
+  RpcEndpointAccessType,
+} from './types';
 
 const logger = getLogger('project.rpc.service');
 
@@ -30,7 +36,7 @@ export class ProjectRpcService {
     private projectService: ProjectService
   ) {}
 
-  @Cron('0 */8 * * * *')
+  // @Cron('0 */8 * * * *')
   async autoValidateRpcEndpoints() {
     const projects = (await this.projectService.getAliveProjects()).filter(
       (project) => project.projectType === ProjectType.RPC
@@ -75,6 +81,7 @@ export class ProjectRpcService {
         endpoint.valid = false;
         endpoint.reason = validateUrlResult.reason;
         reason = reason || validateUrlResult.reason;
+        errorLevel = errorLevel || (validateUrlResult.level as ErrorLevel);
         continue;
       }
       const response = await this.validateRpcEndpoint(project.id, endpoint.key, endpoint.value);
@@ -87,9 +94,12 @@ export class ProjectRpcService {
       endpoint.valid = response.valid;
       endpoint.reason = response.reason;
 
-      if (response.level === ErrorLevel.error) {
-        reason = reason || response.reason;
-        errorLevel = errorLevel || response.level;
+      if (response.level !== ErrorLevel.none) {
+        if (errorLevel === ErrorLevel.error) {
+          continue;
+        }
+        errorLevel = response.level as ErrorLevel;
+        reason = response.reason;
       }
     }
     return this.formatResponse(!reason, reason, errorLevel);
@@ -224,7 +234,7 @@ export class ProjectRpcService {
         .withNodeType(projectManifest.nodeType)
         .withHeight()
         .withClientNameAndVersion(projectManifest.client?.name, projectManifest.client?.version)
-        .validate(endpoint, endpointKey as ENDPOINT_KEY);
+        .validate(endpoint, endpointKey as RpcEndpointType);
       return this.formatResponse(true);
     } catch (e) {
       logger.debug(e);
@@ -267,7 +277,7 @@ export class ProjectRpcService {
     }
 
     for (const endpoint of project.serviceEndpoints) {
-      endpoint.access = AccessType.DEFAULT;
+      endpoint.access = RpcEndpointAccessType[endpoint.key] || AccessType.DEFAULT;
       endpoint.isWebsocket = endpoint.key.endsWith('Ws');
       endpoint.rpcFamily = manifest.rpcFamily || [];
     }
