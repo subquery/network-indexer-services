@@ -295,7 +295,7 @@ impl Project {
     pub fn is_rpc_project(&self) -> bool {
         matches!(
             self.ptype,
-            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_) | ProjectType::Subgraph
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
         )
     }
 
