@@ -787,8 +787,9 @@ pub async fn extend_channel(
                id:"{:#X}",
                expiration:{},
                price:"{}",
-               indexerSign:{},
-               consumerSign:{}
+               indexerSign:"0x{}",
+               consumerSign:"0x{}"
+            )
            {{ id, expiredAt }}
         }}"#,
         channel_id, expired_at, new_price, indexer_sign, signature
