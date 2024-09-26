@@ -528,6 +528,17 @@ async fn ep_payg_handler(
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => {
             let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
+                if return_data.is_empty() {
+                    let unique_title = format!(
+                        "payg ep_query_handler, inline returns empty, becase endpoint returns empty, deployment_id: {}, ep_name: {}",
+                        deployment, ep_name
+                    );
+                    let msg = format!(
+                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                        res_fmt, headers, body, data
+                    );
+                    make_sentry_message(&unique_title, &msg);
+                }
                 return_data
             } else {
                 let unique_title = format!(
