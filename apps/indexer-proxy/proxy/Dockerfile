@@ -1,5 +1,5 @@
 # Builder
-FROM rust:buster AS builder
+FROM rust:bullseye AS builder
 RUN update-ca-certificates
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
@@ -18,7 +18,7 @@ RUN --mount=type=cache,id=cargo_bin,target=~/.cargo/bin/ \
     cargo update && cargo build --release && mv /subql/target/release/subql-indexer-proxy /subql/
 
 # Final image
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
     apt-get --assume-yes install curl && \
