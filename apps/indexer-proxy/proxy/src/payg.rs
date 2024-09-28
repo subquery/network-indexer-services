@@ -52,9 +52,10 @@ use crate::contracts::{
 use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
-
+use crate::sentry_log::make_sentry_message;
 const CURRENT_VERSION: u8 = 3;
 
+#[derive(Debug)]
 pub struct StateCache {
     pub expiration: i64,
     pub agent: Address,
@@ -142,6 +143,7 @@ impl StateCache {
 }
 
 /// Supported consumer type.
+#[derive(Debug)]
 pub enum ConsumerType {
     /// real account
     Account(Vec<Address>),
@@ -584,19 +586,44 @@ pub fn check_multiple_state_balance(
     let remote_prev = state_cache.remote;
     let used_amount = price * unit_times;
 
-    let local_next = state_cache.spent + used_amount;
+    let (local_next, flag) = state_cache.spent.overflowing_add(used_amount);
+    if flag {
+        make_sentry_message("overflowing_add used_amount overflow",
+                            &format!("state_cache is {:#?}, used_amount is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", state_cache, used_amount, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
 
     if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    let range = end - start;
+    let (range, flag) = end.overflowing_sub(start);
+    if flag {
+        make_sentry_message("overflowing_sub start overflow",
+                            &format!("start is {:#?}, end is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, end, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
+
     if range > MULTIPLE_RANGE_MAX {
         return Err(Error::Overflow(1059));
     }
 
-    let middle = start + range / 2;
+    let (middle, flag) = start.overflowing_add(range / 2);
+    if flag {
+        make_sentry_message("overflowing_add range overflow",
+                            &format!("start is {:#?}, range is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, range, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
     let mut mpqsa = if local_next < middle {
         MultipleQueryStateActive::Active
     } else if local_next > end {

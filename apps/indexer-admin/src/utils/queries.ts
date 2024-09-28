@@ -393,6 +393,7 @@ export const VALID_RPC_ENDPOINT = gql`
     validateRpcEndpoint(projectId: $projectId, endpointKey: $endpointKey, endpoint: $endpoint) {
       valid
       reason
+      level
     }
   }
 `;
