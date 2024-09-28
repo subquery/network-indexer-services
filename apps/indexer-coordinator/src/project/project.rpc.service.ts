@@ -36,7 +36,7 @@ export class ProjectRpcService {
     private projectService: ProjectService
   ) {}
 
-  // @Cron('0 */8 * * * *')
+  @Cron('0 */8 * * * *')
   async autoValidateRpcEndpoints() {
     const projects = (await this.projectService.getAliveProjects()).filter(
       (project) => project.projectType === ProjectType.RPC
