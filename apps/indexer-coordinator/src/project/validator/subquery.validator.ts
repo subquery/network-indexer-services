@@ -6,6 +6,7 @@ import axios from 'axios';
 import { getLogger } from '../../utils/logger';
 import { SubqueryManifest } from '../project.manifest';
 import { Project, ValidationResponse } from '../project.model';
+import { ErrorLevel } from '../types';
 import { validatePrivateEndpoint } from './common.validator';
 
 const logger = getLogger('subquery.validator');
@@ -24,7 +25,11 @@ export async function validateNodeEndpoint(
       timeout: 5000,
     });
     if (response.status !== 200) {
-      return { valid: false, reason: 'Invalid node endpoint. HTTP status should be 200' };
+      return {
+        valid: false,
+        reason: 'Invalid node endpoint. HTTP status should be 200',
+        level: ErrorLevel.error,
+      };
     }
     const data = response.data;
     const projectManifest = project.manifest as SubqueryManifest;
@@ -36,12 +41,12 @@ export async function validateNodeEndpoint(
       logger.error(
         `Invalid node endpoint chain. genesisHash:${data.genesisHash}, chain:${data?.chain}, chainId:${projectManifest.network?.chainId}`
       );
-      return { valid: false, reason: 'Invalid node endpoint chain' };
+      return { valid: false, reason: 'Invalid node endpoint chain', level: ErrorLevel.error };
     }
     return { valid: true, reason: '' };
   } catch (error) {
     logger.error(`Failed to validate node endpoint: ${error.message}`);
-    return { valid: false, reason: error.message };
+    return { valid: false, reason: error.message, level: ErrorLevel.error };
   }
 }
 
