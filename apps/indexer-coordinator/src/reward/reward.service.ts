@@ -74,20 +74,21 @@ export class RewardService implements OnModuleInit {
   @Cron(AUTO_RUN_TASK_CRON)
   async autoRunTasks() {
     await this.collectAllocationRewards(TxType.check);
+    await this.collectStateChannelRewards(TxType.check);
+  }
+
+  @Cron('0 */5 * * * *')
+  async triggerReduceAllocation() {
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
     if (reduceEnabled) {
       await this.reduceAllocation(TxType.check);
     }
-    await this.collectStateChannelRewards(TxType.check);
   }
 
   @Cron(CHECK_TASKS_CRON)
   async checkTasks() {
     if (this.txOngoingMap[this.collectAllocationRewards.name]) {
       await this.collectAllocationRewards(TxType.postponed);
-    }
-    if (this.txOngoingMap[this.reduceAllocation.name]) {
-      await this.reduceAllocation(TxType.postponed);
     }
     if (this.txOngoingMap[this.collectStateChannelRewards.name]) {
       await this.collectStateChannelRewards(TxType.postponed);
@@ -152,8 +153,11 @@ export class RewardService implements OnModuleInit {
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
+    if (!allocation) {
+      this.logger.error('getRunnerAllocation is null');
+      return;
+    }
     this.txOngoingMap[this.reduceAllocation.name] = false;
-
     const expectTotalReduce = allocation.used.sub(allocation.total);
 
     let refetch = true;
