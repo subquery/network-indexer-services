@@ -144,7 +144,7 @@ export class RewardService implements OnModuleInit {
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
     if (!allocation) {
-      this.logger.error('getRunnerAllocation is null');
+      this.logger.debug('getRunnerAllocation is null');
       return;
     }
     this.txOngoingMap[this.reduceAllocation.name] = false;
