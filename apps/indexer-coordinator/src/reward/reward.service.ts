@@ -67,7 +67,7 @@ export class RewardService implements OnModuleInit {
     await this.collectStateChannelRewards(TxType.check);
   }
 
-  @Cron('0 */5 * * * *)
+  @Cron('0 */5 * * * *')
   async triggerReduceAllocation() {
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
     if (reduceEnabled) {
@@ -143,8 +143,11 @@ export class RewardService implements OnModuleInit {
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
+    if (!allocation) {
+      this.logger.error('getRunnerAllocation is null');
+      return;
+    }
     this.txOngoingMap[this.reduceAllocation.name] = false;
-
     const expectTotalReduce = allocation.used.sub(allocation.total);
 
     let refetch = true;
