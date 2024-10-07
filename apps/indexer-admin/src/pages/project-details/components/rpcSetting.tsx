@@ -6,6 +6,7 @@ import { useParams } from 'react-router';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { Spinner, Steps, Typography } from '@subql/components';
 import { cidToBytes32 } from '@subql/network-clients';
+import { useUpdate } from 'ahooks';
 import { Button, Form, Input, InputNumber } from 'antd';
 import { Rule } from 'antd/es/form';
 import debounce from 'debounce-promise';
@@ -23,6 +24,20 @@ interface IProps {
   id?: string;
 }
 
+const getRuleField = (key: string) => {
+  const lowerCaseKey = key.toLowerCase();
+
+  if (lowerCaseKey.includes('metrics')) {
+    return 'metrics';
+  }
+
+  if (lowerCaseKey.includes('http')) {
+    return 'http';
+  }
+
+  return 'ws';
+};
+
 const RpcSetting: FC<IProps> = (props) => {
   const { onCancel, onSubmit, id: propsId } = props;
 
@@ -30,6 +45,11 @@ const RpcSetting: FC<IProps> = (props) => {
   const mineId = useMemo(() => propsId || id, [propsId, id]);
   const projectQuery = useProjectDetails(mineId);
   const [form] = Form.useForm();
+  const update = useUpdate();
+  const [loadingUpdate, setLoadingUpdate] = React.useState(false);
+  const inputFieldFeedback = React.useRef<{
+    [key in string]: 'warn' | 'error' | 'success' | 'validating' | '';
+  }>({});
 
   const keys = useQuery<{ getRpcEndpointKeys: string[] }>(GET_RPC_ENDPOINT_KEYS, {
     variables: {
@@ -39,15 +59,30 @@ const RpcSetting: FC<IProps> = (props) => {
 
   const rules = useMemo(() => {
     const checkIfWsAndHttpSame = () => {
-      const allValues = keys.data?.getRpcEndpointKeys.map((key) => {
-        try {
-          return new URL(form.getFieldValue(key)).hostname;
-        } catch {
-          return form.getFieldValue(key);
-        }
-      });
+      const allValues = keys.data?.getRpcEndpointKeys
+        .map((key) => {
+          try {
+            return {
+              key,
+              val: new URL(form.getFieldValue(key)).hostname,
+            };
+          } catch {
+            return {
+              key,
+              val: form.getFieldValue(key),
+            };
+          }
+        })
+        .filter((i) => i.val);
 
-      const ifSame = new Set(allValues).size === 1;
+      if ((allValues?.length || 0) < 2) {
+        return {
+          result: false,
+          message: 'Please input endpoint',
+        };
+      }
+
+      const ifSame = new Set(allValues?.map((i) => i.val)).size === 1;
 
       if (ifSame)
         return {
@@ -56,15 +91,25 @@ const RpcSetting: FC<IProps> = (props) => {
 
       return {
         result: false,
-        message: 'The origin of Ws and Http endpoint should be the same.',
+        message: 'The origin of all endpoint should be the same.',
       };
     };
 
     const polkadotAndSubstrateRule = (
-      endpointType: 'http' | 'ws',
+      endpointType: 'http' | 'ws' | 'metrics',
       value: string,
       ruleField: string
     ) => {
+      if (endpointType === 'metrics') {
+        if (value) {
+          return checkIfWsAndHttpSame();
+        }
+
+        return {
+          result: true,
+        };
+      }
+
       if (endpointType === 'ws') {
         if (!value)
           return {
@@ -112,7 +157,19 @@ const RpcSetting: FC<IProps> = (props) => {
     };
 
     return {
-      evm: (endpointType: 'http' | 'ws', value: string, ruleField: string) => {
+      evm: (endpointType: 'http' | 'ws' | 'metrics', value: string, ruleField: string) => {
+        if (endpointType === 'metrics') {
+          const metricsVal = form.getFieldValue(ruleField);
+
+          if (metricsVal) {
+            return checkIfWsAndHttpSame();
+          }
+
+          return {
+            result: true,
+          };
+        }
+
         if (endpointType === 'ws') {
           const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
           if (wsVal && wsVal?.startsWith('ws')) {
@@ -146,7 +203,7 @@ const RpcSetting: FC<IProps> = (props) => {
   }, [form, keys.data?.getRpcEndpointKeys]);
 
   const [validate] = useLazyQuery<
-    { validateRpcEndpoint: { valid: boolean; reason?: string } },
+    { validateRpcEndpoint: { valid: boolean; reason?: string; level: 'warn' | 'error' | '' } },
     { projectId: string; endpointKey: string; endpoint: string }
   >(VALID_RPC_ENDPOINT);
 
@@ -160,6 +217,13 @@ const RpcSetting: FC<IProps> = (props) => {
       // @ts-ignore
       const ruleField = rule.field as string;
       const ruleKeys = Object.keys(rules);
+
+      inputFieldFeedback.current = {
+        ...inputFieldFeedback.current,
+        [ruleField]: 'validating',
+      };
+      update();
+
       const whichRule =
         rules[
           ruleKeys.find((key) => ruleField.includes(key as string)) as
@@ -167,18 +231,27 @@ const RpcSetting: FC<IProps> = (props) => {
             | 'polkadot'
             | 'substrate'
         ];
-      const { result, message } = whichRule(
-        ruleField.toLocaleLowerCase().includes('http') ? 'http' : 'ws',
-        value,
-        ruleField
-      );
+
+      const { result, message } = whichRule(getRuleField(ruleField), value, ruleField);
 
       if (!result) {
+        inputFieldFeedback.current = {
+          ...inputFieldFeedback.current,
+          [ruleField]: 'error',
+        };
+        update();
         return Promise.reject(new Error(message));
       }
 
       // whichRule should validate if the field can be empty, if empty, just true
-      if (!value) return Promise.resolve();
+      if (!value) {
+        inputFieldFeedback.current = {
+          ...inputFieldFeedback.current,
+          [ruleField]: 'success',
+        };
+        update();
+        return Promise.resolve();
+      }
 
       const res = await validate({
         variables: {
@@ -190,10 +263,20 @@ const RpcSetting: FC<IProps> = (props) => {
           fetchPolicy: 'network-only',
         },
       });
-
+      inputFieldFeedback.current = {
+        ...inputFieldFeedback.current,
+        [ruleField]: res?.data?.validateRpcEndpoint.level || '',
+      };
+      update();
       if (!res?.data?.validateRpcEndpoint.valid) {
         return Promise.reject(new Error(res?.data?.validateRpcEndpoint.reason));
       }
+
+      inputFieldFeedback.current = {
+        ...inputFieldFeedback.current,
+        [ruleField]: 'success',
+      };
+      update();
       // verification RPC endpoint
       return Promise.resolve();
     };
@@ -204,6 +287,7 @@ const RpcSetting: FC<IProps> = (props) => {
         [key]: debounce(validateFunc, 1000),
       };
     }, {}) as Record<string, (rule: Rule, value: string) => Promise<void> | void>;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validate, mineId, rules, keys.data?.getRpcEndpointKeys]);
 
   if (!projectQuery.data) return <Spinner />;
@@ -266,21 +350,35 @@ const RpcSetting: FC<IProps> = (props) => {
         >
           {keys.data?.getRpcEndpointKeys.map((key) => {
             return (
-              <Form.Item
-                key={key}
-                label={`${key} Endpoint`}
-                name={`${key}`}
-                hasFeedback
-                rules={[
-                  () => {
-                    return {
-                      validator: debouncedValidator[key],
-                    };
-                  },
-                ]}
-              >
-                <Input />
-              </Form.Item>
+              <WithWarning key={key}>
+                <Form.Item
+                  key={key}
+                  label={`${key} Endpoint`}
+                  name={`${key}`}
+                  hasFeedback
+                  className={
+                    inputFieldFeedback.current[key] === 'warn' ? 'ant-form-item-has-warning' : ''
+                  }
+                  validateStatus={
+                    ({
+                      warn: 'warning',
+                      error: 'error',
+                      success: 'success',
+                      '': 'success',
+                      validating: 'validating',
+                    }[inputFieldFeedback.current[key]] as 'warning' | 'error' | 'success') || ''
+                  }
+                  rules={[
+                    () => {
+                      return {
+                        validator: debouncedValidator[key],
+                      };
+                    },
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+              </WithWarning>
             );
           })}
           <HorizeFormItem>
@@ -310,43 +408,62 @@ const RpcSetting: FC<IProps> = (props) => {
           shape="round"
           type="primary"
           style={{ borderColor: 'var(--sq-blue600)', background: 'var(--sq-blue600)' }}
+          loading={loadingUpdate}
           onClick={async () => {
-            await form.validateFields();
-            const serviceEndpoints = keys.data?.getRpcEndpointKeys
-              .map((key) => {
-                return {
-                  key,
-                  value: form.getFieldValue(`${key}`)?.trim(),
-                };
-              })
-              .filter((i) => i.value);
-
             try {
-              await startProjectRequest({
-                variables: {
-                  rateLimit: form.getFieldValue('rateLimit'),
-                  poiEnabled: false,
-                  queryVersion: '',
-                  nodeVersion: '',
-                  networkDictionary: '',
-                  networkEndpoints: '',
-                  batchSize: 1,
-                  workers: 1,
-                  timeout: 1,
-                  cache: 1,
-                  cpu: 1,
-                  memory: 1,
-                  id: mineId,
-                  projectType: projectQuery.data?.project.projectType,
-                  serviceEndpoints,
-                },
-              });
-              onSubmit?.();
-            } catch (e) {
-              parseError(e, {
-                alert: true,
-                rawMsg: true,
-              });
+              setLoadingUpdate(true);
+              try {
+                await form.validateFields();
+              } catch (e: any) {
+                // ValidateErrorEntity
+                if (e?.errorFields && Array.isArray(e.errorFields)) {
+                  // eslint-disable-next-line no-restricted-syntax
+                  for (const err of e.errorFields) {
+                    const name = err?.name?.[0] as string;
+                    if (inputFieldFeedback.current[name] !== 'warn') {
+                      return;
+                    }
+                  }
+                }
+              }
+              const serviceEndpoints = keys.data?.getRpcEndpointKeys
+                .map((key) => {
+                  return {
+                    key,
+                    value: form.getFieldValue(`${key}`)?.trim(),
+                  };
+                })
+                .filter((i) => i.value);
+
+              try {
+                await startProjectRequest({
+                  variables: {
+                    rateLimit: form.getFieldValue('rateLimit'),
+                    poiEnabled: false,
+                    queryVersion: '',
+                    nodeVersion: '',
+                    networkDictionary: '',
+                    networkEndpoints: '',
+                    batchSize: 1,
+                    workers: 1,
+                    timeout: 1,
+                    cache: 1,
+                    cpu: 1,
+                    memory: 1,
+                    id: mineId,
+                    projectType: projectQuery.data?.project.projectType,
+                    serviceEndpoints,
+                  },
+                });
+                onSubmit?.();
+              } catch (e) {
+                parseError(e, {
+                  alert: true,
+                  rawMsg: true,
+                });
+              }
+            } finally {
+              setLoadingUpdate(false);
             }
           }}
         >
@@ -370,6 +487,16 @@ export const HorizeFormItem = styled.div`
 
     .ant-form-item-label {
       padding: 0;
+    }
+  }
+`;
+
+const WithWarning = styled.div`
+  .ant-form-item-has-warning {
+    .ant-row {
+      .ant-form-item-explain-error {
+        color: var(--sq-warning);
+      }
     }
   }
 `;
