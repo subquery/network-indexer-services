@@ -25,3 +25,12 @@ export function getDomain(url: string): string {
   const domain = new URL(url).hostname;
   return domain;
 }
+
+export function safeGetDomain(url: string): string {
+  let domain = '';
+  try {
+    domain = new URL(url).hostname;
+  } finally {
+    return domain;
+  }
+}

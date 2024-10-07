@@ -6,7 +6,7 @@ import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
 import { getLogger } from 'src/utils/logger';
-import { getDomain, getIpAddress, isIp, isPrivateIp } from 'src/utils/network';
+import { getDomain, getIpAddress, isIp, isPrivateIp, safeGetDomain } from 'src/utils/network';
 import { Repository } from 'typeorm';
 import { RpcManifest } from './project.manifest';
 import {
@@ -264,13 +264,14 @@ export class ProjectRpcService {
     project.rateLimit = rateLimit;
 
     const manifest = project.manifest as RpcManifest;
+    this.fillRpcEndpoints(projectConfig.serviceEndpoints, manifest.rpcFamily);
+
     const endpointKeys = this.getAllEndpointKeys(manifest.rpcFamily || []);
 
     project.serviceEndpoints = projectConfig.serviceEndpoints.filter((endpoint) => {
       return endpointKeys.includes(endpoint.key);
     });
     projectConfig.serviceEndpoints = project.serviceEndpoints;
-
     const validateResult = await this.validateProjectEndpoints(project, project.serviceEndpoints);
     if (!validateResult.valid && validateResult.level === ErrorLevel.error) {
       throw new Error(`Invalid endpoints: ${validateResult.reason}`);
@@ -283,6 +284,36 @@ export class ProjectRpcService {
     }
 
     return this.projectRepo.save(project);
+  }
+
+  fillRpcEndpoints(serviceEndpoints: SeviceEndpoint[], rpcFamilyList: string[]) {
+    if (!serviceEndpoints.length) return;
+    let targetKey = '';
+    let defaultSuffix = '';
+    if (rpcFamilyList.includes('evm')) {
+      targetKey = RpcEndpointType.evmMetricsHttp;
+      defaultSuffix = ':6060/debug/metrics';
+    } else if (rpcFamilyList.includes('polkadot')) {
+      targetKey = RpcEndpointType.polkadotMetricsHttp;
+      defaultSuffix = ':9615/metrics';
+    }
+    if (!targetKey) return;
+
+    let exists = false;
+    let value = '';
+    for (const e of serviceEndpoints) {
+      if (e.key === targetKey) {
+        exists = true;
+      }
+      if (e.value) {
+        value = e.value;
+      }
+    }
+    if (value && !exists) {
+      const domain = safeGetDomain(value);
+      if (!domain) return;
+      serviceEndpoints.push(new SeviceEndpoint(targetKey, `http://${domain}${defaultSuffix}`));
+    }
   }
 
   async stopRpcProject(id: string): Promise<Project> {
