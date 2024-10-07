@@ -9,6 +9,7 @@ import { bytes32ToCid } from '@subql/network-clients';
 import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber } from 'ethers';
 import lodash from 'lodash';
+import { ConfigService } from 'src/config/config.service';
 import { ContractService } from 'src/core/contract.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { TxType } from 'src/core/types';
@@ -35,11 +36,31 @@ export class PaygService implements OnModuleInit {
     private pubSub: SubscriptionService,
     private contract: ContractService,
     private onChain: OnChainService,
-    private account: AccountService
+    private account: AccountService,
+    private configService: ConfigService
   ) {}
 
-  onModuleInit() {
-    // this.closeOutdatedAndNotExtended();
+  async onModuleInit() {
+    await this.patchDefaultFlexPlan();
+  }
+
+  async patchDefaultFlexPlan() {
+    const flexConfig = await this.configService.getFlexConfig();
+    if (flexConfig.flex_enabled === 'true') {
+      // project not modified since
+      const pays = await this.paygRepo.find({
+        where: {
+          price: '',
+          token: '',
+        },
+      });
+      for (const p of pays) {
+        p.price = flexConfig.flex_price;
+        p.expiration = Number(flexConfig.flex_valid_period) || 0;
+        p.token = this.contract.getSdk().sqToken.address;
+        await this.paygRepo.save(p);
+      }
+    }
   }
 
   async channelFromContract(id: BigNumber): Promise<ChannelState> {

@@ -31,6 +31,7 @@ export class RewardService implements OnModuleInit {
   private readonly oneDay = 24 * 60 * 60 * 1000;
   private readonly allocationBypassTimeLimit = 3 * this.oneDay;
   private readonly allocationStartTimes: Map<string, number> = new Map();
+  private readonly channelRewardsStartTimes: Map<string, number> = new Map();
 
   private readonly logger = getLogger('RewardService');
 
@@ -63,20 +64,21 @@ export class RewardService implements OnModuleInit {
   @Cron('1 1 1 * * *')
   async autoRunTasks() {
     await this.collectAllocationRewards(TxType.check);
+    await this.collectStateChannelRewards(TxType.check);
+  }
+
+  @Cron('0 */5 * * * *')
+  async triggerReduceAllocation() {
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
     if (reduceEnabled) {
       await this.reduceAllocation(TxType.check);
     }
-    await this.collectStateChannelRewards(TxType.check);
   }
 
   @Cron('0 */30 * * * *')
   async checkTasks() {
     if (this.txOngoingMap[this.collectAllocationRewards.name]) {
       await this.collectAllocationRewards(TxType.postponed);
-    }
-    if (this.txOngoingMap[this.reduceAllocation.name]) {
-      await this.reduceAllocation(TxType.postponed);
     }
     if (this.txOngoingMap[this.collectStateChannelRewards.name]) {
       await this.collectStateChannelRewards(TxType.postponed);
@@ -141,8 +143,11 @@ export class RewardService implements OnModuleInit {
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
+    if (!allocation) {
+      this.logger.debug('getRunnerAllocation is null');
+      return;
+    }
     this.txOngoingMap[this.reduceAllocation.name] = false;
-
     const expectTotalReduce = allocation.used.sub(allocation.total);
 
     let refetch = true;
@@ -248,12 +253,31 @@ export class RewardService implements OnModuleInit {
     const thresholdConfig = await this.configService.get(ConfigType.STATE_CHANNEL_REWARD_THRESHOLD);
     const threshold = BigNumber.from(thresholdConfig);
 
+    const timeLimit = this.allocationBypassTimeLimit;
     const openChannels = await this.paygService.getOpenChannels();
     for (const channel of openChannels) {
       const unclaimed = BigNumber.from(channel.remote).sub(channel.onchain);
-      if (unclaimed.lte(threshold)) continue;
+      if (unclaimed.lte(0)) continue;
+
+      let startTime = this.channelRewardsStartTimes.get(channel.id);
+      if (!startTime) {
+        startTime = Date.now();
+        this.channelRewardsStartTimes.set(channel.id, startTime);
+      }
+
+      if (unclaimed.lte(threshold) && Date.now() - startTime < timeLimit) {
+        this.logger.debug(
+          `Bypassed channel rewards [${unclaimed.toString()}] for channel ${channel.id} ${(
+            (Date.now() - startTime) /
+            this.oneDay
+          ).toFixed(2)}/${timeLimit / this.oneDay} days`
+        );
+        continue;
+      }
+
       try {
         await this.paygService.checkpoint(channel.id, txType);
+        this.channelRewardsStartTimes.delete(channel.id);
       } catch (e) {
         this.logger.error(`Failed to checkpoint for channel ${channel.id}: ${e}`);
         this.txOngoingMap[this.collectStateChannelRewards.name] = true;
