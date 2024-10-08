@@ -177,9 +177,11 @@ const ProjectDetailsPage = () => {
 
   const projectStatus = useMemo(() => {
     if (!metadata) return ProjectStatus.Unknown;
-
-    if (projectQuery.data?.project.projectConfig?.serviceEndpoints?.length) {
-      if (projectQuery.data?.project.projectConfig.serviceEndpoints.every((i) => i.valid)) {
+    const endpoints = projectQuery.data?.project.projectConfig?.serviceEndpoints.filter(
+      (i) => !['evmMetricsHttp', 'polkadotMetricsHttp'].includes(i.key)
+    );
+    if (endpoints?.length) {
+      if (endpoints.every((i) => i.valid)) {
         return ProjectStatus.Ready;
       }
 

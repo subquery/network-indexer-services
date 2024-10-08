@@ -570,11 +570,11 @@ export class PaygService implements OnModuleInit {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async closeOutdatedAndNotExtended() {
-    const channels = await this.channelRepo.find();
+    const channels = await this.getOpenChannels();
     for (const c of channels) {
       try {
         const now = Math.floor(Date.now() / 1000);
-        if (c.expiredAt > now || c.status === ChannelStatus.TERMINATING) {
+        if (c.expiredAt > now) {
           continue;
         }
         await this.terminate(c.id);
