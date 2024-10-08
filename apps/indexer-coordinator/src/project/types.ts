@@ -68,6 +68,24 @@ export const SubgraphEndpointAccessType = {
   [SubgraphEndpointType.MetricsEndpoint]: AccessType.INTERNAL,
 };
 
+export enum RpcEndpointType {
+  evmHttp = 'evmHttp',
+  evmWs = 'evmWs',
+  evmMetricsHttp = 'evmMetricsHttp',
+
+  polkadotWs = 'polkadotWs',
+  polkadotHttp = 'polkadotHttp',
+  polkadotMetricsHttp = 'polkadotMetricsHttp',
+
+  substrateWs = 'substrateWs',
+  substrateHttp = 'substrateHttp',
+}
+
+export const RpcEndpointAccessType = {
+  [RpcEndpointType.evmMetricsHttp]: AccessType.INTERNAL,
+  [RpcEndpointType.polkadotMetricsHttp]: AccessType.INTERNAL,
+};
+
 @InputType('SubgraphPort')
 @ObjectType('SubgraphPort')
 export class SubgraphPort {
@@ -126,3 +144,18 @@ export type TemplateType = {
   pgKey?: string;
   pgCert?: string;
 };
+
+export enum ErrorLevel {
+  none = '',
+  warn = 'warn',
+  error = 'error',
+}
+
+export class ValidateRpcEndpointError extends Error {
+  level: string;
+  constructor(message: string, level: string = ErrorLevel.none) {
+    super(message);
+    this.name = 'ValidateRpcEndpointError';
+    this.level = level;
+  }
+}

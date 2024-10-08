@@ -5,8 +5,10 @@ import axios from 'axios';
 import { BigNumber } from 'ethers';
 import _ from 'lodash';
 import * as semver from 'semver';
+import { safeJSONParse } from 'src/utils/json';
 import { getLogger } from 'src/utils/logger';
 import { WebSocket } from 'ws';
+import { RpcEndpointType, ErrorLevel, ValidateRpcEndpointError } from './types';
 
 const logger = getLogger('rpc.factory');
 
@@ -98,6 +100,39 @@ async function jsonWsRpcRequest(endpoint: string, method: string, params: any[])
   }
 }
 
+async function jsonMetricsHttpRpcRequest(endpoint: string): Promise<{ error: string; data: any }> {
+  if (!endpoint) {
+    return {
+      error: 'Endpoint is empty',
+      data: null,
+    };
+  }
+  try {
+    const res = await axios.request({
+      url: endpoint,
+      method: 'get',
+      timeout: 1000 * 10,
+    });
+    return {
+      error: '',
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      error: err.message,
+      data: null,
+    };
+  }
+  // if (!endpoint) {
+  //   throw new Error('Endpoint is empty');
+  // }
+  // return axios.request({
+  //   url: endpoint,
+  //   method: 'get',
+  //   timeout: 1000 * 10,
+  // });
+}
+
 function getRpcRequestFunction(endpoint: string) {
   if (!endpoint) {
     throw new Error('Endpoint is empty');
@@ -119,7 +154,8 @@ export interface IRpcFamily {
   withNodeType(nodeType: string): IRpcFamily;
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
-  validate(endpoint: string): Promise<void>;
+  withHeight(height?: number): IRpcFamily;
+  validate(endpoint: string, endpointKey: string): Promise<void>;
   getStartHeight(endpoint: string): Promise<number>;
   getTargetHeight(endpoint: string): Promise<number>;
   getLastHeight(endpoint: string): Promise<number>;
@@ -130,9 +166,12 @@ abstract class RpcFamily implements IRpcFamily {
   protected actions: (() => Promise<any>)[] = [];
   protected endpoint: string;
   protected requiredRpcType: RequiredRpcType = RequiredRpcType.http;
+  protected targetEndpointKey: RpcEndpointType;
 
-  async validate(endpoint: string) {
+  async validate(endpoint: string, endpointKey: RpcEndpointType) {
     this.endpoint = endpoint;
+    this.targetEndpointKey = endpointKey;
+
     await Promise.all(this.actions.map((action) => action()));
   }
   getEndpointKeys(): string[] {
@@ -156,6 +195,9 @@ abstract class RpcFamily implements IRpcFamily {
   withClientVersion(clientVersion: string): IRpcFamily {
     throw new Error('Method not implemented.');
   }
+  withHeight(height?: number): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
   getStartHeight(endpoint: string): Promise<number> {
     throw new Error('Method not implemented.');
   }
@@ -172,21 +214,55 @@ abstract class RpcFamily implements IRpcFamily {
 
 export class RpcFamilyEvm extends RpcFamily {
   getEndpointKeys(): string[] {
-    return ['evmWs', 'evmHttp'];
+    return [RpcEndpointType.evmWs, RpcEndpointType.evmHttp, RpcEndpointType.evmMetricsHttp];
   }
 
   withChainId(chainId: string): IRpcFamily {
     this.actions.push(async () => {
-      const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'eth_chainId', []);
-      if (result.data.error) {
-        throw new Error(`Request eth_chainId failed: ${result.data.error.message}`);
+      let p = null;
+      let errorLevel = ErrorLevel.error;
+      switch (this.targetEndpointKey) {
+        case RpcEndpointType.evmHttp:
+          p = jsonRpcRequest(this.endpoint, 'eth_chainId', []);
+          break;
+        case RpcEndpointType.evmWs:
+          p = jsonWsRpcRequest(this.endpoint, 'eth_chainId', []);
+          break;
+        case RpcEndpointType.evmMetricsHttp:
+          p = jsonMetricsHttpRpcRequest(this.endpoint);
+          errorLevel = ErrorLevel.warn;
+          break;
+        default:
+          throw new ValidateRpcEndpointError('Invalid endpointKey', errorLevel);
       }
-      const chainIdFromRpc = result.data.result;
+      const result = await p;
+      let chainIdFromRpc = null;
+
+      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+        if (result.error) {
+          throw new ValidateRpcEndpointError(
+            `Request eth_chainId failed: ${result.error}`,
+            errorLevel
+          );
+        }
+        const info = safeJSONParse(result.data['chain/info']);
+        chainIdFromRpc = info?.chain_id;
+      } else {
+        if (result.data.error) {
+          throw new ValidateRpcEndpointError(
+            `Request eth_chainId failed: ${result.data.error.message}`,
+            errorLevel
+          );
+        }
+        chainIdFromRpc = result.data.result;
+      }
+
       if (!BigNumber.from(chainIdFromRpc).eq(BigNumber.from(chainId || 0))) {
-        throw new Error(
+        throw new ValidateRpcEndpointError(
           `ChainId mismatch: ${BigNumber.from(chainIdFromRpc).toString()} != ${BigNumber.from(
             chainId
-          ).toString()}`
+          ).toString()}`,
+          errorLevel
         );
       }
     });
@@ -195,6 +271,10 @@ export class RpcFamilyEvm extends RpcFamily {
 
   withGenesisHash(genesisHash: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+        return;
+      }
+
       const result = await getRpcRequestFunction(this.endpoint)(
         this.endpoint,
         'eth_getBlockByNumber',
@@ -216,6 +296,9 @@ export class RpcFamilyEvm extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+        return;
+      }
       const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'eth_getBalance', [
         '0x0000000000000000000000000000000000000000',
         _.toLower(nodeType) === 'archive' ? '0x1' : 'latest',
@@ -230,6 +313,9 @@ export class RpcFamilyEvm extends RpcFamily {
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily {
     this.actions.push(async () => {
       if (!clientName && !clientVersion) {
+        return;
+      }
+      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
         return;
       }
       const result = await getRpcRequestFunction(this.endpoint)(
@@ -253,6 +339,10 @@ export class RpcFamilyEvm extends RpcFamily {
         throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
       }
     });
+    return this;
+  }
+
+  withHeight(height?: number): IRpcFamily {
     return this;
   }
 
@@ -318,7 +408,7 @@ export class RpcFamilySubstrate extends RpcFamily {
   }
 
   getEndpointKeys(): string[] {
-    return ['substrateWs', 'substrateHttp'];
+    return [RpcEndpointType.substrateWs, RpcEndpointType.substrateHttp];
   }
 
   withChainId(chainId: string): IRpcFamily {
@@ -327,6 +417,9 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   withGenesisHash(genesisHash: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
+        return this;
+      }
       const result = await getRpcRequestFunction(this.endpoint)(
         this.endpoint,
         'chain_getBlockHash',
@@ -348,6 +441,9 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
+        return this;
+      }
       if (_.toLower(nodeType) !== 'archive') {
         return;
       }
@@ -378,6 +474,10 @@ export class RpcFamilySubstrate extends RpcFamily {
   }
 
   withClientVersion(clientVersion: string): IRpcFamily {
+    return this;
+  }
+
+  withHeight(height?: number): IRpcFamily {
     return this;
   }
 
@@ -429,6 +529,51 @@ export class RpcFamilySubstrate extends RpcFamily {
 
 export class RpcFamilyPolkadot extends RpcFamilySubstrate {
   getEndpointKeys(): string[] {
-    return ['polkadotWs', 'polkadotHttp'];
+    return [
+      RpcEndpointType.polkadotWs,
+      RpcEndpointType.polkadotHttp,
+      RpcEndpointType.polkadotMetricsHttp,
+    ];
+  }
+
+  withHeight(height?: number): IRpcFamily {
+    this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
+        const result = await jsonMetricsHttpRpcRequest(this.endpoint);
+        if (result.error) {
+          throw new ValidateRpcEndpointError(
+            `Request metrics failed: ${result.error}`,
+            ErrorLevel.warn
+          );
+        }
+        const height = this.parseBestBlockHeight(result.data);
+        if (!Number(height)) {
+          throw new ValidateRpcEndpointError(
+            `parse metrics height fail. current: ${height}`,
+            ErrorLevel.warn
+          );
+        }
+      }
+    });
+    return this;
+  }
+
+  parseBestBlockHeight(metrics: string) {
+    for (const line of metrics.split('\n')) {
+      if (line.startsWith('substrate_block_height')) {
+        const match = line.slice(22).match(/\{(.*)\}/);
+        if (match) {
+          const jsonObject: { [key: string]: string } = {};
+          for (const pair of match[1].split(',')) {
+            const [key, value] = pair.split('=');
+            jsonObject[key.trim()] = value.replace(/"/g, '').trim();
+          }
+          if (jsonObject.status === 'best') {
+            return line.split(/\s+/).pop();
+          }
+        }
+      }
+    }
+    return '';
   }
 }
