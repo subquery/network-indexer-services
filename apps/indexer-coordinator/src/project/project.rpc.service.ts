@@ -37,7 +37,7 @@ export class ProjectRpcService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.fillMetricsEndpoint();
+    // await this.fillMetricsEndpoint();
   }
 
   async fillMetricsEndpoint() {
@@ -52,7 +52,7 @@ export class ProjectRpcService implements OnModuleInit {
 
       if (target) {
         let flag = false;
-        let found = p.serviceEndpoints.find((s) => s.key === target.key);
+        const found = p.serviceEndpoints.find((s) => s.key === target.key);
         if (!found) {
           flag = true;
           p.serviceEndpoints.push(target);
@@ -292,7 +292,7 @@ export class ProjectRpcService implements OnModuleInit {
     project.rateLimit = rateLimit;
 
     const manifest = project.manifest as RpcManifest;
-    this.fillRpcEndpoints(projectConfig.serviceEndpoints, manifest.rpcFamily);
+    // this.fillRpcEndpoints(projectConfig.serviceEndpoints, manifest.rpcFamily);
 
     const endpointKeys = this.getAllEndpointKeys(manifest.rpcFamily || []);
 
@@ -341,7 +341,7 @@ export class ProjectRpcService implements OnModuleInit {
       }
     }
     if (exists) {
-      return [, exists];
+      return [undefined, exists];
     }
 
     let res: SeviceEndpoint | undefined;
