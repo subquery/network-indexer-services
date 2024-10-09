@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DesiredStatus } from 'src/core/types';
@@ -30,11 +30,39 @@ import {
 const logger = getLogger('project.rpc.service');
 
 @Injectable()
-export class ProjectRpcService {
+export class ProjectRpcService implements OnModuleInit {
   constructor(
     @InjectRepository(ProjectEntity) private projectRepo: Repository<ProjectEntity>,
     private projectService: ProjectService
   ) {}
+
+  async onModuleInit() {
+    // await this.fillMetricsEndpoint();
+  }
+
+  async fillMetricsEndpoint() {
+    const projects = await this.projectRepo.find({ where: { projectType: ProjectType.RPC } });
+    for (const p of projects) {
+      const manifest = p.manifest as RpcManifest;
+      const [filled, exists] = this.fillRpcEndpoints(
+        p.projectConfig.serviceEndpoints,
+        manifest.rpcFamily
+      );
+      const target = exists || filled;
+
+      if (target) {
+        let flag = false;
+        const found = p.serviceEndpoints.find((s) => s.key === target.key);
+        if (!found) {
+          flag = true;
+          p.serviceEndpoints.push(target);
+        }
+        if (flag || filled) {
+          await this.projectRepo.save(p);
+        }
+      }
+    }
+  }
 
   @Cron('0 */8 * * * *')
   async autoValidateRpcEndpoints() {
@@ -264,7 +292,7 @@ export class ProjectRpcService {
     project.rateLimit = rateLimit;
 
     const manifest = project.manifest as RpcManifest;
-    this.fillRpcEndpoints(projectConfig.serviceEndpoints, manifest.rpcFamily);
+    // this.fillRpcEndpoints(projectConfig.serviceEndpoints, manifest.rpcFamily);
 
     const endpointKeys = this.getAllEndpointKeys(manifest.rpcFamily || []);
 
@@ -286,8 +314,11 @@ export class ProjectRpcService {
     return this.projectRepo.save(project);
   }
 
-  fillRpcEndpoints(serviceEndpoints: SeviceEndpoint[], rpcFamilyList: string[]) {
-    if (!serviceEndpoints.length) return;
+  fillRpcEndpoints(
+    serviceEndpoints: SeviceEndpoint[],
+    rpcFamilyList: string[]
+  ): [filled?: SeviceEndpoint, exists?: SeviceEndpoint] {
+    if (!serviceEndpoints.length) return [];
     let targetKey = '';
     let defaultSuffix = '';
     if (rpcFamilyList.includes('evm')) {
@@ -297,23 +328,36 @@ export class ProjectRpcService {
       targetKey = RpcEndpointType.polkadotMetricsHttp;
       defaultSuffix = ':9615/metrics';
     }
-    if (!targetKey) return;
+    if (!targetKey) return [];
 
-    let exists = false;
+    let exists;
     let value = '';
     for (const e of serviceEndpoints) {
       if (e.key === targetKey) {
-        exists = true;
+        exists = e;
       }
       if (e.value) {
         value = e.value;
       }
     }
-    if (value && !exists) {
-      const domain = safeGetDomain(value);
-      if (!domain) return;
-      serviceEndpoints.push(new SeviceEndpoint(targetKey, `http://${domain}${defaultSuffix}`));
+    if (exists) {
+      return [undefined, exists];
     }
+
+    let res: SeviceEndpoint | undefined;
+    if (value) {
+      const domain = safeGetDomain(value);
+      if (!domain) return [];
+      res = new SeviceEndpoint(
+        targetKey,
+        `http://${domain}${defaultSuffix}`,
+        RpcEndpointAccessType[targetKey] || AccessType.DEFAULT
+      );
+      res.isWebsocket = res.key.endsWith('Ws');
+      res.rpcFamily = rpcFamilyList;
+      serviceEndpoints.push(res);
+    }
+    return [res, undefined];
   }
 
   async stopRpcProject(id: string): Promise<Project> {
