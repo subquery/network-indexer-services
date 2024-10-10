@@ -18,7 +18,7 @@ services:
       retries: 5
 
   coordinator:
-    image: subquerynetwork/indexer-coordinator:v2.4.2
+    image: subquerynetwork/indexer-coordinator:v2.5.0
     container_name: indexer_coordinator
     restart: always
     ports:
