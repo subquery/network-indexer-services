@@ -365,4 +365,9 @@ export class ProjectResolver {
   async getProjectDbSize(@Args('id') id: string): Promise<string> {
     return (await this.dbStatsService.getProjectDbStats(id)).size || '0';
   }
+
+  @Query(() => String)
+  async getDockerCompose(@Args('id', { nullable: true }) id?: string): Promise<string> {
+    return await this.projectService.getDockerCompose(id);
+  }
 }
