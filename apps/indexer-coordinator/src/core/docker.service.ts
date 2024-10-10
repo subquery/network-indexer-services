@@ -10,11 +10,19 @@ import { getLogger } from '../utils/logger';
 
 @Injectable()
 export class DockerService {
-  private docker: Dockerode;
+  private dockerInstance: Dockerode;
   private containerMap = new Map<string, Dockerode.Container>();
 
-  constructor() {
-    this.docker = new Dockerode({ socketPath: '/var/run/docker.sock' });
+  get docker(): Dockerode {
+    if (!this.dockerInstance) {
+      try {
+        this.dockerInstance = new Dockerode({ socketPath: '/var/run/docker.sock' });
+      } catch (e) {
+        getLogger('docker').error(e, `failed to connect to docker`);
+        throw new Error('failed to connect to docker');
+      }
+    }
+    return this.dockerInstance;
   }
 
   getContainer(name: string): Dockerode.Container {
