@@ -43,9 +43,11 @@ export class PaygResolver {
   channelExtend(
     @Args('id') id: string,
     @Args('expiration') expiration: number,
-    @Args('price', { nullable: true }) price?: string
+    @Args('price', { nullable: true }) price?: string,
+    @Args('indexerSign', { nullable: true }) indexerSign?: string,
+    @Args('consumerSign', { nullable: true }) consumerSign?: string
   ) {
-    return this.paygService.extend(id, expiration, price);
+    return this.paygService.extend(id, expiration, price, indexerSign, consumerSign);
   }
 
   @Mutation(() => ChannelType)
