@@ -43,6 +43,7 @@ use subql_indexer_utils::{
 };
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::account::ACCOUNT;
 use crate::ai::api_stream;
 use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
 use crate::cli::COMMAND;
@@ -527,19 +528,24 @@ async fn ep_payg_handler(
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => {
-            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
-                return_data
-            } else {
-                let unique_title = format!(
+            let return_body = match String::from_utf8(data.clone()) {
+                Ok(return_data) => return_data,
+                Err(err) => {
+                    let account = ACCOUNT.read().await;
+                    let indexer = account.indexer.clone();
+                    drop(account);
+                    let indexer_string = format!("{:?}", indexer);
+                    let unique_title = format!(
                     "payg ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
                     deployment, ep_name
                 );
-                let msg = format!(
-                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
-                    res_fmt, headers, body, data
-                );
-                make_sentry_message(&unique_title, &msg);
-                "".to_owned()
+                    let msg = format!(
+                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, err is {:#?}, base64 data is {:#?}, account address is {:#?}",
+                        res_fmt, headers, body, data, data.len(), err, general_purpose::STANDARD.encode(&data), indexer_string,
+                    );
+                    make_sentry_message(&unique_title, &msg);
+                    "".to_owned()
+                }
             };
             (
                 return_body,
