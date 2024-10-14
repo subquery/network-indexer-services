@@ -485,7 +485,7 @@ async fn ep_payg_handler(
         return payg_stream(endpoint.endpoint.clone(), v, state, false).await;
     }
 
-    let (data, signature, state_data, limit) = match block.to_str() {
+    let (data, signature, state_data, limit, inactive) = match block.to_str() {
         Ok("multiple") => {
             let state = match MultipleQueryState::from_bs64(auth) {
                 Ok(p) => p,
@@ -529,7 +529,24 @@ async fn ep_payg_handler(
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => {
             let return_body = match String::from_utf8(data.clone()) {
-                Ok(return_data) => return_data,
+                Ok(return_data) => {
+                    if data.is_empty() {
+                        let account = ACCOUNT.read().await;
+                        let indexer = account.indexer;
+                        drop(account);
+                        let indexer_string = format!("{:?}", indexer);
+                        let unique_title = format!(
+                            "payg ep_query_handler, proxy get empty and lead to inline returns empty, deployment_id: {}, ep_name: {}",
+                            deployment, ep_name
+                        );
+                        let msg = format!(
+                            "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, base64 data is {:#?}, account address is {:#?}， inactive is {}",
+                            res_fmt, headers, body, data, data.len(), general_purpose::STANDARD.encode(&data), indexer_string, inactive
+                        );
+                        make_sentry_message(&unique_title, &msg);
+                    }
+                    return_data
+                }
                 Err(err) => {
                     let account = ACCOUNT.read().await;
                     let indexer = account.indexer;
@@ -540,8 +557,8 @@ async fn ep_payg_handler(
                     deployment, ep_name
                 );
                     let msg = format!(
-                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, err is {:#?}, base64 data is {:#?}, account address is {:#?}",
-                        res_fmt, headers, body, data, data.len(), err, general_purpose::STANDARD.encode(&data), indexer_string,
+                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, err is {:#?}, base64 data is {:#?}, account address is {:#?}, inactive is {}",
+                        res_fmt, headers, body, data, data.len(), err, general_purpose::STANDARD.encode(&data), indexer_string,inactive
                     );
                     make_sentry_message(&unique_title, &msg);
                     "".to_owned()
