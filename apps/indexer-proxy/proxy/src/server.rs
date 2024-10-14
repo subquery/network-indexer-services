@@ -532,7 +532,7 @@ async fn ep_payg_handler(
                 Ok(return_data) => return_data,
                 Err(err) => {
                     let account = ACCOUNT.read().await;
-                    let indexer = account.indexer.clone();
+                    let indexer = account.indexer;
                     drop(account);
                     let indexer_string = format!("{:?}", indexer);
                     let unique_title = format!(
