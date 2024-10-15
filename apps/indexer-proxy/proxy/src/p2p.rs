@@ -719,7 +719,13 @@ async fn handle_group(
                                 )
                                 .await
                                 {
-                                    Ok((res_query, res_signature, res_state, _limit)) => {
+                                    Ok((
+                                        res_query,
+                                        res_signature,
+                                        res_state,
+                                        _limit,
+                                        _inactive,
+                                    )) => {
                                         json!({
                                             "result": general_purpose::STANDARD.encode(&res_query),
                                             "signature": res_signature,
