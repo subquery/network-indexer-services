@@ -704,13 +704,29 @@ pub async fn query_multiple_state(
     Ok((data, signature, state.to_bs64(), limit))
 }
 
+#[derive(Deserialize, Debug)]
+pub struct QueryResult {
+    pub data: ChannelExtendData,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ChannelExtendData {
+    pub channelExtend: ChannelExtend,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ChannelExtend {
+    pub expiredAt: u64,
+    pub id: String,
+}
+
 pub async fn extend_channel(
     channel: String,
     new_price: U256,
     expired: i64,
     expiration: i32,
     signature: String,
-) -> Result<String> {
+) -> Result<(String, u64)> {
     // check channel & signature
     let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
         .map_err(|_e| Error::Serialize(1120))?;
@@ -805,7 +821,19 @@ pub async fn extend_channel(
         return Err(Error::ServiceException(1202));
     }
 
-    Ok(indexer_sign)
+    if let Some(data) = query_result.get("data") {
+        if let Some(channel_extend) = data.get("channelExtend") {
+            if let Some(expired_at) = channel_extend.get("expiredAt").and_then(|v| v.as_u64()) {
+                Ok((indexer_sign, expired_at))
+            } else {
+                Err(Error::ServiceException(1203))
+            }
+        } else {
+            Err(Error::ServiceException(1203))
+        }
+    } else {
+        Err(Error::ServiceException(1203))
+    }
 }
 
 pub async fn pay_channel(mut state: QueryState) -> Result<String> {
