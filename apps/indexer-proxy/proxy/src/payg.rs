@@ -710,7 +710,7 @@ pub async fn extend_channel(
     expired: i64,
     expiration: i32,
     signature: String,
-) -> Result<(String, u64)> {
+) -> Result<String> {
     // check channel & signature
     let channel_id = U256::from_str_radix(&channel.trim_start_matches("0x"), 16)
         .map_err(|_e| Error::Serialize(1120))?;
@@ -805,19 +805,7 @@ pub async fn extend_channel(
         return Err(Error::ServiceException(1202));
     }
 
-    if let Some(data) = query_result.get("data") {
-        if let Some(channel_extend) = data.get("channelExtend") {
-            if let Some(expired_at) = channel_extend.get("expiredAt").and_then(|v| v.as_u64()) {
-                Ok((indexer_sign, expired_at))
-            } else {
-                Err(Error::ServiceException(1203))
-            }
-        } else {
-            Err(Error::ServiceException(1203))
-        }
-    } else {
-        Err(Error::ServiceException(1203))
-    }
+    Ok(indexer_sign)
 }
 
 pub async fn pay_channel(mut state: QueryState) -> Result<String> {

@@ -617,7 +617,7 @@ async fn payg_extend(
     Path(channel): Path<String>,
     Json(payload): Json<ExtendParams>,
 ) -> Result<Json<Value>, Error> {
-    let (extend, expired_at) = extend_channel(
+    let extend = extend_channel(
         channel,
         string_u256(&payload.price),
         payload.expired,
@@ -627,8 +627,7 @@ async fn payg_extend(
     .await?;
     Ok(Json(json!({
         "price": payload.price,
-        "signature": extend,
-        "expired_at": expired_at
+        "signature": extend
     })))
 }
 
