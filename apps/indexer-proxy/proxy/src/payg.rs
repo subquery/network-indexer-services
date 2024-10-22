@@ -704,22 +704,6 @@ pub async fn query_multiple_state(
     Ok((data, signature, state.to_bs64(), limit))
 }
 
-#[derive(Deserialize, Debug)]
-pub struct QueryResult {
-    pub data: ChannelExtendData,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ChannelExtendData {
-    pub channelExtend: ChannelExtend,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ChannelExtend {
-    pub expiredAt: u64,
-    pub id: String,
-}
-
 pub async fn extend_channel(
     channel: String,
     new_price: U256,
