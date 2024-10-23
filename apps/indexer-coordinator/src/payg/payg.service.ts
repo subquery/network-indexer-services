@@ -405,7 +405,8 @@ export class PaygService implements OnModuleInit {
     }
 
     if (!indexerSign || !consumerSign) {
-      throw new Error(`require indexerSign and consumerSign: ${id}`);
+      logger.debug(`extend channel requires indexerSign and consumerSign: ${id}`);
+      // throw new Error(`require indexerSign and consumerSign: ${id}`);
     }
 
     let modified = false;
