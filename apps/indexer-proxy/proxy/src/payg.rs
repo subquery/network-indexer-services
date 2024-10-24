@@ -1032,7 +1032,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             .arg(state_cache.to_bytes())
             .query_async(&mut conn)
             .await
-            .map_err(|err| error!("Redis 2: {}", err));
+            .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
     }
 
     Ok(())
