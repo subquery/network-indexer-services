@@ -90,7 +90,7 @@ export async function getManifest(cid: string) {
   return resultManifest;
 }
 
-function dockerRegistryFromChain(chainType: ChainType): string {
+export function dockerRegistryFromChain(chainType: ChainType): string {
   return `subquerynetwork/subql-node-${chainType}`;
 }
 

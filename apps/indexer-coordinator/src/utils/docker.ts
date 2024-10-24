@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { TemplateType } from '../project/types';
 import { argv } from '../yargs';
 import { getLogger } from './logger';
-import { nodeConfigs } from './project';
+import { ChainType, dockerRegistryFromChain, nodeConfigs } from './project';
 
 export function bytesToMegabytes(bytes: number): number {
   return bytes / (1024 * 1024);
@@ -104,6 +104,20 @@ export async function generateDockerComposeFile(data: TemplateType) {
   }
 }
 
+export async function generateDockerComposeContent(data: TemplateType) {
+  const chainType = 'substrate' as ChainType;
+  const config = { chainType, dockerRegistry: dockerRegistryFromChain(chainType) };
+  const context = { ...data, ...config };
+
+  const file = fs.readFileSync(join(__dirname, 'template.yml'), 'utf8');
+  handlebars.registerHelper('eq', (a, b) => a === b);
+  handlebars.registerHelper('ge', (a, b) => a >= b);
+  const template = handlebars.compile(file, { noEscape: true })(context);
+
+  // getTemplateContextValidator().parse(context);
+  return template;
+}
+
 export function canContainersRestart(id: string, containerStates: any[]): boolean {
   const containerNames = containerStates.map((container) => container.Name);
   const containersExist =
@@ -114,7 +128,7 @@ export function canContainersRestart(id: string, containerStates: any[]): boolea
   return containersExist && !isContainerAborted;
 }
 
-function getTemplateContextValidator() {
+export function getTemplateContextValidator() {
   const versionSchema = z.string().refine((v) => v.match(/^v?\d+\.\d+\.\d+(-\d+)?$/), {
     message: 'Invalid version string',
   });
