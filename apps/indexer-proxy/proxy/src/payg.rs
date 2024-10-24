@@ -52,9 +52,10 @@ use crate::contracts::{
 use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
-
+use crate::sentry_log::make_sentry_message;
 const CURRENT_VERSION: u8 = 3;
 
+#[derive(Debug)]
 pub struct StateCache {
     pub expiration: i64,
     pub agent: Address,
@@ -142,6 +143,7 @@ impl StateCache {
 }
 
 /// Supported consumer type.
+#[derive(Debug)]
 pub enum ConsumerType {
     /// real account
     Account(Vec<Address>),
@@ -584,19 +586,44 @@ pub fn check_multiple_state_balance(
     let remote_prev = state_cache.remote;
     let used_amount = price * unit_times;
 
-    let local_next = state_cache.spent + used_amount;
+    let (local_next, flag) = state_cache.spent.overflowing_add(used_amount);
+    if flag {
+        make_sentry_message("overflowing_add used_amount overflow",
+                            &format!("state_cache is {:#?}, used_amount is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", state_cache, used_amount, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
 
     if local_next > total {
         // overflow the total
         return Err(Error::Overflow(1056));
     }
 
-    let range = end - start;
+    let (range, flag) = end.overflowing_sub(start);
+    if flag {
+        make_sentry_message("overflowing_sub start overflow",
+                            &format!("start is {:#?}, end is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, end, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
+
     if range > MULTIPLE_RANGE_MAX {
         return Err(Error::Overflow(1059));
     }
 
-    let middle = start + range / 2;
+    let (middle, flag) = start.overflowing_add(range / 2);
+    if flag {
+        make_sentry_message("overflowing_add range overflow",
+                            &format!("start is {:#?}, range is {:#?}, state_cache: {:#?}, unit_times: {}, start: {:#?}, end: {:#?}", start, range, state_cache,
+                                     unit_times,
+                                     start,
+                                     end));
+        return Err(Error::Overflow(1058));
+    }
     let mut mpqsa = if local_next < middle {
         MultipleQueryStateActive::Active
     } else if local_next > end {
@@ -741,28 +768,6 @@ pub async fn extend_channel(
 
     // send to coordinator
     let expired_at = expired + expiration as i64;
-    let mdata = format!(
-        r#"mutation {{
-             channelExtend(
-               id:"{:#X}",
-               expiration:{},
-               price:"{}",
-             )
-           {{ id, expiredAt }}
-        }}"#,
-        channel_id, expired_at, new_price,
-    );
-    let url = COMMAND.graphql_url();
-    let query = GraphQLQuery::query(&mdata);
-    let query_result = graphql_request(&url, &query).await.map_err(|e| {
-        error!("{:?}", e);
-        Error::ServiceException(1202)
-    })?;
-    // println!("query_result : {:?}", query_result);
-    if query_result.get("errors").is_some() {
-        return Err(Error::ServiceException(1202));
-    }
-
     let account = ACCOUNT.read().await;
     let indexer_sign = extend_sign2(
         channel_id,
@@ -775,8 +780,32 @@ pub async fn extend_channel(
     )
     .await?;
     drop(account);
+    let indexer_sign = convert_sign_to_string(&indexer_sign);
+    let mdata = format!(
+        r#"mutation {{
+             channelExtend(
+               id:"{:#X}",
+               expiration:{},
+               price:"{}",
+               indexerSign:"0x{}",
+               consumerSign:"0x{}"
+            )
+           {{ id, expiredAt }}
+        }}"#,
+        channel_id, expired_at, new_price, indexer_sign, signature
+    );
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    let query_result = graphql_request(&url, &query).await.map_err(|e| {
+        error!("{:?}", e);
+        Error::ServiceException(1202)
+    })?;
+    // println!("query_result : {:?}", query_result);
+    if query_result.get("errors").is_some() {
+        return Err(Error::ServiceException(1202));
+    }
 
-    Ok(convert_sign_to_string(&indexer_sign))
+    Ok(indexer_sign)
 }
 
 pub async fn pay_channel(mut state: QueryState) -> Result<String> {

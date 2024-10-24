@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
 import { bytes32ToCid } from '@subql/network-clients';
@@ -529,6 +530,9 @@ export class PaygService implements OnModuleInit {
     if (channel.onchain === channel.remote) {
       return channel;
     }
+    if (!channel.lastIndexerSign || !channel.lastConsumerSign) {
+      return channel;
+    }
 
     // terminate
     await this.contract.sendTransaction({
@@ -622,5 +626,23 @@ export class PaygService implements OnModuleInit {
 
   async getOpenChannels() {
     return await this.channelRepo.find({ where: { status: ChannelStatus.OPEN } });
+  }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async closeOutdatedAndNotExtended() {
+    const channels = await this.getOpenChannels();
+    for (const c of channels) {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        if (c.expiredAt > now) {
+          continue;
+        }
+        await this.terminate(c.id);
+      } catch (e) {
+        logger.error(
+          `closeOutdatedAndNotExtended state channel(${c.id} ${c.deploymentId}) error: ${e.stack}`
+        );
+      }
+    }
   }
 }

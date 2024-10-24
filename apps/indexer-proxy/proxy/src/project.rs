@@ -280,7 +280,7 @@ impl Project {
         }
     }
 
-    pub fn endpoint<'a>(&'a self, ep_name: &str, no_internal: bool) -> Result<&Endpoint> {
+    pub fn endpoint<'a>(&'a self, ep_name: &str, no_internal: bool) -> Result<&'a Endpoint> {
         if let Some(end) = self.endpoints.get(ep_name) {
             if no_internal && end.is_internal {
                 Err(Error::InvalidServiceEndpoint(1037))
@@ -295,7 +295,7 @@ impl Project {
     pub fn is_rpc_project(&self) -> bool {
         matches!(
             self.ptype,
-            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_) | ProjectType::Subgraph
+            ProjectType::RpcEvm(_) | ProjectType::RpcSubstrate(_)
         )
     }
 

@@ -53,6 +53,7 @@ use crate::payg::{
     query_multiple_state, query_single_state, AuthPayg,
 };
 use crate::project::get_project;
+use crate::sentry_log::make_sentry_message;
 use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
 use crate::{
     account::{get_indexer, indexer_healthy},
@@ -318,7 +319,7 @@ async fn ep_query_handler(
     }
     let (data, signature, limit) = project
         .check_query(
-            body,
+            body.clone(),
             endpoint.endpoint.clone(),
             MetricsQuery::CloseAgreement,
             MetricsNetwork::HTTP,
@@ -329,13 +330,29 @@ async fn ep_query_handler(
         .await?;
 
     let (body, mut headers) = match res_fmt.to_str() {
-        Ok("inline") => (
-            String::from_utf8(data).unwrap_or("".to_owned()),
-            vec![
-                ("X-Indexer-Sig", signature.as_str()),
-                ("X-Indexer-Response-Format", "inline"),
-            ],
-        ),
+        Ok("inline") => {
+            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
+                return_data
+            } else {
+                let unique_title = format!(
+                    "ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
+                    deployment_id, ep_name
+                );
+                let msg = format!(
+                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                    res_fmt, headers, body, data
+                );
+                make_sentry_message(&unique_title, &msg);
+                "".to_owned()
+            };
+            (
+                return_body,
+                vec![
+                    ("X-Indexer-Sig", signature.as_str()),
+                    ("X-Indexer-Response-Format", "inline"),
+                ],
+            )
+        }
         Ok("wrapped") => (
             serde_json::to_string(&json!({
                 "result": general_purpose::STANDARD.encode(&data),
@@ -344,7 +361,18 @@ async fn ep_query_handler(
             .unwrap_or("".to_owned()),
             vec![("X-Indexer-Response-Format", "wrapped")],
         ),
-        _ => ("".to_owned(), vec![]),
+        _ => {
+            let unique_title = format!(
+                "ep_query_handler, not inline or wrapped, deployment_id: {}, ep_name: {}",
+                deployment_id, ep_name
+            );
+            let msg = format!(
+                "res_fmt: {:#?}, headers: {:#?}, body: {}",
+                res_fmt, headers, body
+            );
+            make_sentry_message(&unique_title, &msg);
+            ("".to_owned(), vec![])
+        }
     };
     headers.push(("Content-Type", "application/json"));
     headers.push(("Access-Control-Max-Age", "600"));
@@ -464,7 +492,7 @@ async fn ep_payg_handler(
             };
             match query_multiple_state(
                 &deployment,
-                body,
+                body.clone(),
                 endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
@@ -483,7 +511,7 @@ async fn ep_payg_handler(
             };
             match query_single_state(
                 &deployment,
-                body,
+                body.clone(),
                 endpoint.endpoint.clone(),
                 state,
                 MetricsNetwork::HTTP,
@@ -498,14 +526,41 @@ async fn ep_payg_handler(
     };
 
     let (body, mut headers) = match res_fmt.to_str() {
-        Ok("inline") => (
-            String::from_utf8(data).unwrap_or("".to_owned()),
-            vec![
-                ("X-Indexer-Sig", signature.as_str()),
-                ("X-Channel-State", state_data.as_str()),
-                ("X-Indexer-Response-Format", "inline"),
-            ],
-        ),
+        Ok("inline") => {
+            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
+                if return_data.is_empty() {
+                    let unique_title = format!(
+                        "payg ep_query_handler, inline returns empty, because endpoint returns empty, deployment_id: {}, ep_name: {}",
+                        deployment, ep_name
+                    );
+                    let msg = format!(
+                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                        res_fmt, headers, body, data
+                    );
+                    make_sentry_message(&unique_title, &msg);
+                }
+                return_data
+            } else {
+                let unique_title = format!(
+                    "payg ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
+                    deployment, ep_name
+                );
+                let msg = format!(
+                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
+                    res_fmt, headers, body, data
+                );
+                make_sentry_message(&unique_title, &msg);
+                "".to_owned()
+            };
+            (
+                return_body,
+                vec![
+                    ("X-Indexer-Sig", signature.as_str()),
+                    ("X-Channel-State", state_data.as_str()),
+                    ("X-Indexer-Response-Format", "inline"),
+                ],
+            )
+        }
         // `wrapped` or other res format
         _ => (
             serde_json::to_string(&json!({
