@@ -1024,7 +1024,7 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             }
         };
 
-        let exp = (channel.expired - now) as usize;
+        let exp = ((channel.expired - now).max(0)) as usize;
         if exp > 0 {
             let _: core::result::Result<(), ()> = redis::cmd("SETEX")
                 .arg(&keyname)
@@ -1033,6 +1033,11 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 .query_async(&mut conn)
                 .await
                 .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
+        } else {
+            warn!(
+                "redis 2 setex parameter exp is zero, does nothing here, channel id: {}, expired is: {}",
+                channel.id, channel.expired
+            );
         }
     }
 
