@@ -1025,14 +1025,15 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
         };
 
         let exp = (channel.expired - now) as usize;
-
-        let _: core::result::Result<(), ()> = redis::cmd("SETEX")
-            .arg(&keyname)
-            .arg(exp)
-            .arg(state_cache.to_bytes())
-            .query_async(&mut conn)
-            .await
-            .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
+        if exp > 0 {
+            let _: core::result::Result<(), ()> = redis::cmd("SETEX")
+                .arg(&keyname)
+                .arg(exp)
+                .arg(state_cache.to_bytes())
+                .query_async(&mut conn)
+                .await
+                .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
+        }
     }
 
     Ok(())
