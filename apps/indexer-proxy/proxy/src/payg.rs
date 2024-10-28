@@ -1033,6 +1033,8 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 .query_async(&mut conn)
                 .await
                 .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
+        } else {
+            info!("redis 2 setex parameter exp is zero, does nothing here");
         }
     }
 
