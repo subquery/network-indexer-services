@@ -1034,7 +1034,10 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
                 .await
                 .map_err(|err| error!("Redis 2: {}， exp is {}", err, exp));
         } else {
-            info!("redis 2 setex parameter exp is zero, does nothing here");
+            warn!(
+                "redis 2 setex parameter exp is zero, does nothing here, channel id: {}, expired is {}",
+                channel.id, channel.expired
+            );
         }
     }
 
