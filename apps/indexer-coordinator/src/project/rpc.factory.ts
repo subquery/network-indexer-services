@@ -172,11 +172,7 @@ abstract class RpcFamily implements IRpcFamily {
     this.endpoint = endpoint;
     this.targetEndpointKey = endpointKey;
 
-    while (this.actions.length) {
-      const action = this.actions.shift();
-      await action();
-    }
-    // await Promise.all(this.actions.map((action) => action()));
+    await Promise.all(this.actions.map((action) => action()));
   }
   getEndpointKeys(): string[] {
     throw new Error('Method not implemented.');
@@ -421,6 +417,9 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   withGenesisHash(genesisHash: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
+        return this;
+      }
       const result = await getRpcRequestFunction(this.endpoint)(
         this.endpoint,
         'chain_getBlockHash',
@@ -442,6 +441,9 @@ export class RpcFamilySubstrate extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
+      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
+        return this;
+      }
       if (_.toLower(nodeType) !== 'archive') {
         return;
       }
@@ -532,26 +534,6 @@ export class RpcFamilyPolkadot extends RpcFamilySubstrate {
       RpcEndpointType.polkadotHttp,
       RpcEndpointType.polkadotMetricsHttp,
     ];
-  }
-
-  withGenesisHash(genesisHash: string): IRpcFamily {
-    this.actions.push(async () => {
-      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
-        return this;
-      }
-      return super.withGenesisHash(genesisHash);
-    });
-    return this;
-  }
-
-  withNodeType(nodeType: string): IRpcFamily {
-    this.actions.push(async () => {
-      if (this.targetEndpointKey === RpcEndpointType.polkadotMetricsHttp) {
-        return this;
-      }
-      return super.withNodeType(nodeType);
-    });
-    return this;
   }
 
   withHeight(height?: number): IRpcFamily {
