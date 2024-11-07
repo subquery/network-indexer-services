@@ -3,9 +3,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
-import { Modal, Spinner, Tooltip, Typography } from '@subql/components';
+import { Modal, Spinner, Typography } from '@subql/components';
 import { TOKEN_SYMBOLS } from '@subql/network-config';
-import { Input, Select } from 'antd';
+import { Input, Select, Tooltip } from 'antd';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';

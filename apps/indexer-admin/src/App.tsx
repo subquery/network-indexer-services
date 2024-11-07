@@ -12,7 +12,7 @@ import {
 } from 'react-router-dom';
 import { ApolloProvider } from '@apollo/client';
 import { loadDevMessages, loadErrorMessages } from '@apollo/client/dev';
-import { Footer } from '@subql/components';
+import { Footer, SubqlProvider } from '@subql/components';
 import { useMount } from 'ahooks';
 import { RainbowProvider, tipsChainIds } from 'conf/rainbowConf';
 import { isUndefined } from 'lodash';
@@ -152,11 +152,13 @@ const App: FC = () => (
             <LoadingProvider>
               <ModalProvider>
                 <NotificationProvider>
-                  <div className="App">
-                    <Router>
-                      <AppContents />
-                    </Router>
-                  </div>
+                  <SubqlProvider version="v2">
+                    <div className="App">
+                      <Router>
+                        <AppContents />
+                      </Router>
+                    </div>
+                  </SubqlProvider>
                 </NotificationProvider>
               </ModalProvider>
             </LoadingProvider>
