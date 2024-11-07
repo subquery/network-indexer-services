@@ -24,6 +24,21 @@ interface IProps {
   id?: string;
 }
 
+export const getKeyName = (keyName: string) => {
+  if (keyName.includes('Metrics')) {
+    return 'Metrics' as const;
+  }
+
+  if (keyName.includes('Ws')) {
+    return 'WebSocket' as const;
+  }
+
+  if (keyName.includes('Http')) {
+    return 'HTTP' as const;
+  }
+  return keyName;
+};
+
 const getRuleField = (key: string) => {
   const lowerCaseKey = key.toLowerCase();
 
@@ -353,7 +368,7 @@ const RpcSetting: FC<IProps> = (props) => {
               <WithWarning key={key}>
                 <Form.Item
                   key={key}
-                  label={`${key} Endpoint`}
+                  label={`${getKeyName(key)} Endpoint`}
                   name={`${key}`}
                   hasFeedback
                   className={
