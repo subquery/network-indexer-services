@@ -10,28 +10,13 @@ import { GET_RPC_ENDPOINT_KEYS } from 'utils/queries';
 
 import { CardContainer } from '../styles';
 import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
-import RpcSetting from './rpcSetting';
+import RpcSetting, { getKeyName } from './rpcSetting';
 
 type Props = {
   project: ProjectDetails;
   metadata?: TQueryMetadata;
   projectStatus: ProjectStatus;
   refresh: () => void;
-};
-
-const getKeyName = (keyName: string) => {
-  if (keyName.includes('Metrics')) {
-    return 'Metrics' as const;
-  }
-
-  if (keyName.includes('Ws')) {
-    return 'WebSocket' as const;
-  }
-
-  if (keyName.includes('Http')) {
-    return 'HTTP' as const;
-  }
-  return keyName;
 };
 
 const getEndpointStatus = (endpoint?: { valid: boolean }) => {
@@ -150,7 +135,14 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
           description={
             <Typography>
               You have not entered a valid metrics endpoint. You may receive fewer RPC requests
-              without this set and active
+              without this set and active.{' '}
+              <Typography.Link
+                href="https://academy.subquery.network/subquery_network/node_operators/rpc_providers/connect-node.html#prerequisites"
+                type="info"
+                target="_blank"
+              >
+                Learn more.
+              </Typography.Link>
             </Typography>
           }
         />
@@ -169,7 +161,14 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
             <Typography>
               Your metrics endpoint cannot be reached. You may receive fewer RPC requests without a
               healthy metrics endpoint. <br />
-              Please check: {metricStatus.reason}
+              Please check: {metricStatus.reason}{' '}
+              <Typography.Link
+                href="https://academy.subquery.network/subquery_network/node_operators/rpc_providers/connect-node.html#prerequisites"
+                type="info"
+                target="_blank"
+              >
+                Learn more.
+              </Typography.Link>
             </Typography>
           }
         />
