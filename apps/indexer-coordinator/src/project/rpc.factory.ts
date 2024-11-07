@@ -241,7 +241,7 @@ export class RpcFamilyEvm extends RpcFamily {
       if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
         if (result.error) {
           throw new ValidateRpcEndpointError(
-            `Request eth_chainId failed: ${result.error}`,
+            `Request metrics failed: ${result.error}`,
             errorLevel
           );
         }
