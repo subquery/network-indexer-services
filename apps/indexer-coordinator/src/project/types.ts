@@ -79,6 +79,10 @@ export enum RpcEndpointType {
 
   substrateWs = 'substrateWs',
   substrateHttp = 'substrateHttp',
+
+  subqlDictWs = 'subql_dictWs',
+  subqlDictHttp = 'subql_dictHttp',
+  subqlDictMetricsHttp = 'subql_dictMetricsHttp',
 }
 
 export const RpcEndpointAccessType = {
