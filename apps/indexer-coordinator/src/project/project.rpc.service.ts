@@ -262,6 +262,8 @@ export class ProjectRpcService implements OnModuleInit {
         .withNodeType(projectManifest.nodeType)
         .withHeight()
         .withClientNameAndVersion(projectManifest.client?.name, projectManifest.client?.version)
+        .withBlockFitlerCapability()
+        .withFilteredBlocks()
         .validate(endpoint, endpointKey as RpcEndpointType);
       return this.formatResponse(true);
     } catch (e) {
