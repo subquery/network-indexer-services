@@ -88,6 +88,7 @@ export enum RpcEndpointType {
 export const RpcEndpointAccessType = {
   [RpcEndpointType.evmMetricsHttp]: AccessType.INTERNAL,
   [RpcEndpointType.polkadotMetricsHttp]: AccessType.INTERNAL,
+  [RpcEndpointType.subqlDictMetricsHttp]: AccessType.INTERNAL,
 };
 
 @InputType('SubgraphPort')
