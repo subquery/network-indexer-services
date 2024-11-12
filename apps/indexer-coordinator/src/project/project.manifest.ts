@@ -55,7 +55,7 @@ export class RpcManifest {
   version?: string;
   @Field(() => [String], { nullable: true })
   rpcFamily?: string[];
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { nullable: true, defaultValue: '' })
   nodeType?: string;
   @Field(() => ClientClass, { nullable: true })
   client?: ClientClass;
@@ -81,7 +81,7 @@ export class SubgraphManifest {
   version?: string;
   @Field(() => [String], { nullable: true })
   rpcFamily?: string[];
-  @Field(() => String, { nullable: true })
+  @Field(() => String, { nullable: true, defaultValue: '' })
   nodeType?: string;
   @Field(() => ClientClass, { nullable: true })
   client?: ClientClass;
