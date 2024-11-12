@@ -17,6 +17,23 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![deny(warnings)]
+use crate::account::ACCOUNT;
+use crate::ai::api_stream;
+use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
+use crate::cli::COMMAND;
+use crate::contracts::check_agreement_and_consumer;
+use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
+use crate::payg::{
+    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel,
+    query_multiple_state, query_single_state, AuthPayg,
+};
+use crate::project::get_project;
+use crate::sentry_log::make_sentry_message;
+use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
+use crate::{
+    account::{get_indexer, indexer_healthy},
+    auth::AuthWhitelistQuery,
+};
 use axum::extract::ws::WebSocket;
 use axum::{
     extract::{ConnectInfo, Path, WebSocketUpgrade},
@@ -42,23 +59,6 @@ use subql_indexer_utils::{
     tools::{hex_u256, string_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
-
-use crate::ai::api_stream;
-use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
-use crate::cli::COMMAND;
-use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
-use crate::payg::{
-    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel,
-    query_multiple_state, query_single_state, AuthPayg,
-};
-use crate::project::get_project;
-use crate::sentry_log::make_sentry_message;
-use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
-use crate::{
-    account::{get_indexer, indexer_healthy},
-    auth::AuthWhitelistQuery,
-};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -484,7 +484,7 @@ async fn ep_payg_handler(
         return payg_stream(endpoint.endpoint.clone(), v, state, false).await;
     }
 
-    let (data, signature, state_data, limit) = match block.to_str() {
+    let (data, signature, state_data, limit, inactive) = match block.to_str() {
         Ok("multiple") => {
             let state = match MultipleQueryState::from_bs64(auth) {
                 Ok(p) => p,
@@ -527,30 +527,41 @@ async fn ep_payg_handler(
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => {
-            let return_body = if let Ok(return_data) = String::from_utf8(data.clone()) {
-                if return_data.is_empty() {
+            let return_body = match String::from_utf8(data.clone()) {
+                Ok(return_data) => {
+                    if data.is_empty() {
+                        let account = ACCOUNT.read().await;
+                        let indexer = account.indexer;
+                        drop(account);
+                        let indexer_string = format!("{:?}", indexer);
+                        let unique_title = format!(
+                            "payg ep_query_handler, proxy get empty and lead to inline returns empty, deployment_id: {}, ep_name: {}",
+                            deployment, ep_name
+                        );
+                        let msg = format!(
+                            "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, base64 data is {:#?}, account address is {:#?}， inactive is {}",
+                            res_fmt, headers, body, data, data.len(), general_purpose::STANDARD.encode(&data), indexer_string, inactive
+                        );
+                        make_sentry_message(&unique_title, &msg);
+                    }
+                    return_data
+                }
+                Err(err) => {
+                    let account = ACCOUNT.read().await;
+                    let indexer = account.indexer;
+                    drop(account);
+                    let indexer_string = format!("{:?}", indexer);
                     let unique_title = format!(
                         "payg ep_query_handler, inline returns empty, because endpoint returns empty, deployment_id: {}, ep_name: {}",
                         deployment, ep_name
-                    );
+                );
                     let msg = format!(
-                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
-                        res_fmt, headers, body, data
+                        "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:#?}, data length is {}, err is {:#?}, base64 data is {:#?}, account address is {:#?}, inactive is {}",
+                        res_fmt, headers, body, data, data.len(), err, general_purpose::STANDARD.encode(&data), indexer_string,inactive
                     );
                     make_sentry_message(&unique_title, &msg);
+                    "".to_owned()
                 }
-                return_data
-            } else {
-                let unique_title = format!(
-                    "payg ep_query_handler, inline returns empty, deployment_id: {}, ep_name: {}",
-                    deployment, ep_name
-                );
-                let msg = format!(
-                    "res_fmt: {:#?}, headers: {:#?}, body: {}, data: {:?}",
-                    res_fmt, headers, body, data
-                );
-                make_sentry_message(&unique_title, &msg);
-                "".to_owned()
             };
             (
                 return_body,
