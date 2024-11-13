@@ -246,9 +246,9 @@ pub async fn proxy_request(
                 if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
                     || dns_err.kind() == std::io::ErrorKind::NotFound
                 {
-                    format!("{}: DNS resolution error", url)
+                    format!("{}: DNS resolution error, dns_err is {:#?}", url, dns_err)
                 } else {
-                    format!("{}: Other IO error: {:?}", url, dns_err)
+                    format!("{}: Other IO error: {:#?}", url, dns_err)
                 }
             } else {
                 format!("{}: {}", url, err.to_string())
