@@ -16,6 +16,8 @@ import { useContractSDK } from 'containers/contractSdk';
 import { AllConfig, ConfigKey, GET_ALL_CONFIG, SET_CONFIG } from 'utils/queries';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
+import NodeOperatorInformation from './components/NodeOperatorInforamtion';
+
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -74,6 +76,10 @@ const GlobalConfig: FC = () => {
       }}
     >
       <Typography variant="h4">Config</Typography>
+
+      <Wrapper>
+        <NodeOperatorInformation />
+      </Wrapper>
 
       <Wrapper>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>

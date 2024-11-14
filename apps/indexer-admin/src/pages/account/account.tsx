@@ -127,8 +127,17 @@ const Account = () => {
         try {
           const name = values[MetadataFormKey.name];
           const proxyEndpoint = values[MetadataFormKey.proxyEndpoint];
-          const metadata = await createIndexerMetadata(name, proxyEndpoint);
-          await accountAction(AccountAction.updateMetaData, metadata, onModalClose, fetchMetadata);
+          const newMetadata = await createIndexerMetadata(
+            name,
+            proxyEndpoint,
+            metadata?.description
+          );
+          await accountAction(
+            AccountAction.updateMetaData,
+            newMetadata,
+            onModalClose,
+            fetchMetadata
+          );
         } finally {
           formHelper.setStatus({ loading: false });
         }
