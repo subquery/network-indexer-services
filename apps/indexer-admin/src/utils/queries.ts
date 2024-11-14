@@ -406,7 +406,7 @@ export const GET_SUBGRAPH_ENDPOINTS = gql`
 export interface ManiFest {
   getManifest: {
     rpcManifest?: {
-      chain: { chainId: string };
+      chain?: { chainId?: string; genesisHash?: string };
       nodeType: string;
       name: string;
       rpcFamily: string[];
