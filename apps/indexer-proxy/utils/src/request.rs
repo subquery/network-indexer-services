@@ -15,7 +15,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 use once_cell::sync::Lazy;
 use reqwest::{
     header::{CONNECTION, CONTENT_TYPE},
@@ -24,6 +23,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
+use std::error::Error as StdError;
 use std::time::Duration;
 
 use crate::{
@@ -183,7 +183,7 @@ pub async fn proxy_request(
     let res = match method.to_lowercase().as_str() {
         "get" => {
             let mut req = REQUEST_CLIENT
-                .get(url)
+                .get(&url)
                 .timeout(Duration::from_secs(REQUEST_TIMEOUT));
             let mut no_auth = true;
             for (k, v) in headers {
@@ -193,13 +193,13 @@ pub async fn proxy_request(
                 req = req.header(k, v);
             }
             if no_auth {
-                req = req.header(AUTHORIZATION, token);
+                req = req.header(AUTHORIZATION, &token);
             }
             req.send().await
         }
         _ => {
             let mut req = REQUEST_CLIENT
-                .post(url)
+                .post(&url)
                 .timeout(Duration::from_secs(REQUEST_TIMEOUT))
                 .header("content-type", "application/json");
             let mut no_auth = true;
@@ -210,7 +210,7 @@ pub async fn proxy_request(
                 req = req.header(k, v);
             }
             if no_auth {
-                req = req.header(AUTHORIZATION, token);
+                req = req.header(AUTHORIZATION, &token);
             }
 
             req.body(query).send().await
@@ -234,7 +234,28 @@ pub async fn proxy_request(
                 Err(value)
             }
         }
-        Err(err) => Err(json!(err.to_string())),
+        Err(err) => {
+            let error_message = if err.is_timeout() {
+                format!("{}: Request timed out", url)
+            } else if err.is_connect() {
+                format!("{}: Connection error: This might be a network issue", url)
+            } else if let Some(dns_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<std::io::Error>())
+            {
+                if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
+                    || dns_err.kind() == std::io::ErrorKind::NotFound
+                {
+                    format!("{}: DNS resolution error, dns_err is {:#?}", url, dns_err)
+                } else {
+                    format!("{}: Other IO error: {:#?}", url, dns_err)
+                }
+            } else {
+                format!("{}: {}", url, err.to_string())
+            };
+
+            Err(json!(error_message))
+        }
     }
 }
 

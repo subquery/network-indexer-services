@@ -5,6 +5,7 @@ import { FC, useEffect } from 'react';
 import { useLazyQuery } from '@apollo/client';
 import { Spinner, Tag, Typography } from '@subql/components';
 import { Button } from 'antd';
+import { ETH_TYPE_DICTION, NETWORK_TYPE_DICTION } from 'conf/constant';
 import { isUndefined } from 'lodash';
 import styled from 'styled-components';
 
@@ -143,7 +144,15 @@ const ProjectDetailsHeader: FC<Props> = ({
               <>
                 <TagItem
                   versionType="Network"
-                  value={manifest.data?.getManifest.rpcManifest?.rpcFamily.join(' ')}
+                  value={
+                    ETH_TYPE_DICTION[
+                      manifest.data?.getManifest.rpcManifest?.chain?.chainId || ''
+                    ] ||
+                    NETWORK_TYPE_DICTION[
+                      manifest.data?.getManifest.rpcManifest?.chain?.genesisHash || ''
+                    ] ||
+                    manifest.data?.getManifest.rpcManifest?.rpcFamily?.[0]
+                  }
                 />
                 <Separator height={30} mr={36} ml={36} />
 

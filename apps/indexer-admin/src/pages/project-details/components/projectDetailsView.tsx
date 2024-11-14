@@ -140,7 +140,7 @@ const ProjectDetailsView: FC<Props> = ({ project }) => {
                   Chain ID:
                 </Typography>
                 <Typography variant="medium">
-                  {manifest.data?.getManifest.rpcManifest?.chain.chainId}
+                  {manifest.data?.getManifest.rpcManifest?.chain?.chainId}
                 </Typography>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
