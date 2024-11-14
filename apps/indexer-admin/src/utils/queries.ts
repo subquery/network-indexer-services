@@ -616,3 +616,13 @@ export const getRequestHistory = (params: { deploymentId: string; indexer: strin
     }
   `);
 };
+
+export const getIndexerSocialCredibility = (params: { indexer: string }) => {
+  return excellencyQuery<{ indexerParams: { socialCredibility: boolean }[] }>(`
+      {
+        indexerPrograms(indexerId: "${params.indexer}") {
+          socialCredibility
+        }
+      }
+  `);
+};
