@@ -260,7 +260,7 @@ pub async fn proxy_request(
             } else if err.is_redirect() {
                 format!("{}: Too many redirects occurred", url)
             } else {
-                format!("{}: {}", url, err)
+                format!("url: {}, err: {}, source is: {:#?}", url, err, err.source())
             };
 
             Err(json!(error_message))
