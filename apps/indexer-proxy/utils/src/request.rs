@@ -15,6 +15,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
+use crate::{
+    constants::{APPLICATION_JSON, AUTHORIZATION, KEEP_ALIVE},
+    error::Error,
+};
+use native_tls::Error as NativeTlsError;
 use once_cell::sync::Lazy;
 use reqwest::{
     header::{CONNECTION, CONTENT_TYPE},
@@ -25,11 +30,6 @@ use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use std::error::Error as StdError;
 use std::time::Duration;
-
-use crate::{
-    constants::{APPLICATION_JSON, AUTHORIZATION, KEEP_ALIVE},
-    error::Error,
-};
 
 pub static REQUEST_CLIENT: Lazy<Client> = Lazy::new(reqwest::Client::new);
 
@@ -246,12 +246,21 @@ pub async fn proxy_request(
                 if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
                     || dns_err.kind() == std::io::ErrorKind::NotFound
                 {
-                    format!("{}: DNS resolution error, dns_err is {:#?}", url, dns_err)
+                    format!("{}: DNS resolution error: {:?}", url, dns_err)
                 } else {
-                    format!("{}: Other IO error: {:#?}", url, dns_err)
+                    format!("{}: Other IO error: {:?}", url, dns_err)
                 }
+            } else if let Some(tls_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<NativeTlsError>())
+            {
+                format!("{}: TLS/SSL error: {:?}", url, tls_err)
+            } else if err.is_request() {
+                format!("{}: Malformed HTTP response or protocol error", url)
+            } else if err.is_redirect() {
+                format!("{}: Too many redirects occurred", url)
             } else {
-                format!("{}: {}", url, err.to_string())
+                format!("{}: {}", url, err)
             };
 
             Err(json!(error_message))
