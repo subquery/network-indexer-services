@@ -15,6 +15,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
+use crate::{
+    constants::{APPLICATION_JSON, AUTHORIZATION, KEEP_ALIVE},
+    error::Error,
+};
+use native_tls::Error as NativeTlsError;
 use once_cell::sync::Lazy;
 use reqwest::{
     header::{CONNECTION, CONTENT_TYPE},
@@ -25,11 +30,6 @@ use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use std::error::Error as StdError;
 use std::time::Duration;
-
-use crate::{
-    constants::{APPLICATION_JSON, AUTHORIZATION, KEEP_ALIVE},
-    error::Error,
-};
 
 pub static REQUEST_CLIENT: Lazy<Client> = Lazy::new(reqwest::Client::new);
 
@@ -236,9 +236,16 @@ pub async fn proxy_request(
         }
         Err(err) => {
             let error_message = if err.is_timeout() {
-                format!("{}: Request timed out", url)
+                format!(
+                    "url : {} , Request timed out, source is {:?}",
+                    url,
+                    err.source()
+                )
             } else if err.is_connect() {
-                format!("{}: Connection error: This might be a network issue", url)
+                format!(
+                    "url : {} , Connection error: This might be a network issue",
+                    url
+                )
             } else if let Some(dns_err) = err
                 .source()
                 .and_then(|source| source.downcast_ref::<std::io::Error>())
@@ -246,12 +253,44 @@ pub async fn proxy_request(
                 if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
                     || dns_err.kind() == std::io::ErrorKind::NotFound
                 {
-                    format!("{}: DNS resolution error, dns_err is {:#?}", url, dns_err)
+                    format!(
+                        "url : {} , DNS resolution error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
                 } else {
-                    format!("{}: Other IO error: {:#?}", url, dns_err)
+                    format!(
+                        "url: {} , Other IO error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
                 }
+            } else if let Some(tls_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<NativeTlsError>())
+            {
+                format!(
+                    "url : {} , TLS/SSL error: {:?}, source is {:?}",
+                    url,
+                    tls_err,
+                    err.source()
+                )
+            } else if err.is_request() {
+                format!(
+                    "url : {} , Malformed HTTP response or protocol error, source is {:?}",
+                    url,
+                    err.source()
+                )
+            } else if err.is_redirect() {
+                format!(
+                    "url : {} , Too many redirects occurred, source is {:?}",
+                    url,
+                    err.source()
+                )
             } else {
-                format!("{}: {}", url, err.to_string())
+                format!("url : {}, err: {}, source is: {:?}", url, err, err.source())
             };
 
             Err(json!(error_message))
