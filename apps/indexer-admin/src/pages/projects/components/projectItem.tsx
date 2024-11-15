@@ -5,7 +5,7 @@ import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Spinner, SubqlProgress, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
-import { isUndefined } from 'lodash';
+import { isNull, isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
 import UnsafeWarn from 'components/UnsafeWarn';
@@ -52,6 +52,19 @@ const ProjectItem: FC<Props> = (props) => {
     });
   }, [metadata]);
 
+  const onlineStatusRender = useMemo(() => {
+    if (isNull(onlineStatus)) return <Spinner />;
+    if (isUndefined(onlineStatus)) return <Tag>Not Run</Tag>;
+    return (
+      <Tag
+        color={onlineStatus ? 'success' : 'error'}
+        style={{ height: '22px', lineHeight: '18px' }}
+      >
+        {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
+      </Tag>
+    );
+  }, [onlineStatus]);
+
   const pushDetailPage = () => history.push(`/project/${id}`, { data: { ...props, status } });
 
   return (
@@ -93,14 +106,7 @@ const ProjectItem: FC<Props> = (props) => {
         )}
       </ItemContainer>
       <ItemContainer flex={1} />
-      <ItemContainer flex={3}>
-        <Tag
-          color={onlineStatus ? 'success' : 'error'}
-          style={{ height: '22px', lineHeight: '18px' }}
-        >
-          {onlineStatus ? OnlineStatus.online : OnlineStatus.offline}
-        </Tag>
-      </ItemContainer>
+      <ItemContainer flex={3}>{onlineStatusRender}</ItemContainer>
       <ItemContainer flex={1} />
 
       <ItemContainer flex={3}>
