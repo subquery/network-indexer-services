@@ -15,5 +15,6 @@ export type AccountButtonItem = {
 
 export type IndexerMetadata = {
   name: string;
+  description?: string;
   url: string;
 };

@@ -28,9 +28,9 @@ export enum RegisterFormKey {
 
 export const initialRegisterValues = {
   [RegisterFormKey.name]: '',
-  [RegisterFormKey.proxyEndpoint]: '',
-  [RegisterFormKey.amount]: 0,
-  [RegisterFormKey.rate]: 0,
+  [RegisterFormKey.proxyEndpoint]: 'http://localhost',
+  [RegisterFormKey.amount]: 200000,
+  [RegisterFormKey.rate]: 20,
 };
 
 export type TRegisterValues = {
