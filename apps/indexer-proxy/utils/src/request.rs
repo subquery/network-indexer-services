@@ -236,7 +236,11 @@ pub async fn proxy_request(
         }
         Err(err) => {
             let error_message = if err.is_timeout() {
-                format!("url : {} , Request timed out", url)
+                format!(
+                    "url : {} , Request timed out, source is {:?}",
+                    url,
+                    err.source()
+                )
             } else if err.is_connect() {
                 format!(
                     "url : {} , Connection error: This might be a network issue",
@@ -249,19 +253,42 @@ pub async fn proxy_request(
                 if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
                     || dns_err.kind() == std::io::ErrorKind::NotFound
                 {
-                    format!("url : {} , DNS resolution error: {:?}", url, dns_err)
+                    format!(
+                        "url : {} , DNS resolution error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
                 } else {
-                    format!("url: {} , Other IO error: {:?}", url, dns_err)
+                    format!(
+                        "url: {} , Other IO error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
                 }
             } else if let Some(tls_err) = err
                 .source()
                 .and_then(|source| source.downcast_ref::<NativeTlsError>())
             {
-                format!("url : {} , TLS/SSL error: {:?}", url, tls_err)
+                format!(
+                    "url : {} , TLS/SSL error: {:?}, source is {:?}",
+                    url,
+                    tls_err,
+                    err.source()
+                )
             } else if err.is_request() {
-                format!("url : {} , Malformed HTTP response or protocol error", url)
+                format!(
+                    "url : {} , Malformed HTTP response or protocol error, source is {:?}",
+                    url,
+                    err.source()
+                )
             } else if err.is_redirect() {
-                format!("url : {} , Too many redirects occurred", url)
+                format!(
+                    "url : {} , Too many redirects occurred, source is {:?}",
+                    url,
+                    err.source()
+                )
             } else {
                 format!("url : {}, err: {}, source is: {:?}", url, err, err.source())
             };
