@@ -241,6 +241,20 @@ pub async fn proxy_request(
                     url,
                     err.source()
                 )
+            } else if let Some(hyper_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<hyper::Error>())
+            {
+                if hyper_err.is_incomplete_message() {
+                    format!("url : {} ,  Malformed HTTP response or protocol error: Incomplete message from server, source is {:?}", url, err.source())
+                } else {
+                    format!(
+                        "url : {} , Hyper error: {:?}, source is {:?}",
+                        url,
+                        hyper_err,
+                        err.source()
+                    )
+                }
             } else if err.is_connect() {
                 format!(
                     "url : {} , Connection error: This might be a network issue",
