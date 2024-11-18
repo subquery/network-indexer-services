@@ -7,6 +7,7 @@ import _ from 'lodash';
 import * as semver from 'semver';
 import { safeJSONParse } from 'src/utils/json';
 import { getLogger } from 'src/utils/logger';
+import { MetricsType, parseMetrics } from 'src/utils/metrics';
 import { WebSocket } from 'ws';
 import { RpcEndpointType, ErrorLevel, ValidateRpcEndpointError } from './types';
 
@@ -262,8 +263,17 @@ export class RpcFamilyEvm extends RpcFamily {
         if (result.error) {
           throw new ValidateRpcEndpointError(`Request metrics failed: ${result.error}`, errorLevel);
         }
-        const info = safeJSONParse(result.data['chain/info']);
-        chainIdFromRpc = info?.chain_id;
+        if (typeof result.data === 'object') {
+          const info = safeJSONParse(result.data['chain/info']);
+          chainIdFromRpc = info?.chain_id;
+        } else {
+          const metricsObj = parseMetrics(result.data);
+          if (metricsObj.mType === MetricsType.GETH_PROMETHEUS) {
+            chainIdFromRpc = metricsObj.chain_id;
+          } else {
+            chainIdFromRpc = chainId;
+          }
+        }
       } else {
         if (result.data.error) {
           throw new ValidateRpcEndpointError(
@@ -360,6 +370,55 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   withHeight(height?: number): IRpcFamily {
+    this.actions.push(async () => {
+      if (this.targetEndpointKey !== this.metricsHttp) return;
+
+      const result = await jsonMetricsHttpRpcRequest(this.endpoint);
+      if (result.error) {
+        throw new ValidateRpcEndpointError(
+          `Request metrics failed: ${result.error}`,
+          ErrorLevel.warn
+        );
+      }
+      let headBlock = '0';
+      let errorMsg = 'unknown client';
+      if (typeof result.data === 'object') {
+        headBlock = result.data['chain/head/block'];
+      } else {
+        const metricsObj = parseMetrics(result.data);
+
+        switch (metricsObj.mType) {
+          case MetricsType.GETH_PROMETHEUS:
+            headBlock = metricsObj.chain_head_block;
+            errorMsg = 'incorrect head block';
+            break;
+          case MetricsType.ERIGON_PROMETHEUS:
+            headBlock = metricsObj.chain_checkpoint_latest;
+            errorMsg = 'incorrect checkpoint';
+            break;
+          case MetricsType.NETHERMIND_PROMETHEUS:
+            headBlock = metricsObj.nethermind_blocks;
+            errorMsg = 'incorrect nethermind blocks';
+            break;
+          case MetricsType.RETH_PROMETHEUS:
+            headBlock = metricsObj.reth_blockchain_tree_canonical_chain_height;
+            errorMsg = 'incorrect reth blocks';
+            break;
+          case MetricsType.BESU_PROMETHEUS:
+            // deal with '0.0' for BigNumber
+            headBlock = String(Number(metricsObj.ethereum_blockchain_height));
+            errorMsg = 'incorrect block height';
+            break;
+          default:
+        }
+      }
+      if (BigNumber.from(headBlock).eq('0')) {
+        throw new ValidateRpcEndpointError(
+          `${errorMsg}: ${BigNumber.from(headBlock).toString()}`,
+          ErrorLevel.warn
+        );
+      }
+    });
     return this;
   }
 
