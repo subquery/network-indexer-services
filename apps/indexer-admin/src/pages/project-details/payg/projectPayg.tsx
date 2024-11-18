@@ -112,7 +112,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
             <Typography>Advertise a price per 1,000 requests</Typography>
-            <Tooltip title="Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by KSQT.">
+            <Tooltip title="Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by SQT.">
               <BsInfoCircle style={{ marginLeft: 8, color: 'var(--sq-gray600)' }} />
             </Tooltip>
           </div>
@@ -122,6 +122,14 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
               <Input
                 value={paygConf.price}
                 onChange={(e) => {
+                  if (+e.target.value < 0.0001) {
+                    setPaygConf({
+                      ...paygConf,
+                      price: '0.0001',
+                    });
+                    return;
+                  }
+
                   setPaygConf({
                     ...paygConf,
                     price: e.target.value,
@@ -185,7 +193,15 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
             <Input
               disabled={loading}
               value={paygConf.validity}
+              min="1"
               onChange={(e) => {
+                if (+e.target.value < 1) {
+                  setPaygConf({
+                    ...paygConf,
+                    validity: '1',
+                  });
+                  return;
+                }
                 setPaygConf({
                   ...paygConf,
                   validity: e.target.value,

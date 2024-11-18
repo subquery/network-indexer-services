@@ -44,7 +44,7 @@ export const Text = styled.div<TextProps>`
   margin-bottom: ${({ mb }) => mb ?? 0}px;
   min-width: ${({ mw }) => mw ?? 10}px;
   overflow-wrap: anywhere;
-  min-height: 18px;
+  min-height: 20.7px;
 `;
 
 export const Label = styled.label<TextProps>`
