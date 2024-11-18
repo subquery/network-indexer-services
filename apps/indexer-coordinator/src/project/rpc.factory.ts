@@ -384,6 +384,7 @@ export class RpcFamilyEvm extends RpcFamily {
       let errorMsg = 'unknown client';
       if (typeof result.data === 'object') {
         headBlock = result.data['chain/head/block'];
+        errorMsg = 'incorrect head block';
       } else {
         const metricsObj = parseMetrics(result.data);
 
