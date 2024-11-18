@@ -188,7 +188,7 @@ const ProjectDetailsHeader: FC<Props> = ({
 
                 <TagItem
                   versionType="Client Name"
-                  value={manifest.data?.getManifest.rpcManifest?.client?.name || 'Unkonwn'}
+                  value={manifest.data?.getManifest.rpcManifest?.client?.name || 'Unknown'}
                 />
                 <Separator height={30} mr={36} ml={36} />
               </>

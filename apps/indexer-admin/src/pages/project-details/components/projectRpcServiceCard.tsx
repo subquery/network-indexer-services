@@ -100,7 +100,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
 
   const renderServicesEndpoints = useMemo(() => {
     return keys.data?.getRpcEndpointKeys.map((endpointName, index) => {
-      const endpoint = project.projectConfig.serviceEndpoints.find((i) => i.key === endpointName);
+      const endpoint = project.serviceEndpoints.find((i) => i.key === endpointName);
       const status = getEndpointStatus(endpoint);
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }} key={endpointName || index}>
@@ -116,13 +116,11 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
         </div>
       );
     });
-  }, [keys.data, project.projectConfig.serviceEndpoints]);
+  }, [keys.data, project.serviceEndpoints]);
 
   const renderServicesEndpointsFailed = useMemo(() => {
     const render = [];
-    const metricStatus = project.projectConfig.serviceEndpoints.find(
-      (i) => getKeyName(i.key) === 'Metrics'
-    );
+    const metricStatus = project.serviceEndpoints.find((i) => getKeyName(i.key) === 'Metrics');
 
     if (!metricStatus) {
       render.push(
@@ -175,7 +173,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
       );
     }
 
-    const failedEndpoints = project.projectConfig.serviceEndpoints.filter(
+    const failedEndpoints = project.serviceEndpoints.filter(
       (i) => !i.valid && getKeyName(i.key) !== 'Metrics'
     );
 
@@ -202,7 +200,7 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
     }
 
     return render;
-  }, [project.projectConfig.serviceEndpoints]);
+  }, [project.serviceEndpoints]);
 
   if (!metadata || !keys.data) return <Skeleton paragraph={{ rows: 5 }} active />;
   return (

@@ -112,6 +112,8 @@ export type ProjectConfig = {
     price: string;
     token: string;
   };
+
+  serviceEndpoints: { key: string; value: string; valid: boolean; reason: string }[];
 };
 
 export type ProjectServiceMetadata = {
@@ -169,10 +171,6 @@ export type ProjectDetails = {
   };
   metadata: TQueryMetadata;
   projectType: ProjectType;
-  serviceEndpoints: {
-    key: 'nodeEndpoint' | 'queryEndpoint';
-    value: string;
-  }[];
 } & ProjectServiceMetadata;
 
 // manifest types

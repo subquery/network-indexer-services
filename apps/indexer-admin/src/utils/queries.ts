@@ -47,7 +47,13 @@ const ProjectFields = `
       valid
       reason
     }
+  }
 
+  serviceEndpoints {
+    key
+    value
+    valid
+    reason
   }
 `;
 
