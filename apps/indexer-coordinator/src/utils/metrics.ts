@@ -7,7 +7,7 @@ export enum MetricsType {
   ERIGON_PROMETHEUS = 'erigon_prom',
   NETHERMIND_PROMETHEUS = 'nethermind_prom',
   RETH_PROMETHEUS = 'reth_prom',
-  BESU_PROMETHEUS = 'besu_prom'
+  BESU_PROMETHEUS = 'besu_prom',
 }
 
 function extractFromBrace(content: string) {
@@ -134,7 +134,7 @@ export function parseMetrics(metrics: string): MetricsData {
     }
 
     // besu
-    if(lines[i].startsWith('# TYPE besu_blockchain_difficulty_total gauge')) {
+    if (lines[i].startsWith('# TYPE besu_blockchain_difficulty_total gauge')) {
       mType = MetricsType.BESU_PROMETHEUS;
     }
     if (lines[i].startsWith('# TYPE ethereum_blockchain_height gauge')) {
