@@ -215,7 +215,9 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
         {rpcButtons}
       </div>
 
-      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
+      <div
+        style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap' }}
+      >
         {renderServicesEndpoints}
 
         {project.projectConfig.serviceEndpoints.length ? (
