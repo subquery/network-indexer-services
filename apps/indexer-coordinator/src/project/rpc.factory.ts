@@ -408,7 +408,7 @@ export class RpcFamilyEvm extends RpcFamily {
           case MetricsType.BESU_PROMETHEUS:
             // deal with '0.0' for BigNumber
             headBlock = String(Number(metricsObj.ethereum_blockchain_height));
-            errorMsg = 'incorrect block height';
+            errorMsg = 'incorrect besu block height';
             break;
           default:
         }
