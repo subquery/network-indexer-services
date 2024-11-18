@@ -224,6 +224,9 @@ const GlobalConfig: FC = () => {
                           if (!value) {
                             return Promise.reject(new Error('Please input price'));
                           }
+                          if (value <= 0) {
+                            return Promise.reject(new Error('Price must be greater than 0'));
+                          }
                           return Promise.resolve();
                         },
                       },
@@ -302,6 +305,11 @@ const GlobalConfig: FC = () => {
                           if (!value) {
                             return Promise.reject(new Error('Please input valid period'));
                           }
+
+                          if (value < 1) {
+                            return Promise.reject(new Error('Valid period must be greater than 1'));
+                          }
+
                           return Promise.resolve();
                         },
                       },
