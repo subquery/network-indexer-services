@@ -79,6 +79,8 @@ export const StyledButton = styled(SubButton)<StyledButtonProps>`
   margin-right: ${({ mr }) => mr ?? 0}px;
   margin-left: ${({ ml }) => ml ?? 0}px;
   font-weight: 500;
+  box-sizing: border-box;
+  height: 50px;
 `;
 
 type ButtonProps = {
@@ -104,7 +106,7 @@ export const Button: FC<ButtonProps & StyledButtonProps> = ({
   <StyledButton
     label={title}
     type={type ?? 'secondary'}
-    leftItem={loading && <Spin size={23} color={`${type === 'primary' ? '#fff' : '#4388dd'}`} />}
+    leftItem={loading && <Spin size={16} color={`${type === 'primary' ? '#fff' : '#4388dd'}`} />}
     disabled={disabled || loading}
     {...props}
   />

@@ -122,10 +122,10 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
               <Input
                 value={paygConf.price}
                 onChange={(e) => {
-                  if (+e.target.value < 0.0001) {
+                  if (+e.target.value < 0.0000000000000000001) {
                     setPaygConf({
                       ...paygConf,
-                      price: '0.0001',
+                      price: '0.0000000000000000001',
                     });
                     return;
                   }
