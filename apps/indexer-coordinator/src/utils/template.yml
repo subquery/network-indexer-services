@@ -7,8 +7,13 @@ services:
     user: "1000"
     restart: always
     cpus: {{cpu}}
+    {{#if isUserManaged}}
+    ports:
+      - {{localIP}}:{{localServiceNodePort}}:{{servicePort}}
+    {{else}}
     expose:
       - {{servicePort}}
+    {{/if}}
     environment:
       DB_USER: "{{postgres.user}}"
       DB_PASS: "{{postgres.pass}}"
@@ -67,8 +72,13 @@ services:
     image: subquerynetwork/subql-query:{{queryVersion}}
     container_name: query_{{projectID}}
     user: "1000"
+    {{#if isUserManaged}}
+    ports:
+      - {{localIP}}:{{localServiceQueryPort}}:{{servicePort}}
+    {{else}}
     expose:
       - {{servicePort}}
+    {{/if}}
     depends_on:
       "node_{{projectID}}":
         condition: service_healthy
