@@ -52,7 +52,7 @@ export const ProjectItemContainer = styled.div`
   padding: 16px 24px;
   border-radius: 8px;
   border: 1px solid var(--sq-gray300);
-
+  transition: all 0.3s ease;
   &:hover {
     background-color: rgba(67, 136, 221, 0.08);
     border-color: var(--sq-blue600);
@@ -64,5 +64,5 @@ export const ProfileContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 80%;
-  margin-left: 16px;
+  margin-left: 8px;
 `;

@@ -71,6 +71,18 @@ type StyledButtonProps = {
 };
 
 export const StyledButton = styled(SubButton)<StyledButtonProps>`
+  @property --start-color {
+    syntax: '<color>';
+    initial-value: #ffffff14;
+    inherits: false;
+  }
+
+  @property --end-color {
+    syntax: '<color>';
+    initial-value: #ffffff14;
+    inherits: false;
+  }
+
   align-self: ${({ align }) => align ?? 'center'};
   min-width: ${({ width }) => width ?? 150}px;
   padding: 16px 50px;
@@ -81,6 +93,17 @@ export const StyledButton = styled(SubButton)<StyledButtonProps>`
   font-weight: 500;
   box-sizing: border-box;
   height: 50px;
+  background: linear-gradient(
+    96.26deg,
+    var(--start-color) 13.8%,
+    var(--end-color) 82.83%
+  ) !important;
+  transition: --start-color 0.3s ease, --end-color 0.3s ease;
+
+  &:hover {
+    --start-color: #4388dd14;
+    --end-color: #ff458114;
+  }
 `;
 
 type ButtonProps = {

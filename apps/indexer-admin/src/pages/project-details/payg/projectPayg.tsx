@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
 import { Modal, Spinner, Typography } from '@subql/components';
 import { TOKEN_SYMBOLS } from '@subql/network-config';
-import { Input, Select, Tooltip } from 'antd';
+import { Form, Input, Select, Tooltip } from 'antd';
+import { useForm } from 'antd/es/form/Form';
+import BigNumberJs from 'bignumber.js';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
@@ -35,6 +37,8 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
   const paygEnabled = useMemo(() => {
     return innerConfig.paygExpiration && innerConfig.paygPrice;
   }, [innerConfig]);
+
+  const [form] = useForm();
 
   // const { rates, fetchedTime } = useStableCoin(sdk, SUPPORTED_NETWORK);
 
@@ -116,105 +120,118 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
               <BsInfoCircle style={{ marginLeft: 8, color: 'var(--sq-gray600)' }} />
             </Tooltip>
           </div>
+          <Form
+            form={form}
+            initialValues={{
+              price: paygConf.price,
+            }}
+          >
+            <SubqlInput>
+              {sdk && (
+                <Form.Item
+                  name="price"
+                  rules={[
+                    {
+                      validator: (_, value) => {
+                        if (BigNumberJs(value).isLessThanOrEqualTo(0)) {
+                          return Promise.reject(new Error('Price must be greater than 0'));
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <Input
+                    value={paygConf.price}
+                    onChange={(e) => {
+                      form.setFieldValue('price', e.target.value);
+                      setPaygConf({
+                        ...paygConf,
+                        price: e.target.value,
+                      });
+                    }}
+                    type="number"
+                    disabled={loading}
+                    addonAfter={
+                      <Select
+                        value={paygConf.token}
+                        onChange={(e) => {
+                          setPaygConf({
+                            ...paygConf,
+                            token: e,
+                          });
+                        }}
+                        options={[
+                          // {
+                          //   value: STABLE_COIN_ADDRESS,
+                          //   label: (
+                          //     <div style={{ display: 'flex', alignItems: 'center' }}>
+                          //       <img
+                          //         style={{ width: 24, height: 24, marginRight: 8 }}
+                          //         src="/images/usdc.png"
+                          //         alt=""
+                          //       />
+                          //       <Typography>USDC</Typography>
+                          //     </div>
+                          //   ),
+                          // },
+                          {
+                            value: sdk.sqToken.address,
+                            label: (
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <img
+                                  style={{ width: 24, height: 24, marginRight: 8 }}
+                                  src="/images/ksqt.svg"
+                                  alt=""
+                                />
+                                <Typography>{TOKEN_SYMBOL}</Typography>
+                              </div>
+                            ),
+                          },
+                        ]}
+                      />
+                    }
+                  />
+                </Form.Item>
+              )}
+            </SubqlInput>
 
-          <SubqlInput>
-            {sdk && (
+            <div style={{ marginTop: 24 }}>
+              <Typography style={{ marginBottom: 8 }}>Validity Period</Typography>
+              <Tooltip
+                title={`Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by ${TOKEN_SYMBOL}.`}
+              >
+                <BsInfoCircle style={{ marginLeft: 8, color: 'var(--sq-gray600)' }} />
+              </Tooltip>
+            </div>
+
+            <SubqlInput>
               <Input
-                value={paygConf.price}
+                disabled={loading}
+                value={paygConf.validity}
+                min="1"
                 onChange={(e) => {
-                  if (+e.target.value < 0.0000000000000000001) {
+                  if (+e.target.value < 1) {
                     setPaygConf({
                       ...paygConf,
-                      price: '0.0000000000000000001',
+                      validity: '1',
                     });
                     return;
                   }
-
                   setPaygConf({
                     ...paygConf,
-                    price: e.target.value,
+                    validity: e.target.value,
                   });
                 }}
                 type="number"
-                disabled={loading}
-                addonAfter={
-                  <Select
-                    value={paygConf.token}
-                    onChange={(e) => {
-                      setPaygConf({
-                        ...paygConf,
-                        token: e,
-                      });
-                    }}
-                    options={[
-                      // {
-                      //   value: STABLE_COIN_ADDRESS,
-                      //   label: (
-                      //     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      //       <img
-                      //         style={{ width: 24, height: 24, marginRight: 8 }}
-                      //         src="/images/usdc.png"
-                      //         alt=""
-                      //       />
-                      //       <Typography>USDC</Typography>
-                      //     </div>
-                      //   ),
-                      // },
-                      {
-                        value: sdk.sqToken.address,
-                        label: (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <img
-                              style={{ width: 24, height: 24, marginRight: 8 }}
-                              src="/images/ksqt.svg"
-                              alt=""
-                            />
-                            <Typography>{TOKEN_SYMBOL}</Typography>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
+                suffix={
+                  <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
+                    Day(s)
+                  </Typography>
                 }
               />
-            )}
-          </SubqlInput>
-
-          <div style={{ marginTop: 24 }}>
-            <Typography style={{ marginBottom: 8 }}>Validity Period</Typography>
-            <Tooltip
-              title={`Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by ${TOKEN_SYMBOL}.`}
-            >
-              <BsInfoCircle style={{ marginLeft: 8, color: 'var(--sq-gray600)' }} />
-            </Tooltip>
-          </div>
-
-          <SubqlInput>
-            <Input
-              disabled={loading}
-              value={paygConf.validity}
-              min="1"
-              onChange={(e) => {
-                if (+e.target.value < 1) {
-                  setPaygConf({
-                    ...paygConf,
-                    validity: '1',
-                  });
-                  return;
-                }
-                setPaygConf({
-                  ...paygConf,
-                  validity: e.target.value,
-                });
-              }}
-              type="number"
-              suffix={
-                <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
-                  Day(s)
-                </Typography>
-              }
-            />
-          </SubqlInput>
+            </SubqlInput>
+          </Form>
         </div>
       </Modal>
     </Container>

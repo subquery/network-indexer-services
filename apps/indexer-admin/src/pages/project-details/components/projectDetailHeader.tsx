@@ -182,7 +182,7 @@ const ProjectDetailsHeader: FC<Props> = ({
 
                 <TagItem
                   versionType="Node Type"
-                  value={manifest.data?.getManifest.rpcManifest?.nodeType}
+                  value={manifest.data?.getManifest.rpcManifest?.nodeType || 'Unknown'}
                 />
                 <Separator height={30} mr={36} ml={36} />
 

@@ -5,6 +5,8 @@ import { FC, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Spinner, SubqlProgress, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
+import { formatSQT } from '@subql/react-hooks';
+import BigNumberJs from 'bignumber.js';
 import { isNull, isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
@@ -20,6 +22,7 @@ import {
 } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
+import { TOKEN_SYMBOL } from 'utils/web3';
 
 import { OnlineStatus, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
@@ -30,7 +33,7 @@ type Props = Omit<ProjectDetails, 'metadata'> & {
 };
 
 const ProjectItem: FC<Props> = (props) => {
-  const { id, details, metadata, projectType, metadataLoading } = props;
+  const { id, details, payg, metadata, projectType, metadataLoading } = props;
 
   const { indexer: account } = useCoordinatorIndexer();
   const history = useHistory();
@@ -70,14 +73,14 @@ const ProjectItem: FC<Props> = (props) => {
   return (
     <ProjectItemContainer onClick={pushDetailPage}>
       <ItemContainer flex={13}>
-        <Avatar address={cidToBytes32(id)} size={50} />
+        <Avatar address={cidToBytes32(id)} size={40} />
         <ProfileContainer>
           <Typography className="overflowEllipsis2" style={{ gap: 8, maxWidth: 560 }}>
             {details.name}
             {isUnsafe && <UnsafeWarn />}
           </Typography>
           <Typography
-            style={{ width: '100%', marginTop: 8, minWidth: 360 }}
+            style={{ width: '100%', marginTop: 8, overflowWrap: 'anywhere' }}
             type="secondary"
             variant="small"
           >
@@ -86,7 +89,7 @@ const ProjectItem: FC<Props> = (props) => {
         </ProfileContainer>
       </ItemContainer>
 
-      <ItemContainer flex={5}>
+      <ItemContainer flex={4}>
         <Typography variant="small" type="secondary">
           {
             {
@@ -108,7 +111,19 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={1} />
       <ItemContainer flex={3}>{onlineStatusRender}</ItemContainer>
       <ItemContainer flex={1} />
-
+      <ItemContainer flex={1}>
+        {payg?.expiration ? (
+          <Typography variant="small" type="secondary">
+            {BigNumberJs(formatSQT(payg?.price)).multipliedBy(1000).toFixed()} {TOKEN_SYMBOL} / 1000
+            requests
+          </Typography>
+        ) : (
+          <Typography variant="small" type="secondary">
+            Not Available
+          </Typography>
+        )}
+      </ItemContainer>
+      <ItemContainer flex={1} />
       <ItemContainer flex={3}>
         {!isUndefined(status) ? (
           <Tag color={status === ServiceStatus.READY ? 'success' : 'default'}>

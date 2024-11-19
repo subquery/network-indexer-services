@@ -166,6 +166,7 @@ export const GET_PROJECTS = gql`
   query {
     getProjects: getProjectsSimple {
       ${ProjectFields}
+      ${PaygFields}
     }
   }
 `;
