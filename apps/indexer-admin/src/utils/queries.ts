@@ -47,7 +47,13 @@ const ProjectFields = `
       valid
       reason
     }
+  }
 
+  serviceEndpoints {
+    key
+    value
+    valid
+    reason
   }
 `;
 
@@ -160,6 +166,7 @@ export const GET_PROJECTS = gql`
   query {
     getProjects: getProjectsSimple {
       ${ProjectFields}
+      ${PaygFields}
     }
   }
 `;

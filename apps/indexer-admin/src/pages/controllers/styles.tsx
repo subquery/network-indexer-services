@@ -50,6 +50,7 @@ export const ItemContainer = styled.div`
   border-radius: 10px;
   background-color: white;
   align-items: center;
+  transition: all 0.3s ease;
   :hover {
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
     cursor: pointer;

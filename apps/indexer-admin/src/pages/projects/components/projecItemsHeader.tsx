@@ -18,10 +18,12 @@ const Container = styled.div`
 
 const projetHeaderItems = [
   { title: 'Project Name', flex: 13 },
-  { title: 'Type', flex: 5 },
-  { title: 'Progress', flex: 3 },
+  { title: 'Type', flex: 4 },
+  { title: 'Progress', flex: 4 },
   { title: '', flex: 1 },
   { title: 'Connection status', flex: 3 },
+  { title: '', flex: 1 },
+  { title: 'Flex Plan Price', flex: 2 },
   { title: '', flex: 1 },
   { title: 'Status', flex: 3 },
 ];

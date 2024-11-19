@@ -89,7 +89,7 @@ const ProjectSubgraphServiceCard: FC<Props> = ({ project, metadata, projectStatu
       <div
         style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap' }}
       >
-        {project.projectConfig.serviceEndpoints.map((endpoint, index) => {
+        {project.serviceEndpoints.map((endpoint, index) => {
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }} key={endpoint.key || index}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -108,7 +108,7 @@ const ProjectSubgraphServiceCard: FC<Props> = ({ project, metadata, projectStatu
           );
         })}
 
-        {project.projectConfig.serviceEndpoints.length ? (
+        {project.serviceEndpoints.length ? (
           <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
         ) : (
           ''

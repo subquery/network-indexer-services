@@ -1,10 +1,10 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { FC, useEffect } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import { useLazyQuery } from '@apollo/client';
 import { Spinner, Tag, Typography } from '@subql/components';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { ETH_TYPE_DICTION, NETWORK_TYPE_DICTION } from 'conf/constant';
 import { isUndefined } from 'lodash';
 import styled from 'styled-components';
@@ -13,6 +13,7 @@ import Avatar from 'components/avatar';
 import { Separator } from 'components/primary';
 import { TagItem } from 'components/tagItem';
 import UnsafeWarn from 'components/UnsafeWarn';
+import { usePAYGConfig } from 'hooks/paygHook';
 import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
 import { statusText } from 'pages/projects/constant';
 import { cidToBytes32 } from 'utils/ipfs';
@@ -51,6 +52,26 @@ const ProjectDetailsHeader: FC<Props> = ({
 }) => {
   const [getManifest, manifest] = useLazyQuery<ManiFest>(GET_MANIFEST);
   const { isUnsafe } = useGetIfUnsafeDeployment(id);
+  const { paygConfig, loading } = usePAYGConfig(id);
+
+  const goOnlineDisable = useMemo(() => {
+    if (
+      !loading &&
+      (paygConfig.paygPrice === '' || !paygConfig.paygExpiration || +paygConfig.paygPrice === 0)
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [paygConfig, loading]);
+
+  const tooltipOfGoOnline = useMemo(() => {
+    if (goOnlineDisable) {
+      return 'Please set Flex Plan price and expiration date before going online';
+    }
+
+    return '';
+  }, [goOnlineDisable]);
 
   useEffect(() => {
     if (project.projectType === ProjectType.Rpc) {
@@ -84,16 +105,19 @@ const ProjectDetailsHeader: FC<Props> = ({
 
             <div>
               {status === ServiceStatus.TERMINATED && (
-                <Button
-                  size="large"
-                  shape="round"
-                  type="primary"
-                  onClick={() => {
-                    announceReady();
-                  }}
-                >
-                  Go Online
-                </Button>
+                <Tooltip title={tooltipOfGoOnline} placement="top">
+                  <Button
+                    size="large"
+                    shape="round"
+                    type="primary"
+                    disabled={goOnlineDisable}
+                    onClick={() => {
+                      announceReady();
+                    }}
+                  >
+                    Go Online
+                  </Button>
+                </Tooltip>
               )}
               {status === ServiceStatus.READY && (
                 <Button
@@ -158,13 +182,13 @@ const ProjectDetailsHeader: FC<Props> = ({
 
                 <TagItem
                   versionType="Node Type"
-                  value={manifest.data?.getManifest.rpcManifest?.nodeType}
+                  value={manifest.data?.getManifest.rpcManifest?.nodeType || 'Unknown'}
                 />
                 <Separator height={30} mr={36} ml={36} />
 
                 <TagItem
                   versionType="Client Name"
-                  value={manifest.data?.getManifest.rpcManifest?.client?.name || 'Unkonwn'}
+                  value={manifest.data?.getManifest.rpcManifest?.client?.name || 'Unknown'}
                 />
                 <Separator height={30} mr={36} ml={36} />
               </>
