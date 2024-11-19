@@ -219,6 +219,7 @@ export class ProjectService {
     if (!result.data.deployment) {
       throw new Error(`project not exist on network: ${id}`);
     }
+
     const deployment = result.data.deployment;
     const project = deployment.project;
     if (_.startsWith(project.metadata, '0x')) {
@@ -334,7 +335,6 @@ export class ProjectService {
     }
     project.hostType = hostType;
     await this.projectRepo.save(project);
-
     if (project.hostType === HostType.USER_MANAGED) {
       return await this.startUserManagedSubqueryProject(project, projectConfig);
     }
