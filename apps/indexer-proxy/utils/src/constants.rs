@@ -68,8 +68,10 @@ pub const TELEMETRIES_TESTNET: [&str; 3] = [
     "0x293a6d85DD0d7d290A719Fdeef43FaD10240bA77", // DEV
 ];
 
-pub const BOOTSTRAP: [&str; 3] = [
+pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/142.215.53.35/tcp/7370",
     "/ip4/8.219.198.62/tcp/7371",
     "/ip4/8.219.198.62/quic/7370",
+    "/ip4/154.91.1.165/tcp/7371",
+    "/ip4/154.91.1.165/quic/7370",
 ];
