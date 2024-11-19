@@ -106,6 +106,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
         okText="Enable"
         title="Enable Flex Plan"
         onSubmit={async () => {
+          await form.validateFields();
           await changePAYGCofnig(paygConf);
           setShowModal(false);
         }}
@@ -124,6 +125,7 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
             form={form}
             initialValues={{
               price: paygConf.price,
+              validity: paygConf.validity,
             }}
           >
             <SubqlInput>
@@ -133,6 +135,9 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
                   rules={[
                     {
                       validator: (_, value) => {
+                        if (!value) {
+                          return Promise.reject(new Error('Price is required'));
+                        }
                         if (BigNumberJs(value).isLessThanOrEqualTo(0)) {
                           return Promise.reject(new Error('Price must be greater than 0'));
                         }
@@ -206,30 +211,41 @@ export function ProjectPAYG({ id }: TProjectPAYG) {
             </div>
 
             <SubqlInput>
-              <Input
-                disabled={loading}
-                value={paygConf.validity}
-                min="1"
-                onChange={(e) => {
-                  if (+e.target.value < 1) {
+              <Form.Item
+                name="validity"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) {
+                        return Promise.reject(new Error('Validity is required'));
+                      }
+                      if (BigNumberJs(value).isLessThan(1)) {
+                        return Promise.reject(
+                          new Error('Validity must be greater or equal than 1')
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
+                <Input
+                  disabled={loading}
+                  value={paygConf.validity}
+                  onChange={(e) => {
                     setPaygConf({
                       ...paygConf,
-                      validity: '1',
+                      validity: e.target.value,
                     });
-                    return;
+                  }}
+                  type="number"
+                  suffix={
+                    <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
+                      Day(s)
+                    </Typography>
                   }
-                  setPaygConf({
-                    ...paygConf,
-                    validity: e.target.value,
-                  });
-                }}
-                type="number"
-                suffix={
-                  <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
-                    Day(s)
-                  </Typography>
-                }
-              />
+                />
+              </Form.Item>
             </SubqlInput>
           </Form>
         </div>
