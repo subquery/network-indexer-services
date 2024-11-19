@@ -203,9 +203,16 @@ impl RpcMainfest {
 
         let mut not_allowed = !self.rpc_allow_list.is_empty();
         for ra in &self.rpc_allow_list {
-            if method.starts_with(ra) {
-                not_allowed = false;
-                break;
+            if ra.ends_with('_') {
+                if method.starts_with(ra) {
+                    not_allowed = false;
+                    break;
+                }
+            } else {
+                if method == ra {
+                    not_allowed = false;
+                    break;
+                }
             }
         }
         if not_allowed {
