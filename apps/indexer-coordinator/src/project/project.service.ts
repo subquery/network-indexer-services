@@ -219,13 +219,8 @@ export class ProjectService {
     if (!result.data.deployment) {
       throw new Error(`project not exist on network: ${id}`);
     }
-
-    console.log('---------getProjectInfoFromNetwork----', result);
     const deployment = result.data.deployment;
     const project = deployment.project;
-
-    console.log('---------project----', project);
-
     if (_.startsWith(project.metadata, '0x')) {
       project.metadata = bytes32ToCid(project.metadata);
     }
