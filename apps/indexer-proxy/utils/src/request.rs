@@ -30,6 +30,7 @@ use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use std::error::Error as StdError;
 use std::time::Duration;
+use tokio_stream::StreamExt;
 
 pub static REQUEST_CLIENT: Lazy<Client> = Lazy::new(reqwest::Client::new);
 
@@ -134,38 +135,33 @@ pub async fn post_request_raw(uri: &str, query: String) -> Result<Vec<u8>, Error
 // handle request
 #[inline]
 async fn handle_request_raw(request: RequestBuilder, query: String) -> Result<Vec<u8>, Error> {
-    let response_result = request
+    let res = request
         .timeout(Duration::from_secs(REQUEST_TIMEOUT))
-        .header(CONTENT_TYPE, APPLICATION_JSON)
-        .header(CONNECTION, KEEP_ALIVE)
-        .body(query.to_owned())
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .header(reqwest::header::CONNECTION, "keep-alive")
+        .body(query)
         .send()
-        .await;
-
-    let res = match response_result {
-        Ok(res) => res,
-        Err(_e) => {
-            return Err(Error::GraphQLInternal(
+        .await
+        .or_else(|_e| {
+            Err(Error::GraphQLInternal(
                 1010,
                 "Service exception or timeout".to_owned(),
             ))
-        }
-    };
+        })?;
 
     let status = res.status();
-    let body = res
-        .bytes()
-        .await
-        .map(|bytes| bytes.to_vec())
-        .map_err(|e| Error::GraphQLQuery(1011, e.to_string()))?;
+    let mut body_stream = res.bytes_stream();
+    let mut body = Vec::new();
 
-    // 200~299
-    if status.is_success() {
-        Ok(body)
-    } else {
-        let err = String::from_utf8(body).unwrap_or("Internal request error".to_owned());
-        Err(Error::GraphQLInternal(1011, err))
+    while let Some(chunk) = body_stream.next().await {
+        let chunk = chunk.map_err(|e| Error::GraphQLQuery(1011, e.to_string()))?;
+        body.extend_from_slice(&chunk);
     }
+
+    status.is_success().then_some(body.clone()).ok_or_else(|| {
+        let err = String::from_utf8_lossy(&body).to_string();
+        Error::GraphQLInternal(1011, err)
+    })
 }
 
 // Request to indexer/consumer proxy
