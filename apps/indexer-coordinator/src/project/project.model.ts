@@ -424,17 +424,20 @@ export class PaygEntity {
   token: string;
 }
 
+@ObjectType('Payg')
+export class Payg extends PaygEntity {}
+
 @ObjectType('Project')
-export class Project extends ProjectEntity {}
+export class Project extends ProjectEntity {
+  @Field(() => Payg, { nullable: true })
+  payg?: Payg;
+}
 
 @ObjectType('ProjectWithStats')
 export class ProjectWithStats extends Project {
   @Field({ nullable: true })
   dbSize?: string;
 }
-
-@ObjectType('Payg')
-export class Payg extends PaygEntity {}
 
 @ObjectType('ProjectDetails')
 export class ProjectDetails extends ProjectEntity {

@@ -158,7 +158,14 @@ export class ProjectService {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return (await this.projectRepo.find()).sort((a, b) => {
+    const projects = (await this.projectRepo.find()) as Project[];
+    for (const p of projects) {
+      const payg = await this.paygRepo.findOne({
+        where: { id: p.id },
+      });
+      p.payg = payg;
+    }
+    return projects.sort((a, b) => {
       if (!a?.details?.name) {
         return 1;
       }
@@ -328,7 +335,6 @@ export class ProjectService {
     }
     project.hostType = hostType;
     await this.projectRepo.save(project);
-    
     if (project.hostType === HostType.USER_MANAGED) {
       return await this.startUserManagedSubqueryProject(project, projectConfig);
     }
