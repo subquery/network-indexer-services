@@ -190,16 +190,29 @@ impl RpcMainfest {
     // correct times & reasonable overflow times
     pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
         for rd in &self.rpc_deny_list {
-            if method.starts_with(rd) {
-                return Err(Error::InvalidRequest(1060));
+            if rd.ends_with('_') {
+                if method.starts_with(rd) {
+                    return Err(Error::InvalidRequest(1060));
+                }
+            } else {
+                if method == rd {
+                    return Err(Error::InvalidRequest(1060));
+                }
             }
         }
 
         let mut not_allowed = !self.rpc_allow_list.is_empty();
         for ra in &self.rpc_allow_list {
-            if method.starts_with(ra) {
-                not_allowed = false;
-                break;
+            if ra.ends_with('_') {
+                if method.starts_with(ra) {
+                    not_allowed = false;
+                    break;
+                }
+            } else {
+                if method == ra {
+                    not_allowed = false;
+                    break;
+                }
             }
         }
         if not_allowed {
