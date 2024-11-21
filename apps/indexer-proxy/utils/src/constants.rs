@@ -54,18 +54,20 @@ pub static HEADERS: Lazy<[HeaderName; 5]> = Lazy::new(|| {
     ]
 });
 
-pub const TELEMETRIES_MAINNET: [&str; 1] = [
+pub const TELEMETRIES_MAINNET: [&str; 2] = [
     "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // MAINNET
+    "0xec373af3d916928a691ce8ade6e5dcac07d29345", // MAINNET
 ];
 
 pub const TELEMETRIES_KEPLER: [&str; 1] = [
     "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // KEPLER
 ];
 
-pub const TELEMETRIES_TESTNET: [&str; 3] = [
+pub const TELEMETRIES_TESTNET: [&str; 4] = [
     "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // TESTNET
     "0xb351A9F7e138a37090cA7659816A04c871B15451", // DEV
     "0x293a6d85DD0d7d290A719Fdeef43FaD10240bA77", // DEV
+    "0xec373af3d916928a691ce8ade6e5dcac07d29345", // DEV
 ];
 
 pub const BOOTSTRAP: [&str; 5] = [
