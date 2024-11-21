@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC } from 'react';
-import { Spinner } from '@subql/components';
+import { Spinner, Typography } from '@subql/components';
 import { formatSQT, renderAsync, useAsyncMemo } from '@subql/react-hooks';
 import BigNumber from 'bignumber.js';
 import { PER_MILL } from 'conf/constant';
@@ -102,7 +102,18 @@ const IndexerRegistryView: FC<Props> = ({ onSubmit, loading }) => {
                       errors={errors}
                     />
                     <FieldItem
-                      title="Proxy Endpoint"
+                      title={
+                        <div>
+                          Proxy Endpoint{' '}
+                          <Typography.Link
+                            type="info"
+                            href="https://academy.subquery.network/subquery_network/node_operators/setup/becoming-a-node-operator.html#_2-setup-proxy-endpoint-to-public"
+                            target="_blank"
+                          >
+                            Learn more here.
+                          </Typography.Link>
+                        </div>
+                      }
                       fieldKey={RegisterFormKey.proxyEndpoint}
                       errors={errors}
                     />

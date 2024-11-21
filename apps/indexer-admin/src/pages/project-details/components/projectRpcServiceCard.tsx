@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo, useState } from 'react';
-import { Typography } from '@subql/components';
-import { Button, Drawer, Skeleton } from 'antd';
+import { useQuery } from '@apollo/client';
+import { Tag, Typography } from '@subql/components';
+import { Alert, Button, Drawer, Skeleton } from 'antd';
+
+import { GET_RPC_ENDPOINT_KEYS } from 'utils/queries';
 
 import { CardContainer } from '../styles';
 import { ProjectDetails, ProjectStatus, TQueryMetadata } from '../types';
-import RpcSetting from './rpcSetting';
+import RpcSetting, { getKeyName } from './rpcSetting';
 
 type Props = {
   project: ProjectDetails;
@@ -16,8 +19,28 @@ type Props = {
   refresh: () => void;
 };
 
+const getEndpointStatus = (endpoint?: { valid: boolean }) => {
+  if (!endpoint) {
+    return {
+      message: 'Not set',
+      status: 'warning' as const,
+    };
+  }
+
+  if (endpoint.valid) {
+    return { message: 'Healthy', status: 'success' as const };
+  }
+
+  return { message: 'Error', status: 'error' as const };
+};
+
 const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, refresh }) => {
   const [showRpcDrawer, setShowRpcDrawer] = useState(false);
+  const keys = useQuery<{ getRpcEndpointKeys: string[] }>(GET_RPC_ENDPOINT_KEYS, {
+    variables: {
+      projectId: project.id,
+    },
+  });
   const rpcButtons = useMemo(() => {
     const btns = [];
 
@@ -75,7 +98,111 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
     return btns;
   }, [projectStatus]);
 
-  if (!metadata) return <Skeleton paragraph={{ rows: 5 }} active />;
+  const renderServicesEndpoints = useMemo(() => {
+    return keys.data?.getRpcEndpointKeys.map((endpointName, index) => {
+      const endpoint = project.serviceEndpoints.find((i) => i.key === endpointName);
+      const status = getEndpointStatus(endpoint);
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }} key={endpointName || index}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography type="secondary">{getKeyName(endpointName)}</Typography>
+            <Tag color={status.status} style={{ marginLeft: 8 }}>
+              {status.message}
+            </Tag>
+          </div>
+          <Typography style={{ marginTop: 8 }} variant="medium">
+            {endpoint?.value || 'N/A'}
+          </Typography>
+        </div>
+      );
+    });
+  }, [keys.data, project.serviceEndpoints]);
+
+  const renderServicesEndpointsFailed = useMemo(() => {
+    const render = [];
+    const metricStatus = project.serviceEndpoints.find((i) => getKeyName(i.key) === 'Metrics');
+
+    if (!metricStatus) {
+      render.push(
+        <Alert
+          showIcon
+          style={{ background: '#F87C4F14', border: '1px solid #F87C4F80', width: '100%' }}
+          key="metrics"
+          type="warning"
+          message={<Typography type="warning">Metrics Endpoint not set</Typography>}
+          description={
+            <Typography>
+              You have not entered a valid metrics endpoint. You may receive fewer RPC requests
+              without this set and active.{' '}
+              <Typography.Link
+                href="https://academy.subquery.network/subquery_network/node_operators/rpc_providers/connect-node.html#prerequisites"
+                type="info"
+                target="_blank"
+              >
+                Learn more.
+              </Typography.Link>
+            </Typography>
+          }
+        />
+      );
+    }
+
+    if (metricStatus && !metricStatus.valid) {
+      render.push(
+        <Alert
+          showIcon
+          style={{ background: '#F87C4F14', border: '1px solid #F87C4F80', width: '100%' }}
+          key="metricsFailed"
+          type="warning"
+          message={<Typography type="warning">Metrics Endpoint is not healthy</Typography>}
+          description={
+            <Typography>
+              Your metrics endpoint cannot be reached. You may receive fewer RPC requests without a
+              healthy metrics endpoint. <br />
+              Please check: {metricStatus.reason}{' '}
+              <Typography.Link
+                href="https://academy.subquery.network/subquery_network/node_operators/rpc_providers/connect-node.html#prerequisites"
+                type="info"
+                target="_blank"
+              >
+                Learn more.
+              </Typography.Link>
+            </Typography>
+          }
+        />
+      );
+    }
+
+    const failedEndpoints = project.serviceEndpoints.filter(
+      (i) => !i.valid && getKeyName(i.key) !== 'Metrics'
+    );
+
+    if (failedEndpoints.length) {
+      render.unshift(
+        <Alert
+          showIcon
+          style={{ width: '100%' }}
+          key="failedReason"
+          type="error"
+          message={<Typography type="danger">RPC Service validation failure</Typography>}
+          description={
+            <Typography>
+              The following errors were detected during validation:
+              <ul style={{ paddingLeft: 16 }}>
+                {failedEndpoints.map((i) => (
+                  <li key={i.key}>{i.reason}</li>
+                ))}
+              </ul>
+            </Typography>
+          }
+        />
+      );
+    }
+
+    return render;
+  }, [project.serviceEndpoints]);
+
+  if (!metadata || !keys.data) return <Skeleton paragraph={{ rows: 5 }} active />;
   return (
     <CardContainer style={{ flexDirection: 'column' }}>
       <div style={{ display: 'flex' }}>
@@ -86,19 +213,10 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
         {rpcButtons}
       </div>
 
-      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40 }}>
-        {project.projectConfig.serviceEndpoints.map((endpoint, index) => {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column' }} key={endpoint.key || index}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <Typography type="secondary">{endpoint.key}</Typography>
-              </div>
-              <Typography style={{ marginTop: 8 }} variant="medium">
-                {endpoint.value}
-              </Typography>
-            </div>
-          );
-        })}
+      <div
+        style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 40, flexWrap: 'wrap' }}
+      >
+        {renderServicesEndpoints}
 
         {project.projectConfig.serviceEndpoints.length ? (
           <div style={{ width: 1, height: 20, background: 'var(--sq-gray400)' }} />
@@ -115,7 +233,9 @@ const ProjectRpcServiceCard: FC<Props> = ({ project, metadata, projectStatus, re
           </Typography>
         </div>
       </div>
-
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
+        {renderServicesEndpointsFailed}
+      </div>
       <Drawer
         open={showRpcDrawer}
         rootClassName="popupViewDrawer"

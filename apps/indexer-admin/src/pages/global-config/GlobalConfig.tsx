@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { FC, useEffect, useState } from 'react';
+import { BsBoxArrowInUpRight } from 'react-icons/bs';
 import { useMutation, useQuery } from '@apollo/client';
-import { openNotification, Spinner, Typography } from '@subql/components';
-import { formatSQT } from '@subql/react-hooks';
+import { openNotification, Spinner, Tag, Typography } from '@subql/components';
+import { formatSQT, useAsyncMemo } from '@subql/react-hooks';
 import { Button, Form, Input, Select, Switch } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import BigNumberJs from 'bignumber.js';
@@ -13,8 +14,17 @@ import styled from 'styled-components';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
-import { AllConfig, ConfigKey, GET_ALL_CONFIG, SET_CONFIG } from 'utils/queries';
+import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
+import {
+  AllConfig,
+  ConfigKey,
+  GET_ALL_CONFIG,
+  getIndexerSocialCredibility,
+  SET_CONFIG,
+} from 'utils/queries';
 import { TOKEN_SYMBOL } from 'utils/web3';
+
+import NodeOperatorInformation from './components/NodeOperatorInforamtion';
 
 const Wrapper = styled.div`
   display: flex;
@@ -28,6 +38,8 @@ const Wrapper = styled.div`
 `;
 
 const GlobalConfig: FC = () => {
+  const { indexer: account, loading } = useCoordinatorIndexer();
+
   const [config, setConfig] = useState({
     autoReduceOverAllocation: false,
     flexEnabled: false,
@@ -38,6 +50,13 @@ const GlobalConfig: FC = () => {
   const [setConfigMutation] = useMutation(SET_CONFIG);
 
   const [form] = useForm();
+
+  const socialCredibility = useAsyncMemo(async () => {
+    if (!account) return false;
+    const res = await getIndexerSocialCredibility({ indexer: account });
+
+    return res.data?.indexerParams?.[0]?.socialCredibility;
+  }, [account]);
 
   useEffect(() => {
     if (configQueryData.data) {
@@ -74,6 +93,10 @@ const GlobalConfig: FC = () => {
       }}
     >
       <Typography variant="h4">Config</Typography>
+
+      <Wrapper>
+        <NodeOperatorInformation />
+      </Wrapper>
 
       <Wrapper>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -201,6 +224,9 @@ const GlobalConfig: FC = () => {
                           if (!value) {
                             return Promise.reject(new Error('Please input price'));
                           }
+                          if (value <= 0) {
+                            return Promise.reject(new Error('Price must be greater than 0'));
+                          }
                           return Promise.resolve();
                         },
                       },
@@ -279,6 +305,11 @@ const GlobalConfig: FC = () => {
                           if (!value) {
                             return Promise.reject(new Error('Please input valid period'));
                           }
+
+                          if (value < 1) {
+                            return Promise.reject(new Error('Valid period must be greater than 1'));
+                          }
+
                           return Promise.resolve();
                         },
                       },
@@ -343,6 +374,42 @@ const GlobalConfig: FC = () => {
             </>
           )}
         </div>
+      </Wrapper>
+
+      <Wrapper>
+        {socialCredibility.loading || loading ? (
+          <Spinner />
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">
+                Link your ENS domain to enable social credibility
+              </Typography>
+
+              <Tag color={socialCredibility.data ? 'success' : 'default'}>
+                Social Credibility {socialCredibility.data ? 'Enabled' : 'Disabled'}
+              </Tag>
+            </div>
+            <Typography variant="medium" type="secondary">
+              We suggest you also setup your Social Profile so Delegators can get to know you, and
+              so you can show social credibility. To setup social credibility, create an ENS domain
+              name and profile linked to your wallet.
+            </Typography>
+
+            <div>
+              <Typography.Link href="https://app.ens.domains/" target="_blank">
+                <Button
+                  shape="round"
+                  type="primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  Setup ENS
+                  <BsBoxArrowInUpRight />
+                </Button>
+              </Typography.Link>
+            </div>
+          </>
+        )}
       </Wrapper>
     </div>
   );

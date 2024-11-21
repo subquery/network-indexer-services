@@ -16,6 +16,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use crate::account::ACCOUNT;
+use crate::cli::{redis, COMMAND};
+use crate::graphql::project_mainfest;
+use crate::metadata::{
+    ai_metadata, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
+};
+use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
+use crate::p2p::send;
 use chrono::Utc;
 use digest::Digest;
 use ethers::{
@@ -25,6 +33,7 @@ use ethers::{
     utils::keccak256,
 };
 use once_cell::sync::Lazy;
+use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -42,19 +51,10 @@ use subql_indexer_utils::{
 use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
-use crate::account::ACCOUNT;
-use crate::cli::{redis, COMMAND};
-use crate::graphql::project_mainfest;
-use crate::metadata::{
-    ai_metadata, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
-};
-use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
-use crate::p2p::send;
-
 pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ProjectType {
     Subquery,
     RpcEvm(RpcMainfest),
@@ -63,7 +63,7 @@ pub enum ProjectType {
     Ai,
 }
 
-#[derive(Serialize, Clone, Default)]
+#[derive(Serialize, Clone, Default, Debug)]
 enum NodeType {
     #[default]
     Full,
@@ -81,13 +81,13 @@ impl NodeType {
 
 //impl Default for NodeType
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ComputeUnit {
     value: u64,
     overflow: u64,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RpcMainfest {
     node_type: NodeType,
     feature_flags: Vec<String>,
@@ -96,10 +96,23 @@ pub struct RpcMainfest {
     compute_unit: HashMap<String, ComputeUnit>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct ComputeUnitItem {
     name: String,
+    #[serde(deserialize_with = "str_to_u64")]
     value: u64,
+}
+
+fn str_to_u64<'de, D>(deserializer: D) -> std::result::Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let mut value = s.parse::<u64>().map_err(serde::de::Error::custom)?;
+    if value == 0 {
+        value = 1; // Change 0 to 1
+    }
+    Ok(value)
 }
 
 #[derive(Deserialize)]
@@ -177,16 +190,29 @@ impl RpcMainfest {
     // correct times & reasonable overflow times
     pub fn unit_times(&self, method: &String) -> Result<(u64, u64)> {
         for rd in &self.rpc_deny_list {
-            if method.starts_with(rd) {
-                return Err(Error::InvalidRequest(1060));
+            if rd.ends_with('_') {
+                if method.starts_with(rd) {
+                    return Err(Error::InvalidRequest(1060));
+                }
+            } else {
+                if method == rd {
+                    return Err(Error::InvalidRequest(1060));
+                }
             }
         }
 
         let mut not_allowed = !self.rpc_allow_list.is_empty();
         for ra in &self.rpc_allow_list {
-            if method.starts_with(ra) {
-                not_allowed = false;
-                break;
+            if ra.ends_with('_') {
+                if method.starts_with(ra) {
+                    not_allowed = false;
+                    break;
+                }
+            } else {
+                if method == ra {
+                    not_allowed = false;
+                    break;
+                }
             }
         }
         if not_allowed {
@@ -201,14 +227,14 @@ impl RpcMainfest {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Endpoint {
     pub endpoint: String,
     pub is_internal: bool,
     pub is_ws: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Project {
     pub id: String,
     pub ptype: ProjectType,

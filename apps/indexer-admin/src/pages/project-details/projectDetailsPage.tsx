@@ -313,90 +313,97 @@ const ProjectDetailsPage = () => {
 
   useInterval(() => {
     fetchQueryMetadata();
+    projectQuery.refetch();
   }, 15000);
 
-  return renderAsync(projectQuery, {
-    loading: () => <LoadingSpinner />,
-    error: () => <>Unable to get Project Info</>,
-    data: ({ project }) => {
-      return (
-        <Container>
-          <ContentContainer>
-            <ProjectDetailsHeader
-              id={id}
-              project={project}
-              status={status}
-              onRemoveProject={() => {
-                setActionType(ProjectAction.RemoveProject);
-                setVisible(true);
-              }}
-              announceReady={() => {
-                setActionType(ProjectAction.AnnounceReady);
-                setVisible(true);
-              }}
-              announceStop={() => {
-                setActionType(ProjectAction.AnnounceTerminating);
-                setVisible(true);
-              }}
-            />
-            {project.projectType === ProjectType.SubQuery && (
-              <ProjectServiceCard
+  return renderAsync(
+    {
+      ...projectQuery,
+      loading: projectQuery.previousData ? false : projectQuery.loading,
+    },
+    {
+      loading: () => <LoadingSpinner />,
+      error: () => <>Unable to get Project Info</>,
+      data: ({ project }) => {
+        return (
+          <Container>
+            <ContentContainer>
+              <ProjectDetailsHeader
                 id={id}
                 project={project}
-                actionItems={serviceActionItems}
-                data={metadata}
-                projectStatus={projectStatus}
-                update={() => {
-                  setActionType(ProjectAction.RestartProject);
+                status={status}
+                onRemoveProject={() => {
+                  setActionType(ProjectAction.RemoveProject);
                   setVisible(true);
                 }}
-                stop={() => {
-                  setActionType(ProjectAction.StopProject);
+                announceReady={() => {
+                  setActionType(ProjectAction.AnnounceReady);
+                  setVisible(true);
+                }}
+                announceStop={() => {
+                  setActionType(ProjectAction.AnnounceTerminating);
                   setVisible(true);
                 }}
               />
-            )}
-            {project.projectType === ProjectType.Rpc && (
-              <ProjectRpcServiceCard
-                project={project}
-                metadata={metadata}
-                projectStatus={projectStatus}
-                refresh={() => {
-                  projectQuery.refetch();
-                }}
-              />
-            )}
-            {project.projectType === ProjectType.SubGraph && (
-              <ProjectSubgraphServiceCard
-                project={project}
-                metadata={metadata}
-                projectStatus={projectStatus}
-                refresh={() => {
-                  projectQuery.refetch();
-                }}
-              />
-            )}
-            <ProjectStatusView percent={progress} metadata={metadata} />
-            <ProjectUptime />
-            {projectDetails && (
-              <ProjectTabbarView id={id} project={project} config={projectDetails} />
-            )}
-          </ContentContainer>
-          <PopupView
-            setVisible={setVisible}
-            visible={visible}
-            title={modalTitle}
-            onClose={() => onPopoverClose()}
-            // @ts-ignore
-            steps={modalSteps}
-            type={actionType}
-            loading={loading}
-          />
-          {alertInfo && <AlertView {...alertInfo} />}
-        </Container>
-      );
-    },
-  });
+              {project.projectType === ProjectType.SubQuery && (
+                <ProjectServiceCard
+                  id={id}
+                  project={project}
+                  actionItems={serviceActionItems}
+                  data={metadata}
+                  projectStatus={projectStatus}
+                  update={() => {
+                    setActionType(ProjectAction.RestartProject);
+                    setVisible(true);
+                  }}
+                  stop={() => {
+                    setActionType(ProjectAction.StopProject);
+                    setVisible(true);
+                  }}
+                />
+              )}
+              {project.projectType === ProjectType.Rpc && (
+                <ProjectRpcServiceCard
+                  project={project}
+                  metadata={metadata}
+                  projectStatus={projectStatus}
+                  refresh={() => {
+                    projectQuery.refetch();
+                  }}
+                />
+              )}
+              {project.projectType === ProjectType.SubGraph && (
+                <ProjectSubgraphServiceCard
+                  project={project}
+                  metadata={metadata}
+                  projectStatus={projectStatus}
+                  refresh={() => {
+                    projectQuery.refetch();
+                  }}
+                />
+              )}
+              <ProjectStatusView percent={progress} metadata={metadata} />
+              <ProjectUptime />
+              {projectDetails && (
+                <ProjectTabbarView id={id} project={project} config={projectDetails} />
+              )}
+            </ContentContainer>
+            <PopupView
+              setVisible={setVisible}
+              visible={visible}
+              title={modalTitle}
+              onClose={() => onPopoverClose()}
+              // @ts-ignore
+              steps={modalSteps}
+              type={actionType}
+              loading={loading}
+            />
+            {alertInfo && <AlertView {...alertInfo} />}
+          </Container>
+        );
+      },
+    }
+  );
 };
 
 export default ProjectDetailsPage;

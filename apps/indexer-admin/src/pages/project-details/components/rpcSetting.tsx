@@ -24,6 +24,21 @@ interface IProps {
   id?: string;
 }
 
+export const getKeyName = (keyName: string) => {
+  if (keyName.includes('Metrics')) {
+    return 'Metrics' as const;
+  }
+
+  if (keyName.includes('Ws')) {
+    return 'WebSocket' as const;
+  }
+
+  if (keyName.includes('Http')) {
+    return 'HTTP' as const;
+  }
+  return keyName;
+};
+
 const getRuleField = (key: string) => {
   const lowerCaseKey = key.toLowerCase();
 
@@ -156,49 +171,56 @@ const RpcSetting: FC<IProps> = (props) => {
       };
     };
 
-    return {
-      evm: (endpointType: 'http' | 'ws' | 'metrics', value: string, ruleField: string) => {
-        if (endpointType === 'metrics') {
-          const metricsVal = form.getFieldValue(ruleField);
+    const evmAndDataNodeRule = (
+      endpointType: 'http' | 'ws' | 'metrics',
+      value: string,
+      ruleField: string
+    ) => {
+      if (endpointType === 'metrics') {
+        const metricsVal = form.getFieldValue(ruleField);
 
-          if (metricsVal) {
-            return checkIfWsAndHttpSame();
-          }
-
-          return {
-            result: true,
-          };
+        if (metricsVal) {
+          return checkIfWsAndHttpSame();
         }
-
-        if (endpointType === 'ws') {
-          const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
-          if (wsVal && wsVal?.startsWith('ws')) {
-            return checkIfWsAndHttpSame();
-          }
-
-          if (wsVal && !wsVal?.startsWith('ws')) {
-            return {
-              result: false,
-              message: 'Please input a valid endpoint',
-            };
-          }
-
-          return {
-            result: true,
-          };
-        }
-        if (value?.startsWith('http'))
-          return {
-            result: true,
-          };
 
         return {
-          result: false,
-          message: 'Please input a valid endpoint',
+          result: true,
         };
-      },
+      }
+
+      if (endpointType === 'ws') {
+        const wsVal = form.getFieldValue(ruleField.replace('Http', 'Ws'));
+        if (wsVal && wsVal?.startsWith('ws')) {
+          return checkIfWsAndHttpSame();
+        }
+
+        if (wsVal && !wsVal?.startsWith('ws')) {
+          return {
+            result: false,
+            message: 'Please input a valid endpoint',
+          };
+        }
+
+        return {
+          result: true,
+        };
+      }
+      if (value?.startsWith('http'))
+        return {
+          result: true,
+        };
+
+      return {
+        result: false,
+        message: 'Please input a valid endpoint',
+      };
+    };
+
+    return {
+      evm: evmAndDataNodeRule,
       polkadot: polkadotAndSubstrateRule,
       substrate: polkadotAndSubstrateRule,
+      subql_dict: evmAndDataNodeRule,
     };
   }, [form, keys.data?.getRpcEndpointKeys]);
 
@@ -353,7 +375,7 @@ const RpcSetting: FC<IProps> = (props) => {
               <WithWarning key={key}>
                 <Form.Item
                   key={key}
-                  label={`${key} Endpoint`}
+                  label={`${getKeyName(key)} Endpoint`}
                   name={`${key}`}
                   hasFeedback
                   className={

@@ -9,7 +9,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 
 import { Separator } from 'components/primary';
 import { useController, useTokenBalance } from 'hooks/indexerHook';
-import SubqueryIcon from 'resources/subquery.svg';
+import SubqueryIcon from 'resources/logo.png';
 import { TOKEN_SYMBOL } from 'utils/web3';
 
 import { Container, LeftContainer, RightContainer } from './styles';
@@ -123,7 +123,7 @@ const Header = () => {
   return (
     <Container>
       <LeftContainer>
-        <img src={SubqueryIcon} alt="subquery" />
+        <img src={SubqueryIcon} alt="subquery" width={140} />
         {!isRootPage && renderTabbars()}
       </LeftContainer>
       <RightContainer>

@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useState, VFC } from 'react';
+import React, { useState, VFC } from 'react';
 import { Field, FormikErrors, FormikHandlers, FormikValues } from 'formik';
 import styled from 'styled-components';
 
@@ -27,7 +27,7 @@ const Option = styled.option`
 `;
 
 type Props = {
-  title: string;
+  title: React.ReactNode;
   fieldKey: string;
   placeholder?: string;
   initialValue?: string | number;
@@ -35,6 +35,7 @@ type Props = {
   setFieldValue?: (field: string, value: string | number) => void;
   onChange?: FormikHandlers['handleChange'];
   errors?: FormikErrors<FormikValues>;
+  help?: React.ReactNode;
 };
 
 export const FieldItem: VFC<Props> = ({
@@ -45,6 +46,7 @@ export const FieldItem: VFC<Props> = ({
   setFieldValue,
   options,
   errors,
+  help,
 }) => {
   const [value, setValue] = useState(initialValue);
 
@@ -72,6 +74,7 @@ export const FieldItem: VFC<Props> = ({
           <>{errors[fieldKey]}</>
         </Text>
       )}
+      {help}
     </Container>
   );
 };

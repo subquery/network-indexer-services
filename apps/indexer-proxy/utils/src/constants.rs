@@ -54,22 +54,26 @@ pub static HEADERS: Lazy<[HeaderName; 5]> = Lazy::new(|| {
     ]
 });
 
-pub const TELEMETRIES_MAINNET: [&str; 1] = [
-    "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // MAINNET
+pub const TELEMETRIES_MAINNET: [&str; 2] = [
+    "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // MAINNET, metrics account
+    "0xec373af3d916928a691ce8ade6e5dcac07d29345", // MAINNET, temp metrics account
 ];
 
 pub const TELEMETRIES_KEPLER: [&str; 1] = [
     "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // KEPLER
 ];
 
-pub const TELEMETRIES_TESTNET: [&str; 3] = [
-    "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // TESTNET
+pub const TELEMETRIES_TESTNET: [&str; 4] = [
+    "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // TESTNET, metrics account
     "0xb351A9F7e138a37090cA7659816A04c871B15451", // DEV
     "0x293a6d85DD0d7d290A719Fdeef43FaD10240bA77", // DEV
+    "0xec373af3d916928a691ce8ade6e5dcac07d29345", // DEV, temp metrics account
 ];
 
-pub const BOOTSTRAP: [&str; 3] = [
+pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/142.215.53.35/tcp/7370",
     "/ip4/8.219.198.62/tcp/7371",
     "/ip4/8.219.198.62/quic/7370",
+    "/ip4/154.91.1.165/tcp/7371",
+    "/ip4/154.91.1.165/quic/7370",
 ];

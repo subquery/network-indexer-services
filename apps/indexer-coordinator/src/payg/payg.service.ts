@@ -389,14 +389,30 @@ export class PaygService implements OnModuleInit {
     }
   }
 
-  async extend(id: string, expiration: number, price?: string): Promise<Channel> {
+  async extend(
+    id: string,
+    expiration: number,
+    price?: string,
+    indexerSign?: string,
+    consumerSign?: string
+  ): Promise<Channel> {
     const channel = await this.channel(id);
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
     }
 
+    if (channel.status !== ChannelStatus.OPEN) {
+      throw new Error(`channel not open: ${id}`);
+    }
+
+    if (!indexerSign || !consumerSign) {
+      logger.debug(`extend channel requires indexerSign and consumerSign: ${id}`);
+      // throw new Error(`require indexerSign and consumerSign: ${id}`);
+    }
+
     let modified = false;
 
+    const preExpirationAt = channel.expiredAt;
     if (channel.expiredAt < expiration) {
       channel.expiredAt = expiration;
       modified = true;
@@ -408,12 +424,56 @@ export class PaygService implements OnModuleInit {
       modified = true;
     }
 
+    let signed = false;
+    if (indexerSign && consumerSign) {
+      // channel.lastConsumerSign = consumerSign;
+      // channel.lastIndexerSign = indexerSign;
+      modified = true;
+      signed = true;
+    }
+
     if (!modified) {
       return channel;
     }
 
-    logger.debug(`Extend state channel ${id}`);
+    const expr = expiration - preExpirationAt;
 
+    logger.debug(
+      `Extend state channel ${id}. ${JSON.stringify(
+        channel
+      )} preExpirationAt:${preExpirationAt} expr:${expr}`
+    );
+
+    if (signed) {
+      await this.contract.sendTransaction({
+        action: `state channel extend ${id}`,
+        type: TxType.check,
+        txFun: (overrides) =>
+          this.contract
+            .getSdk()
+            .stateChannel.extend(
+              id,
+              preExpirationAt,
+              expr,
+              indexerSign,
+              consumerSign,
+              channel.price,
+              overrides
+            ),
+        gasFun: (overrides) =>
+          this.contract
+            .getSdk()
+            .stateChannel.estimateGas.extend(
+              id,
+              preExpirationAt,
+              expr,
+              indexerSign,
+              consumerSign,
+              channel.price,
+              overrides
+            ),
+      });
+    }
     return this.saveAndPublish(channel, PaygEvent.State);
   }
 

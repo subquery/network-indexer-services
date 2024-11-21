@@ -70,7 +70,7 @@ export class RewardService implements OnModuleInit {
   @Cron('0 */5 * * * *')
   async triggerReduceAllocation() {
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
-    if (reduceEnabled) {
+    if (reduceEnabled === 'true') {
       await this.reduceAllocation(TxType.check);
     }
   }

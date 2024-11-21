@@ -196,7 +196,8 @@ export const useIsOnline = (props: {
   interval?: number;
 }) => {
   const { deploymentId, indexer, interval = 30000 } = props;
-  const [online, setOnline] = useState(false);
+  // undefined: project not ready, null: wait to get status, boolean: online status
+  const [online, setOnline] = useState<null | undefined | boolean>(null);
   const metadata = useGetIndexerMetadata(indexer);
 
   const getProjectUptimeStatus = async () => {
@@ -212,7 +213,7 @@ export const useIsOnline = (props: {
         return status;
       }
     }
-
+    setOnline(undefined);
     return false;
   };
 

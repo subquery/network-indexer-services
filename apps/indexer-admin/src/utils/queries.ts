@@ -47,7 +47,13 @@ const ProjectFields = `
       valid
       reason
     }
+  }
 
+  serviceEndpoints {
+    key
+    value
+    valid
+    reason
   }
 `;
 
@@ -160,6 +166,7 @@ export const GET_PROJECTS = gql`
   query {
     getProjects: getProjectsSimple {
       ${ProjectFields}
+      ${PaygFields}
     }
   }
 `;
@@ -406,7 +413,7 @@ export const GET_SUBGRAPH_ENDPOINTS = gql`
 export interface ManiFest {
   getManifest: {
     rpcManifest?: {
-      chain: { chainId: string };
+      chain?: { chainId?: string; genesisHash?: string };
       nodeType: string;
       name: string;
       rpcFamily: string[];
@@ -614,5 +621,15 @@ export const getRequestHistory = (params: { deploymentId: string; indexer: strin
         day
       }
     }
+  `);
+};
+
+export const getIndexerSocialCredibility = (params: { indexer: string }) => {
+  return excellencyQuery<{ indexerParams: { socialCredibility: boolean }[] }>(`
+      {
+        indexerPrograms(indexerId: "${params.indexer}") {
+          socialCredibility
+        }
+      }
   `);
 };

@@ -252,7 +252,7 @@ const Projects = () => {
                                 key: 'detail',
                                 label: (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <Avatar address={'0x000' || processingId} size={50} />
+                                    <Avatar address={processingId || '0x000'} size={50} />
 
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                       <Typography>
@@ -274,7 +274,7 @@ const Projects = () => {
                                         variant="medium"
                                         style={{ overflowWrap: 'anywhere' }}
                                       >
-                                        {manifest.data?.getManifest.rpcManifest?.chain.chainId ||
+                                        {manifest.data?.getManifest.rpcManifest?.chain?.chainId ||
                                           manifest.data.getManifest.subqueryManifest?.network
                                             ?.chainId ||
                                           manifest.data.getManifest.subgraphManifest?.chain

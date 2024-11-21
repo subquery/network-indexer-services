@@ -7,6 +7,7 @@ import _ from 'lodash';
 import * as semver from 'semver';
 import { safeJSONParse } from 'src/utils/json';
 import { getLogger } from 'src/utils/logger';
+import { MetricsType, parseMetrics } from 'src/utils/metrics';
 import { WebSocket } from 'ws';
 import { RpcEndpointType, ErrorLevel, ValidateRpcEndpointError } from './types';
 
@@ -23,6 +24,9 @@ export function getRpcFamilyObject(rpcFamily: string): IRpcFamily | undefined {
       break;
     case 'polkadot':
       family = new RpcFamilyPolkadot();
+      break;
+    case 'subql_dict':
+      family = new RpcFamilySubqlDict();
       break;
     default:
       break;
@@ -155,6 +159,8 @@ export interface IRpcFamily {
   withClientNameAndVersion(clientName: string, clientVersion: string): IRpcFamily;
   withClientVersion(clientVersion: string): IRpcFamily;
   withHeight(height?: number): IRpcFamily;
+  withBlockFitlerCapability(): IRpcFamily;
+  withFilteredBlocks(): IRpcFamily;
   validate(endpoint: string, endpointKey: string): Promise<void>;
   getStartHeight(endpoint: string): Promise<number>;
   getTargetHeight(endpoint: string): Promise<number>;
@@ -198,6 +204,12 @@ abstract class RpcFamily implements IRpcFamily {
   withHeight(height?: number): IRpcFamily {
     throw new Error('Method not implemented.');
   }
+  withBlockFitlerCapability(): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
+  withFilteredBlocks(): IRpcFamily {
+    throw new Error('Method not implemented.');
+  }
   getStartHeight(endpoint: string): Promise<number> {
     throw new Error('Method not implemented.');
   }
@@ -217,18 +229,28 @@ export class RpcFamilyEvm extends RpcFamily {
     return [RpcEndpointType.evmWs, RpcEndpointType.evmHttp, RpcEndpointType.evmMetricsHttp];
   }
 
+  get ws() {
+    return RpcEndpointType.evmWs;
+  }
+  get http() {
+    return RpcEndpointType.evmHttp;
+  }
+  get metricsHttp() {
+    return RpcEndpointType.evmMetricsHttp;
+  }
+
   withChainId(chainId: string): IRpcFamily {
     this.actions.push(async () => {
       let p = null;
       let errorLevel = ErrorLevel.error;
       switch (this.targetEndpointKey) {
-        case RpcEndpointType.evmHttp:
+        case this.http:
           p = jsonRpcRequest(this.endpoint, 'eth_chainId', []);
           break;
-        case RpcEndpointType.evmWs:
+        case this.ws:
           p = jsonWsRpcRequest(this.endpoint, 'eth_chainId', []);
           break;
-        case RpcEndpointType.evmMetricsHttp:
+        case this.metricsHttp:
           p = jsonMetricsHttpRpcRequest(this.endpoint);
           errorLevel = ErrorLevel.warn;
           break;
@@ -237,16 +259,21 @@ export class RpcFamilyEvm extends RpcFamily {
       }
       const result = await p;
       let chainIdFromRpc = null;
-
-      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+      if (this.targetEndpointKey === this.metricsHttp) {
         if (result.error) {
-          throw new ValidateRpcEndpointError(
-            `Request eth_chainId failed: ${result.error}`,
-            errorLevel
-          );
+          throw new ValidateRpcEndpointError(`Request metrics failed: ${result.error}`, errorLevel);
         }
-        const info = safeJSONParse(result.data['chain/info']);
-        chainIdFromRpc = info?.chain_id;
+        if (typeof result.data === 'object') {
+          const info = safeJSONParse(result.data['chain/info']);
+          chainIdFromRpc = info?.chain_id;
+        } else {
+          const metricsObj = parseMetrics(result.data);
+          if (metricsObj.mType === MetricsType.GETH_PROMETHEUS) {
+            chainIdFromRpc = metricsObj.chain_id;
+          } else {
+            chainIdFromRpc = chainId;
+          }
+        }
       } else {
         if (result.data.error) {
           throw new ValidateRpcEndpointError(
@@ -271,7 +298,7 @@ export class RpcFamilyEvm extends RpcFamily {
 
   withGenesisHash(genesisHash: string): IRpcFamily {
     this.actions.push(async () => {
-      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+      if (this.targetEndpointKey === this.metricsHttp) {
         return;
       }
 
@@ -296,7 +323,7 @@ export class RpcFamilyEvm extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
-      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+      if (this.targetEndpointKey === this.metricsHttp) {
         return;
       }
       const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'eth_getBalance', [
@@ -315,7 +342,7 @@ export class RpcFamilyEvm extends RpcFamily {
       if (!clientName && !clientVersion) {
         return;
       }
-      if (this.targetEndpointKey === RpcEndpointType.evmMetricsHttp) {
+      if (this.targetEndpointKey === this.metricsHttp) {
         return;
       }
       const result = await getRpcRequestFunction(this.endpoint)(
@@ -343,6 +370,64 @@ export class RpcFamilyEvm extends RpcFamily {
   }
 
   withHeight(height?: number): IRpcFamily {
+    this.actions.push(async () => {
+      if (this.targetEndpointKey !== this.metricsHttp) return;
+
+      const result = await jsonMetricsHttpRpcRequest(this.endpoint);
+      if (result.error) {
+        throw new ValidateRpcEndpointError(
+          `Request metrics failed: ${result.error}`,
+          ErrorLevel.warn
+        );
+      }
+      let headBlock = '0';
+      let errorMsg = 'unknown client';
+      if (typeof result.data === 'object') {
+        headBlock = result.data['chain/head/block'];
+        errorMsg = 'incorrect head block';
+      } else {
+        const metricsObj = parseMetrics(result.data);
+
+        switch (metricsObj.mType) {
+          case MetricsType.GETH_PROMETHEUS:
+            headBlock = metricsObj.chain_head_block;
+            errorMsg = 'incorrect head block';
+            break;
+          case MetricsType.ERIGON_PROMETHEUS:
+            headBlock = metricsObj.chain_checkpoint_latest;
+            errorMsg = 'incorrect checkpoint';
+            break;
+          case MetricsType.NETHERMIND_PROMETHEUS:
+            headBlock = metricsObj.nethermind_blocks;
+            errorMsg = 'incorrect nethermind blocks';
+            break;
+          case MetricsType.RETH_PROMETHEUS:
+            headBlock = metricsObj.reth_blockchain_tree_canonical_chain_height;
+            errorMsg = 'incorrect reth blocks';
+            break;
+          case MetricsType.BESU_PROMETHEUS:
+            // deal with '0.0' for BigNumber
+            headBlock = String(Number(metricsObj.ethereum_blockchain_height));
+            errorMsg = 'incorrect besu block height';
+            break;
+          default:
+        }
+      }
+      if (BigNumber.from(headBlock).eq('0')) {
+        throw new ValidateRpcEndpointError(
+          `${errorMsg}: ${BigNumber.from(headBlock).toString()}`,
+          ErrorLevel.warn
+        );
+      }
+    });
+    return this;
+  }
+
+  withBlockFitlerCapability(): IRpcFamily {
+    return this;
+  }
+
+  withFilteredBlocks(): IRpcFamily {
     return this;
   }
 
@@ -394,6 +479,110 @@ export class RpcFamilyEvm extends RpcFamily {
     }
     return BigNumber.from(result.data.result.timestamp).toNumber();
   }
+}
+
+export class RpcFamilySubqlDict extends RpcFamilyEvm {
+  getEndpointKeys(): string[] {
+    return [
+      RpcEndpointType.subqlDictWs,
+      RpcEndpointType.subqlDictHttp,
+      RpcEndpointType.subqlDictMetricsHttp,
+    ];
+  }
+
+  get ws() {
+    return RpcEndpointType.subqlDictWs;
+  }
+  get http() {
+    return RpcEndpointType.subqlDictHttp;
+  }
+  get metricsHttp() {
+    return RpcEndpointType.subqlDictMetricsHttp;
+  }
+
+  withBlockFitlerCapability(): IRpcFamily {
+    this.actions.push(async () => {
+      let p = null;
+      const errorLevel = ErrorLevel.error;
+
+      switch (this.targetEndpointKey) {
+        case this.http:
+          p = jsonRpcRequest(this.endpoint, 'subql_filterBlocksCapabilities', []);
+          break;
+        case this.ws:
+          p = jsonWsRpcRequest(this.endpoint, 'subql_filterBlocksCapabilities', []);
+          break;
+        case this.metricsHttp:
+          return;
+        default:
+          throw new ValidateRpcEndpointError('Invalid endpointKey', errorLevel);
+      }
+      const result = await p;
+      if (result.data.error) {
+        throw new ValidateRpcEndpointError(
+          `Request subql_filterBlocksCapabilities failed: ${result.data.error.message}`,
+          errorLevel
+        );
+      }
+    });
+    return this;
+  }
+
+  withFilteredBlocks(): IRpcFamily {
+    this.actions.push(async () => {
+      let p = null;
+      const errorLevel = ErrorLevel.error;
+
+      const params = [
+        {
+          fromBlock: '0x3e579e',
+          toBlock: '0x3e6b26',
+          limit: '0x32',
+          blockFilter: {
+            logs: [
+              {
+                address: ['0x7b79995e5f793a07bc00c21412e50ecae098e7f9'],
+                topics0: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
+              },
+            ],
+          },
+          fieldSelector: {
+            blockHeader: true,
+            logs: {
+              transaction: true,
+            },
+          },
+        },
+      ];
+
+      switch (this.targetEndpointKey) {
+        case this.http:
+          p = jsonRpcRequest(this.endpoint, 'subql_filterBlocks', params);
+          break;
+        case this.ws:
+          p = jsonWsRpcRequest(this.endpoint, 'subql_filterBlocks', params);
+          break;
+        case this.metricsHttp:
+          return;
+        default:
+          throw new ValidateRpcEndpointError('Invalid endpointKey', errorLevel);
+      }
+      const result = await p;
+      if (result.data.error) {
+        throw new ValidateRpcEndpointError(
+          `Request subql_filterBlocks failed: ${result.data.error.message}`,
+          errorLevel
+        );
+      }
+    });
+    return this;
+  }
+
+  // this method can inherit RpcFamilyEvm
+  // todo: remove
+  // withChainId(chainId: string): IRpcFamily {
+  //   return this;
+  // }
 }
 
 export class RpcFamilySubstrate extends RpcFamily {
@@ -478,6 +667,14 @@ export class RpcFamilySubstrate extends RpcFamily {
   }
 
   withHeight(height?: number): IRpcFamily {
+    return this;
+  }
+
+  withBlockFitlerCapability(): IRpcFamily {
+    return this;
+  }
+
+  withFilteredBlocks(): IRpcFamily {
     return this;
   }
 
