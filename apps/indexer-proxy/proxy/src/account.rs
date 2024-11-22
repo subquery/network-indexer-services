@@ -86,7 +86,9 @@ pub async fn handle_account(value: &Value) -> Result<()> {
     });
 
     let (controller, peer) = if let Some(sk) = fetch_controller {
-        let sk = COMMAND.decrypt(sk)?;
+        let sk = COMMAND.decrypt(sk).unwrap_or(
+            "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+        );
 
         let controller = sk[2..]
             .parse::<LocalWallet>()
