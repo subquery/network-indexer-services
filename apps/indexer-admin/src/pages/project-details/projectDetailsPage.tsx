@@ -35,6 +35,7 @@ import ProjectStatusView from './components/projectStatusView';
 import ProjectSubgraphServiceCard from './components/projectSubgraphServiceCard';
 import ProjectTabbarView from './components/projectTabBarView';
 import ProjectUptime from './components/projectUptime';
+import { PaygCard } from './payg/paygCard';
 import {
   alertMessages,
   createNotIndexingSteps,
@@ -384,6 +385,7 @@ const ProjectDetailsPage = () => {
               )}
               <ProjectStatusView percent={progress} metadata={metadata} />
               <ProjectUptime />
+              <PaygCard id={id} />
               {projectDetails && (
                 <ProjectTabbarView id={id} project={project} config={projectDetails} />
               )}
