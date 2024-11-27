@@ -33,7 +33,7 @@ subql-contracts = { git = "https://github.com/subquery/network-contracts", tag =
 subql-indexer-utils = { version = "2", path = "../utils" }
 sysinfo = "0.32"
 tdn = { version = "0.10", default-features = false, features = ["multiple"] }
-tokenizers = "0.20"
+tokenizers = "0.21"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1" }
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
