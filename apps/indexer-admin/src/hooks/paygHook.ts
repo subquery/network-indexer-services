@@ -67,15 +67,12 @@ export function usePAYGConfig(deploymentId: string) {
           },
         });
 
-        projectQuery.refetch();
+        await projectQuery.refetch();
 
         return true;
       } catch (e) {
-        // formHelper.setErrors({ [ProjectFormKey.paygPrice]: `Invalid PAYG: ${e}` });
         return { status: false, msg: `Invalid PAYG: ${e}` };
       }
-
-      return false;
     },
     [deploymentId, paygPriceRequest, projectQuery, sdk]
   );
