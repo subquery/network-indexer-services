@@ -41,6 +41,8 @@ export type MetricsData = {
 
   // erigon
   chain_checkpoint_latest?: string;
+  p2p_peers?: string;
+  pool_new_block_count?: string;
 
   // nethermind
   nethermind_blocks?: string;
@@ -103,6 +105,24 @@ export function parseMetrics(metrics: string): MetricsData {
         const cpInfo = extractFromGauge(next);
         Object.assign(parsedData, cpInfo);
       }
+    }
+    if (lines[i].startsWith('# TYPE p2p_peers gauge')) {
+      /**
+        # TYPE p2p_peers gauge
+        p2p_peers 81
+      */
+      const next = lines[i + 1] || '';
+      if (next.startsWith('p2p_peers')) {
+        const peersInfo = extractFromGauge(next);
+        Object.assign(parsedData, peersInfo);
+      }
+    }
+    if (lines[i].startsWith('pool_new_block_count')) {
+      /**
+        pool_new_block_count 184
+      */
+      const pbInfo = extractFromGauge(lines[i]);
+      Object.assign(parsedData, pbInfo);
     }
 
     // nethermind
