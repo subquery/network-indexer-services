@@ -161,40 +161,6 @@ const GlobalConfig: FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="h6">Default Flex Plan</Typography>
-
-            {!configQueryData.previousData && configQueryData.loading ? (
-              <Spinner />
-            ) : (
-              <Switch
-                checked={config.flexEnabled}
-                onChange={async () => {
-                  try {
-                    await setConfigMutation({
-                      variables: {
-                        key: ConfigKey.FlexEnabled,
-                        value: config.flexEnabled ? 'false' : 'true',
-                      },
-                    });
-                    openNotification({
-                      type: 'success',
-                      title: `Flex Plan ${config.flexEnabled ? 'Disabled' : 'Enabled'}`,
-                      duration: 3,
-                    });
-                    setConfig({
-                      ...config,
-                      flexEnabled: !config.flexEnabled,
-                    });
-                  } catch (e) {
-                    openNotification({
-                      type: 'error',
-                      title: 'Failed to update config',
-                      description: (e as any)?.message,
-                      duration: 3,
-                    });
-                  }
-                }}
-              />
-            )}
           </div>
 
           {config.flexEnabled && (
