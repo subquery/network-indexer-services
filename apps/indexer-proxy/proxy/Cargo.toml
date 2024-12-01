@@ -11,7 +11,7 @@ axum-streams = { version = "0.19", features = ["text"] }
 base64 = "0.22"
 bincode = "1.3"
 cached = "0.53.1"
-chamomile_types = "0.10"
+chamomile_types = "0.11"
 chrono = "0.4"
 digest = '0.10'
 ethers = { git = "https://github.com/gakonst/ethers-rs.git", tag = "ethers-v2.0.7" }
