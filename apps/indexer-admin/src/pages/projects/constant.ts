@@ -25,17 +25,24 @@ export const createAddProjectSteps = (onAddProject: FormSubmit) => ({
     {
       index: 0,
       title: 'Add new project',
-      desc: 'Input the deployment id, and add the project into you service. Your can manage the project in the projects page and start indexing the project at any time you want.',
+      desc: 'Input the deployment id, and add the project into your service. You can manage the project in the projects page and start indexing the project at any time you want.',
       buttonTitle: 'Add project',
       form: {
         formValues: initialProjectValues,
         schema: ProjectFormSchema,
-        onFormSubmit: onAddProject,
+        onFormSubmit: (values) => {
+          // Validasi untuk menolak proyek SubQL
+          if (values[ProjectFormKey.deploymentId].startsWith('SubQL')) {
+            throw new Error('Pembuatan proyek SubQL tidak diizinkan.');
+          }
+          // Lanjutkan ke logika lama jika validasi berhasil
+          return onAddProject(values);
+        },
         items: [
           {
             formKey: ProjectFormKey.deploymentId,
             title: 'Deployment ID',
-            placeholder: 'QmYDpk94SCgxv4j2PyLkaD8fWJpHwJufMLX2HGjefsNHH4',
+            placeholder: 'Masukkan ID proyek yang valid (SubQL tidak didukung)',
           },
         ],
       },
