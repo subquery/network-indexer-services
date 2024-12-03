@@ -125,7 +125,7 @@ pub async fn handle_account(value: &Value) -> Result<()> {
                 stop_network().await;
                 start_network(key).await;
                 match start_swarm().await {
-                    Ok(swarm) => _ = handle_swarm_event(swarm).await,
+                    Ok((swarm, local_key)) => _ = handle_swarm_event(swarm, local_key).await,
                     Err(err) => info!("start libp2p swarm failed, the err is {:?}", err),
                 }
             });

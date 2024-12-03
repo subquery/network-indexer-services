@@ -1,4 +1,6 @@
 use crate::mod_libp2p::behavior::AgentBehavior;
+use crate::mod_libp2p::message::AgentMessage;
+use crate::mod_libp2p::message::GreeRequest;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use either::Either;
 use libp2p::{
@@ -6,6 +8,7 @@ use libp2p::{
     futures::StreamExt,
     gossipsub,
     identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig},
+    identity::{self, Keypair},
     kad::{store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig},
     multiaddr::Protocol,
     noise, ping,
@@ -25,6 +28,7 @@ use std::{
     str::FromStr,
     time::Duration,
 };
+use tokio::time;
 use tracing::info;
 
 pub mod behavior;
@@ -37,7 +41,8 @@ const BOOTNODES: [&str; 2] = [
 
 const TESTNET_ADDRESS: [&str; 2] = ["/ip4/192.168.1.136/tcp/8002", "/ip4/192.168.1.136/tcp/8003"];
 
-pub async fn start_swarm() -> Result<Swarm<AgentBehavior>, Box<dyn Error + Send + Sync>> {
+pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Error + Send + Sync>>
+{
     let psk = get_psk();
 
     if let Ok(psk) = psk {
@@ -47,7 +52,9 @@ pub async fn start_swarm() -> Result<Swarm<AgentBehavior>, Box<dyn Error + Send 
     // Create a Gosspipsub topic
     let gossipsub_topic = gossipsub::IdentTopic::new("chat");
 
-    let mut swarm = libp2p::SwarmBuilder::with_new_identity()
+    let local_key = identity::Keypair::generate_secp256k1();
+
+    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(local_key.clone())
         .with_tokio()
         .with_other_transport(|key| {
             let noise_config = noise::Config::new(key).unwrap();
@@ -127,15 +134,47 @@ pub async fn start_swarm() -> Result<Swarm<AgentBehavior>, Box<dyn Error + Send 
         println!("Dialed {to_dial:?}")
     }
 
-    Ok(swarm)
+    Ok((swarm, local_key))
 }
 
-pub async fn handle_swarm_event(mut swarm: Swarm<AgentBehavior>) {
+pub async fn handle_swarm_event(mut swarm: Swarm<AgentBehavior>, local_key: Keypair) {
+    let mut interval1 = time::interval(Duration::from_secs(3));
+    let mut interval2 = time::interval(Duration::from_secs(5));
     tokio::spawn(async move {
         loop {
             tokio::select! {
                 event = swarm.next() => {
                     info!("event is {:?}", event);
+                }
+                _ = interval1.tick() => {
+                    let local_peer_id = local_key.public().to_peer_id();
+                    let request = GreeRequest {
+                        message: format!("Send message from: {local_peer_id}: Hello gaess"),
+                    };
+                    let resquest_message = AgentMessage::GreeRequest(request);
+                    for peer_id_address in BOOTNODES {
+                        match peer_id_address.parse() {
+                            Ok(peer_id ) => {
+                                let request_id = swarm
+                                    .behaviour_mut()
+                                    .send_message(&peer_id, resquest_message.clone());
+                                info!("RequestID: {request_id}")
+                            },
+                            Err(err) => info!("err is {:?}, peer_id_address is {}", err, peer_id_address),
+                        }
+
+                    }
+
+                }
+                _ = interval2.tick() => {
+                    let local_peer_id = local_key.public().to_peer_id();
+                    let request = GreeRequest {
+                        message: format!("Send message from: {local_peer_id}: Hello gaess"),
+                    };
+                    let resquest_message = AgentMessage::GreeRequest(request);
+                    swarm
+                        .behaviour_mut()
+                        .broadcast(resquest_message);
                 }
             }
         }

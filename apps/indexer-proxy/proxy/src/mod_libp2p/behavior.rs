@@ -1,5 +1,5 @@
 use libp2p::{
-    gossipsub::{Behaviour as GossipsubBehavior, Event as GossipsubEvent},
+    gossipsub::{self, Behaviour as GossipsubBehavior, Event as GossipsubEvent},
     identify::{Behaviour as IdentifyBehavior, Event as IdentifyEvent},
     kad::{
         store::MemoryStore as KademliaInMemory, Behaviour as KademliaBehavior,
@@ -59,6 +59,12 @@ impl AgentBehavior {
     ) -> Result<(), Vec<u8>> {
         let binary_response = rs.to_binary().expect("Failed to serialize response");
         self.rr.send_response(ch, binary_response)
+    }
+
+    pub fn broadcast(&mut self, rs: AgentMessage) {
+        let gossipsub_topic = gossipsub::IdentTopic::new("chat");
+        let binary_response = rs.to_binary().expect("Failed to serialize response");
+        _ = self.gossipsub.publish(gossipsub_topic, binary_response);
     }
 
     pub fn set_server_mode(&mut self) {
