@@ -28,6 +28,7 @@ mod contracts;
 mod graphql;
 mod metadata;
 mod metrics;
+mod mod_libp2p;
 mod monitor;
 mod p2p;
 mod payg;
@@ -72,7 +73,15 @@ fn start_tokio_main() {
         let debug = COMMAND.debug();
 
         let log_filter = if debug { Level::DEBUG } else { Level::WARN };
-        tracing_subscriber::fmt().with_max_level(log_filter).init();
+        tracing_subscriber::fmt()
+            .with_ansi(false)
+            .event_format(
+                tracing_subscriber::fmt::format()
+                    .with_file(true)
+                    .with_line_number(true),
+            )
+            .with_max_level(log_filter)
+            .init();
 
         cli::init_redis().await;
 
