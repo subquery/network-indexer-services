@@ -29,6 +29,7 @@ use tokio::sync::RwLock;
 use crate::cli::COMMAND;
 use crate::metadata::auto_reduce_allocation_enabled;
 use crate::metrics::{get_services_version, get_status};
+use crate::mod_libp2p::{handle_swarm_event, start_swarm};
 use crate::p2p::{start_network, stop_network};
 
 // sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
@@ -123,6 +124,10 @@ pub async fn handle_account(value: &Value) -> Result<()> {
             tokio::spawn(async move {
                 stop_network().await;
                 start_network(key).await;
+                match start_swarm().await {
+                    Ok(swarm) => _ = handle_swarm_event(swarm).await,
+                    Err(err) => info!("start libp2p swarm failed, the err is {:?}", err),
+                }
             });
         }
     }

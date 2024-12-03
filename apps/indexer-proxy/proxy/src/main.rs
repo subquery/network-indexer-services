@@ -28,6 +28,7 @@ mod contracts;
 mod graphql;
 mod metadata;
 mod metrics;
+mod mod_libp2p;
 mod monitor;
 mod p2p;
 mod payg;
