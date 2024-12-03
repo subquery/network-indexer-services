@@ -134,6 +134,11 @@ pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Er
         println!("Dialed {to_dial:?}")
     }
 
+    let private_net_address =
+        std::env::var("PRIVITE_NET_ADDRESS").unwrap_or("/ip4/0.0.0.0/tcp/8004".to_string());
+    let private_net_address = private_net_address.parse()?;
+    swarm.listen_on(private_net_address)?;
+
     Ok((swarm, local_key))
 }
 
