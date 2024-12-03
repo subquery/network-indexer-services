@@ -77,3 +77,20 @@ pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/154.91.1.165/tcp/7371",
     "/ip4/154.91.1.165/quic/7370",
 ];
+
+pub const METRICS_PEER_ID: &str = "16Uiu2HAmNa64mzMD6Uq4EhUTdHKoZE7MLiEh7hCK3ACN5F5MgJoL";
+pub const METRICS_DEFAULT_ADDRESS: &str = "/dns4/boot_node/tcp/8003";
+
+pub const BOOTNODE_ADDRESS_LIST: [&str; 1] = ["/dns4/boot_node/tcp/8002"];
+pub const TEST_BOOSTNODE_PEER_ID_LIST: [&str; 3] = [
+    "16Uiu2HAm5SPUotukayoKUZG5jQQ9zAGgjAXXz4Tg62kzZMbikLdQ",
+    "16Uiu2HAm3iA5E2xfMsVBtKnh4DEbCDmGEsQJMGWVsVWPMESsfnso",
+    "16Uiu2HAmUFSkx4esqLoos3TvA55WKNDJURoqCrjQLGGuKeZWiw8e",
+];
+pub const PRODUCTION_BOOSTNODE_PEER_ID_LIST: [&str; 3] = [
+    "16Uiu2HAm9dyPd6p9oU1bL1Sc7sJUg5WrB7gL4tJomesK27q3meHm",
+    "16Uiu2HAmSN16v7Pq4EXam94c1Q8k3pTyCdumiRJfof7cYzPGpwQN",
+    "16Uiu2HAm14nXNnB1GxnocpmHckaXfqtshp5ZD8QJvXeXr6kvV4KM",
+];
+
+pub const PRIVATE_NETWORK_KEY: &str = "wiwlLGQ8g6zu0mcckkROzeeAU7xN+Adz40ELWSH3f1M=";
