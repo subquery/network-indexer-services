@@ -44,10 +44,13 @@ const TESTNET_ADDRESS: [&str; 2] = ["/ip4/192.168.1.136/tcp/8002", "/ip4/192.168
 pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Error + Send + Sync>>
 {
     let psk = get_psk();
-
+    println!("file: {}, line: {}", file!(), line!());
     if let Ok(psk) = psk {
-        info!("using swarm key with fingerprint: {}", psk.fingerprint());
+        println!("file: {}, line: {}", file!(), line!());
+        warn!("using swarm key with fingerprint: {}", psk.fingerprint());
+        println!("file: {}, line: {}", file!(), line!());
     }
+    println!("file: {}, line: {}", file!(), line!());
 
     // Create a Gosspipsub topic
     let gossipsub_topic = gossipsub::IdentTopic::new("chat");
@@ -80,7 +83,18 @@ pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Er
             let kad_config = KadConfig::new(StreamProtocol::new("/agent/connection/1.0.0"));
 
             let kad_memory = KadInMemory::new(local_peer_id);
-            let kad = KadBehavior::with_config(local_peer_id, kad_memory, kad_config);
+            let mut kad = KadBehavior::with_config(local_peer_id, kad_memory, kad_config);
+
+            for to_dial in TESTNET_ADDRESS {
+                if let Ok(addr) = parse_legacy_multiaddr(&to_dial) {
+                    for peer_address in &BOOTNODES {
+                        if let Ok(peer) = PeerId::from_str(peer_address) {
+                            kad.add_address(&peer, addr.clone());
+                        }
+                    }
+                }
+            }
+            _ = kad.bootstrap();
 
             let identify_config =
                 IdentifyConfig::new("/agent/connection/1.0.0".to_string(), key.clone().public())
@@ -136,6 +150,7 @@ pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Er
 
     let private_net_address =
         std::env::var("PRIVITE_NET_ADDRESS").unwrap_or("/ip4/0.0.0.0/tcp/8004".to_string());
+    warn!("private_net_address: {}", private_net_address);
     let private_net_address = private_net_address.parse()?;
     swarm.listen_on(private_net_address)?;
 
@@ -143,8 +158,8 @@ pub async fn start_swarm() -> Result<(Swarm<AgentBehavior>, Keypair), Box<dyn Er
 }
 
 pub async fn handle_swarm_event(mut swarm: Swarm<AgentBehavior>, local_key: Keypair) {
-    let mut interval1 = time::interval(Duration::from_secs(3));
-    let mut interval2 = time::interval(Duration::from_secs(5));
+    let mut interval1 = time::interval(Duration::from_secs(8));
+    let mut interval2 = time::interval(Duration::from_secs(16));
     tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -163,9 +178,9 @@ pub async fn handle_swarm_event(mut swarm: Swarm<AgentBehavior>, local_key: Keyp
                                 let request_id = swarm
                                     .behaviour_mut()
                                     .send_message(&peer_id, resquest_message.clone());
-                                info!("RequestID: {request_id}")
+                                warn!("peer_id_address: {peer_id_address}, peer_id: {peer_id:?}, RequestID: {request_id}, resquest_message : {resquest_message:?}")
                             },
-                            Err(err) => info!("err is {:?}, peer_id_address is {}", err, peer_id_address),
+                            Err(err) => warn!("err is {:?}, peer_id_address is {}", err, peer_id_address),
                         }
 
                     }
@@ -201,12 +216,16 @@ fn get_ipfs_path() -> Box<Path> {
 
 /// Read the pre shared key file from the given ipfs directory
 fn get_psk() -> Result<PreSharedKey, Box<dyn Error>> {
+    println!("file: {}, line: {}", file!(), line!());
     let base64_key =
         std::env::var("PRIVITE_NET_KEY").map_err(|_| "PRIVITE_NET_KEY missing in .env")?;
+    println!("file: {}, line: {}", file!(), line!());
     let bytes = STANDARD.decode(&base64_key)?;
+    println!("file: {}, line: {}", file!(), line!());
     let key: [u8; 32] = bytes
         .try_into()
         .map_err(|_| "Decoded key must be 32 bytes long")?;
+    println!("file: {}, line: {}", file!(), line!());
     Ok(PreSharedKey::new(key))
 }
 

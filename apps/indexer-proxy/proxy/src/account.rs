@@ -119,15 +119,21 @@ pub async fn handle_account(value: &Value) -> Result<()> {
     drop(account);
 
     if old_c != new_c {
+        warn!("file: {}, line: {}", file!(), line!());
         if let Some(key) = peer {
+            warn!("file: {}, line: {}", file!(), line!());
             info!("Need restart p2p network...");
             tokio::spawn(async move {
-                stop_network().await;
-                start_network(key).await;
+                warn!("file: {}, line: {}", file!(), line!());
                 match start_swarm().await {
-                    Ok((swarm, local_key)) => _ = handle_swarm_event(swarm, local_key).await,
+                    Ok((swarm, local_key)) => {
+                        println!("it start to handle event");
+                        _ = handle_swarm_event(swarm, local_key).await
+                    }
                     Err(err) => info!("start libp2p swarm failed, the err is {:?}", err),
                 }
+                stop_network().await;
+                start_network(key).await;
             });
         }
     }
