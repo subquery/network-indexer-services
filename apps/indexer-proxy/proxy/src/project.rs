@@ -23,7 +23,7 @@ use crate::metadata::{
     ai_metadata, rpc_evm_metadata, rpc_substrate_metadata, subgraph_metadata, subquery_metadata,
 };
 use crate::metrics::{add_metrics_query, update_metrics_projects, MetricsNetwork, MetricsQuery};
-use crate::p2p::send;
+// use crate::p2p::send;
 use chrono::Utc;
 use digest::Digest;
 use ethers::{
@@ -48,7 +48,7 @@ use subql_indexer_utils::{
     tools::merge_json,
     types::Result,
 };
-use tdn::types::group::hash_to_group_id;
+// use tdn::types::group::hash_to_group_id;
 use tokio::sync::Mutex;
 
 pub static PROJECTS: Lazy<Mutex<HashMap<String, Project>>> =
@@ -589,12 +589,12 @@ async fn update_projects(deployments: Vec<Project>) {
         if new_deployments.contains(o) {
             continue;
         } else {
-            let gid = hash_to_group_id(o.as_bytes());
+            // let gid = hash_to_group_id(o.as_bytes());
             lock.remove(o);
             // project leave
-            tokio::spawn(async move {
-                send("project-leave", vec![], gid).await;
-            });
+            // tokio::spawn(async move {
+            //     send("project-leave", vec![], gid).await;
+            // });
         }
     }
 
@@ -602,9 +602,9 @@ async fn update_projects(deployments: Vec<Project>) {
         let did = n.id.clone();
         lock.insert(did.clone(), n);
         // project join
-        tokio::spawn(async move {
-            send("project-join", vec![json!(did)], 0).await;
-        });
+        // tokio::spawn(async move {
+        //     send("project-join", vec![json!(did)], 0).await;
+        // });
     }
 
     drop(lock);

@@ -59,9 +59,9 @@ pub const TELEMETRIES_MAINNET: [&str; 2] = [
     "0xec373af3d916928a691ce8ade6e5dcac07d29345", // MAINNET, temp metrics account
 ];
 
-pub const TELEMETRIES_KEPLER: [&str; 1] = [
-    "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // KEPLER
-];
+// pub const TELEMETRIES_KEPLER: [&str; 1] = [
+//     "0x740BD38d229C01Fe569071D4132E8851b3011DF0", // KEPLER
+// ];
 
 pub const TELEMETRIES_TESTNET: [&str; 4] = [
     "0x41526BE3CDe4b0ff39A4A2908Af3527a703E9fDa", // TESTNET, metrics account
@@ -76,4 +76,27 @@ pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/8.219.198.62/quic/7370",
     "/ip4/154.91.1.165/tcp/7371",
     "/ip4/154.91.1.165/quic/7370",
+];
+
+pub const BOOTNODE_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8001/quic-v1";
+pub const BOOTNODE_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8001";
+pub const METRICS_PEER_ID: &str = "16Uiu2HAmNa64mzMD6Uq4EhUTdHKoZE7MLiEh7hCK3ACN5F5MgJoL";
+pub const METRICS_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8003/quic-v1";
+pub const METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8003";
+
+pub const TEST_BOOTNODE_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8005/quic-v1";
+pub const TEST_BOOTNODE_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8005";
+pub const TEST_METRICS_PEER_ID: &str = "16Uiu2HAmUGCzsEwPGyuE9HcTzKGY4LUPFpLP3vKpT7buJUAdsKX5";
+pub const TEST_METRICS_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8007/quic-v1";
+pub const TEST_METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8007";
+
+pub const TEST_BOOSTNODE_PEER_ID_LIST: [&str; 3] = [
+    "16Uiu2HAm5SPUotukayoKUZG5jQQ9zAGgjAXXz4Tg62kzZMbikLdQ",
+    "16Uiu2HAm3iA5E2xfMsVBtKnh4DEbCDmGEsQJMGWVsVWPMESsfnso",
+    "16Uiu2HAmUFSkx4esqLoos3TvA55WKNDJURoqCrjQLGGuKeZWiw8e",
+];
+pub const PRODUCTION_BOOSTNODE_PEER_ID_LIST: [&str; 3] = [
+    "16Uiu2HAm9dyPd6p9oU1bL1Sc7sJUg5WrB7gL4tJomesK27q3meHm",
+    "16Uiu2HAmSN16v7Pq4EXam94c1Q8k3pTyCdumiRJfof7cYzPGpwQN",
+    "16Uiu2HAm14nXNnB1GxnocpmHckaXfqtshp5ZD8QJvXeXr6kvV4KM",
 ];

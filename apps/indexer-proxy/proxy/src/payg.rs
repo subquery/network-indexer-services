@@ -34,6 +34,7 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use subql_indexer_utils::{
     error::Error,
+    p2p::Event,
     payg::{
         convert_sign_to_string, convert_string_to_sign, extend_recover2, extend_sign2,
         price_recover, price_sign, MultipleQueryState, MultipleQueryStateActive, OpenState,
@@ -44,15 +45,20 @@ use subql_indexer_utils::{
     types::Result,
 };
 
-use crate::account::ACCOUNT;
-use crate::cli::{redis, COMMAND};
-use crate::contracts::{
-    check_consumer_controller, check_convert_price, check_state_channel_consumer, get_convert_price,
+use crate::{
+    account::{get_indexer, ACCOUNT},
+    cli::{redis, COMMAND},
+    contracts::{
+        check_consumer_controller, check_convert_price, check_state_channel_consumer,
+        get_convert_price,
+    },
+    metrics::{MetricsNetwork, MetricsQuery},
+    mod_libp2p::network::EventLoop,
+    // p2p::report_conflict,
+    project::{get_project, list_projects, Project},
+    sentry_log::make_sentry_message,
 };
-use crate::metrics::{MetricsNetwork, MetricsQuery};
-use crate::p2p::report_conflict;
-use crate::project::{get_project, list_projects, Project};
-use crate::sentry_log::make_sentry_message;
+
 const CURRENT_VERSION: u8 = 3;
 
 #[derive(Debug)]
@@ -407,7 +413,19 @@ pub async fn before_query_signle_state(
         let times = state_cache.conflict_times;
         let start = state_cache.conflict_start;
         let end = Utc::now().timestamp();
-        tokio::spawn(report_conflict(project_id, channel, times, start, end));
+        tokio::spawn(async move {
+            let indexer = get_indexer().await;
+            let event = Event::MetricsPaygConflict(
+                indexer,
+                project_id.clone(),
+                channel.clone(),
+                times as i32,
+                start,
+                end,
+            );
+            EventLoop::send_p2p_event(event).await;
+            // report_conflict(project_id, channel, times, start, end).await;
+        });
 
         // overflow the conflict
         return Err(Error::PaygConflict(1050));

@@ -23,7 +23,7 @@ use axum::{
 };
 use chrono::prelude::*;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use redis::RedisResult;
+// use redis::RedisResult;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use subql_indexer_utils::{error::Error, types::Result};
@@ -34,7 +34,7 @@ use serde_json;
 use std::result;
 use std::str::FromStr;
 
-use crate::contracts::check_agreement_and_consumer;
+// use crate::contracts::check_agreement_and_consumer;
 use crate::{
     cli::{redis, COMMAND},
     whitelist::WHITELIST,
@@ -222,53 +222,53 @@ fn check_jwt(auth: &str) -> Result<Claims> {
     Ok(decoded.claims)
 }
 
-pub async fn check_and_save_agreement(signer: &str, agreement: &str) -> Result<()> {
-    check_agreement_with_signer(signer, agreement).await?;
+// pub async fn check_and_save_agreement(signer: &str, agreement: &str) -> Result<()> {
+//     check_agreement_with_signer(signer, agreement).await?;
 
-    // check limit is valid
-    check_agreement_limit(agreement).await?;
+//     // check limit is valid
+//     check_agreement_limit(agreement).await?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-pub async fn check_and_get_agreement_limit(
-    signer: &str,
-    agreement: &str,
-) -> Result<(u64, u64, u64, u64)> {
-    check_agreement_with_signer(signer, agreement).await?;
+// pub async fn check_and_get_agreement_limit(
+//     signer: &str,
+//     agreement: &str,
+// ) -> Result<(u64, u64, u64, u64)> {
+//     check_agreement_with_signer(signer, agreement).await?;
 
-    // get limit
-    Ok(get_agreement_limit(agreement).await)
-}
+//     // get limit
+//     Ok(get_agreement_limit(agreement).await)
+// }
 
-async fn check_agreement_with_signer(signer: &str, agreement: &str) -> Result<()> {
-    // check already has agreement
-    let daily_limit_name = format!("{}-dlimit", agreement);
-    let ca_consumer = format!("{}-{}", agreement, signer);
-    let mut conn = redis();
+// async fn check_agreement_with_signer(signer: &str, agreement: &str) -> Result<()> {
+//     // check already has agreement
+//     let daily_limit_name = format!("{}-dlimit", agreement);
+//     let ca_consumer = format!("{}-{}", agreement, signer);
+//     let mut conn = redis();
 
-    let daily_limit: RedisResult<u64> = redis::cmd("GET")
-        .arg(&daily_limit_name)
-        .query_async(&mut conn)
-        .await;
-    let ca_checked: RedisResult<bool> = redis::cmd("GET")
-        .arg(&ca_consumer)
-        .query_async(&mut conn)
-        .await;
+//     let daily_limit: RedisResult<u64> = redis::cmd("GET")
+//         .arg(&daily_limit_name)
+//         .query_async(&mut conn)
+//         .await;
+//     let ca_checked: RedisResult<bool> = redis::cmd("GET")
+//         .arg(&ca_consumer)
+//         .query_async(&mut conn)
+//         .await;
 
-    if daily_limit.is_err() {
-        // init agreement
-        let (checked, daily, rate) = check_agreement_and_consumer(signer, agreement).await?;
-        if !checked {
-            return Err(Error::AuthCreate(1001));
-        }
-        save_agreement(agreement, daily, rate, Some(signer)).await;
-    } else if ca_checked.is_err() {
-        return Err(Error::AuthExpired(1006));
-    }
+//     if daily_limit.is_err() {
+//         // init agreement
+//         let (checked, daily, rate) = check_agreement_and_consumer(signer, agreement).await?;
+//         if !checked {
+//             return Err(Error::AuthCreate(1001));
+//         }
+//         save_agreement(agreement, daily, rate, Some(signer)).await;
+//     } else if ca_checked.is_err() {
+//         return Err(Error::AuthExpired(1006));
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 async fn save_agreement(agreement: &str, daily: u64, rate: u64, signer: Option<&str>) {
     let daily_limit = format!("{}-dlimit", agreement);
