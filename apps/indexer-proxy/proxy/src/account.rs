@@ -23,13 +23,15 @@ use ethers::{
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use subql_indexer_utils::{constants::decode_proxy_version, error::Error, types::Result};
-use tdn::prelude::PeerKey;
+// use tdn::prelude::PeerKey;
+use libp2p::identity;
 use tokio::sync::RwLock;
 
 use crate::cli::COMMAND;
 use crate::metadata::auto_reduce_allocation_enabled;
 use crate::metrics::{get_services_version, get_status};
-use crate::p2p::{start_network, stop_network};
+use crate::mod_libp2p::{network::EventLoop, start_libp2p_process};
+// use crate::p2p::{start_network, stop_network};
 
 // sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
 const EMPTY_CONTROLLER: H160 = H160([
@@ -85,7 +87,7 @@ pub async fn handle_account(value: &Value) -> Result<()> {
         }
     });
 
-    let (controller, peer) = if let Some(sk) = fetch_controller {
+    let (controller_sk, controller, peer) = if let Some(sk) = fetch_controller {
         let sk = COMMAND.decrypt(sk).unwrap_or(
             "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
         );
@@ -93,13 +95,14 @@ pub async fn handle_account(value: &Value) -> Result<()> {
         let controller = sk[2..]
             .parse::<LocalWallet>()
             .map_err(|_| Error::InvalidController(1038))?;
-        let peer = PeerKey::from_db_bytes(
-            &hex::decode(&sk[2..]).map_err(|_| Error::InvalidController(1039))?,
+        let peer = identity::secp256k1::SecretKey::try_from_bytes(
+            &mut hex::decode(&sk[2..]).map_err(|_| Error::InvalidController(1039))?,
         )
         .map_err(|_| Error::InvalidController(1039))?;
-        (controller, Some(peer))
+        (sk[2..].to_string(), controller, Some(peer))
     } else {
         (
+            "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
             "0000000000000000000000000000000000000000000000000000000000000001"
                 .parse::<LocalWallet>()
                 .unwrap(),
@@ -118,11 +121,17 @@ pub async fn handle_account(value: &Value) -> Result<()> {
     drop(account);
 
     if old_c != new_c {
-        if let Some(key) = peer {
+        if let Some(_key) = peer {
             info!("Need restart p2p network...");
             tokio::spawn(async move {
-                stop_network().await;
-                start_network(key).await;
+                EventLoop::stop().await;
+                if controller_sk
+                    != *"0000000000000000000000000000000000000000000000000000000000000001"
+                {
+                    start_libp2p_process(&controller_sk).await;
+                }
+                // stop_network().await;
+                // start_network(key).await;
             });
         }
     }
