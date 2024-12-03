@@ -14,10 +14,13 @@ cached = "0.53.1"
 chamomile_types = "0.10"
 chrono = "0.4"
 digest = '0.10'
+dotenv = "0.15.0"
+either = "1.13.0"
 ethers = { git = "https://github.com/gakonst/ethers-rs.git", tag = "ethers-v2.0.7" }
 futures-util = "0.3.30"
 hex = "0.4"
 jsonwebtoken = "9.1"
+libp2p = { version = "0.54.1", features = ["full"] }
 once_cell = "1.12"
 prometheus-client = "0.22"
 redis = { version = "0.27", features = ["tokio-comp"] }

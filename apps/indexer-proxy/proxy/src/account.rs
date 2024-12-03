@@ -29,6 +29,7 @@ use tokio::sync::RwLock;
 use crate::cli::COMMAND;
 use crate::metadata::auto_reduce_allocation_enabled;
 use crate::metrics::{get_services_version, get_status};
+use crate::mod_libp2p::start_libp2p_process;
 use crate::p2p::{start_network, stop_network};
 
 // sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
@@ -118,9 +119,12 @@ pub async fn handle_account(value: &Value) -> Result<()> {
     drop(account);
 
     if old_c != new_c {
+        warn!("file: {}, line: {}", file!(), line!());
         if let Some(key) = peer {
+            warn!("file: {}, line: {}", file!(), line!());
             info!("Need restart p2p network...");
             tokio::spawn(async move {
+                start_libp2p_process().await;
                 stop_network().await;
                 start_network(key).await;
             });

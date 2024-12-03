@@ -28,6 +28,7 @@ mod contracts;
 mod graphql;
 mod metadata;
 mod metrics;
+mod mod_libp2p;
 mod monitor;
 mod p2p;
 mod payg;
@@ -48,6 +49,7 @@ use tracing::Level;
 pub const GITHUB_SENTRY_DSN: Option<&'static str> = option_env!("SECRETS_SENTRY_DSN");
 
 fn main() {
+    dotenv::dotenv().ok();
     if let Some(sentry_dsn) = GITHUB_SENTRY_DSN {
         let sentry_option = sentry::ClientOptions {
             before_send: Some(Arc::new(Box::new(before_send))),
@@ -72,7 +74,15 @@ fn start_tokio_main() {
         let debug = COMMAND.debug();
 
         let log_filter = if debug { Level::DEBUG } else { Level::WARN };
-        tracing_subscriber::fmt().with_max_level(log_filter).init();
+        tracing_subscriber::fmt()
+            .with_ansi(false)
+            .event_format(
+                tracing_subscriber::fmt::format()
+                    .with_file(true)
+                    .with_line_number(true),
+            )
+            .with_max_level(log_filter)
+            .init();
 
         cli::init_redis().await;
 
