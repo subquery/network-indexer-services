@@ -28,8 +28,9 @@ mod contracts;
 mod graphql;
 mod metadata;
 mod metrics;
+mod mod_libp2p;
 mod monitor;
-mod p2p;
+// mod p2p;
 mod payg;
 mod primitives;
 mod project;
@@ -86,7 +87,7 @@ fn start_tokio_main() {
 
         subscriber::subscribe();
         monitor::listen();
-        p2p::listen();
+        // p2p::listen();
         metrics::listen();
         whitelist::listen();
 

@@ -23,17 +23,22 @@ use aes_gcm::{
 use digest::{generic_array::GenericArray, Digest};
 use once_cell::sync::Lazy;
 use redis::aio::MultiplexedConnection;
-use std::net::SocketAddr;
 use structopt::StructOpt;
 use subql_contracts::Network;
 use subql_indexer_utils::{
-    constants::{BOOTSTRAP, TELEMETRIES_KEPLER, TELEMETRIES_MAINNET, TELEMETRIES_TESTNET},
+    constants::{
+        BOOTNODE_DEFAULT_QUIC_ADDRESS, BOOTNODE_DEFAULT_TCP_ADDRESS, METRICS_DEFAULT_QUIC_ADDRESS,
+        METRICS_DEFAULT_TCP_ADDRESS, TEST_BOOTNODE_DEFAULT_QUIC_ADDRESS,
+        TEST_BOOTNODE_DEFAULT_TCP_ADDRESS, TEST_METRICS_DEFAULT_QUIC_ADDRESS,
+        TEST_METRICS_DEFAULT_TCP_ADDRESS,
+    },
     error::Error,
 };
-use tdn::prelude::PeerId;
+// use tdn::prelude::PeerId;
 use tokio::sync::OnceCell;
 
-const DEFAULT_P2P_ADDR: &str = "0.0.0.0:7370";
+const DEFAULT_TCP_ADDRESS: &str = "/ip4/0.0.0.0/tcp/7370";
+const DEFAULT_UDP_ADDRESS: &str = "/ip4/0.0.0.0/udp/7370/quic-v1";
 
 pub static REDIS: OnceCell<MultiplexedConnection> = OnceCell::const_new();
 
@@ -155,11 +160,17 @@ impl CommandLineArgs {
         self.token_duration
     }
 
-    pub fn p2p(&self) -> SocketAddr {
+    pub fn p2p(&self) -> [String; 2] {
         if let Some(port) = self.p2p_port {
-            format!("0.0.0.0:{}", port).parse().unwrap()
+            [
+                format!("/ip4/0.0.0.0/tcp/{}", port),
+                format!("/ip4/0.0.0.0/udp/{}/quic-v1", port),
+            ]
         } else {
-            DEFAULT_P2P_ADDR.parse().unwrap()
+            [
+                DEFAULT_TCP_ADDRESS.to_string(),
+                DEFAULT_UDP_ADDRESS.to_string(),
+            ]
         }
     }
 
@@ -187,28 +198,41 @@ impl CommandLineArgs {
 
     pub fn bootstrap(&self) -> Vec<String> {
         let mut seeds = self.bootstrap.clone();
-        seeds.extend(BOOTSTRAP.iter().map(|v| v.to_string()));
+        match self.network() {
+            Network::Mainnet => {
+                seeds.push(METRICS_DEFAULT_QUIC_ADDRESS.to_string());
+                seeds.push(BOOTNODE_DEFAULT_QUIC_ADDRESS.to_string());
+                seeds.push(METRICS_DEFAULT_TCP_ADDRESS.to_string());
+                seeds.push(BOOTNODE_DEFAULT_TCP_ADDRESS.to_string());
+            }
+            _ => {
+                seeds.push(TEST_METRICS_DEFAULT_QUIC_ADDRESS.to_string());
+                seeds.push(TEST_BOOTNODE_DEFAULT_QUIC_ADDRESS.to_string());
+                seeds.push(TEST_METRICS_DEFAULT_TCP_ADDRESS.to_string());
+                seeds.push(TEST_BOOTNODE_DEFAULT_TCP_ADDRESS.to_string());
+            }
+        }
         seeds
     }
 
-    pub fn telemetries(&self) -> Vec<PeerId> {
-        if self.telemetry {
-            match self.network() {
-                Network::Mainnet => TELEMETRIES_MAINNET
-                    .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
-                    .collect(),
-                Network::Kepler => TELEMETRIES_KEPLER
-                    .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
-                    .collect(),
-                _ => TELEMETRIES_TESTNET
-                    .iter()
-                    .filter_map(|p| PeerId::from_hex(p.trim()).ok())
-                    .collect(),
-            }
-        } else {
-            vec![]
-        }
-    }
+    // pub fn telemetries(&self) -> Vec<PeerId> {
+    //     if self.telemetry {
+    //         match self.network() {
+    //             Network::Mainnet => TELEMETRIES_MAINNET
+    //                 .iter()
+    //                 .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+    //                 .collect(),
+    //             Network::Kepler => TELEMETRIES_KEPLER
+    //                 .iter()
+    //                 .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+    //                 .collect(),
+    //             _ => TELEMETRIES_TESTNET
+    //                 .iter()
+    //                 .filter_map(|p| PeerId::from_hex(p.trim()).ok())
+    //                 .collect(),
+    //         }
+    //     } else {
+    //         vec![]
+    //     }
+    // }
 }

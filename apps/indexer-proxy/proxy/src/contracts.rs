@@ -28,7 +28,7 @@ use subql_contracts::{
     service_agreement_registry,
 };
 use subql_indexer_utils::{error::Error, price_oracle::convert_price};
-use tdn::prelude::PeerId;
+// use tdn::prelude::PeerId;
 
 use crate::cli::COMMAND;
 use crate::payg::ConsumerType;
@@ -171,38 +171,38 @@ pub async fn check_state_channel_consumer(
     }
 }
 
-pub async fn get_consumer_host_peer() -> Result<PeerId, Error> {
-    let client = Arc::new(
-        Provider::<Http>::try_from(COMMAND.network_endpoint())
-            .map_err(|_| Error::ServiceException(1022))?,
-    );
-    let host =
-        consumer_host(client, COMMAND.network()).map_err(|_| Error::ServiceException(1023))?;
+// pub async fn get_consumer_host_peer() -> Result<PeerId, Error> {
+//     let client = Arc::new(
+//         Provider::<Http>::try_from(COMMAND.network_endpoint())
+//             .map_err(|_| Error::ServiceException(1022))?,
+//     );
+//     let host =
+//         consumer_host(client, COMMAND.network()).map_err(|_| Error::ServiceException(1023))?;
 
-    let mut signers: Vec<Address> = vec![];
-    let token: Token = host
-        .method::<_, Token>("getSigners", ())
-        .map_err(|_| Error::ServiceException(1028))?
-        .call()
-        .await
-        .map_err(|_| Error::ServiceException(1028))?;
+//     let mut signers: Vec<Address> = vec![];
+//     let token: Token = host
+//         .method::<_, Token>("getSigners", ())
+//         .map_err(|_| Error::ServiceException(1028))?
+//         .call()
+//         .await
+//         .map_err(|_| Error::ServiceException(1028))?;
 
-    if let Some(ts) = token.into_array() {
-        for t in ts {
-            if let Some(address) = t.into_address() {
-                signers.push(address);
-            }
-        }
-    }
+//     if let Some(ts) = token.into_array() {
+//         for t in ts {
+//             if let Some(address) = t.into_address() {
+//                 signers.push(address);
+//             }
+//         }
+//     }
 
-    if !signers.is_empty() {
-        let peer_id =
-            PeerId::from_bytes(signers[0].as_bytes()).map_err(|_| Error::ServiceException(1023))?;
-        Ok(peer_id)
-    } else {
-        Err(Error::ServiceException(1023))
-    }
-}
+//     if !signers.is_empty() {
+//         let peer_id =
+//             PeerId::from_bytes(signers[0].as_bytes()).map_err(|_| Error::ServiceException(1023))?;
+//         Ok(peer_id)
+//     } else {
+//         Err(Error::ServiceException(1023))
+//     }
+// }
 
 pub async fn check_consumer_controller(consumer: Address, signer: Address) -> Result<bool, Error> {
     let client = Arc::new(
