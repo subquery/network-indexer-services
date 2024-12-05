@@ -8,6 +8,7 @@ export enum MetricsType {
   NETHERMIND_PROMETHEUS = 'nethermind_prom',
   RETH_PROMETHEUS = 'reth_prom',
   BESU_PROMETHEUS = 'besu_prom',
+  AUTONITY_PROMETHEUS = 'auto_prom',
 }
 
 function extractFromBrace(content: string) {
@@ -37,6 +38,8 @@ export type MetricsData = {
 
   // geth
   chain_id?: string;
+
+  // geth & autonity
   chain_head_block?: string;
 
   // erigon
@@ -52,6 +55,9 @@ export type MetricsData = {
 
   // besu & nethermind
   ethereum_blockchain_height?: string;
+
+  // autonity
+  p2p_acn_peers?: string;
 };
 
 // eslint-disable-next-line complexity
@@ -166,6 +172,20 @@ export function parseMetrics(metrics: string): MetricsData {
       if (next.startsWith('ethereum_blockchain_height')) {
         const blocksInfo = extractFromGauge(next);
         Object.assign(parsedData, blocksInfo);
+      }
+    }
+
+    // autonity
+    if (lines[i].startsWith('# TYPE p2p_acn_peers gauge')) {
+      mType = MetricsType.AUTONITY_PROMETHEUS;
+      /**
+        # TYPE p2p_acn_peers gauge
+        p2p_acn_peers 0
+      */
+      const next = lines[i + 1] || '';
+      if (next.startsWith('p2p_acn_peers')) {
+        const peerInfo = extractFromGauge(next);
+        Object.assign(parsedData, peerInfo);
       }
     }
   }
