@@ -19,7 +19,7 @@ use libp2p::{
         Event as RequestResponseEvent, Message as RequestResponseMessage,
         ProtocolSupport as RequestResponseProtocolSupport,
     },
-    swarm::SwarmEvent,
+    swarm::{DialError, SwarmEvent},
     tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm, Transport,
 };
 use std::{
@@ -75,11 +75,13 @@ pub async fn monitor_libp2p_connection(
     local_key: Keypair,
     gossipsub_topic: &IdentTopic,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut swarm = start_swarm(local_key.clone(), gossipsub_topic).await?;
+    let (mut swarm, multiaddr_list) = start_swarm(local_key.clone(), gossipsub_topic).await?;
 
     // Main monitoring loop
     loop {
-        if let Err(_) = handle_swarm_event(&mut swarm, local_key.clone()).await {
+        if let Err(_) =
+            handle_swarm_event(&mut swarm, local_key.clone(), multiaddr_list.clone()).await
+        {
             break Err("error".into());
         }
     }
@@ -88,7 +90,7 @@ pub async fn monitor_libp2p_connection(
 pub async fn start_swarm(
     local_key: Keypair,
     gossipsub_topic: &IdentTopic,
-) -> Result<Swarm<AgentBehavior>, Box<dyn Error + Send + Sync>> {
+) -> Result<(Swarm<AgentBehavior>, Vec<Multiaddr>), Box<dyn Error + Send + Sync>> {
     let psk = get_psk();
     warn!("file: {}, line: {}", file!(), line!());
     if let Ok(psk) = psk {
@@ -171,24 +173,29 @@ pub async fn start_swarm(
         .subscribe(gossipsub_topic)
         .unwrap();
 
+    let mut multiaddr_list: Vec<Multiaddr> = vec![];
+
     for to_dial in TESTNET_ADDRESS {
+        warn!("to_dial is {:?}", to_dial);
         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-        swarm.dial(addr)?;
-        warn!("Dialed {to_dial:?}")
+        println!("to_dial: {}, addr is {:#?}", to_dial, addr);
+        multiaddr_list.push(addr.clone());
+        let dial_result = swarm.dial(addr)?;
+        warn!("Dialed {to_dial:?}, dial_result {dial_result:?}")
     }
 
     let private_net_address =
         std::env::var("PRIVITE_NET_ADDRESS").unwrap_or("/ip4/0.0.0.0/tcp/8004".to_string());
-    warn!("private_net_address: {}", private_net_address);
     let private_net_address = private_net_address.parse()?;
     swarm.listen_on(private_net_address)?;
 
-    Ok(swarm)
+    Ok((swarm, multiaddr_list))
 }
 
 pub async fn handle_swarm_event(
     swarm: &mut Swarm<AgentBehavior>,
     local_key: Keypair,
+    multiaddr_list: Vec<Multiaddr>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut interval1 = time::interval(Duration::from_secs(8));
     let mut interval2 = time::interval(Duration::from_secs(16));
@@ -209,7 +216,7 @@ pub async fn handle_swarm_event(
                 match event {
                     Some(event) => {
                         warn!("Event: {:?}", event);
-                        if let Err(e) = handle_event(event, &peer_id_list).await {
+                        if let Err(e) = handle_event(event, &peer_id_list, &multiaddr_list).await {
                             info!("Error handling swarm event: {}", e);
                             break;
                         }
@@ -252,6 +259,7 @@ pub async fn handle_swarm_event(
 async fn handle_event(
     swarm_event: SwarmEvent<AgentEvent>,
     peer_id_list: &[PeerId],
+    multiaddr_list: &[Multiaddr],
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match swarm_event {
         SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
@@ -280,11 +288,35 @@ async fn handle_event(
 
             _ => {}
         },
+        SwarmEvent::Behaviour(AgentEvent::RequestResponse(
+            RequestResponseEvent::OutboundFailure { peer, .. },
+        )) => {
+            warn!("peerid is {}, peer_id list is {:?}", peer, peer_id_list);
+            if peer_id_list.contains(&peer) {
+                warn!("send msg to  {} fail, restart libp2p", peer);
+                return Err(format!("send msg to {} fail, restart libp2p", peer).into());
+            }
+        }
         SwarmEvent::ConnectionClosed { peer_id, .. } => {
             warn!("peerid is {}, peer_id list is {:?}", peer_id, peer_id_list);
             if peer_id_list.contains(&peer_id) {
                 warn!("Connection to bootstrap peer {} lost", peer_id);
                 return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
+            }
+        }
+        SwarmEvent::OutgoingConnectionError { error, .. } => {
+            if let DialError::Transport(error) = error {
+                warn!("Dial error: {:?}", error);
+                for (multiaddr, _) in &error {
+                    if multiaddr_list.contains(multiaddr) {
+                        warn!("Connection to bootstrap address: {:?} fail", multiaddr);
+                        return Err(format!(
+                            "Connection to bootstrap address: {:?} fail",
+                            multiaddr
+                        )
+                        .into());
+                    }
+                }
             }
         }
         SwarmEvent::NewListenAddr { address, .. } => {
