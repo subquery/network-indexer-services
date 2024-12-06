@@ -90,13 +90,13 @@ pub async fn start_swarm(
     gossipsub_topic: &IdentTopic,
 ) -> Result<Swarm<AgentBehavior>, Box<dyn Error + Send + Sync>> {
     let psk = get_psk();
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     if let Ok(psk) = psk {
-        println!("file: {}, line: {}", file!(), line!());
+        warn!("file: {}, line: {}", file!(), line!());
         warn!("using swarm key with fingerprint: {}", psk.fingerprint());
-        println!("file: {}, line: {}", file!(), line!());
+        warn!("file: {}, line: {}", file!(), line!());
     }
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     let mut swarm = libp2p::SwarmBuilder::with_existing_identity(local_key.clone())
         .with_tokio()
         .with_other_transport(|key| {
@@ -174,7 +174,7 @@ pub async fn start_swarm(
     for to_dial in TESTNET_ADDRESS {
         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
         swarm.dial(addr)?;
-        println!("Dialed {to_dial:?}")
+        warn!("Dialed {to_dial:?}")
     }
 
     let private_net_address =
@@ -273,17 +273,18 @@ async fn handle_event(
 
             _ => {}
         },
-        SwarmEvent::ConnectionClosed { .. } => {
+        SwarmEvent::ConnectionClosed { peer_id, .. } => {
             // if peer_id == bootstrap_peer_id {
-            //     info!("Connection to bootstrap peer {} lost", peer_id);
+            warn!("Connection to bootstrap peer {} lost", peer_id);
             //     return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
             // }
+            return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
         }
         SwarmEvent::NewListenAddr { address, .. } => {
-            info!("Swarm is now listening on address: {}", address);
+            warn!("Swarm is now listening on address: {}", address);
         }
         SwarmEvent::IncomingConnection { .. } => {
-            info!("Incoming connection detected");
+            warn!("Incoming connection detected");
         }
         _ => {
             warn!("swarm_event is {:?}", swarm_event);
@@ -294,16 +295,16 @@ async fn handle_event(
 
 /// Read the pre shared key file from the given ipfs directory
 fn get_psk() -> Result<PreSharedKey, Box<dyn Error + Send + Sync>> {
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     let base64_key =
         std::env::var("PRIVITE_NET_KEY").map_err(|_| "PRIVITE_NET_KEY missing in .env")?;
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     let bytes = STANDARD.decode(&base64_key)?;
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     let key: [u8; 32] = bytes
         .try_into()
         .map_err(|_| "Decoded key must be 32 bytes long")?;
-    println!("file: {}, line: {}", file!(), line!());
+    warn!("file: {}, line: {}", file!(), line!());
     Ok(PreSharedKey::new(key))
 }
 
