@@ -192,13 +192,24 @@ pub async fn handle_swarm_event(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut interval1 = time::interval(Duration::from_secs(8));
     let mut interval2 = time::interval(Duration::from_secs(16));
+    let peer_id_list: Vec<PeerId> = BOOTNODES
+        .iter()
+        .filter_map(|peer_id_address| match peer_id_address.parse() {
+            Ok(peer_id) => Some(peer_id),
+            Err(err) => {
+                warn!("Error: {:?}, Peer ID Address: {}", err, peer_id_address);
+                None
+            }
+        })
+        .collect();
+    warn!("peer_id_list is {:?}", peer_id_list);
     loop {
         tokio::select! {
             event = swarm.next() => {
                 match event {
                     Some(event) => {
                         warn!("Event: {:?}", event);
-                        if let Err(e) = handle_event(event).await {
+                        if let Err(e) = handle_event(event, &peer_id_list).await {
                             info!("Error handling swarm event: {}", e);
                             break;
                         }
@@ -213,16 +224,11 @@ pub async fn handle_swarm_event(
                     message: format!("Send message from: {local_peer_id}: Hello gaess"),
                 };
                 let request_message = AgentMessage::GreeRequest(request);
-                for peer_id_address in BOOTNODES {
-                    match peer_id_address.parse() {
-                        Ok(peer_id) => {
-                            let request_id = swarm
-                                .behaviour_mut()
-                                .send_message(&peer_id, request_message.clone());
-                            warn!("Peer ID Address: {peer_id_address}, Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}", tokio::task::id());
-                        },
-                        Err(err) => warn!("Error: {:?}, Peer ID Address: {}", err, peer_id_address),
-                    }
+                for peer_id in &peer_id_list {
+                    let request_id = swarm
+                        .behaviour_mut()
+                        .send_message(peer_id, request_message.clone());
+                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}", tokio::task::id());
                 }
                 interval1 = time::interval(Duration::from_secs(8));
                 interval1.reset();
@@ -245,6 +251,7 @@ pub async fn handle_swarm_event(
 
 async fn handle_event(
     swarm_event: SwarmEvent<AgentEvent>,
+    peer_id_list: &[PeerId],
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match swarm_event {
         SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
@@ -274,11 +281,11 @@ async fn handle_event(
             _ => {}
         },
         SwarmEvent::ConnectionClosed { peer_id, .. } => {
-            // if peer_id == bootstrap_peer_id {
-            warn!("Connection to bootstrap peer {} lost", peer_id);
-            //     return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
-            // }
-            return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
+            warn!("peerid is {}, peer_id list is {:?}", peer_id, peer_id_list);
+            if peer_id_list.contains(&peer_id) {
+                warn!("Connection to bootstrap peer {} lost", peer_id);
+                return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
+            }
         }
         SwarmEvent::NewListenAddr { address, .. } => {
             warn!("Swarm is now listening on address: {}", address);
