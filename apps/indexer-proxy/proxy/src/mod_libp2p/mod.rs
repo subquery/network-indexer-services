@@ -205,7 +205,7 @@ pub async fn handle_swarm_event(mut swarm: Swarm<AgentBehavior>, local_key: Keyp
                     warn!("Interval2 tick");
                     let local_peer_id = local_key.public().to_peer_id();
                     let request = GreeRequest {
-                        message: format!("Send message from: {local_peer_id}: Hello gaess"),
+                        message: format!("Send message from: {local_peer_id}, current time is {}", chrono::Local::now()),
                     };
                     let request_message = AgentMessage::GreeRequest(request);
                     swarm.behaviour_mut().broadcast(request_message);
