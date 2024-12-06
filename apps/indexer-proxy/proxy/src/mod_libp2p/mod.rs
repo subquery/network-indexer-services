@@ -288,15 +288,15 @@ async fn handle_event(
 
             _ => {}
         },
-        SwarmEvent::Behaviour(AgentEvent::RequestResponse(
-            RequestResponseEvent::OutboundFailure { peer, .. },
-        )) => {
-            warn!("peerid is {}, peer_id list is {:?}", peer, peer_id_list);
-            if peer_id_list.contains(&peer) {
-                warn!("send msg to  {} fail, restart libp2p", peer);
-                return Err(format!("send msg to {} fail, restart libp2p", peer).into());
-            }
-        }
+        // SwarmEvent::Behaviour(AgentEvent::RequestResponse(
+        //     RequestResponseEvent::OutboundFailure { peer, .. },
+        // )) => {
+        //     warn!("peerid is {}, peer_id list is {:?}", peer, peer_id_list);
+        //     if peer_id_list.contains(&peer) {
+        //         warn!("send msg to  {} fail, restart libp2p", peer);
+        //         return Err(format!("send msg to {} fail, restart libp2p", peer).into());
+        //     }
+        // }
         SwarmEvent::ConnectionClosed { peer_id, .. } => {
             warn!("peerid is {}, peer_id list is {:?}", peer_id, peer_id_list);
             if peer_id_list.contains(&peer_id) {
