@@ -1,6 +1,6 @@
 use crate::mod_libp2p::{
     behavior::{AgentBehavior, AgentEvent},
-    message::{AgentMessage, GreeRequest},
+    message::{AgentMessage, GreetRequest},
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use either::Either;
@@ -123,14 +123,8 @@ pub async fn start_swarm(
             let local_peer_id = PeerId::from(key.clone().public());
 
             let kad_config = KadConfig::new(StreamProtocol::new("/agent/connection/1.0.0"));
-
             let kad_memory = KadInMemory::new(local_peer_id);
             let kad = KadBehavior::with_config(local_peer_id, kad_memory, kad_config);
-
-            let identify_config =
-                IdentifyConfig::new("/agent/connection/1.0.0".to_string(), key.clone().public())
-                    .with_push_listen_addr_updates(true)
-                    .with_interval(Duration::from_secs(30));
 
             let rr_config = RequestResponseConfig::default();
             let rr_protocol = StreamProtocol::new("/agent/message/1.0.0");
@@ -139,6 +133,10 @@ pub async fn start_swarm(
                 rr_config,
             );
 
+            let identify_config =
+                IdentifyConfig::new("/agent/connection/1.0.0".to_string(), key.clone().public())
+                    .with_push_listen_addr_updates(true)
+                    .with_interval(Duration::from_secs(30));
             let identify = IdentifyBehavior::new(identify_config);
 
             let message_id_fn = |message: &gossipsub::Message| {
@@ -160,6 +158,7 @@ pub async fn start_swarm(
                 gossipsub_config,
             )
             .unwrap();
+
             let ping =
                 ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(10)));
             AgentBehavior::new(kad, identify, rr_behavior, gossipsub, ping)
@@ -227,10 +226,10 @@ pub async fn handle_swarm_event(
             _ = interval1.tick() => {
                 warn!("Interval1 tick");
                 let local_peer_id = local_key.public().to_peer_id();
-                let request = GreeRequest {
+                let request = GreetRequest {
                     message: format!("Send message from: {local_peer_id}: Hello gaess"),
                 };
-                let request_message = AgentMessage::GreeRequest(request);
+                let request_message = AgentMessage::GreetRequest(request);
                 for peer_id in &peer_id_list {
                     let request_id = swarm
                         .behaviour_mut()
@@ -243,10 +242,10 @@ pub async fn handle_swarm_event(
             _ = interval2.tick() => {
                 warn!("Interval2 tick");
                 let local_peer_id = local_key.public().to_peer_id();
-                let request = GreeRequest {
+                let request = GreetRequest {
                     message: format!("Send message from: {local_peer_id}, current time is {}", chrono::Local::now()),
                 };
-                let request_message = AgentMessage::GreeRequest(request);
+                let request_message = AgentMessage::GreetRequest(request);
                 swarm.behaviour_mut().broadcast(request_message);
                 interval2 = time::interval(Duration::from_secs(16));
                 interval2.reset();
