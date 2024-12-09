@@ -16,12 +16,13 @@ use libp2p::{
     pnet::{PnetConfig, PreSharedKey},
     request_response::{
         cbor::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
-        Event as RequestResponseEvent, Message as RequestResponseMessage,
+        Event as RequestResponseEvent, Message as RequestResponseMessage, OutboundRequestId,
         ProtocolSupport as RequestResponseProtocolSupport,
     },
     swarm::{DialError, SwarmEvent},
     tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm, Transport,
 };
+use once_cell::sync::Lazy;
 use std::{
     collections::hash_map::DefaultHasher,
     error::Error,
@@ -29,9 +30,11 @@ use std::{
     str::FromStr,
     time::Duration,
 };
+use std::{collections::HashMap, sync::Arc};
 use tokio::{
     sync::{
         mpsc::{self, Sender},
+        oneshot::{self, Sender as OneShotSender},
         OnceCell, RwLock,
     },
     time::{self, sleep},
@@ -50,7 +53,11 @@ const TESTNET_ADDRESS: [&str; 2] = ["/ip4/192.168.1.136/tcp/8002", "/ip4/192.168
 
 pub const PRIVITE_NET_KEY: Option<&'static str> = option_env!("PRIVITE_NET_KEY");
 
-pub static RR_SENDER: OnceCell<Sender<String>> = OnceCell::const_new();
+pub static RR_SENDER: OnceCell<Sender<(String, OneShotSender<()>)>> = OnceCell::const_new();
+
+pub static ONE_SENDER_MAP: Lazy<
+    OnceCell<Arc<RwLock<HashMap<OutboundRequestId, OneShotSender<()>>>>>,
+> = Lazy::new(|| OnceCell::new());
 
 pub async fn start_libp2p_process() {
     tokio::spawn(async move {
@@ -95,6 +102,9 @@ pub async fn start_swarm(
     local_key: Keypair,
     gossipsub_topic: &IdentTopic,
 ) -> Result<(Swarm<AgentBehavior>, Vec<Multiaddr>), Box<dyn Error + Send + Sync>> {
+    ONE_SENDER_MAP
+        .set(Arc::new(RwLock::new(HashMap::new())))
+        .map_err(|_| "Failed to initialize ONE_SENDER_Map")?;
     let psk = get_psk();
     if let Ok(psk) = psk {
         warn!("using swarm key with fingerprint: {}", psk.fingerprint());
@@ -227,16 +237,20 @@ pub async fn handle_swarm_event(
                     None => warn!("No event received from swarm"),
                 }
             }
-            Some(rr_msg) = rr_recv.recv() => {
+            Some((rr_msg, msg_oneshot_sender)) = rr_recv.recv() => {
                 let request = GreetRequest {
                     message: rr_msg,
                 };
                 let request_message = AgentMessage::GreetRequest(request);
-                for peer_id in &peer_id_list {
+                if let Some( peer_id) = &peer_id_list.get(0) {
                     let request_id = swarm
                         .behaviour_mut()
                         .send_message(peer_id, request_message.clone());
-                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}", tokio::task::id());
+                    if let Some(map) = ONE_SENDER_MAP.get() {
+                        let mut write_guard = map.write().await;
+                        write_guard.insert(request_id, msg_oneshot_sender);
+                    }
+                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}",tokio::task::id());
                 }
             },
             _ = interval1.tick() => {
