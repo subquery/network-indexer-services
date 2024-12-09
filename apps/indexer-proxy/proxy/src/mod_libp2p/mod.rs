@@ -34,7 +34,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::{
     sync::{
         mpsc::{self, Sender},
-        oneshot::{self, Sender as OneShotSender},
+        oneshot::Sender as OneShotSender,
         OnceCell, RwLock,
     },
     time::{self, sleep},

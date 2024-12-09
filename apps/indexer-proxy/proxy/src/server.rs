@@ -17,7 +17,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![deny(warnings)]
+use crate::mod_libp2p::RR_SENDER;
 use axum::extract::ws::WebSocket;
+use axum::extract::Query;
 use axum::{
     extract::{ConnectInfo, Path, WebSocketUpgrade},
     http::{
@@ -42,6 +44,7 @@ use subql_indexer_utils::{
     request::{graphql_request, GraphQLQuery},
     tools::{hex_u256, string_u256, u256_hex},
 };
+use tokio::sync::oneshot;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::ai::api_stream;
@@ -107,6 +110,7 @@ pub async fn start_server(port: u16) {
         .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
+        .route("/libp2p_test", get(libp2p_test))
         .route("/", get(|| async { Redirect::to("/healthy") }))
         .layer(
             CorsLayer::new()
@@ -730,6 +734,29 @@ async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>,
 async fn healthy_handler() -> Result<Json<Value>, Error> {
     let info = indexer_healthy().await;
     Ok(Json(info))
+}
+
+#[derive(Deserialize)]
+pub struct Libp2pTestQuery {
+    pub peer_id: String, // Example query parameter (could be PeerId or something else)
+}
+async fn libp2p_test(Query(params): Query<Libp2pTestQuery>) -> String {
+    // Attempt to fetch the sender from RR_SENDER
+    if let Some(rr_sender) = RR_SENDER.get() {
+        // Create a oneshot channel to send a message
+        let (tx, rx) = oneshot::channel();
+
+        // Send the peer_id and tx to the RR_SENDER channel
+        rr_sender.send((params.peer_id.clone(), tx)).await.unwrap();
+
+        // Wait for the response (if needed)
+        match rx.await {
+            Ok(()) => "Message received".to_string(),
+            Err(_) => "Error receiving message".to_string(),
+        }
+    } else {
+        "RR_SENDER is not initialized".to_string()
+    }
 }
 
 async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
