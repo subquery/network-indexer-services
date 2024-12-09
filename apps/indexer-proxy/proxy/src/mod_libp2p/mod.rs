@@ -29,7 +29,13 @@ use std::{
     str::FromStr,
     time::Duration,
 };
-use tokio::time::{self, sleep};
+use tokio::{
+    sync::{
+        mpsc::{self, Sender},
+        OnceCell, RwLock,
+    },
+    time::{self, sleep},
+};
 use tracing::info;
 
 pub mod behavior;
@@ -43,6 +49,8 @@ const BOOTNODES: [&str; 2] = [
 const TESTNET_ADDRESS: [&str; 2] = ["/ip4/192.168.1.136/tcp/8002", "/ip4/192.168.1.136/tcp/8003"];
 
 pub const PRIVITE_NET_KEY: Option<&'static str> = option_env!("PRIVITE_NET_KEY");
+
+pub static RR_SENDER: OnceCell<Sender<String>> = OnceCell::const_new();
 
 pub async fn start_libp2p_process() {
     tokio::spawn(async move {
@@ -201,6 +209,10 @@ pub async fn handle_swarm_event(
         })
         .collect();
     warn!("peer_id_list is {:?}", peer_id_list);
+    let (rr_send, mut rr_recv) = mpsc::channel(1024);
+    RR_SENDER
+        .set(rr_send.clone())
+        .expect("libp2p request response SENDER failure");
     loop {
         tokio::select! {
             event = swarm.next() => {
@@ -215,6 +227,18 @@ pub async fn handle_swarm_event(
                     None => warn!("No event received from swarm"),
                 }
             }
+            Some(rr_msg) = rr_recv.recv() => {
+                let request = GreetRequest {
+                    message: rr_msg,
+                };
+                let request_message = AgentMessage::GreetRequest(request);
+                for peer_id in &peer_id_list {
+                    let request_id = swarm
+                        .behaviour_mut()
+                        .send_message(peer_id, request_message.clone());
+                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}", tokio::task::id());
+                }
+            },
             _ = interval1.tick() => {
                 warn!("Interval1 tick");
                 let local_peer_id = local_key.public().to_peer_id();
