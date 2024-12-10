@@ -740,7 +740,7 @@ async fn healthy_handler() -> Result<Json<Value>, Error> {
 pub struct Libp2pTestQuery {
     pub peer_id: String, // Example query parameter (could be PeerId or something else)
 }
-async fn libp2p_test(Query(params): Query<Libp2pTestQuery>) -> String {
+async fn libp2p_test(Query(params): Query<Libp2pTestQuery>) -> Result<Json<Value>, Error> {
     // Attempt to fetch the sender from RR_SENDER
     if let Some(rr_sender) = RR_SENDER.get() {
         // Create a oneshot channel to send a message
@@ -751,11 +751,20 @@ async fn libp2p_test(Query(params): Query<Libp2pTestQuery>) -> String {
 
         // Wait for the response (if needed)
         match rx.await {
-            Ok(()) => "Message received".to_string(),
-            Err(_) => "Error receiving message".to_string(),
+            Ok(()) => Ok(Json(json!({
+                "status": "success",
+                "message": "Message received"
+            }))),
+            Err(_) => Ok(Json(json!({
+                "status": "error",
+                "message": "Error receiving message"
+            }))),
         }
     } else {
-        "RR_SENDER is not initialized".to_string()
+        Ok(Json(json!({
+            "status": "error",
+            "message": "RR_SENDER is not initialized"
+        })))
     }
 }
 
