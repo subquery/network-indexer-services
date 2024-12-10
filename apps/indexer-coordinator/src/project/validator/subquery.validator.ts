@@ -3,6 +3,7 @@
 
 import { URL } from 'url';
 import axios from 'axios';
+import _ from 'lodash';
 import { getLogger } from '../../utils/logger';
 import { SubqueryManifest } from '../project.manifest';
 import { Project, ValidationResponse } from '../project.model';
@@ -59,7 +60,8 @@ export async function validateQueryEndpoint(
     if (!validate.valid) {
       return validate;
     }
-    const url = new URL('graphql', endpoint);
+    const fixedEndpoint = endpoint.endsWith('/') ? endpoint : `${endpoint}/`;
+    const url = new URL('graphql', fixedEndpoint);
     const response = await axios.request({
       url: url.toString(),
       method: 'POST',
@@ -73,6 +75,7 @@ export async function validateQueryEndpoint(
           _metadata {
             chain
             genesisHash
+            deployments
           }
         }
       `,
@@ -94,6 +97,18 @@ export async function validateQueryEndpoint(
       );
       return { valid: false, reason: 'Invalid query endpoint chain' };
     }
+
+    const heights = Object.keys(data?._metadata?.deployments || {});
+    const maxHeight = _.maxBy(heights, (v) => BigInt(v));
+    const maxHeightDeploymentInfo = data?._metadata?.deployments?.[maxHeight] || '';
+    const exists = maxHeightDeploymentInfo.indexOf(project.id) >= 0;
+    if (!exists) {
+      return {
+        valid: false,
+        reason: 'The indexer deployment information is incorrect',
+      };
+    }
+
     return { valid: true, reason: '' };
   } catch (error) {
     logger.error(`Failed to validate query endpoint: ${error.message}`);
