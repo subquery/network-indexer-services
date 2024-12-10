@@ -299,6 +299,13 @@ async fn handle_event(
                 request_id,
                 response,
             } => {
+                if let Some(map) = ONE_SENDER_MAP.get() {
+                    let mut write_guard = map.write().await;
+                    if let Some(msg_oneshot_sender) = write_guard.remove(&request_id) {
+                        _ = msg_oneshot_sender.send(());
+                    }
+                }
+
                 let parsed_response =
                     AgentMessage::from_binary(&response).expect("Failed to decode response");
                 match parsed_response {
