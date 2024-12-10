@@ -267,7 +267,7 @@ export class ProjectRpcService implements OnModuleInit {
         .validate(endpoint, endpointKey as RpcEndpointType);
       return this.formatResponse(true);
     } catch (e) {
-      logger.debug(e);
+      logger.debug(`${e}`);
       return this.formatResponse(false, e.message, e.level || ErrorLevel.error);
     }
   }

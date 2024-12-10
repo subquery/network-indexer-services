@@ -264,8 +264,15 @@ export class RpcFamilyEvm extends RpcFamily {
           throw new ValidateRpcEndpointError(`Request metrics failed: ${result.error}`, errorLevel);
         }
         if (typeof result.data === 'object') {
-          const info = safeJSONParse(result.data['chain/info']);
-          chainIdFromRpc = info?.chain_id;
+          // eth
+          if ('chain/info' in result.data) {
+            const info = safeJSONParse(result.data['chain/info']);
+            chainIdFromRpc = info?.chain_id;
+          }
+          // autonity
+          if ('p2p/acn/peers' in result.data) {
+            chainIdFromRpc = chainId;
+          }
         } else {
           const metricsObj = parseMetrics(result.data);
           if (metricsObj.mType === MetricsType.GETH_PROMETHEUS) {
@@ -392,6 +399,7 @@ export class RpcFamilyEvm extends RpcFamily {
         const metricsObj = parseMetrics(result.data);
         switch (metricsObj.mType) {
           case MetricsType.GETH_PROMETHEUS:
+          case MetricsType.AUTONITY_PROMETHEUS:
             headBlock = metricsObj.chain_head_block;
             errorMsg = 'incorrect head block';
             break;
