@@ -111,6 +111,7 @@ pub async fn start_server(port: u16) {
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
         .route("/libp2p_test", get(libp2p_test))
+        .route("/empty_test", get(empty_test))
         .route("/", get(|| async { Redirect::to("/healthy") }))
         .layer(
             CorsLayer::new()
@@ -766,6 +767,13 @@ async fn libp2p_test(Query(params): Query<Libp2pTestQuery>) -> Result<Json<Value
             "message": "RR_SENDER is not initialized"
         })))
     }
+}
+
+async fn empty_test() -> Result<Json<Value>, Error> {
+    Ok(Json(json!({
+        "status": "success",
+        "message": "Message received"
+    })))
 }
 
 async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {
