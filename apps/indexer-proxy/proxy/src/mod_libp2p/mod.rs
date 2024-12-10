@@ -107,7 +107,7 @@ pub async fn start_swarm(
         .map_err(|_| "Failed to initialize ONE_SENDER_Map")?;
     let psk = get_psk();
     if let Ok(psk) = psk {
-        warn!("using swarm key with fingerprint: {}", psk.fingerprint());
+        info!("using swarm key with fingerprint: {}", psk.fingerprint());
     }
     let mut swarm = libp2p::SwarmBuilder::with_existing_identity(local_key.clone())
         .with_tokio()
@@ -242,15 +242,19 @@ pub async fn handle_swarm_event(
                     message: rr_msg,
                 };
                 let request_message = AgentMessage::GreetRequest(request);
-                if let Some( peer_id) = &peer_id_list.get(0) {
+                let mut request_id_list = vec![];
+                if let Some(peer_id) = &peer_id_list.get(0) {
                     let request_id = swarm
                         .behaviour_mut()
                         .send_message(peer_id, request_message.clone());
+                    request_id_list.push(request_id);
+                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}",tokio::task::id());
+                }
+                if !request_id_list.is_empty() {
                     if let Some(map) = ONE_SENDER_MAP.get() {
                         let mut write_guard = map.write().await;
-                        write_guard.insert(request_id, msg_oneshot_sender);
+                        write_guard.insert(request_id_list[0], msg_oneshot_sender);
                     }
-                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}",tokio::task::id());
                 }
             },
             _ = interval1.tick() => {
