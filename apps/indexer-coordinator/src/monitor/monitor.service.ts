@@ -8,6 +8,7 @@ import { DesiredStatus } from 'src/core/types';
 import { HostType, ProjectType, SubqueryEndpointType } from 'src/project/types';
 import { DockerService } from '../core/docker.service';
 import { ProjectService } from '../project/project.service';
+import { validateQueryEndpoint } from '../project/validator/subquery.validator';
 import { nodeContainer } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 
@@ -39,6 +40,15 @@ export class MonitorService {
         project.projectType === ProjectType.SUBQUERY &&
         project.hostType === HostType.USER_MANAGED
       ) {
+        const endpoint = project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query);
+        if (endpoint?.value) continue;
+
+        const res = await validateQueryEndpoint(endpoint.value, project);
+        if (res.valid !== endpoint.valid) {
+          endpoint.valid = res.valid;
+          endpoint.reason = res.reason;
+          await this.projectService.saveProject(project);
+        }
         continue;
       }
 

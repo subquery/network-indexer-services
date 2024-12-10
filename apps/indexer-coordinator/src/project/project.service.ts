@@ -599,6 +599,10 @@ export class ProjectService {
     return this.paygRepo.save(payg);
   }
 
+  async saveProject(project: Project) {
+    return this.projectRepo.save(project);
+  }
+
   async getManifest<T>(id: string): Promise<T> {
     const project = await this.getProject(id);
     if (project && project.manifest && Object.keys(project.manifest).length > 0) {
