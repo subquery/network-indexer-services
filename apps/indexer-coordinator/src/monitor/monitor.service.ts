@@ -41,7 +41,7 @@ export class MonitorService {
         project.hostType === HostType.USER_MANAGED
       ) {
         const endpoint = project.serviceEndpoints.find((e) => e.key === SubqueryEndpointType.Query);
-        if (endpoint?.value) continue;
+        if (!endpoint) return;
 
         const res = await validateQueryEndpoint(endpoint.value, project);
         if (res.valid !== endpoint.valid) {
