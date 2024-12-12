@@ -19,7 +19,7 @@ use libp2p::{
         Event as RequestResponseEvent, Message as RequestResponseMessage, OutboundRequestId,
         ProtocolSupport as RequestResponseProtocolSupport,
     },
-    swarm::{DialError, SwarmEvent},
+    swarm::SwarmEvent,
     tcp, yamux, Multiaddr, PeerId, StreamProtocol, Swarm, Transport,
 };
 use once_cell::sync::Lazy;
@@ -69,11 +69,9 @@ pub async fn start_libp2p_process() {
         loop {
             match monitor_libp2p_connection(local_key.clone(), &gossipsub_topic).await {
                 Ok(_) => {
-                    info!("Monitor task exited cleanly.");
                     backoff = Duration::from_secs(1); // Reset backoff on success
                 }
-                Err(e) => {
-                    info!("Monitor task failed: {}. Restarting...", e);
+                Err(_e) => {
                     sleep(backoff).await;
                     backoff = (backoff * 2).min(Duration::from_secs(60)); // Cap backoff
                 }
@@ -115,7 +113,8 @@ pub async fn start_swarm(
             let noise_config = noise::Config::new(key).unwrap();
             let yamux_config = yamux::Config::default();
 
-            let base_transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true));
+            let base_transport =
+                tcp::tokio::Transport::new(tcp::Config::default().ttl(64).nodelay(true));
             let maybe_encrypted = match psk {
                 Ok(psk) => Either::Left(
                     base_transport
@@ -185,12 +184,9 @@ pub async fn start_swarm(
     let mut multiaddr_list: Vec<Multiaddr> = vec![];
 
     for to_dial in TESTNET_ADDRESS {
-        warn!("to_dial is {:?}", to_dial);
         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-        info!("to_dial: {}, addr is {:#?}", to_dial, addr);
         multiaddr_list.push(addr.clone());
-        let dial_result = swarm.dial(addr)?;
-        warn!("Dialed {to_dial:?}, dial_result {dial_result:?}")
+        let _ = swarm.dial(addr)?;
     }
 
     let private_net_address =
@@ -212,13 +208,9 @@ pub async fn handle_swarm_event(
         .iter()
         .filter_map(|peer_id_address| match peer_id_address.parse() {
             Ok(peer_id) => Some(peer_id),
-            Err(err) => {
-                warn!("Error: {:?}, Peer ID Address: {}", err, peer_id_address);
-                None
-            }
+            Err(_err) => None,
         })
         .collect();
-    warn!("peer_id_list is {:?}", peer_id_list);
     let (rr_send, mut rr_recv) = mpsc::channel(1024);
     RR_SENDER
         .set(rr_send.clone())
@@ -228,8 +220,7 @@ pub async fn handle_swarm_event(
             event = swarm.next() => {
                 match event {
                     Some(event) => {
-                        warn!("Event: {:?}", event);
-                        if let Err(e) = handle_event(event, &peer_id_list, &multiaddr_list).await {
+                        if let Err(e) = handle_event(swarm, event, &peer_id_list, &multiaddr_list).await {
                             info!("Error handling swarm event: {}", e);
                             break;
                         }
@@ -242,39 +233,31 @@ pub async fn handle_swarm_event(
                     message: rr_msg,
                 };
                 let request_message = AgentMessage::GreetRequest(request);
-                let mut request_id_list = vec![];
                 if let Some(peer_id) = &peer_id_list.get(0) {
                     let request_id = swarm
                         .behaviour_mut()
                         .send_message(peer_id, request_message.clone());
-                    request_id_list.push(request_id);
-                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}",tokio::task::id());
-                }
-                if !request_id_list.is_empty() {
                     if let Some(map) = ONE_SENDER_MAP.get() {
                         let mut write_guard = map.write().await;
-                        write_guard.insert(request_id_list[0], msg_oneshot_sender);
+                        write_guard.insert(request_id, msg_oneshot_sender);
                     }
                 }
             },
             _ = interval1.tick() => {
-                warn!("Interval1 tick");
                 let local_peer_id = local_key.public().to_peer_id();
                 let request = GreetRequest {
                     message: format!("Send message from: {local_peer_id}: Hello gaess"),
                 };
                 let request_message = AgentMessage::GreetRequest(request);
                 for peer_id in &peer_id_list {
-                    let request_id = swarm
+                    let _request_id = swarm
                         .behaviour_mut()
                         .send_message(peer_id, request_message.clone());
-                    warn!("Peer ID: {peer_id:?}, Request ID: {request_id}, Request Message: {request_message:?}, task id : {:?}", tokio::task::id());
                 }
                 interval1 = time::interval(Duration::from_secs(8));
                 interval1.reset();
             }
             _ = interval2.tick() => {
-                warn!("Interval2 tick");
                 let local_peer_id = local_key.public().to_peer_id();
                 let request = GreetRequest {
                     message: format!("Send message from: {local_peer_id}, current time is {}", chrono::Local::now()),
@@ -290,13 +273,14 @@ pub async fn handle_swarm_event(
 }
 
 async fn handle_event(
+    swarm: &mut Swarm<AgentBehavior>,
     swarm_event: SwarmEvent<AgentEvent>,
-    peer_id_list: &[PeerId],
-    multiaddr_list: &[Multiaddr],
+    _peer_id_list: &[PeerId],
+    _multiaddr_list: &[Multiaddr],
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match swarm_event {
         SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
-            peer,
+            peer: _,
             message,
         })) => match message {
             RequestResponseMessage::Response {
@@ -313,13 +297,7 @@ async fn handle_event(
                 let parsed_response =
                     AgentMessage::from_binary(&response).expect("Failed to decode response");
                 match parsed_response {
-                    AgentMessage::GreetResponse(res) => {
-                        warn!(
-                            "RequestResponseEvent::Message::Response -> PeerID: {peer} | RequestID: \
-                             {request_id} | Response: {0:?}",
-                            res.message
-                        )
-                    }
+                    AgentMessage::GreetResponse(..) => {}
                     _ => {
                         warn!("Received unknown response type.");
                     }
@@ -337,37 +315,25 @@ async fn handle_event(
         //         return Err(format!("send msg to {} fail, restart libp2p", peer).into());
         //     }
         // }
-        SwarmEvent::ConnectionClosed { peer_id, .. } => {
-            warn!("peerid is {}, peer_id list is {:?}", peer_id, peer_id_list);
-            if peer_id_list.contains(&peer_id) {
-                warn!("Connection to bootstrap peer {} lost", peer_id);
-                return Err(format!("Lost connection to bootstrap peer: {}", peer_id).into());
+        SwarmEvent::ConnectionClosed { peer_id: _, .. } => {
+            for to_dial in TESTNET_ADDRESS {
+                let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+                _ = swarm.dial(addr)?;
             }
         }
-        SwarmEvent::OutgoingConnectionError { error, .. } => {
-            if let DialError::Transport(error) = error {
-                warn!("Dial error: {:?}", error);
-                for (multiaddr, _) in &error {
-                    if multiaddr_list.contains(multiaddr) {
-                        warn!("Connection to bootstrap address: {:?} fail", multiaddr);
-                        return Err(format!(
-                            "Connection to bootstrap address: {:?} fail",
-                            multiaddr
-                        )
-                        .into());
-                    }
-                }
+        SwarmEvent::OutgoingConnectionError { error: _, .. } => {
+            for to_dial in TESTNET_ADDRESS {
+                let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+                _ = swarm.dial(addr);
             }
         }
         SwarmEvent::NewListenAddr { address, .. } => {
-            warn!("Swarm is now listening on address: {}", address);
+            info!("Swarm is now listening on address: {}", address);
         }
         SwarmEvent::IncomingConnection { .. } => {
-            warn!("Incoming connection detected");
+            info!("Incoming connection detected");
         }
-        _ => {
-            warn!("swarm_event is {:?}", swarm_event);
-        }
+        _ => {}
     }
     Ok(())
 }
