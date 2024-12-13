@@ -8,7 +8,7 @@ use libp2p::{
     mdns::{self, Event as MdnsEvent},
     ping::{self, Behaviour as PingBehaviour, Event as PingEvent},
     request_response::{
-        cbor::Behaviour as RequestResponseBehavior, Event as RequestResponseEvent,
+        json::Behaviour as RequestResponseBehavior, Event as RequestResponseEvent,
         OutboundRequestId, ResponseChannel as RequestResponseChannel,
     },
     swarm::NetworkBehaviour,

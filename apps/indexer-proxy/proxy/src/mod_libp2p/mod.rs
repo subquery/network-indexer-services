@@ -16,7 +16,7 @@ use libp2p::{
     noise, ping,
     pnet::{PnetConfig, PreSharedKey},
     request_response::{
-        cbor::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
+        json::Behaviour as RequestResponseBehavior, Config as RequestResponseConfig,
         Event as RequestResponseEvent, Message as RequestResponseMessage, OutboundRequestId,
         ProtocolSupport as RequestResponseProtocolSupport,
     },
