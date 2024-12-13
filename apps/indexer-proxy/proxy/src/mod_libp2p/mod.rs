@@ -11,6 +11,7 @@ use libp2p::{
     identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig},
     identity::{self, Keypair},
     kad::{store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig},
+    mdns,
     multiaddr::Protocol,
     noise, ping,
     pnet::{PnetConfig, PreSharedKey},
@@ -139,7 +140,7 @@ pub async fn start_swarm(
             let rr_config =
                 RequestResponseConfig::default().with_max_concurrent_streams(1024 * 1024);
             let rr_protocol = StreamProtocol::new("/agent/message/1.0.0");
-            let rr_behavior = RequestResponseBehavior::<Vec<u8>, Vec<u8>>::new(
+            let rr_behavior = RequestResponseBehavior::<AgentMessage, AgentMessage>::new(
                 [(rr_protocol, RequestResponseProtocolSupport::Full)],
                 rr_config,
             );
@@ -172,7 +173,9 @@ pub async fn start_swarm(
 
             let ping =
                 ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(10)));
-            AgentBehavior::new(kad, identify, rr_behavior, gossipsub, ping)
+
+            let mdns = mdns::tokio::Behaviour::new(mdns::Config::default(), local_peer_id).unwrap();
+            AgentBehavior::new(kad, identify, rr_behavior, gossipsub, ping, mdns)
         })?
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
         .build();
@@ -182,6 +185,7 @@ pub async fn start_swarm(
         let multiaddr: Multiaddr = addr.parse()?;
         swarm.behaviour_mut().kad.add_address(&peer_id, multiaddr);
     }
+
     swarm
         .behaviour_mut()
         .gossipsub
@@ -301,9 +305,9 @@ async fn handle_event(
                     }
                 }
 
-                let parsed_response =
-                    AgentMessage::from_binary(&response).expect("Failed to decode response");
-                match parsed_response {
+                // let parsed_response =
+                //     AgentMessage::from_binary(&response).expect("Failed to decode response");
+                match response {
                     AgentMessage::GreetResponse(..) => {}
                     _ => {
                         warn!("Received unknown response type.");
