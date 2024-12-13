@@ -35,7 +35,7 @@ use tokio::{
     sync::{
         mpsc::{self, Sender},
         oneshot::Sender as OneShotSender,
-        OnceCell, RwLock,
+        Mutex, OnceCell,
     },
     time::{self, sleep},
 };
@@ -56,7 +56,7 @@ pub const PRIVITE_NET_KEY: Option<&'static str> = option_env!("PRIVITE_NET_KEY")
 pub static RR_SENDER: OnceCell<Sender<(String, OneShotSender<()>)>> = OnceCell::const_new();
 
 pub static ONE_SENDER_MAP: Lazy<
-    OnceCell<Arc<RwLock<HashMap<OutboundRequestId, OneShotSender<()>>>>>,
+    OnceCell<Arc<Mutex<HashMap<OutboundRequestId, OneShotSender<()>>>>>,
 > = Lazy::new(|| OnceCell::new());
 
 pub async fn start_libp2p_process() {
@@ -101,7 +101,7 @@ pub async fn start_swarm(
     gossipsub_topic: &IdentTopic,
 ) -> Result<(Swarm<AgentBehavior>, Vec<Multiaddr>), Box<dyn Error + Send + Sync>> {
     ONE_SENDER_MAP
-        .set(Arc::new(RwLock::new(HashMap::new())))
+        .set(Arc::new(Mutex::new(HashMap::new())))
         .map_err(|_| "Failed to initialize ONE_SENDER_Map")?;
     let psk = get_psk();
     if let Ok(psk) = psk {
@@ -111,7 +111,8 @@ pub async fn start_swarm(
         .with_tokio()
         .with_other_transport(|key| {
             let noise_config = noise::Config::new(key).unwrap();
-            let yamux_config = yamux::Config::default();
+            let mut yamux_config = yamux::Config::default();
+            yamux_config.set_max_num_streams(1024 * 1024);
 
             let base_transport =
                 tcp::tokio::Transport::new(tcp::Config::default().ttl(64).nodelay(true));
@@ -135,7 +136,8 @@ pub async fn start_swarm(
             let kad_memory = KadInMemory::new(local_peer_id);
             let kad = KadBehavior::with_config(local_peer_id, kad_memory, kad_config);
 
-            let rr_config = RequestResponseConfig::default();
+            let rr_config =
+                RequestResponseConfig::default().with_max_concurrent_streams(1024 * 1024);
             let rr_protocol = StreamProtocol::new("/agent/message/1.0.0");
             let rr_behavior = RequestResponseBehavior::<Vec<u8>, Vec<u8>>::new(
                 [(rr_protocol, RequestResponseProtocolSupport::Full)],
@@ -175,6 +177,11 @@ pub async fn start_swarm(
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
         .build();
 
+    for (peer, addr) in BOOTNODES.iter().zip(TESTNET_ADDRESS.iter()) {
+        let peer_id: PeerId = peer.parse()?;
+        let multiaddr: Multiaddr = addr.parse()?;
+        swarm.behaviour_mut().kad.add_address(&peer_id, multiaddr);
+    }
     swarm
         .behaviour_mut()
         .gossipsub
@@ -238,7 +245,7 @@ pub async fn handle_swarm_event(
                         .behaviour_mut()
                         .send_message(peer_id, request_message.clone());
                     if let Some(map) = ONE_SENDER_MAP.get() {
-                        let mut write_guard = map.write().await;
+                        let mut write_guard = map.lock().await;
                         write_guard.insert(request_id, msg_oneshot_sender);
                     }
                 }
@@ -273,22 +280,22 @@ pub async fn handle_swarm_event(
 }
 
 async fn handle_event(
-    swarm: &mut Swarm<AgentBehavior>,
+    _swarm: &mut Swarm<AgentBehavior>,
     swarm_event: SwarmEvent<AgentEvent>,
     _peer_id_list: &[PeerId],
     _multiaddr_list: &[Multiaddr],
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match swarm_event {
         SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
-            peer: _,
             message,
+            ..
         })) => match message {
             RequestResponseMessage::Response {
                 request_id,
                 response,
             } => {
                 if let Some(map) = ONE_SENDER_MAP.get() {
-                    let mut write_guard = map.write().await;
+                    let mut write_guard = map.lock().await;
                     if let Some(msg_oneshot_sender) = write_guard.remove(&request_id) {
                         _ = msg_oneshot_sender.send(());
                     }
@@ -315,18 +322,18 @@ async fn handle_event(
         //         return Err(format!("send msg to {} fail, restart libp2p", peer).into());
         //     }
         // }
-        SwarmEvent::ConnectionClosed { peer_id: _, .. } => {
-            for to_dial in TESTNET_ADDRESS {
-                let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-                _ = swarm.dial(addr)?;
-            }
-        }
-        SwarmEvent::OutgoingConnectionError { error: _, .. } => {
-            for to_dial in TESTNET_ADDRESS {
-                let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-                _ = swarm.dial(addr);
-            }
-        }
+        // SwarmEvent::ConnectionClosed { peer_id: _, .. } => {
+        //     for to_dial in TESTNET_ADDRESS {
+        //         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+        //         _ = swarm.dial(addr)?;
+        //     }
+        // }
+        // SwarmEvent::OutgoingConnectionError { error: _, .. } => {
+        //     for to_dial in TESTNET_ADDRESS {
+        //         let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+        //         _ = swarm.dial(addr);
+        //     }
+        // }
         SwarmEvent::NewListenAddr { address, .. } => {
             info!("Swarm is now listening on address: {}", address);
         }
