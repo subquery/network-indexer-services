@@ -36,7 +36,7 @@ export class ContractService {
   constructor(private accountService: AccountService, private config: Config) {
     this.chainID = networkToChainID[config.network];
     this.existentialBalance = parseEther('0.001');
-    this.provider = initProvider(config.networkEndpoint, this.chainID);
+    this.provider = initProvider(config.networkEndpoint, this.chainID, logger);
     this.sdk = initContractSDK(this.provider, this.chainID);
     this.gasFeeLimit = parseEther(argv['gas-fee-limit']).mul(11).div(10);
     this.gasFeeLimitEnabled = this.gasFeeLimit.gt(0);

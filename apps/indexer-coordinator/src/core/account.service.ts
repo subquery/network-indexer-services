@@ -29,7 +29,7 @@ export class AccountService {
     private config: Config
   ) {
     const chainID = networkToChainID[config.network];
-    const provider = initProvider(config.networkEndpoint, chainID);
+    const provider = initProvider(config.networkEndpoint, chainID, logger);
     this.sdk = initContractSDK(provider, chainID);
   }
 

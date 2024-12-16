@@ -49,13 +49,14 @@ export const sdkOptions = {
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
 
-export function initProvider(endpoint: string, chainID: string) {
+export function initProvider(endpoint: string, chainID: string, logger?: any) {
   // return new providers.StaticJsonRpcProvider(endpoint, parseInt(chainID, 16));
 
   const endpoints = endpoint.split(',');
   return new MultipleEndpointProvider({
     endpoints,
     chainID,
+    logger,
   });
 }
 
