@@ -183,7 +183,11 @@ pub async fn start_swarm(
     for (peer, addr) in BOOTNODES.iter().zip(TESTNET_ADDRESS.iter()) {
         let peer_id: PeerId = peer.parse()?;
         let multiaddr: Multiaddr = addr.parse()?;
-        swarm.behaviour_mut().kad.add_address(&peer_id, multiaddr);
+        swarm
+            .behaviour_mut()
+            .kad
+            .add_address(&peer_id, multiaddr.clone());
+        swarm.add_peer_address(peer_id, multiaddr);
     }
 
     swarm
