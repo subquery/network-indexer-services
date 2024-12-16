@@ -29,7 +29,7 @@ export class MultipleEndpointProvider extends providers.StaticJsonRpcProvider {
   override send(method: string, params: Array<any>): Promise<any> {
     // @ts-ignore
     const i = this.count || 0;
-    const len = this.endpoints.length;
+    const len = this.endpoints.length - 1;
     const endpoint = this.endpoints[i];
 
     const obj = Object.create(this, {
@@ -45,28 +45,26 @@ export class MultipleEndpointProvider extends providers.StaticJsonRpcProvider {
       },
     });
 
-    return super.send
-      .call(obj, method, params)
-      .then(
-        (result) => {
-          return result;
-        },
-        (err) => {
-          if (i >= len) throw err;
-          this.logger?.warn(
-            `rpc(${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
-          );
-          obj.count++;
-          return this.send.call(obj, method, params);
-        }
-      )
-      .catch((err) => {
+    return super.send.call(obj, method, params).then(
+      (result) => {
+        return result;
+      },
+      (err) => {
         if (i >= len) throw err;
-        obj.count++;
         this.logger?.warn(
-          `rpc(catch ${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
+          `rpc(${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
         );
+        obj.count++;
         return this.send.call(obj, method, params);
-      });
+      }
+    );
+    // .catch((err) => {
+    //   if (i >= len) throw err;
+    //   obj.count++;
+    //   this.logger?.warn(
+    //     `rpc(catch ${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
+    //   );
+    //   return this.send.call(obj, method, params);
+    // });
   }
 }
