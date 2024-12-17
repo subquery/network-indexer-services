@@ -32,11 +32,23 @@ export class MultipleEndpointProvider extends providers.StaticJsonRpcProvider {
     const len = this.endpoints.length - 1;
     const endpoint = this.endpoints[i];
 
-    const obj = Object.create(this, {
+    let obj = this;
+
+    if (obj[Symbol.toStringTag] !== 'extend-multi') {
+      obj = Object.create(this, {
+        [Symbol.toStringTag]: {
+          value: 'extend-multi',
+        },
+      });
+    }
+
+    Object.defineProperties(obj, {
       connection: {
         value: {
           url: endpoint,
         },
+        writable: true,
+        configurable: true,
       },
       count: {
         value: i,
@@ -50,21 +62,26 @@ export class MultipleEndpointProvider extends providers.StaticJsonRpcProvider {
         return result;
       },
       (err) => {
-        if (i >= len) throw err;
+        const cut = i >= len;
         this.logger?.warn(
-          `rpc(${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
+          `rpc(${i}/${len} ${mask(endpoint)}) errored. ${err}. ${
+            cut ? 'throw' : 'will retry with next endpoint...'
+          }`
         );
+
+        if (cut) throw err;
+        // @ts-ignore
         obj.count++;
         return this.send.call(obj, method, params);
       }
     );
     // .catch((err) => {
-    //   if (i >= len) throw err;
-    //   obj.count++;
-    //   this.logger?.warn(
-    //     `rpc(catch ${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
-    //   );
-    //   return this.send.call(obj, method, params);
+    // if (i >= len) throw err;
+    // obj.count++;
+    // this.logger?.warn(
+    //   `rpc(catch ${i} ${mask(endpoint)}) errored: ${err}. will retry with next endpoint...`
+    // );
+    // return this.send.call(obj, method, params);
     // });
   }
 }
