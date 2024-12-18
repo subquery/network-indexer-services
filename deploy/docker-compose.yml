@@ -36,7 +36,7 @@ services:
       - --network=mainnet # Change to the network you want to index [testnet | kepler | mainnet]
       - --postgres-host=postgres
       - --network-endpoint=https://mainnet.base.org
-      - --network-endpoint=https://base.rpc.subquery.network/public # Configure multiple options. will poll on failure.
+      - --network-endpoint=https://base.rpc.subquery.network/public # Configure multiple options. Attempts the next option on failure.
       - --postgres-password=<replace with you own password> # Change to your postgres password
       - --postgres-port=5432
       - --postgres-ssl-mode=disabled # Set to 'enabled' to activate SSL.
