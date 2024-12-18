@@ -175,7 +175,7 @@ export const IndexingForm: FC<Props> = ({ setVisible, id: propsId, onSuccess }) 
         type: 'default' as NOTIFICATION_TYPE,
         title: 'Purge POI',
         message:
-          'Sent request to purge Proof of Index (POI), it will take around 2 minutes dependeing on your indexing progress. Monitor the network tab for progress.',
+          'Sent request to purge Proof of Index (POI), it will take around 2 minutes depending on your indexing progress. Monitor the network tab for progress.',
       });
     }
 
