@@ -6,6 +6,7 @@ import { ContractSDK, SdkOptions, SubqueryNetwork } from '@subql/contract-sdk';
 // import mainnetDeployment from '@subql/contract-sdk/publish/mainnet.json';
 // import testnetDeployment from '@subql/contract-sdk/publish/testnet.json';
 import { Signer, providers } from 'ethers';
+import { MultipleEndpointProvider } from './provider';
 
 // const deployments = {
 //   testnet: testnetDeployment,
@@ -48,8 +49,15 @@ export const sdkOptions = {
   [ChainID.mainnet]: createContractOptions('mainnet'),
 };
 
-export function initProvider(endpoint: string, chainID: string) {
-  return new providers.StaticJsonRpcProvider(endpoint, parseInt(chainID, 16));
+export function initProvider(endpoint: string | Array<string>, chainID: string, logger?: any) {
+  // return new providers.StaticJsonRpcProvider(endpoint, parseInt(chainID, 16));
+
+  const endpoints = Array.isArray(endpoint) ? endpoint : endpoint.split(',');
+  return new MultipleEndpointProvider({
+    endpoints,
+    chainID,
+    logger,
+  });
 }
 
 export function initContractSDK(

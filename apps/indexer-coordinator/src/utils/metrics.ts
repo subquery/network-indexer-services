@@ -8,6 +8,7 @@ export enum MetricsType {
   NETHERMIND_PROMETHEUS = 'nethermind_prom',
   RETH_PROMETHEUS = 'reth_prom',
   BESU_PROMETHEUS = 'besu_prom',
+  AUTONITY_PROMETHEUS = 'auto_prom',
 }
 
 function extractFromBrace(content: string) {
@@ -37,10 +38,14 @@ export type MetricsData = {
 
   // geth
   chain_id?: string;
+
+  // geth & autonity
   chain_head_block?: string;
 
   // erigon
   chain_checkpoint_latest?: string;
+  p2p_peers?: string;
+  pool_new_block_count?: string;
 
   // nethermind
   nethermind_blocks?: string;
@@ -50,6 +55,9 @@ export type MetricsData = {
 
   // besu & nethermind
   ethereum_blockchain_height?: string;
+
+  // autonity
+  p2p_acn_peers?: string;
 };
 
 // eslint-disable-next-line complexity
@@ -104,6 +112,24 @@ export function parseMetrics(metrics: string): MetricsData {
         Object.assign(parsedData, cpInfo);
       }
     }
+    if (lines[i].startsWith('# TYPE p2p_peers gauge')) {
+      /**
+        # TYPE p2p_peers gauge
+        p2p_peers 81
+      */
+      const next = lines[i + 1] || '';
+      if (next.startsWith('p2p_peers')) {
+        const peersInfo = extractFromGauge(next);
+        Object.assign(parsedData, peersInfo);
+      }
+    }
+    if (lines[i].startsWith('pool_new_block_count')) {
+      /**
+        pool_new_block_count 184
+      */
+      const pbInfo = extractFromGauge(lines[i]);
+      Object.assign(parsedData, pbInfo);
+    }
 
     // nethermind
     if (lines[i].startsWith('# TYPE nethermind_blocks gauge')) {
@@ -146,6 +172,20 @@ export function parseMetrics(metrics: string): MetricsData {
       if (next.startsWith('ethereum_blockchain_height')) {
         const blocksInfo = extractFromGauge(next);
         Object.assign(parsedData, blocksInfo);
+      }
+    }
+
+    // autonity
+    if (lines[i].startsWith('# TYPE p2p_acn_peers gauge')) {
+      mType = MetricsType.AUTONITY_PROMETHEUS;
+      /**
+        # TYPE p2p_acn_peers gauge
+        p2p_acn_peers 0
+      */
+      const next = lines[i + 1] || '';
+      if (next.startsWith('p2p_acn_peers')) {
+        const peerInfo = extractFromGauge(next);
+        Object.assign(parsedData, peerInfo);
       }
     }
   }

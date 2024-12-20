@@ -54,7 +54,7 @@ const tabItems = [
     label: (
       <>
         <BsBookmarkDash style={{ marginRight: 8 }} />
-        Flex Plan
+        Flex Plans
       </>
     ),
   },

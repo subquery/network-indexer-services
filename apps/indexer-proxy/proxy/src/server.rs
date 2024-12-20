@@ -39,6 +39,7 @@ use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
     payg::{MultipleQueryState, QueryState},
+    request::{graphql_request, GraphQLQuery},
     tools::{hex_u256, string_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -98,6 +99,7 @@ pub async fn start_server(port: u16) {
         .route("/payg-extend/:channel", post(payg_extend))
         // `GET /payg-state/0x00...955X` goes to get channel state
         .route("/payg-state/:channel", get(payg_state))
+        .route("/payg-state-raw/:channel", get(payg_state_raw))
         // `POST /payg-pay` goes to pay to channel some spent
         .route("/payg-pay", post(payg_pay))
         // `Get /metadata/Qm...955X?block=100` goes to query the metadata
@@ -645,6 +647,76 @@ async fn payg_state(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
         "conflict_start": state.conflict_start,
         "conflict_times": state.conflict_times
     })))
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RawChannelItem {
+    pub id: String,
+    pub consumer: String,
+    #[serde(rename(deserialize = "deploymentId"))]
+    pub deployment: String,
+    pub agent: String,
+    pub total: String,
+    pub spent: String,
+    pub remote: String,
+    pub price: String,
+    #[serde(rename(deserialize = "lastFinal"))]
+    pub is_final: bool,
+    #[serde(rename(deserialize = "expiredAt"))]
+    pub expired: i64,
+    #[serde(rename(deserialize = "lastIndexerSign"))]
+    pub indexer_sign: String,
+    #[serde(rename(deserialize = "lastConsumerSign"))]
+    pub consumer_sign: String,
+}
+
+async fn payg_state_raw(Path(channel): Path<String>) -> Result<Json<Value>, Error> {
+    let mdata = format!(
+        r#"query {{
+  channel(
+    id: "{}"
+  ) {{
+    id
+    consumer
+    deploymentId
+    agent
+    total
+    spent
+    remote
+    price
+    lastFinal
+    expiredAt
+    lastIndexerSign
+    lastConsumerSign }}}}"#,
+        channel
+    );
+    let url = COMMAND.graphql_url();
+    let query = GraphQLQuery::query(&mdata);
+    if let Ok(data) = graphql_request(&url, &query).await {
+        if let Some(item) = data.pointer("/data/channel") {
+            let channel: RawChannelItem = serde_json::from_str(item.to_string().as_str())
+                .map_err(|_e| Error::Serialize(1120))?;
+            if let Some(value) = serde_json::to_value(&channel)
+                .map_err(|_e| Error::ServiceException(1021))?
+                .as_object_mut()
+            {
+                process_sign(value, "indexer_sign");
+                process_sign(value, "consumer_sign");
+
+                return Ok(Json(json!(value)));
+            }
+        }
+    }
+    Err(Error::ServiceException(1021))
+}
+
+fn process_sign(value: &mut serde_json::Map<String, serde_json::Value>, key: &str) {
+    if let Some(sign_value) = value.get_key_value(key) {
+        let sign = sign_value.1.to_string().trim_matches('"').to_string();
+        if !sign.is_empty() {
+            value.insert(key.to_owned(), "******".into());
+        }
+    }
 }
 
 async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {

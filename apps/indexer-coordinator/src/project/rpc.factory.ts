@@ -264,8 +264,15 @@ export class RpcFamilyEvm extends RpcFamily {
           throw new ValidateRpcEndpointError(`Request metrics failed: ${result.error}`, errorLevel);
         }
         if (typeof result.data === 'object') {
-          const info = safeJSONParse(result.data['chain/info']);
-          chainIdFromRpc = info?.chain_id;
+          // eth
+          if ('chain/info' in result.data) {
+            const info = safeJSONParse(result.data['chain/info']);
+            chainIdFromRpc = info?.chain_id;
+          }
+          // autonity
+          if ('p2p/acn/peers' in result.data) {
+            chainIdFromRpc = chainId;
+          }
         } else {
           const metricsObj = parseMetrics(result.data);
           if (metricsObj.mType === MetricsType.GETH_PROMETHEUS) {
@@ -381,20 +388,25 @@ export class RpcFamilyEvm extends RpcFamily {
         );
       }
       let headBlock = '0';
+      let p2pPeers = '0';
+      let poolNewBlockCount = '0';
+
       let errorMsg = 'unknown client';
       if (typeof result.data === 'object') {
         headBlock = result.data['chain/head/block'];
         errorMsg = 'incorrect head block';
       } else {
         const metricsObj = parseMetrics(result.data);
-
         switch (metricsObj.mType) {
           case MetricsType.GETH_PROMETHEUS:
+          case MetricsType.AUTONITY_PROMETHEUS:
             headBlock = metricsObj.chain_head_block;
             errorMsg = 'incorrect head block';
             break;
           case MetricsType.ERIGON_PROMETHEUS:
             headBlock = metricsObj.chain_checkpoint_latest;
+            p2pPeers = metricsObj.p2p_peers;
+            poolNewBlockCount = metricsObj.pool_new_block_count;
             errorMsg = 'incorrect checkpoint';
             break;
           case MetricsType.NETHERMIND_PROMETHEUS:
@@ -413,7 +425,11 @@ export class RpcFamilyEvm extends RpcFamily {
           default:
         }
       }
-      if (BigNumber.from(headBlock).eq('0')) {
+      if (
+        BigNumber.from(headBlock).eq('0') &&
+        BigNumber.from(p2pPeers).eq('0') &&
+        BigNumber.from(poolNewBlockCount).eq('0')
+      ) {
         throw new ValidateRpcEndpointError(
           `${errorMsg}: ${BigNumber.from(headBlock).toString()}`,
           ErrorLevel.warn

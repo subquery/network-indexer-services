@@ -4,6 +4,7 @@
 import React, { FC, useEffect } from 'react';
 import { Markdown, Spinner, Typography } from '@subql/components';
 import { Button } from 'antd';
+import styled from 'styled-components';
 
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useNotification } from 'containers/notificationContext';
@@ -12,6 +13,16 @@ import { useAccountAction } from 'hooks/transactionHook';
 import { AccountAction } from 'pages/project-details/types';
 import { parseError } from 'utils/error';
 import { createIndexerMetadata } from 'utils/ipfs';
+
+const MarkdownStyled = styled.div`
+  .subql-markdown__main {
+    min-height: 160px;
+    .ant-input {
+      height: 160px;
+      resize: vertical;
+    }
+  }
+`;
 
 const NodeOperatorInformation: FC = () => {
   const { indexer: account } = useCoordinatorIndexer();
@@ -78,12 +89,14 @@ const NodeOperatorInformation: FC = () => {
         community.
       </Typography>
 
-      <Markdown
-        value={markdownVal}
-        onChange={(val) => {
-          setMarkdownVal(val || '');
-        }}
-      />
+      <MarkdownStyled>
+        <Markdown
+          value={markdownVal}
+          onChange={(val) => {
+            setMarkdownVal(val || '');
+          }}
+        />
+      </MarkdownStyled>
       {markdownVal !== indexerMetadata?.description ? (
         <div>
           <Button
