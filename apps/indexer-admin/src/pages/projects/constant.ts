@@ -25,7 +25,7 @@ export const createAddProjectSteps = (onAddProject: FormSubmit) => ({
     {
       index: 0,
       title: 'Add new project',
-      desc: 'Input the deployment id, and add the project into you service. Your can manage the project in the projects page and start indexing the project at any time you want.',
+      desc: 'Input the deployment id, and add the project into your service. Your can manage the project in the projects page and start indexing the project at any time you want.',
       buttonTitle: 'Add project',
       form: {
         formValues: initialProjectValues,
