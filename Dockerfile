@@ -15,6 +15,9 @@ WORKDIR /usr/src/app/apps/indexer-admin
 
 RUN if [ -z "$(ls -A /usr/src/app/apps/indexer-admin/build 2>/dev/null)" ]; then yarn install && yarn build; else echo "indexer-admin/build is not empty, will not build admin"; fi
 
+# If this step fails, please use the following parameters to run yarn build.
+# RUN if [ -z "$(ls -A /usr/src/app/apps/indexer-admin/build 2>/dev/null)" ]; then yarn install && NODE_OPTIONS="--max-old-space-size=4096" yarn build; else echo "indexer-admin/build is not empty, will not build admin"; fi
+
 FROM node:16-alpine
 
 # Find the installed docker-compose and store its path
