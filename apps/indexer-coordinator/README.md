@@ -6,7 +6,7 @@ Start all the services: `db service` `coordinator service` and `proxy service` t
 
 ### Run Docker Compose
 
-- In [indexer services](https://github.com/subquery/indexer-services), run `docker-compose -f docker-compose-dev.yml up`
+- In [indexer services](https://github.com/subquery/network-indexer-services/tree/main/deploy), run `docker-compose -f docker-compose.yml up -d`
 
 <img width="900" alt="1" src="https://user-images.githubusercontent.com/8177474/157581858-ffe19d45-540b-4eb4-a299-6aeafa0e720a.png">
 
