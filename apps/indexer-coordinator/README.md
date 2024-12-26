@@ -6,7 +6,7 @@ Start all the services: `db service` `coordinator service` and `proxy service` t
 
 ### Run Docker Compose
 
-- In [indexer services](https://github.com/subquery/indexer-services), run `docker-compose -f docker-compose-dev.yml up`
+- In [indexer services](https://github.com/subquery/network-indexer-services/tree/main/deploy), run `docker-compose -f docker-compose.yml up -d`
 
 <img width="900" alt="1" src="https://user-images.githubusercontent.com/8177474/157581858-ffe19d45-540b-4eb4-a299-6aeafa0e720a.png">
 
@@ -15,7 +15,7 @@ Start all the services: `db service` `coordinator service` and `proxy service` t
 
 For the default configuration, open the indexer admin app with `http://localhost:8000`
 
-<img width="1628" alt="2" src="https://user-images.githubusercontent.com/8177474/157581741-10a1ffb1-604d-4375-b3ca-30cccbea2e0a.png">
+<img width="1512" alt="image" src="https://github.com/user-attachments/assets/10d7bf89-39d3-4975-b07d-d73e56ea6f0d" />
 
 
 ## Start With CLI
