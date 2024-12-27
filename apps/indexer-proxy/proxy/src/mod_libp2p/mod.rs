@@ -1,6 +1,7 @@
 use crate::mod_libp2p::{
     behavior::{AgentBehavior, AgentEvent},
     message::{AgentMessage, GreetRequest},
+    network::EventLoop,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use either::Either;
@@ -32,6 +33,9 @@ use std::{
     time::Duration,
 };
 use std::{collections::HashMap, sync::Arc};
+use subql_indexer_utils::constants::{
+    BOOTNODE_ADDRESS, BOOTNODE_PEER_ID, METRICS_DEFAULT_ADDRESS, METRICS_PEER_ID,
+};
 use tokio::{
     sync::{
         mpsc::{self, Sender},
@@ -44,13 +48,7 @@ use tracing::info;
 
 pub mod behavior;
 pub mod message;
-
-const BOOTNODES: [&str; 2] = [
-    "16Uiu2HAmGhmfeYmefx3fJGkojaUBkWS8oYZrkmYmXZ3Ey844qLwf",
-    "16Uiu2HAmLiJHsiwFyVEXnN6QvdH1eVBrsaTNdPqA6xxJbTf1bMbz",
-];
-
-const TESTNET_ADDRESS: [&str; 2] = ["/ip4/192.168.1.136/tcp/8002", "/ip4/192.168.1.136/tcp/8003"];
+pub mod network;
 
 pub const PRIVITE_NET_KEY: Option<&'static str> = option_env!("PRIVITE_NET_KEY");
 
@@ -85,16 +83,19 @@ pub async fn monitor_libp2p_connection(
     local_key: Keypair,
     gossipsub_topic: &IdentTopic,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let (mut swarm, multiaddr_list) = start_swarm(local_key.clone(), gossipsub_topic).await?;
+    let (swarm, _multiaddr_list) = start_swarm(local_key.clone(), gossipsub_topic).await?;
 
+    let mut eventloop = EventLoop::new(swarm);
+    eventloop.run().await;
+    Ok(())
     // Main monitoring loop
-    loop {
-        if let Err(_) =
-            handle_swarm_event(&mut swarm, local_key.clone(), multiaddr_list.clone()).await
-        {
-            break Err("error".into());
-        }
-    }
+    // loop {
+    //     if let Err(_) =
+    //         handle_swarm_event(&mut swarm, local_key.clone(), multiaddr_list.clone()).await
+    //     {
+    //         break Err("error".into());
+    //     }
+    // }
 }
 
 pub async fn start_swarm(
@@ -179,8 +180,14 @@ pub async fn start_swarm(
         })?
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
         .build();
+    let mut bootnode_list = vec![];
+    bootnode_list.push(BOOTNODE_PEER_ID);
+    bootnode_list.push(METRICS_PEER_ID);
+    let mut address_list = vec![];
+    address_list.push(METRICS_DEFAULT_ADDRESS);
+    address_list.push(BOOTNODE_ADDRESS);
 
-    for (peer, addr) in BOOTNODES.iter().zip(TESTNET_ADDRESS.iter()) {
+    for (peer, addr) in bootnode_list.iter().zip(address_list.clone().iter()) {
         let peer_id: PeerId = peer.parse()?;
         let multiaddr: Multiaddr = addr.parse()?;
         swarm
@@ -196,13 +203,13 @@ pub async fn start_swarm(
         .subscribe(gossipsub_topic)
         .unwrap();
 
-    let mut multiaddr_list: Vec<Multiaddr> = vec![];
+    let multiaddr_list: Vec<Multiaddr> = vec![];
 
-    for to_dial in TESTNET_ADDRESS {
-        let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-        multiaddr_list.push(addr.clone());
-        let _ = swarm.dial(addr)?;
-    }
+    // for to_dial in address_list {
+    //     let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+    //     multiaddr_list.push(addr.clone());
+    //     let _ = swarm.dial(addr)?;
+    // }
 
     let private_net_address =
         std::env::var("PRIVITE_NET_ADDRESS").unwrap_or("/ip4/0.0.0.0/tcp/8004".to_string());
@@ -219,7 +226,10 @@ pub async fn handle_swarm_event(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut interval1 = time::interval(Duration::from_secs(8));
     let mut interval2 = time::interval(Duration::from_secs(16));
-    let peer_id_list: Vec<PeerId> = BOOTNODES
+    let mut bootnode_list = vec![];
+    bootnode_list.push(BOOTNODE_PEER_ID);
+    bootnode_list.push(METRICS_PEER_ID);
+    let peer_id_list: Vec<PeerId> = bootnode_list
         .iter()
         .filter_map(|peer_id_address| match peer_id_address.parse() {
             Ok(peer_id) => Some(peer_id),
@@ -232,15 +242,11 @@ pub async fn handle_swarm_event(
         .expect("libp2p request response SENDER failure");
     loop {
         tokio::select! {
-            event = swarm.next() => {
-                match event {
-                    Some(event) => {
-                        if let Err(e) = handle_event(swarm, event, &peer_id_list, &multiaddr_list).await {
-                            info!("Error handling swarm event: {}", e);
-                            break;
-                        }
-                    },
-                    None => warn!("No event received from swarm"),
+            Some(event) = swarm.next() => {
+                warn!("event is {:?}", event);
+                if let Err(e) = handle_event(swarm, event, &peer_id_list, &multiaddr_list).await {
+                    info!("Error handling swarm event: {}", e);
+                    break;
                 }
             }
             Some((rr_msg, msg_oneshot_sender)) = rr_recv.recv() => {

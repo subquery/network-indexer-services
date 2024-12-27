@@ -77,3 +77,9 @@ pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/154.91.1.165/tcp/7371",
     "/ip4/154.91.1.165/quic/7370",
 ];
+
+pub const METRICS_PEER_ID: &str = "16Uiu2HAm1KHBgyu66L29vREWcfvfabe5Kx2M4JLif8B2jfai9Axk";
+pub const METRICS_DEFAULT_ADDRESS: &str = "/ip4/192.168.1.136/tcp/8002";
+
+pub const BOOTNODE_PEER_ID: &str = "16Uiu2HAmGhmfeYmefx3fJGkojaUBkWS8oYZrkmYmXZ3Ey844qLwf";
+pub const BOOTNODE_ADDRESS: &str = "/ip4/192.168.1.136/tcp/8003";
