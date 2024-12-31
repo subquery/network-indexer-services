@@ -6,7 +6,7 @@ use futures_util::StreamExt;
 use libp2p::{
     gossipsub::Event as GossipsubEvent,
     identify::Event as IdentifyEvent,
-    kad::Event as KademliaEvent,
+    kad::{Event as KademliaEvent, RecordKey},
     mdns::Event as MdnsEvent,
     ping::Event as PingEvent,
     request_response::{Event as RequestResponseEvent, Message, OutboundRequestId},
@@ -39,6 +39,7 @@ impl EventLoop {
 
     pub(crate) async fn run(&mut self) {
         let mut interval = time::interval(Duration::from_secs(600));
+        // let mut interval2 = time::interval(Duration::from_secs(10));
         loop {
             tokio::select! {
                 event = self.swarm.select_next_some() => self.handle_event(event).await,
@@ -56,6 +57,11 @@ impl EventLoop {
                         interval.reset();
                     }
                 }
+                // _ = interval2.tick() => {
+                //     let key: RecordKey = METRICS_PEER_ID.to_string().into_bytes().into();
+                //     let kad_id = self.swarm.behaviour_mut().kad.get_providers(key.clone());
+                //     warn!("ask metris peer id here, key is {:?}, kad_id is {:?}", key, kad_id);
+                // }
             }
         }
     }
@@ -112,9 +118,23 @@ impl EventLoop {
         }
     }
 
-    async fn handle_identify_event(&mut self, event: IdentifyEvent) {}
+    async fn handle_identify_event(&mut self, event: IdentifyEvent) {
+        match event {
+            IdentifyEvent::Received { peer_id, info, .. } => {
+                if peer_id.to_base58() == METRICS_PEER_ID {
+                    for addr in info.clone().listen_addrs {
+                        warn!(" metrics peer found, addr is {:?}", addr);
+                        _ = self.swarm.dial(addr);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 
-    async fn handle_kad_event(&mut self, event: KademliaEvent) {}
+    async fn handle_kad_event(&mut self, event: KademliaEvent) {
+        warn!("kad event is {:?}", event);
+    }
 
     async fn handle_request_response_event(
         &mut self,
