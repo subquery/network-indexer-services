@@ -4,9 +4,10 @@ use crate::mod_libp2p::{
 };
 use futures_util::StreamExt;
 use libp2p::{
+    core::ConnectedPoint,
     gossipsub::Event as GossipsubEvent,
     identify::Event as IdentifyEvent,
-    kad::{Event as KademliaEvent, RecordKey},
+    kad::{self, Event as KademliaEvent, RecordKey},
     mdns::Event as MdnsEvent,
     ping::Event as PingEvent,
     request_response::{Event as RequestResponseEvent, Message, OutboundRequestId},
@@ -39,47 +40,64 @@ impl EventLoop {
 
     pub(crate) async fn run(&mut self) {
         let mut interval = time::interval(Duration::from_secs(600));
-        // let mut interval2 = time::interval(Duration::from_secs(10));
+        //let mut interval2 = time::interval(Duration::from_secs(10));
         loop {
             tokio::select! {
-                event = self.swarm.select_next_some() => self.handle_event(event).await,
-                _ = interval.tick() => {
-                    if let Some(metrics_peer_id ) = self.metrics_peer_id {
-                        let request = GreetRequest {
-                            message: format!("Send message from: client: Hello gaess"),
-                        };
-                        let request_message = AgentMessage::GreetRequest(request);
-                        let request_id = self.swarm
-                            .behaviour_mut()
-                            .send_message(&metrics_peer_id, request_message.clone());
-                        self.msg_pool.insert(request_id, "abc".to_string());
-                        interval = time::interval(Duration::from_secs(600));
-                        interval.reset();
-                    }
-                }
-                // _ = interval2.tick() => {
-                //     let key: RecordKey = METRICS_PEER_ID.to_string().into_bytes().into();
-                //     let kad_id = self.swarm.behaviour_mut().kad.get_providers(key.clone());
-                //     warn!("ask metris peer id here, key is {:?}, kad_id is {:?}", key, kad_id);
-                // }
-            }
+                   event = self.swarm.select_next_some() => self.handle_event(event).await,
+                   _ = interval.tick() => {
+                       if let Some(metrics_peer_id ) = self.metrics_peer_id {
+                           let request = GreetRequest {
+                               message: format!("Send message from: client: Hello gaess"),
+                           };
+                           let request_message = AgentMessage::GreetRequest(request);
+                           let request_id = self.swarm
+                               .behaviour_mut()
+                               .send_message(&metrics_peer_id, request_message.clone());
+                           self.msg_pool.insert(request_id, "abc".to_string());
+                           interval = time::interval(Duration::from_secs(600));
+                           interval.reset();
+                       }
+                   }
+            //       _ = interval2.tick() => {
+              //         let key: RecordKey = METRICS_PEER_ID.to_string().into_bytes().into();
+             //          let kad_id = self.swarm.behaviour_mut().kad.get_providers(key.clone());
+               //        warn!("ask metris peer id here, key is {:?}, kad_id is {:?}", key, kad_id);
+                //   }
+               }
         }
     }
 
     pub async fn handle_event(&mut self, event: SwarmEvent<AgentEvent>) {
+        warn!("begin event is {:?}", event);
         match event {
             SwarmEvent::ConnectionEstablished {
                 peer_id,
                 connection_id,
+                endpoint,
                 ..
             } => {
                 _ = self.connection_pool.insert(peer_id.clone(), connection_id);
                 if peer_id.to_base58() == METRICS_PEER_ID {
                     self.metrics_peer_id = Some(peer_id)
                 }
+                match endpoint {
+                    ConnectedPoint::Dialer { address, .. } => {
+                        _ = self
+                            .swarm
+                            .behaviour_mut()
+                            .kad
+                            .add_address(&peer_id, address);
+                        self.swarm
+                            .behaviour_mut()
+                            .kad
+                            .set_mode(Some(kad::Mode::Server));
+                    }
+                    _ => {}
+                }
             }
             SwarmEvent::ConnectionClosed { peer_id, .. } => {
                 _ = self.connection_pool.remove(&peer_id);
+                _ = self.swarm.behaviour_mut().kad.remove_peer(&peer_id);
                 if peer_id.to_base58() == METRICS_PEER_ID {
                     self.metrics_peer_id = None
                 }
@@ -121,11 +139,14 @@ impl EventLoop {
     async fn handle_identify_event(&mut self, event: IdentifyEvent) {
         match event {
             IdentifyEvent::Received { peer_id, info, .. } => {
-                if peer_id.to_base58() == METRICS_PEER_ID {
-                    for addr in info.clone().listen_addrs {
-                        warn!(" metrics peer found, addr is {:?}", addr);
-                        _ = self.swarm.dial(addr);
-                    }
+                warn!(
+                    "peer_id.to_base58() : {:?}, METRICS_PEER_ID",
+                    peer_id.to_base58(),
+                );
+                for addr in info.clone().listen_addrs {
+                    warn!(" metrics peer found, addr is {:?}", addr);
+                    // _ = self.swarm.dial(addr);
+                    self.swarm.behaviour_mut().kad.add_address(&peer_id, addr);
                 }
             }
             _ => {}
@@ -133,7 +154,26 @@ impl EventLoop {
     }
 
     async fn handle_kad_event(&mut self, event: KademliaEvent) {
-        warn!("kad event is {:?}", event);
+        // warn!("kad event is {:?}", event);
+        // match event {
+        //     KademliaEvent::RoutingUpdated {
+        //         peer, addresses, ..
+        //     } => {
+        //         if peer.to_base58() == METRICS_PEER_ID {
+        //             for addr in addresses.iter() {
+        //                 warn!(" metrics peer found, addr is {:?}", addr);
+        //                 _ = self.swarm.dial(addr.clone());
+        //             }
+        //         }
+        //     }
+        //     // KademliaEvent::OutboundQueryProgressed{result, ..} => {
+        //     //     match result {
+        //     //         GetRecord{} => {},
+        //     //         _ => {}
+        //     //     }
+        //     // },
+        //     _ => {}
+        // }
     }
 
     async fn handle_request_response_event(

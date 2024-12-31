@@ -11,6 +11,7 @@ use libp2p::{
     gossipsub::{self, IdentTopic},
     identify::{Behaviour as IdentifyBehavior, Config as IdentifyConfig},
     identity::{self, Keypair},
+    kad,
     kad::{store::MemoryStore as KadInMemory, Behaviour as KadBehavior, Config as KadConfig},
     mdns,
     multiaddr::Protocol,
@@ -187,14 +188,20 @@ pub async fn start_swarm(
     address_list.push(METRICS_DEFAULT_ADDRESS);
     address_list.push(BOOTNODE_ADDRESS);
 
-    for (peer, addr) in bootnode_list.iter().zip(address_list.clone().iter()) {
-        let peer_id: PeerId = peer.parse()?;
-        let multiaddr: Multiaddr = addr.parse()?;
-        swarm
-            .behaviour_mut()
-            .kad
-            .add_address(&peer_id, multiaddr.clone());
-        swarm.add_peer_address(peer_id, multiaddr);
+    // for (peer, addr) in bootnode_list.iter().zip(address_list.clone().iter()) {
+    //     let peer_id: PeerId = peer.parse()?;
+    //     let multiaddr: Multiaddr = addr.parse()?;
+    // swarm
+    //     .behaviour_mut()
+    //     .kad
+    //     .add_address(&peer_id, multiaddr.clone());
+    // swarm.add_peer_address(peer_id, multiaddr);
+    // }
+    let mut multiaddr_list: Vec<Multiaddr> = vec![];
+    for to_dial in address_list {
+        let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
+        multiaddr_list.push(addr.clone());
+        let _ = swarm.dial(addr)?;
     }
 
     swarm
@@ -202,14 +209,7 @@ pub async fn start_swarm(
         .gossipsub
         .subscribe(gossipsub_topic)
         .unwrap();
-
-    let multiaddr_list: Vec<Multiaddr> = vec![];
-
-    // for to_dial in address_list {
-    //     let addr: Multiaddr = parse_legacy_multiaddr(&to_dial)?;
-    //     multiaddr_list.push(addr.clone());
-    //     let _ = swarm.dial(addr)?;
-    // }
+    swarm.behaviour_mut().kad.set_mode(Some(kad::Mode::Server));
 
     let private_net_address =
         std::env::var("PRIVITE_NET_ADDRESS").unwrap_or("/ip4/0.0.0.0/tcp/8004".to_string());
