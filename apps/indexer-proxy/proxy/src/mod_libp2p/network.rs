@@ -1,7 +1,8 @@
 use crate::mod_libp2p::{
     behavior::{AgentBehavior, AgentEvent},
-    message::{AgentMessage, GreetRequest},
+    // message::{AgentMessage, GreetRequest},
 };
+use subql_indexer_utils::p2p::Event;
 use futures_util::StreamExt;
 use libp2p::{
     core::ConnectedPoint,
@@ -45,18 +46,18 @@ impl EventLoop {
             tokio::select! {
                    event = self.swarm.select_next_some() => self.handle_event(event).await,
                    _ = interval.tick() => {
-                       if let Some(metrics_peer_id ) = self.metrics_peer_id {
-                           let request = GreetRequest {
-                               message: format!("Send message from: client: Hello gaess"),
-                           };
-                           let request_message = AgentMessage::GreetRequest(request);
-                           let request_id = self.swarm
-                               .behaviour_mut()
-                               .send_message(&metrics_peer_id, request_message.clone());
-                           self.msg_pool.insert(request_id, "abc".to_string());
-                           interval = time::interval(Duration::from_secs(600));
-                           interval.reset();
-                       }
+                       // if let Some(metrics_peer_id ) = self.metrics_peer_id {
+                       //     let request = GreetRequest {
+                       //         message: format!("Send message from: client: Hello gaess"),
+                       //     };
+                       //     let request_message = AgentMessage::GreetRequest(request);
+                       //     let request_id = self.swarm
+                       //         .behaviour_mut()
+                       //         .send_message(&metrics_peer_id, request_message.clone());
+                       //     self.msg_pool.insert(request_id, "abc".to_string());
+                       //     interval = time::interval(Duration::from_secs(600));
+                       //     interval.reset();
+                       // }
                    }
             //       _ = interval2.tick() => {
               //         let key: RecordKey = METRICS_PEER_ID.to_string().into_bytes().into();
@@ -178,19 +179,19 @@ impl EventLoop {
 
     async fn handle_request_response_event(
         &mut self,
-        event: RequestResponseEvent<AgentMessage, AgentMessage>,
+        event: RequestResponseEvent<Event, Event>,
     ) {
-        match event {
-            RequestResponseEvent::Message { message, .. } => match message {
-                Message::Response { request_id, .. } => {
-                    self.msg_pool.remove(&request_id);
-                }
-                _ => {}
-            },
-            _ => {
-                warn!("unhandle request response msg is {:?}", event);
-            }
-        }
+        // match event {
+        //     RequestResponseEvent::Message { message, .. } => match message {
+        //         Message::Response { request_id, .. } => {
+        //             self.msg_pool.remove(&request_id);
+        //         }
+        //         _ => {}
+        //     },
+        //     _ => {
+        //         warn!("unhandle request response msg is {:?}", event);
+        //     }
+        // }
     }
 
     async fn handle_gossipsub_event(&mut self, event: GossipsubEvent) {}

@@ -14,15 +14,15 @@ use libp2p::{
     swarm::NetworkBehaviour,
     Multiaddr, PeerId,
 };
-
-use crate::mod_libp2p::message::AgentMessage;
+// use crate::mod_libp2p::message::AgentMessage;
+use subql_indexer_utils::p2p::Event;
 
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "AgentEvent")]
 pub(crate) struct AgentBehavior {
     pub identify: IdentifyBehavior,
     pub kad: KademliaBehavior<KademliaInMemory>,
-    pub rr: RequestResponseBehavior<AgentMessage, AgentMessage>,
+    pub rr: RequestResponseBehavior<Event, Event>,
     pub gossipsub: GossipsubBehavior,
     pub ping: ping::Behaviour,
     pub mdns: mdns::tokio::Behaviour,
@@ -32,7 +32,7 @@ impl AgentBehavior {
     pub fn new(
         kad: KademliaBehavior<KademliaInMemory>,
         identify: IdentifyBehavior,
-        rr: RequestResponseBehavior<AgentMessage, AgentMessage>,
+        rr: RequestResponseBehavior<Event, Event>,
         gossipsub: GossipsubBehavior,
         ping: PingBehaviour,
         mdns: mdns::tokio::Behaviour,
@@ -51,25 +51,25 @@ impl AgentBehavior {
         self.kad.add_address(peer_id, addr)
     }
 
-    pub fn send_message(&mut self, peer_id: &PeerId, message: AgentMessage) -> OutboundRequestId {
+    pub fn send_message(&mut self, peer_id: &PeerId, message: Event) -> OutboundRequestId {
         // let binary_message = message.to_binary().expect("Failed to serialize message");
         self.rr.send_request(peer_id, message)
     }
 
     pub fn send_response(
         &mut self,
-        ch: RequestResponseChannel<AgentMessage>,
-        rs: AgentMessage,
-    ) -> Result<(), AgentMessage> {
+        ch: RequestResponseChannel<Event>,
+        rs: Event,
+    ) -> Result<(), Event> {
         // let binary_response = rs.to_binary().expect("Failed to serialize response");
         self.rr.send_response(ch, rs)
     }
 
-    pub fn broadcast(&mut self, rs: AgentMessage) {
-        let gossipsub_topic = gossipsub::IdentTopic::new("chat");
-        let binary_response = rs.to_binary().expect("Failed to serialize response");
-        _ = self.gossipsub.publish(gossipsub_topic, binary_response);
-    }
+    // pub fn broadcast(&mut self, rs: Event) {
+    //     let gossipsub_topic = gossipsub::IdentTopic::new("chat");
+    //     let binary_response = rs.serialize().expect("Failed to serialize response");
+    //     _ = self.gossipsub.publish(gossipsub_topic, binary_response);
+    // }
 
     pub fn set_server_mode(&mut self) {
         self.kad.set_mode(Some(libp2p::kad::Mode::Server))
@@ -80,7 +80,7 @@ impl AgentBehavior {
 pub(crate) enum AgentEvent {
     Identify(IdentifyEvent),
     Kad(KademliaEvent),
-    RequestResponse(RequestResponseEvent<AgentMessage, AgentMessage>),
+    RequestResponse(RequestResponseEvent<Event, Event>),
     Gossipsub(GossipsubEvent),
     Ping(PingEvent),
     Mdns(MdnsEvent),
@@ -98,8 +98,8 @@ impl From<KademliaEvent> for AgentEvent {
     }
 }
 
-impl From<RequestResponseEvent<AgentMessage, AgentMessage>> for AgentEvent {
-    fn from(value: RequestResponseEvent<AgentMessage, AgentMessage>) -> Self {
+impl From<RequestResponseEvent<Event, Event>> for AgentEvent {
+    fn from(value: RequestResponseEvent<Event, Event>) -> Self {
         Self::RequestResponse(value)
     }
 }

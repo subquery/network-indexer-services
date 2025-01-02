@@ -1,6 +1,6 @@
 use crate::mod_libp2p::{
     behavior::{AgentBehavior, AgentEvent},
-    message::{AgentMessage, GreetRequest},
+    // message::{AgentMessage, GreetRequest},
     network::EventLoop,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -37,6 +37,7 @@ use std::{collections::HashMap, sync::Arc};
 use subql_indexer_utils::constants::{
     BOOTNODE_ADDRESS, BOOTNODE_PEER_ID, METRICS_DEFAULT_ADDRESS, METRICS_PEER_ID,
 };
+use subql_indexer_utils::p2p::Event;
 use tokio::{
     sync::{
         mpsc::{self, Sender},
@@ -48,7 +49,7 @@ use tokio::{
 use tracing::info;
 
 pub mod behavior;
-pub mod message;
+// pub mod message;
 pub mod network;
 
 pub const PRIVITE_NET_KEY: Option<&'static str> = option_env!("PRIVITE_NET_KEY");
@@ -161,7 +162,7 @@ pub async fn start_swarm(
             let rr_config =
                 RequestResponseConfig::default().with_max_concurrent_streams(1024 * 1024);
             let rr_protocol = StreamProtocol::new("/agent/message/1.0.0");
-            let rr_behavior = RequestResponseBehavior::<AgentMessage, AgentMessage>::new(
+            let rr_behavior = RequestResponseBehavior::<Event, Event>::new(
                 [(rr_protocol, RequestResponseProtocolSupport::Full)],
                 rr_config,
             );
@@ -238,114 +239,40 @@ pub async fn start_swarm(
     Ok((swarm, multiaddr_list))
 }
 
-pub async fn handle_swarm_event(
-    swarm: &mut Swarm<AgentBehavior>,
-    local_key: Keypair,
-    multiaddr_list: Vec<Multiaddr>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut interval1 = time::interval(Duration::from_secs(8));
-    let mut interval2 = time::interval(Duration::from_secs(16));
-    let mut bootnode_list = vec![];
-    bootnode_list.push(BOOTNODE_PEER_ID);
-    bootnode_list.push(METRICS_PEER_ID);
-    let peer_id_list: Vec<PeerId> = bootnode_list
-        .iter()
-        .filter_map(|peer_id_address| match peer_id_address.parse() {
-            Ok(peer_id) => Some(peer_id),
-            Err(_err) => None,
-        })
-        .collect();
-    let (rr_send, mut rr_recv) = mpsc::channel(1024);
-    RR_SENDER
-        .set(rr_send.clone())
-        .expect("libp2p request response SENDER failure");
-    loop {
-        tokio::select! {
-            Some(event) = swarm.next() => {
-                warn!("event is {:?}", event);
-                if let Err(e) = handle_event(swarm, event, &peer_id_list, &multiaddr_list).await {
-                    info!("Error handling swarm event: {}", e);
-                    break;
-                }
-            }
-            Some((rr_msg, msg_oneshot_sender)) = rr_recv.recv() => {
-                let request = GreetRequest {
-                    message: rr_msg,
-                };
-                let request_message = AgentMessage::GreetRequest(request);
-                if let Some(peer_id) = &peer_id_list.get(0) {
-                    let request_id = swarm
-                        .behaviour_mut()
-                        .send_message(peer_id, request_message.clone());
-                    if let Some(map) = ONE_SENDER_MAP.get() {
-                        let mut write_guard = map.lock().await;
-                        write_guard.insert(request_id, msg_oneshot_sender);
-                    }
-                }
-            },
-            _ = interval1.tick() => {
-                let local_peer_id = local_key.public().to_peer_id();
-                let request = GreetRequest {
-                    message: format!("Send message from: {local_peer_id}: Hello gaess"),
-                };
-                let request_message = AgentMessage::GreetRequest(request);
-                for peer_id in &peer_id_list {
-                    let _request_id = swarm
-                        .behaviour_mut()
-                        .send_message(peer_id, request_message.clone());
-                }
-                interval1 = time::interval(Duration::from_secs(8));
-                interval1.reset();
-            }
-            _ = interval2.tick() => {
-                let local_peer_id = local_key.public().to_peer_id();
-                let request = GreetRequest {
-                    message: format!("Send message from: {local_peer_id}, current time is {}", chrono::Local::now()),
-                };
-                let request_message = AgentMessage::GreetRequest(request);
-                swarm.behaviour_mut().broadcast(request_message);
-                interval2 = time::interval(Duration::from_secs(16));
-                interval2.reset();
-            }
-        }
-    }
-    Err("error".into())
-}
-
 async fn handle_event(
     _swarm: &mut Swarm<AgentBehavior>,
-    swarm_event: SwarmEvent<AgentEvent>,
+    swarm_event: SwarmEvent<Event>,
     _peer_id_list: &[PeerId],
     _multiaddr_list: &[Multiaddr],
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match swarm_event {
-        SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
-            message,
-            ..
-        })) => match message {
-            RequestResponseMessage::Response {
-                request_id,
-                response,
-            } => {
-                if let Some(map) = ONE_SENDER_MAP.get() {
-                    let mut write_guard = map.lock().await;
-                    if let Some(msg_oneshot_sender) = write_guard.remove(&request_id) {
-                        _ = msg_oneshot_sender.send(());
-                    }
-                }
+        // SwarmEvent::Behaviour(AgentEvent::RequestResponse(RequestResponseEvent::Message {
+        //     message,
+        //     ..
+        // })) => match message {
+        //     RequestResponseMessage::Response {
+        //         request_id,
+        //         response,
+        //     } => {
+        //         if let Some(map) = ONE_SENDER_MAP.get() {
+        //             let mut write_guard = map.lock().await;
+        //             if let Some(msg_oneshot_sender) = write_guard.remove(&request_id) {
+        //                 _ = msg_oneshot_sender.send(());
+        //             }
+        //         }
 
-                // let parsed_response =
-                //     AgentMessage::from_binary(&response).expect("Failed to decode response");
-                match response {
-                    AgentMessage::GreetResponse(..) => {}
-                    _ => {
-                        warn!("Received unknown response type.");
-                    }
-                }
-            }
+        //         // let parsed_response =
+        //         //     AgentMessage::from_binary(&response).expect("Failed to decode response");
+        //         match response {
+        //             AgentMessage::GreetResponse(..) => {}
+        //             _ => {
+        //                 warn!("Received unknown response type.");
+        //             }
+        //         }
+        //     }
 
-            _ => {}
-        },
+        //     _ => {}
+        // },
         // SwarmEvent::Behaviour(AgentEvent::RequestResponse(
         //     RequestResponseEvent::OutboundFailure { peer, .. },
         // )) => {
