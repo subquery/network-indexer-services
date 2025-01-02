@@ -86,7 +86,7 @@ pub async fn handle_account(value: &Value) -> Result<()> {
         }
     });
 
-    let (controller, peer) = if let Some(sk) = fetch_controller {
+    let (controller_sk, controller, peer) = if let Some(sk) = fetch_controller {
         let sk = COMMAND.decrypt(sk).unwrap_or(
             "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
         );
@@ -98,9 +98,10 @@ pub async fn handle_account(value: &Value) -> Result<()> {
             &hex::decode(&sk[2..]).map_err(|_| Error::InvalidController(1039))?,
         )
         .map_err(|_| Error::InvalidController(1039))?;
-        (controller, Some(peer))
+        (sk[2..].to_string(), controller, Some(peer))
     } else {
         (
+            "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
             "0000000000000000000000000000000000000000000000000000000000000001"
                 .parse::<LocalWallet>()
                 .unwrap(),
@@ -124,7 +125,7 @@ pub async fn handle_account(value: &Value) -> Result<()> {
             warn!("file: {}, line: {}", file!(), line!());
             info!("Need restart p2p network...");
             tokio::spawn(async move {
-                start_libp2p_process().await;
+                start_libp2p_process(&controller_sk).await;
                 stop_network().await;
                 start_network(key).await;
             });

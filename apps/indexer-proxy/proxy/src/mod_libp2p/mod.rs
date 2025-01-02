@@ -59,12 +59,12 @@ pub static ONE_SENDER_MAP: Lazy<
     OnceCell<Arc<Mutex<HashMap<OutboundRequestId, OneShotSender<()>>>>>,
 > = Lazy::new(|| OnceCell::new());
 
-pub async fn start_libp2p_process() {
+pub async fn start_libp2p_process(controller_sk: &str) {
+    let local_key = make_libp2p_keypair(controller_sk).await;
     tokio::spawn(async move {
         // Create a Gosspipsub topic
         let gossipsub_topic = gossipsub::IdentTopic::new("chat");
 
-        let local_key = identity::Keypair::generate_secp256k1();
         let mut backoff = Duration::from_secs(1);
         loop {
             match monitor_libp2p_connection(local_key.clone(), &gossipsub_topic).await {
@@ -78,6 +78,25 @@ pub async fn start_libp2p_process() {
             }
         }
     });
+}
+
+pub async fn make_libp2p_keypair(controller_sk: &str) -> Keypair {
+    if let Ok(private_key_bytes) = hex::decode(&controller_sk) {
+        if let Ok(secret_key) = identity::secp256k1::SecretKey::try_from_bytes(private_key_bytes) {
+            identity::secp256k1::Keypair::from(secret_key).into()
+        } else {
+            make_fake_libp2p_keypair().await
+        }
+    } else {
+        make_fake_libp2p_keypair().await
+    }
+}
+
+pub async fn make_fake_libp2p_keypair() -> Keypair {
+    let private_key_bytes =
+        hex::decode("0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+    let secret_key = identity::secp256k1::SecretKey::try_from_bytes(private_key_bytes).unwrap();
+    identity::secp256k1::Keypair::from(secret_key).into()
 }
 
 pub async fn monitor_libp2p_connection(
