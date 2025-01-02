@@ -2,7 +2,6 @@ use crate::mod_libp2p::{
     behavior::{AgentBehavior, AgentEvent},
     // message::{AgentMessage, GreetRequest},
 };
-use subql_indexer_utils::p2p::Event;
 use futures_util::StreamExt;
 use libp2p::{
     core::ConnectedPoint,
@@ -18,6 +17,7 @@ use libp2p::{
 };
 use std::collections::HashMap;
 use subql_indexer_utils::constants::METRICS_PEER_ID;
+use subql_indexer_utils::p2p::Event;
 use tokio::time::{self, Duration};
 
 pub(crate) struct EventLoop {
@@ -177,10 +177,7 @@ impl EventLoop {
         // }
     }
 
-    async fn handle_request_response_event(
-        &mut self,
-        event: RequestResponseEvent<Event, Event>,
-    ) {
+    async fn handle_request_response_event(&mut self, event: RequestResponseEvent<Event, Event>) {
         // match event {
         //     RequestResponseEvent::Message { message, .. } => match message {
         //         Message::Response { request_id, .. } => {
