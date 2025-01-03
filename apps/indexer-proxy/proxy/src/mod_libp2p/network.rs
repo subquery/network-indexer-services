@@ -1,6 +1,9 @@
-use crate::mod_libp2p::{
-    behavior::{AgentBehavior, AgentEvent},
-    // message::{AgentMessage, GreetRequest},
+use crate::{
+    account::{get_indexer, indexer_healthy},
+    metrics::get_timer_metrics,
+    mod_libp2p::behavior::{AgentBehavior, AgentEvent},
+    primitives::{P2P_BROADCAST_HEALTHY_TIME, P2P_METRICS_STATUS_TIME, P2P_METRICS_TIME},
+    COMMAND,
 };
 use futures_util::StreamExt;
 use libp2p::{
@@ -40,31 +43,38 @@ impl EventLoop {
     }
 
     pub(crate) async fn run(&mut self) {
-        let mut interval = time::interval(Duration::from_secs(600));
-        //let mut interval2 = time::interval(Duration::from_secs(10));
+        let mut interval_project_report_metrics =
+            time::interval(Duration::from_secs(P2P_METRICS_TIME));
+        // let mut interval_project_report_status = time::interval(Duration::from_secs(P2P_METRICS_STATUS_TIME));
+        let mut interval_project_broadcast_healthy =
+            time::interval(Duration::from_secs(P2P_BROADCAST_HEALTHY_TIME));
         loop {
             tokio::select! {
-                   event = self.swarm.select_next_some() => self.handle_event(event).await,
-                   _ = interval.tick() => {
-                       // if let Some(metrics_peer_id ) = self.metrics_peer_id {
-                       //     let request = GreetRequest {
-                       //         message: format!("Send message from: client: Hello gaess"),
-                       //     };
-                       //     let request_message = AgentMessage::GreetRequest(request);
-                       //     let request_id = self.swarm
-                       //         .behaviour_mut()
-                       //         .send_message(&metrics_peer_id, request_message.clone());
-                       //     self.msg_pool.insert(request_id, "abc".to_string());
-                       //     interval = time::interval(Duration::from_secs(600));
-                       //     interval.reset();
-                       // }
-                   }
-            //       _ = interval2.tick() => {
-              //         let key: RecordKey = METRICS_PEER_ID.to_string().into_bytes().into();
-             //          let kad_id = self.swarm.behaviour_mut().kad.get_providers(key.clone());
-               //        warn!("ask metris peer id here, key is {:?}, kad_id is {:?}", key, kad_id);
-                //   }
-               }
+                event = self.swarm.select_next_some() => self.handle_event(event).await,
+                _ = interval_project_report_metrics.tick() => {
+                    // Event::MetricsQueryCount2
+                    let indexer = get_indexer().await;
+                    let indexer_network = format!("{}:{}", indexer, COMMAND.network);
+                    let metrics = get_timer_metrics().await;
+                    let message = Event::MetricsQueryCount2(indexer_network, metrics);
+                    if let Some(metrics_peer_id) = self.metrics_peer_id {
+                        _ = self.swarm.behaviour_mut().rr.send_request(&metrics_peer_id, message);
+                    }
+                }
+                // _ = interval_project_report_status.tick() => {
+               //      // Event::ProjectMetadataRes
+
+               // }
+                _ = interval_project_broadcast_healthy.tick() => {
+                    // Event::IndexerHealthy
+                    let healthy = indexer_healthy().await;
+                    let data = serde_json::to_string(&healthy).unwrap_or("".to_owned());
+                    let message = Event::IndexerHealthy(data);
+                    if let Some(metrics_peer_id) = self.metrics_peer_id {
+                        _ = self.swarm.behaviour_mut().rr.send_request(&metrics_peer_id, message);
+                    }
+                }
+            }
         }
     }
 
