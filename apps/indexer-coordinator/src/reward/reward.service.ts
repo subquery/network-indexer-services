@@ -142,6 +142,7 @@ export class RewardService implements OnModuleInit {
   async reduceAllocation(txType: TxType) {
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
+      this.logger.info('[auto reduce] indexerId is null');
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
@@ -250,6 +251,8 @@ export class RewardService implements OnModuleInit {
           .join(', ')}`
       );
       this.logger.info(`[auto reduce] after call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
+    } else {
+      this.logger.info(`[auto reduce] expectTotalReduce is zero. used:${allocation.used.toString()}. total:${allocation.total.toString()}`);
     }
   }
 
