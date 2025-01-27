@@ -230,6 +230,7 @@ impl EventLoop {
         tokio::time::sleep(Duration::from_secs(3)).await;
         self.connect_to_boot_metrics_node().await;
 
+        let mut check_metrics_interval = time::interval(Duration::from_secs(60));
         loop {
             tokio::select! {
                 event = self.swarm.select_next_some() => self.handle_event(event).await,
@@ -276,6 +277,16 @@ impl EventLoop {
                     // Stop signal received, gracefully exit the loop
                     warn!("Received stop signal, stopping event loop...");
                     break;
+                }
+                _ = check_metrics_interval.tick() => {
+                    if let Some(metrics_peer_id) = self.metrics_peer_id {
+                        if self.swarm.is_connected(&metrics_peer_id) == false {
+                            self.metrics_peer_id = None;
+                            self.rennect_to_metrics_node().await;
+                        }
+                    } else {
+                        self.rennect_to_metrics_node().await;
+                    }
                 }
             }
         }
@@ -348,9 +359,15 @@ impl EventLoop {
             },
             SwarmEvent::OutgoingConnectionError {
                 connection_id,
+                peer_id,
                 error: DialError::Transport(error_list),
                 ..
             } => {
+                if let Some(connect_failed_peer_id) = peer_id {
+                    if connect_failed_peer_id.to_base58() == METRICS_PEER_ID {
+                        self.metrics_multiaddr = None;
+                    }
+                }
                 self.swarm.close_connection(connection_id);
                 if self.boot_node_connection_id.is_none() {
                     if let Ok(boot_node_url_list) =
@@ -474,6 +491,14 @@ impl EventLoop {
         if let Some(event_sender) = LAZY_EVENT_SENDER.lock().unwrap().as_ref() {
             info!("send event: {:?}", event);
             _ = event_sender.send(event);
+        }
+    }
+
+    pub async fn rennect_to_metrics_node(&mut self) {
+        if let Some(metrics_multiaddr) = &self.metrics_multiaddr{
+            _ = self.swarm.dial(metrics_multiaddr.clone());
+        } else {
+            self.connect_to_boot_metrics_node().await;
         }
     }
 }
