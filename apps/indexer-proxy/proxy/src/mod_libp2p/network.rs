@@ -44,7 +44,7 @@ static LAZY_EVENT_SENDER: Lazy<Arc<Mutex<Option<mpsc::Sender<Event>>>>> =
 
 static LAZY_BOOTNODE_METRICS_LIST: Lazy<Vec<&str>> = Lazy::new(|| {
     let mut list = BOOTNODE_ADDRESS_LIST.to_vec();
-    list.push(METRICS_DEFAULT_ADDRESS);
+    list.push(METRICS_PEER_ID);
     list
 });
 
