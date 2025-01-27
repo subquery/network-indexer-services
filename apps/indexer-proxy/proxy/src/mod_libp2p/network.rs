@@ -44,7 +44,7 @@ static LAZY_EVENT_SENDER: Lazy<Arc<Mutex<Option<mpsc::Sender<Event>>>>> =
 
 static LAZY_BOOTNODE_METRICS_LIST: Lazy<Vec<&str>> = Lazy::new(|| {
     let mut list = BOOTNODE_ADDRESS_LIST.to_vec();
-    list.push(METRICS_PEER_ID);
+    list.push(METRICS_DEFAULT_ADDRESS);
     list
 });
 
@@ -177,29 +177,32 @@ impl EventLoop {
     ) -> Result<Vec<Multiaddr>, Box<dyn Error>> {
         let mut url_list = vec![];
         for multiaddr_str in multiaddr_str_list {
-            let multiaddr = Multiaddr::from_str(multiaddr_str)?;
-            let mut dns_name = None;
-            let mut port = None;
+            if let Ok(multiaddr) = Multiaddr::from_str(multiaddr_str) {
+                let mut dns_name = None;
+                let mut port = None;
 
-            for protocol in multiaddr.iter() {
-                match protocol {
-                    Protocol::Dns4(name) => dns_name = Some(name),
-                    Protocol::Tcp(p) => port = Some(p),
-                    _ => {}
+                for protocol in multiaddr.iter() {
+                    match protocol {
+                        Protocol::Dns4(name) => dns_name = Some(name),
+                        Protocol::Tcp(p) => port = Some(p),
+                        _ => {}
+                    }
                 }
-            }
 
-            if let (Some(dns_name), Some(port)) = (dns_name, port) {
-                let addr = format!("{}:{}", dns_name, port);
-                let resolved = addr.to_socket_addrs()?;
-
-                for resolved_ip in resolved {
-                    // info!("Resolved IP address: {}", resolved_ip);
-                    // Construct a new Multiaddr with the resolved IP
-                    if let Ok(resolved_multiaddr) =
-                        Multiaddr::from_str(&format!("/ip4/{}/tcp/{}", resolved_ip.ip(), port))
-                    {
-                        url_list.push(resolved_multiaddr);
+                if let (Some(dns_name), Some(port)) = (dns_name, port) {
+                    let addr = format!("{}:{}", dns_name, port);
+                    if let Ok(resolved) = addr.to_socket_addrs() {
+                        for resolved_ip in resolved {
+                            // info!("Resolved IP address: {}", resolved_ip);
+                            // Construct a new Multiaddr with the resolved IP
+                            if let Ok(resolved_multiaddr) = Multiaddr::from_str(&format!(
+                                "/ip4/{}/tcp/{}",
+                                resolved_ip.ip(),
+                                port
+                            )) {
+                                url_list.push(resolved_multiaddr);
+                            }
+                        }
                     }
                 }
             }
@@ -459,6 +462,11 @@ impl EventLoop {
             for boot_node_url in boot_node_url_list {
                 _ = self.swarm.dial(boot_node_url);
             }
+        } else {
+            warn!(
+                "&*LAZY_BOOTNODE_METRICS_LIST: {:?}, cannot resolve dns",
+                &*LAZY_BOOTNODE_METRICS_LIST
+            );
         }
     }
 
