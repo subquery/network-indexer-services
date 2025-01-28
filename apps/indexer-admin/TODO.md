@@ -15,7 +15,7 @@
 
 - Part 2 for the query and contract
 
-  - [ ] Move the relative codes to togather.
+  - [ ] Move the relative codes to together.
   - [ ] Wrap ContractSDK.
         ...
 
