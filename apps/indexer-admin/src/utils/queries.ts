@@ -107,7 +107,7 @@ export const START_PROJECT = gql`
     $memory: Int!
     $id: String!
     $projectType: Float!
-    $serviceEndpoints: [SeviceEndpointInput!]!
+    $serviceEndpoints: [ServiceEndpointInput!]!
     $rateLimit: Float!
     $hostType: String! = "system-managed"
   ) {
