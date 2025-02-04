@@ -107,8 +107,8 @@
 - `1302` - Websocket connection: failed to send message to remote socket
 - `1303` - Websocket connection: failed to send message to client socket
 - `1304` - Websocket connection: failed to close remote socket
-- `1305` - Websocket connection: failed to manange the before state cache
-- `1306` - Websocket connection: failed to manange the after state cache
+- `1305` - Websocket connection: failed to manage the before state cache
+- `1306` - Websocket connection: failed to manage the after state cache
 - `1307` - Websocket connection: invalid query state
 - `1308` - Websocket connection: failed to connect remote socket
 - `1309` - Websocket connection: remote socket disconnected
