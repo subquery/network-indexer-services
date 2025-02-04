@@ -1,4 +1,4 @@
-## Plan to refactor this projet
+## Plan to refactor this project
 
 - Part 1 for the whole project
 
