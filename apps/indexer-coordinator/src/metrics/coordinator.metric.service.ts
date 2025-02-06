@@ -8,6 +8,7 @@ import Dockerode from 'dockerode';
 import { bytesToMegabytes } from '../utils/docker';
 import { getLogger } from '../utils/logger';
 import { ContainerStatus, Images, Metric, metricNameMap } from './events';
+import { argv } from '../yargs';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
@@ -42,6 +43,9 @@ export class CoordinatorMetricsService implements OnModuleInit {
 
   async tryFetchAllContainersStats() {
     try {
+      const hostEnv = argv['host-env'];
+      if (hostEnv === 'k8s') return;
+
       await this.fetchAllContainersStats();
     } catch (e) {
       getLogger(CoordinatorMetricsService.name).error(e, `failed to fetch all containers stats`);
@@ -117,6 +121,9 @@ export class CoordinatorMetricsService implements OnModuleInit {
 
   async tryPushServiceVersions() {
     try {
+      const hostEnv = argv['host-env'];
+      if (hostEnv === 'k8s') return;
+
       await this.pushServiceVersions();
     } catch (e) {
       getLogger(CoordinatorMetricsService.name).error(e, `failed to push service versions`);
