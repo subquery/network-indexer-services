@@ -25,6 +25,11 @@ export type DeploymentReduce = {
   status: string;
 };
 
+export type DeploymentAllocation = {
+  deploymentId: string;
+  retry: number;
+};
+
 @Injectable()
 export class RewardService implements OnModuleInit {
   private readonly rewardThreshold = BigNumber.from('2000000000000000000000');
@@ -40,6 +45,8 @@ export class RewardService implements OnModuleInit {
     [this.reduceAllocation.name]: false,
     [this.collectStateChannelRewards.name]: false,
   };
+
+  private failedDeploymentAllocations: DeploymentAllocation[] = [];
 
   private lastSingleReduce: DeploymentReduce[] = [];
   private lastTotalReduce: BigNumber = BigNumber.from(0);
@@ -77,9 +84,8 @@ export class RewardService implements OnModuleInit {
 
   @Cron('0 */30 * * * *')
   async checkTasks() {
-    if (this.txOngoingMap[this.collectAllocationRewards.name]) {
-      await this.collectAllocationRewards(TxType.postponed);
-    }
+    await this.collectAllocationRewardsRetry(TxType.postponed);
+
     if (this.txOngoingMap[this.collectStateChannelRewards.name]) {
       await this.collectStateChannelRewards(TxType.postponed);
     }
@@ -93,7 +99,24 @@ export class RewardService implements OnModuleInit {
     const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
       indexerId
     );
-    this.txOngoingMap[this.collectAllocationRewards.name] = false;
+
+    let startTime = Number(
+      await this.configService.get(ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME)
+    );
+    if (!startTime) {
+      startTime = Date.now();
+      await this.configService.set(
+        ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME,
+        startTime.toString()
+      );
+    }
+
+    const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
+    const threshold = BigNumber.from(thresholdConfig);
+    const timeLimit = this.allocationBypassTimeLimit;
+    const forceCollect = Date.now() - startTime >= timeLimit;
+    const failedDeploymentAllocations: DeploymentAllocation[] = [];
+
     for (const allocation of deploymentAllocations) {
       const rewards = await this.onChainService.getAllocationRewards(
         allocation.deploymentId,
@@ -102,20 +125,12 @@ export class RewardService implements OnModuleInit {
       if (rewards.eq(0)) {
         continue;
       }
-      const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
-      const threshold = BigNumber.from(thresholdConfig);
-      const timeLimit = this.allocationBypassTimeLimit;
-      let startTime = this.allocationStartTimes.get(allocation.deploymentId);
-      if (!startTime) {
-        startTime = Date.now();
-        this.allocationStartTimes.set(allocation.deploymentId, startTime);
-      }
-      if (rewards.lt(threshold) && Date.now() - startTime < timeLimit) {
-        this.logger.debug(
-          `Bypassed reward [${rewards.toString()}] for deployment ${allocation.deploymentId} ${(
-            (Date.now() - startTime) /
-            this.oneDay
-          ).toFixed(2)}/${timeLimit / this.oneDay} days`
+
+      if (rewards.lt(threshold) && !forceCollect) {
+        this.logger.info(
+          `[collectAllocationRewards] Bypassed reward [${rewards.toString()}] for deployment ${
+            allocation.deploymentId
+          } ${((Date.now() - startTime) / this.oneDay).toFixed(2)}/${timeLimit / this.oneDay} days`
         );
         continue;
       }
@@ -125,15 +140,55 @@ export class RewardService implements OnModuleInit {
         txType
       );
       if (!success) {
-        this.txOngoingMap[this.collectAllocationRewards.name] = true;
+        failedDeploymentAllocations.push({
+          deploymentId: allocation.deploymentId,
+          retry: 0,
+        });
         continue;
       }
-      this.allocationStartTimes.delete(allocation.deploymentId);
-      this.logger.debug(
-        `Collected reward [${rewards.toString()}] for deployment ${
+      this.logger.info(
+        `[collectAllocationRewards] Collected reward [${rewards.toString()}] for deployment ${
           allocation.deploymentId
         } ${rewards.toString()}`
       );
+    }
+
+    this.failedDeploymentAllocations = failedDeploymentAllocations;
+    if (forceCollect) {
+      await this.configService.set(
+        ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME,
+        Date.now().toString()
+      );
+    }
+  }
+
+  async collectAllocationRewardsRetry(txType: TxType) {
+    const indexerId = await this.accountService.getIndexer();
+    if (!indexerId) {
+      return;
+    }
+    const failedDeploymentAllocations = this.failedDeploymentAllocations || [];
+
+    for (let i = 0; i < failedDeploymentAllocations.length; ) {
+      let success = true;
+      const info = failedDeploymentAllocations[i];
+      const rewards = await this.onChainService.getAllocationRewards(info.deploymentId, indexerId);
+      if (rewards.gt(0)) {
+        success = await this.onChainService.collectAllocationReward(
+          info.deploymentId,
+          indexerId,
+          txType
+        );
+        this.logger.info(
+          `[collectAllocationRewards] retry deployment:${info.deploymentId}, count:${info.retry}, ${success}`
+        );
+      }
+      if (success) {
+        failedDeploymentAllocations.splice(i, 1);
+      } else {
+        info.retry++;
+        i++;
+      }
     }
   }
 
