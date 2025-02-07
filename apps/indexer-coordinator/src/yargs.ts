@@ -189,6 +189,26 @@ function getYargsOption() {
       default: false,
       group: Groups.coordinator,
     },
+    'host-env': {
+      type: 'string',
+      describe: 'k8s or docker',
+      default: 'docker',
+      group: Groups.coordinator,
+    },
+    'reward-cron': {
+      demandOption: false,
+      describe: 'Reward task cron',
+      type: 'string',
+      default: '1 1 1 * * *',
+      group: Groups.coordinator,
+    },
+    'reward-check-cron': {
+      demandOption: false,
+      describe: 'Reward task check cron',
+      type: 'string',
+      default: '0 */30 * * * *',
+      group: Groups.coordinator,
+    },
   });
 }
 

@@ -9,6 +9,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SentryModule } from '@ntegral/nestjs-sentry';
 
 import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
@@ -33,6 +34,16 @@ import { SubscriptionModule } from './subscription/subscription.module';
   imports: [
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
+    SentryModule.forRoot({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV,
+      beforeBreadcrumb(breadcrumb) {
+        if (breadcrumb.category === 'custom') {
+          return breadcrumb;
+        }
+        return null;
+      },
+    }),
     TypeOrmModule.forRoot({
       ...dbOption,
       autoLoadEntities: true,
