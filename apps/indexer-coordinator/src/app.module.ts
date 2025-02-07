@@ -29,13 +29,15 @@ import { ProjectModule } from './project/project.module';
 import { RewardModule } from './reward/reward.module';
 import { StatsModule } from './stats/stats.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { argv } from './yargs';
+
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     SentryModule.forRoot({
-      dsn: process.env.SENTRY_DSN,
+      dsn: argv['sentry-dsn'],
       environment: process.env.NODE_ENV,
       beforeBreadcrumb(breadcrumb) {
         if (breadcrumb.category === 'custom') {

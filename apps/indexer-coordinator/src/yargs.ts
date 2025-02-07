@@ -209,6 +209,14 @@ function getYargsOption() {
       default: '0 */30 * * * *',
       group: Groups.coordinator,
     },
+    'sentry-dsn': {
+      demandOption: false,
+      describe: 'sentry dsn',
+      type: 'string',
+      default:
+        'https://94b886c37a3436e3bc1c29fbfd34f6de@o1192865.ingest.us.sentry.io/4508771319414784',
+      group: Groups.coordinator,
+    },
   });
 }
 
