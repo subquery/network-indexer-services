@@ -45,6 +45,12 @@ import { argv } from './yargs';
         }
         return null;
       },
+      beforeSend(event, hint) {
+        if (hint?.mechanism?.handled === false) {
+          return null;
+        }
+        return event;
+      },
     }),
     TypeOrmModule.forRoot({
       ...dbOption,

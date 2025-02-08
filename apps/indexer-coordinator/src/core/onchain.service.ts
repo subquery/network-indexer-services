@@ -300,8 +300,8 @@ export class OnChainService implements OnApplicationBootstrap {
     deploymentId: string,
     runner: string
   ): Promise<{ rewards: BigNumber; error: Error }> {
-    if (!(await this.checkControllerReady())) return { rewards: BigNumber.from(0), error: null };
     try {
+      if (!(await this.checkControllerReady())) return { rewards: BigNumber.from(0), error: null };
       const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
         cidToBytes32(deploymentId),
         runner
