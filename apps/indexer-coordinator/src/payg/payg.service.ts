@@ -527,9 +527,9 @@ export class PaygService implements OnModuleInit {
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
     }
-    if (channel.onchain === channel.remote) {
-      return channel;
-    }
+    // if (channel.onchain === channel.remote) {
+    //   return channel;
+    // }
     if (!channel.lastIndexerSign || !channel.lastConsumerSign) {
       return channel;
     }
