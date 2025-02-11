@@ -72,6 +72,8 @@ export class RewardService implements OnModuleInit {
     const reduceEnabled = await this.configService.get(ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED);
     if (reduceEnabled === 'true') {
       await this.reduceAllocation(TxType.check);
+    } else {
+      this.logger.info(`[auto reduce] disabled`);
     }
   }
 
@@ -140,11 +142,12 @@ export class RewardService implements OnModuleInit {
   async reduceAllocation(txType: TxType) {
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
+      this.logger.info('[auto reduce] indexerId is null');
       return;
     }
     const allocation = await this.onChainService.getRunnerAllocation(indexerId);
     if (!allocation) {
-      this.logger.debug('getRunnerAllocation is null');
+      this.logger.info('[auto reduce] getRunnerAllocation is null');
       return;
     }
     this.txOngoingMap[this.reduceAllocation.name] = false;
@@ -159,7 +162,7 @@ export class RewardService implements OnModuleInit {
       let calSingleReduce: DeploymentReduce[] = this.lastSingleReduce;
 
       if (refetch) {
-        this.logger.debug(`==== refetch ====`);
+        this.logger.info(`[auto reduce] ==== refetch ====`);
         const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
           indexerId
         );
@@ -172,8 +175,8 @@ export class RewardService implements OnModuleInit {
         for (const d of deploymentAllocations) {
           const toReduce = expectTotalReduce.mul(d.totalAmount).div(allocation.used);
           calcTotalReduce = calcTotalReduce.add(toReduce);
-          this.logger.debug(
-            `take from d: ${d.deploymentId} totalAmount: ${
+          this.logger.info(
+            `[auto reduce] take from d: ${d.deploymentId} totalAmount: ${
               d.totalAmount
             } toReduce: ${toReduce.toString()}`
           );
@@ -185,10 +188,10 @@ export class RewardService implements OnModuleInit {
         }
         let rest = expectTotalReduce.sub(calcTotalReduce);
 
-        this.logger.debug(
-          `expectTotalReduce: ${expectTotalReduce} calcTotalReduce: ${calcTotalReduce.toString()} rest: ${rest.toString()}`
+        this.logger.info(
+          `[auto reduce] expectTotalReduce: ${expectTotalReduce} calcTotalReduce: ${calcTotalReduce.toString()} rest: ${rest.toString()}`
         );
-        this.logger.debug(`before adjust: ${calSingleReduce.map((v) => v.toReduce.toString())}`);
+        this.logger.info(`before adjust: ${calSingleReduce.map((v) => v.toReduce.toString())}`);
         for (let i = deploymentAllocations.length - 1; i >= 0; i--) {
           if (rest.eq(BigNumber.from(0))) {
             break;
@@ -202,7 +205,9 @@ export class RewardService implements OnModuleInit {
           calSingleReduce[i].toReduce = calSingleReduce[i].toReduce.add(diff);
           rest = rest.sub(diff);
         }
-        this.logger.debug(`after adjust: ${calSingleReduce.map((v) => v.toReduce.toString())}`);
+        this.logger.info(
+          `[auto reduce] after adjust: ${calSingleReduce.map((v) => v.toReduce.toString())}`
+        );
         const adjustedTotalReduce = calSingleReduce.reduce(
           (acc, cur) => acc.add(cur.toReduce),
           BigNumber.from(0)
@@ -213,12 +218,14 @@ export class RewardService implements OnModuleInit {
       this.lastSingleReduce = calSingleReduce;
       this.lastTotalReduce = expectTotalReduce;
 
-      this.logger.debug(
-        `before call: this.lastSingleReduce: ${calSingleReduce
+      this.logger.info(
+        `[auto reduce] before call: this.lastSingleReduce: ${calSingleReduce
           .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
           .join(', ')}`
       );
-      this.logger.debug(`before call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
+      this.logger.info(
+        `[auto reduce] before call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`
+      );
 
       for (let i = 0; i < calSingleReduce.length; i++) {
         const d = calSingleReduce[i];
@@ -238,12 +245,14 @@ export class RewardService implements OnModuleInit {
         this.lastTotalReduce = this.lastTotalReduce.sub(d.toReduce);
       }
 
-      this.logger.debug(
-        `after call: this.lastSingleReduce: ${calSingleReduce
+      this.logger.info(
+        `[auto reduce] after call: this.lastSingleReduce: ${calSingleReduce
           .map((v) => [v.deploymentId, v.toReduce.toString(), v.status].join(':'))
           .join(', ')}`
       );
-      this.logger.debug(`after call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
+      this.logger.info(`[auto reduce] after call: this.lastTotalReduce: ${this.lastTotalReduce.toString()}`);
+    } else {
+      this.logger.info(`[auto reduce] expectTotalReduce is zero. used:${allocation.used.toString()}. total:${allocation.total.toString()}`);
     }
   }
 
