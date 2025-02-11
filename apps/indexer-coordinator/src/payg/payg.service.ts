@@ -530,7 +530,7 @@ export class PaygService implements OnModuleInit {
     // if (channel.onchain === channel.remote) {
     //   return channel;
     // }
-    if (channel.remote && (!channel.lastIndexerSign || !channel.lastConsumerSign)) {
+    if (BigNumber.from(channel.remote).gt('0') && (!channel.lastIndexerSign || !channel.lastConsumerSign)) {
       return channel;
     }
 
