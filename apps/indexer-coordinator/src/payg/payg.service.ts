@@ -29,6 +29,8 @@ const logger = getLogger('payg');
 
 @Injectable()
 export class PaygService implements OnModuleInit {
+  isScheduleTerminating: boolean;
+
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
@@ -37,8 +39,7 @@ export class PaygService implements OnModuleInit {
     private contract: ContractService,
     private onChain: OnChainService,
     private account: AccountService,
-    private configService: ConfigService,
-    private isScheduleTerminating: boolean
+    private configService: ConfigService
   ) {
     this.isScheduleTerminating = false;
   }
