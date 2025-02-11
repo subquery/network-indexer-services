@@ -13,6 +13,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin.controller';
 import { AgreementController } from './agreement.controller';
 
+import { AuthModule } from './auth/auth.module';
 import { ChainModule } from './chain/chain.module';
 import { ConfigModule } from './config/config.module';
 import { ConfigureModule } from './configure/configure.module';
@@ -81,6 +82,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     NetworkModule,
     RewardModule,
     ConfigModule,
+    AuthModule,
   ],
   controllers: [AdminController, AgreementController, MonitorController],
 })
