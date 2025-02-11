@@ -639,6 +639,7 @@ export class PaygService implements OnModuleInit {
     const channels = await this.getOpenChannels();
     if (this.isScheduleTerminating) {
       logger.info(`skip closeOutdatedAndNotExtended`);
+      return;
     }
     this.isScheduleTerminating = true;
 
