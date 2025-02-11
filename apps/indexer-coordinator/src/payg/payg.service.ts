@@ -37,8 +37,11 @@ export class PaygService implements OnModuleInit {
     private contract: ContractService,
     private onChain: OnChainService,
     private account: AccountService,
-    private configService: ConfigService
-  ) {}
+    private configService: ConfigService,
+    private isScheduleTerminating: boolean
+  ) {
+    this.isScheduleTerminating = false;
+  }
 
   async onModuleInit() {
     await this.patchDefaultFlexPlan();
@@ -530,7 +533,10 @@ export class PaygService implements OnModuleInit {
     // if (channel.onchain === channel.remote) {
     //   return channel;
     // }
-    if (BigNumber.from(channel.remote).gt('0') && (!channel.lastIndexerSign || !channel.lastConsumerSign)) {
+    if (
+      BigNumber.from(channel.remote).gt('0') &&
+      (!channel.lastIndexerSign || !channel.lastConsumerSign)
+    ) {
       return channel;
     }
 
@@ -631,6 +637,11 @@ export class PaygService implements OnModuleInit {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async closeOutdatedAndNotExtended() {
     const channels = await this.getOpenChannels();
+    if (this.isScheduleTerminating) {
+      logger.info(`skip closeOutdatedAndNotExtended`);
+    }
+    this.isScheduleTerminating = true;
+
     for (const c of channels) {
       try {
         const now = Math.floor(Date.now() / 1000);
@@ -644,5 +655,6 @@ export class PaygService implements OnModuleInit {
         );
       }
     }
+    this.isScheduleTerminating = false;
   }
 }
