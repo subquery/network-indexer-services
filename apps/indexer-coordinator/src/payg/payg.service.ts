@@ -544,8 +544,8 @@ export class PaygService implements OnModuleInit {
             channelId: channel.id,
             isFinal: channel.lastFinal,
             spent: channel.remote,
-            indexerSign: channel.lastIndexerSign,
-            consumerSign: channel.lastConsumerSign,
+            indexerSign: channel.lastIndexerSign || '0x',
+            consumerSign: channel.lastConsumerSign || '0x',
           },
           overrides
         ),
@@ -555,8 +555,8 @@ export class PaygService implements OnModuleInit {
             channelId: channel.id,
             isFinal: channel.lastFinal,
             spent: channel.remote,
-            indexerSign: channel.lastIndexerSign,
-            consumerSign: channel.lastConsumerSign,
+            indexerSign: channel.lastIndexerSign || '0x',
+            consumerSign: channel.lastConsumerSign || '0x',
           },
           overrides
         ),
