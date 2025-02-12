@@ -251,7 +251,7 @@ export class RewardService implements OnModuleInit {
       `[collectAllocationRewards] end ${this.txOngoingMap.collectAllocationRewards}`
     );
 
-    if (scheduleType === ScheduleType.Normal && forceCollect && !failed) {
+    if (forceCollect && !failed) {
       await this.configService.set(
         ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME,
         Date.now().toString()
