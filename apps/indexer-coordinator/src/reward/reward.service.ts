@@ -61,10 +61,6 @@ export class RewardService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    // todo: remove
-    setTimeout(() => {
-      this.collectAllocationRewards(TxType.check, ScheduleType.Normal);
-    }, 1000 * 60);
     // FIXME test only
     // (async () => {
     //   await this.collectAllocationRewards(TxType.check);
@@ -89,8 +85,6 @@ export class RewardService implements OnModuleInit {
 
   @Cron(argv['reward-check-cron'])
   async checkTasks() {
-    // todo: remove
-    this.logger.info(`[reward-check-cron], ${this.txOngoingMap.collectAllocationRewards}`);
     if (this.txOngoingMap.collectAllocationRewards) {
       await this.collectAllocationRewards(TxType.postponed, ScheduleType.Retry);
     }
@@ -123,10 +117,6 @@ export class RewardService implements OnModuleInit {
       });
       return;
     }
-    // todo: remove
-    this.logger.info(
-      `[collectAllocationRewards] deploymentAllocations:${JSON.stringify(deploymentAllocations)}`
-    );
 
     let startTime = Number(
       await this.configService.get(ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME)
