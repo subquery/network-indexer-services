@@ -95,6 +95,8 @@ export class RewardService implements OnModuleInit {
   }
 
   async collectAllocationRewards(txType: TxType, scheduleType: ScheduleType) {
+    this.txOngoingMap.collectAllocationRewards = true;
+
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
       return;
@@ -104,7 +106,6 @@ export class RewardService implements OnModuleInit {
     try {
       deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(indexerId);
     } catch (e) {
-      this.txOngoingMap.collectAllocationRewards = true;
       this.sentryClient.instance().captureMessage(`collect-getError-${indexerId}`, {
         fingerprint: [indexerId],
         extra: {
@@ -169,7 +170,6 @@ export class RewardService implements OnModuleInit {
 
       if (e1) {
         failed = true;
-        this.txOngoingMap.collectAllocationRewards = true;
         failedDeploymentAllocations.push(allocation.deploymentId);
       }
       if (rewards.eq(0)) {
@@ -212,7 +212,6 @@ export class RewardService implements OnModuleInit {
 
       if (!success) {
         failed = true;
-        this.txOngoingMap.collectAllocationRewards = true;
         failedDeploymentAllocations.push(allocation.deploymentId);
         continue;
       }
@@ -233,6 +232,8 @@ export class RewardService implements OnModuleInit {
           failedDS: JSON.stringify(failedDeploymentAllocations),
         },
       });
+    } else {
+      this.txOngoingMap.collectAllocationRewards = false;
     }
 
     if (scheduleType === ScheduleType.Normal && forceCollect) {
