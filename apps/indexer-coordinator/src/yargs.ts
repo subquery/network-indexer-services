@@ -189,6 +189,34 @@ function getYargsOption() {
       default: false,
       group: Groups.coordinator,
     },
+    'host-env': {
+      type: 'string',
+      describe: 'k8s or docker',
+      default: 'docker',
+      group: Groups.coordinator,
+    },
+    'reward-cron': {
+      demandOption: false,
+      describe: 'Reward task cron',
+      type: 'string',
+      default: '1 1 1 * * *',
+      group: Groups.coordinator,
+    },
+    'reward-check-cron': {
+      demandOption: false,
+      describe: 'Reward task check cron',
+      type: 'string',
+      default: '0 */30 * * * *',
+      group: Groups.coordinator,
+    },
+    'sentry-dsn': {
+      demandOption: false,
+      describe: 'sentry dsn',
+      type: 'string',
+      default:
+        'https://94b886c37a3436e3bc1c29fbfd34f6de@o1192865.ingest.us.sentry.io/4508771319414784',
+      group: Groups.coordinator,
+    },
   });
 }
 

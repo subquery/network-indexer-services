@@ -4,19 +4,27 @@
 import assert from 'assert';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { InjectSentry, SentryService } from '@ntegral/nestjs-sentry';
 import { BigNumber } from 'ethers';
 import { ConfigService, ConfigType } from 'src/config/config.service';
 import { NetworkService } from 'src/network/network.service';
+import { IndexerAllocationSummary } from 'src/network/network.type';
 import { getLogger } from 'src/utils/logger';
 import { AccountService } from '../core/account.service';
 import { OnChainService } from '../core/onchain.service';
 import { TxType } from '../core/types';
 import { PaygService } from '../payg/payg.service';
+import { argv } from '../yargs';
 
 enum Status {
   Pending = 'Pending',
   Success = 'Success',
   Failed = 'Failed',
+}
+
+enum ScheduleType {
+  Normal = 'normal',
+  Retry = 'retry',
 }
 
 export type DeploymentReduce = {
@@ -27,16 +35,14 @@ export type DeploymentReduce = {
 
 @Injectable()
 export class RewardService implements OnModuleInit {
-  private readonly rewardThreshold = BigNumber.from('2000000000000000000000');
   private readonly oneDay = 24 * 60 * 60 * 1000;
   private readonly allocationBypassTimeLimit = 3 * this.oneDay;
-  private readonly allocationStartTimes: Map<string, number> = new Map();
   private readonly channelRewardsStartTimes: Map<string, number> = new Map();
 
   private readonly logger = getLogger('RewardService');
 
   private txOngoingMap: Record<string, boolean> = {
-    [this.collectAllocationRewards.name]: false,
+    collectAllocationRewards: false,
     [this.reduceAllocation.name]: false,
     [this.collectStateChannelRewards.name]: false,
   };
@@ -45,6 +51,8 @@ export class RewardService implements OnModuleInit {
   private lastTotalReduce: BigNumber = BigNumber.from(0);
 
   constructor(
+    @InjectSentry()
+    private sentryClient: SentryService,
     private accountService: AccountService,
     private networkService: NetworkService,
     private onChainService: OnChainService,
@@ -61,9 +69,9 @@ export class RewardService implements OnModuleInit {
     // })();
   }
 
-  @Cron('1 1 1 * * *')
+  @Cron(argv['reward-cron'])
   async autoRunTasks() {
-    await this.collectAllocationRewards(TxType.check);
+    await this.collectAllocationRewards(TxType.check, ScheduleType.Normal);
     await this.collectStateChannelRewards(TxType.check);
   }
 
@@ -75,64 +83,168 @@ export class RewardService implements OnModuleInit {
     }
   }
 
-  @Cron('0 */30 * * * *')
+  @Cron(argv['reward-check-cron'])
   async checkTasks() {
-    if (this.txOngoingMap[this.collectAllocationRewards.name]) {
-      await this.collectAllocationRewards(TxType.postponed);
+    if (this.txOngoingMap.collectAllocationRewards) {
+      await this.collectAllocationRewards(TxType.postponed, ScheduleType.Retry);
     }
+
     if (this.txOngoingMap[this.collectStateChannelRewards.name]) {
       await this.collectStateChannelRewards(TxType.postponed);
     }
   }
 
-  async collectAllocationRewards(txType: TxType) {
+  async collectAllocationRewards(txType: TxType, scheduleType: ScheduleType) {
+    this.txOngoingMap.collectAllocationRewards = true;
+    this.logger.info(`[collectAllocationRewards] start ${scheduleType}`);
+
     const indexerId = await this.accountService.getIndexer();
     if (!indexerId) {
       return;
     }
-    const deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(
-      indexerId
+
+    let deploymentAllocations: IndexerAllocationSummary[] = [];
+    try {
+      deploymentAllocations = await this.networkService.getIndexerAllocationSummaries(indexerId);
+    } catch (e) {
+      this.sentryClient.instance().captureMessage(`collect-getError-${indexerId}`, {
+        fingerprint: [indexerId],
+        extra: {
+          scheduleType,
+          error: e,
+          monitorSlug: 'deploymentAllocations',
+        },
+      });
+      return;
+    }
+
+    let startTime = Number(
+      await this.configService.get(ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME)
     );
-    this.txOngoingMap[this.collectAllocationRewards.name] = false;
+    if (!startTime) {
+      startTime = Date.now();
+      await this.configService.set(
+        ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME,
+        startTime.toString()
+      );
+    }
+
+    const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
+    const threshold = BigNumber.from(thresholdConfig);
+    const timeLimit = this.allocationBypassTimeLimit;
+    const forceCollect = Date.now() - startTime >= timeLimit;
+    const failedDeploymentAllocations = [];
+
+    this.sentryClient.instance().addBreadcrumb({
+      level: 'info',
+      category: 'custom',
+      message: 'ready to check deploymentAllocation',
+      data: {
+        deploymentAllocations: JSON.stringify(
+          deploymentAllocations.map((da) => {
+            return { deploymentId: da.deploymentId, totalAmount: da.totalAmount };
+          })
+        ),
+        scheduleType,
+      },
+    });
+
+    let failed = false;
+
     for (const allocation of deploymentAllocations) {
-      const rewards = await this.onChainService.getAllocationRewards(
+      const { rewards, error: e1 } = await this.onChainService.getAllocationRewards(
         allocation.deploymentId,
         indexerId
       );
+
+      this.sentryClient.instance().addBreadcrumb({
+        level: 'info',
+        category: 'custom',
+        message: `get deploymentAllocation ${allocation.deploymentId}`,
+        data: {
+          deploymentId: allocation.deploymentId,
+          scheduleType,
+          rewards: rewards.toString(),
+          error: e1,
+        },
+      });
+
+      if (e1) {
+        failed = true;
+        failedDeploymentAllocations.push(allocation.deploymentId);
+      }
       if (rewards.eq(0)) {
         continue;
       }
-      const thresholdConfig = await this.configService.get(ConfigType.ALLOCATION_REWARD_THRESHOLD);
-      const threshold = BigNumber.from(thresholdConfig);
-      const timeLimit = this.allocationBypassTimeLimit;
-      let startTime = this.allocationStartTimes.get(allocation.deploymentId);
-      if (!startTime) {
-        startTime = Date.now();
-        this.allocationStartTimes.set(allocation.deploymentId, startTime);
-      }
-      if (rewards.lt(threshold) && Date.now() - startTime < timeLimit) {
+
+      if (rewards.lt(threshold) && !forceCollect) {
+        this.sentryClient.instance().addBreadcrumb({
+          level: 'info',
+          category: 'custom',
+          message: `skip collect ${allocation.deploymentId}`,
+          data: {
+            deploymentId: allocation.deploymentId,
+            scheduleType,
+            rewards: rewards.toString(),
+            startTime,
+          },
+        });
+
         this.logger.debug(
-          `Bypassed reward [${rewards.toString()}] for deployment ${allocation.deploymentId} ${(
-            (Date.now() - startTime) /
-            this.oneDay
-          ).toFixed(2)}/${timeLimit / this.oneDay} days`
+          `[collectAllocationRewards] Bypassed reward [${rewards.toString()}] for deployment ${
+            allocation.deploymentId
+          } ${((Date.now() - startTime) / this.oneDay).toFixed(2)}/${timeLimit / this.oneDay} days`
         );
         continue;
       }
-      const success = await this.onChainService.collectAllocationReward(
+
+      const { success, error: e2 } = await this.onChainService.collectAllocationReward(
         allocation.deploymentId,
         indexerId,
         txType
       );
+
+      this.sentryClient.instance().addBreadcrumb({
+        level: 'info',
+        category: 'custom',
+        message: `collect ${allocation.deploymentId}`,
+        data: { deploymentId: allocation.deploymentId, scheduleType, success, error: e2 },
+      });
+
       if (!success) {
-        this.txOngoingMap[this.collectAllocationRewards.name] = true;
+        failed = true;
+        failedDeploymentAllocations.push(allocation.deploymentId);
         continue;
       }
-      this.allocationStartTimes.delete(allocation.deploymentId);
-      this.logger.debug(
-        `Collected reward [${rewards.toString()}] for deployment ${
+      this.logger.info(
+        `[collectAllocationRewards] Collected reward [${rewards.toString()}] for deployment ${
           allocation.deploymentId
         } ${rewards.toString()}`
+      );
+    }
+
+    if (failed) {
+      this.sentryClient.instance().captureMessage(`collect-rewards-${indexerId}`, {
+        level: 'error',
+        fingerprint: [indexerId],
+        extra: {
+          scheduleType,
+          monitorSlug: 'collect-allocation',
+          failedDS: JSON.stringify(failedDeploymentAllocations),
+        },
+      });
+    } else {
+      this.txOngoingMap.collectAllocationRewards = false;
+    }
+
+    this.logger.info(
+      `[collectAllocationRewards] end ${this.txOngoingMap.collectAllocationRewards}`
+    );
+
+    if (forceCollect && !failed) {
+      await this.configService.set(
+        ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME,
+        Date.now().toString()
       );
     }
   }

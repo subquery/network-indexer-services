@@ -11,6 +11,7 @@ export enum ConfigType {
   FLEX_VALID_PERIOD = 'flex_valid_period',
   FLEX_ENABLED = 'flex_enabled',
   ALLOCATION_REWARD_THRESHOLD = 'allocation_reward_threshold',
+  ALLOCATION_REWARD_LAST_FORCE_TIME = 'allocation_reward_last_force_time',
   STATE_CHANNEL_REWARD_THRESHOLD = 'state_channel_reward_threshold',
   AUTO_REDUCE_ALLOCATION_ENABLED = 'auto_reduce_allocation_enabled',
 }
@@ -20,6 +21,7 @@ const defaultConfig: Record<string, string> = {
   [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24 * 3}`, // 3 days
   [ConfigType.FLEX_ENABLED]: 'true',
   [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
+  [ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME]: '0',
   [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
   [ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED]: 'true',
 };

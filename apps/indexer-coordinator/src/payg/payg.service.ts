@@ -29,6 +29,8 @@ const logger = getLogger('payg');
 
 @Injectable()
 export class PaygService implements OnModuleInit {
+  isScheduleTerminating: boolean;
+
   constructor(
     @InjectRepository(Channel) private channelRepo: Repository<Channel>,
     @InjectRepository(PaygEntity) private paygRepo: Repository<PaygEntity>,
@@ -38,7 +40,9 @@ export class PaygService implements OnModuleInit {
     private onChain: OnChainService,
     private account: AccountService,
     private configService: ConfigService
-  ) {}
+  ) {
+    this.isScheduleTerminating = false;
+  }
 
   async onModuleInit() {
     await this.patchDefaultFlexPlan();
@@ -527,10 +531,13 @@ export class PaygService implements OnModuleInit {
     if (!channel) {
       throw new Error(`channel not exist: ${id}`);
     }
-    if (channel.onchain === channel.remote) {
-      return channel;
-    }
-    if (!channel.lastIndexerSign || !channel.lastConsumerSign) {
+    // if (channel.onchain === channel.remote) {
+    //   return channel;
+    // }
+    if (
+      BigNumber.from(channel.remote).gt('0') &&
+      (!channel.lastIndexerSign || !channel.lastConsumerSign)
+    ) {
       return channel;
     }
 
@@ -544,8 +551,8 @@ export class PaygService implements OnModuleInit {
             channelId: channel.id,
             isFinal: channel.lastFinal,
             spent: channel.remote,
-            indexerSign: channel.lastIndexerSign,
-            consumerSign: channel.lastConsumerSign,
+            indexerSign: channel.lastIndexerSign || '0x',
+            consumerSign: channel.lastConsumerSign || '0x',
           },
           overrides
         ),
@@ -555,8 +562,8 @@ export class PaygService implements OnModuleInit {
             channelId: channel.id,
             isFinal: channel.lastFinal,
             spent: channel.remote,
-            indexerSign: channel.lastIndexerSign,
-            consumerSign: channel.lastConsumerSign,
+            indexerSign: channel.lastIndexerSign || '0x',
+            consumerSign: channel.lastConsumerSign || '0x',
           },
           overrides
         ),
@@ -631,6 +638,12 @@ export class PaygService implements OnModuleInit {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async closeOutdatedAndNotExtended() {
     const channels = await this.getOpenChannels();
+    if (this.isScheduleTerminating) {
+      logger.info(`skip closeOutdatedAndNotExtended`);
+      return;
+    }
+    this.isScheduleTerminating = true;
+
     for (const c of channels) {
       try {
         const now = Math.floor(Date.now() / 1000);
@@ -644,5 +657,6 @@ export class PaygService implements OnModuleInit {
         );
       }
     }
+    this.isScheduleTerminating = false;
   }
 }

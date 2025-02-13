@@ -296,9 +296,12 @@ export class OnChainService implements OnApplicationBootstrap {
     return true;
   }
 
-  async getAllocationRewards(deploymentId: string, runner: string): Promise<BigNumber> {
-    if (!(await this.checkControllerReady())) return BigNumber.from(0);
+  async getAllocationRewards(
+    deploymentId: string,
+    runner: string
+  ): Promise<{ rewards: BigNumber; error: Error }> {
     try {
+      if (!(await this.checkControllerReady())) return { rewards: BigNumber.from(0), error: null };
       const [rewards, burnt] = await this.sdk.rewardsBooster.getAllocationRewards(
         cidToBytes32(deploymentId),
         runner
@@ -306,10 +309,10 @@ export class OnChainService implements OnApplicationBootstrap {
       logger.debug(
         `allocation rewards for deployment: ${deploymentId} is ${rewards}, burnt: ${burnt}`
       );
-      return rewards;
+      return { rewards, error: null };
     } catch (e) {
       logger.warn(e, `Fail to get allocation rewards for deployment: ${deploymentId}`);
-      return BigNumber.from(0);
+      return { rewards: BigNumber.from(0), error: e };
     }
   }
 
@@ -317,7 +320,7 @@ export class OnChainService implements OnApplicationBootstrap {
     deploymentId: string,
     runner: string,
     txType: TxType
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; error: Error }> {
     if (!(await this.checkControllerReady())) return;
     try {
       await this.contractService.sendTransaction({
@@ -336,10 +339,10 @@ export class OnChainService implements OnApplicationBootstrap {
             overrides
           ),
       });
-      return true;
+      return { success: true, error: null };
     } catch (e) {
       logger.warn(e, `Fail to claim allocation rewards for deployment: ${deploymentId}`);
-      return false;
+      return { success: false, error: e };
     }
   }
 
