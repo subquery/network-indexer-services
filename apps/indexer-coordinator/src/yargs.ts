@@ -189,6 +189,12 @@ function getYargsOption() {
       default: false,
       group: Groups.coordinator,
     },
+    'host-env': {
+      type: 'string',
+      describe: 'k8s or docker',
+      default: 'docker',
+      group: Groups.coordinator,
+    }
   });
 }
 

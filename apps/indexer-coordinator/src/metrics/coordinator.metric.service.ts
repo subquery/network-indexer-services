@@ -4,53 +4,78 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import Docker from 'dockerode';
+import Dockerode from 'dockerode';
 import { bytesToMegabytes } from '../utils/docker';
+import { getLogger } from '../utils/logger';
 import { ContainerStatus, Images, Metric, metricNameMap } from './events';
+import { argv } from '../yargs';
 
 @Injectable()
 export class CoordinatorMetricsService implements OnModuleInit {
-  private docker: Docker;
-  constructor(protected eventEmitter: EventEmitter2) {
-    this.docker = new Docker();
+  private dockerInstance: Dockerode;
+  private get docker(): Dockerode {
+    if (!this.dockerInstance) {
+      try {
+        this.dockerInstance = new Dockerode({ socketPath: '/var/run/docker.sock' });
+      } catch (e) {
+        getLogger(CoordinatorMetricsService.name).error(e, `failed to connect to docker`);
+        throw new Error('failed to connect to docker');
+      }
+    }
+    return this.dockerInstance;
   }
 
+  constructor(protected eventEmitter: EventEmitter2) {}
+
   onModuleInit() {
-    void this.pushServiceVersions();
+    void this.tryPushServiceVersions();
   }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   handleVersionsCron() {
-    void this.pushServiceVersions();
+    void this.tryPushServiceVersions();
   }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
-  async handleCron() {
-    await this.fetchAllContainersStats();
+  handleCron() {
+    void this.tryFetchAllContainersStats();
+  }
+
+  async tryFetchAllContainersStats() {
+    try {
+      const hostEnv = argv['host-env'];
+      if (hostEnv === 'k8s') return;
+
+      await this.fetchAllContainersStats();
+    } catch (e) {
+      getLogger(CoordinatorMetricsService.name).error(e, `failed to fetch all containers stats`);
+    }
   }
 
   async fetchAllContainersStats() {
     const containers = await this.docker.listContainers();
 
-    await Promise.all(containers.map(async container => {
-      const { Id, Image } = container;
-      const [image] = Image.split(':');
-      const metric = metricNameMap[image as Images];
-      if (!metric) return;
+    await Promise.all(
+      containers.map(async (container) => {
+        const { Id, Image } = container;
+        const [image] = Image.split(':');
+        const metric = metricNameMap[image as Images];
+        if (!metric) return;
 
-      const containerDetails = this.docker.getContainer(Id);
-      const data = await containerDetails.inspect();
-      const status = this.fetchContainerStatus(data);
-      const stats = await this.fetchContainerCPUandMemoryUsage(containerDetails);
-      this.eventEmitter.emit(metric, {
-        cpu_usage: stats.cpuUsage,
-        memory_usage: stats.memoryUsage,
-        status,
-      });
-    }));
+        const containerDetails = this.docker.getContainer(Id);
+        const data = await containerDetails.inspect();
+        const status = this.fetchContainerStatus(data);
+        const stats = await this.fetchContainerCPUandMemoryUsage(containerDetails);
+        this.eventEmitter.emit(metric, {
+          cpu_usage: stats.cpuUsage,
+          memory_usage: stats.memoryUsage,
+          status,
+        });
+      })
+    );
   }
 
-  fetchContainerStatus(data: Docker.ContainerInspectInfo): ContainerStatus {
+  fetchContainerStatus(data: Dockerode.ContainerInspectInfo): ContainerStatus {
     const { Health, Restarting, ExitCode } = data.State;
     const health = Health?.Status;
 
@@ -68,7 +93,7 @@ export class CoordinatorMetricsService implements OnModuleInit {
     return status;
   }
 
-  async fetchContainerCPUandMemoryUsage(container: Docker.Container) {
+  async fetchContainerCPUandMemoryUsage(container: Dockerode.Container) {
     const stats = await container.stats({ stream: false });
 
     const { cpu_stats, precpu_stats } = stats;
@@ -92,6 +117,17 @@ export class CoordinatorMetricsService implements OnModuleInit {
     }
 
     return { id: container.id, memoryUsage, cpuUsage };
+  }
+
+  async tryPushServiceVersions() {
+    try {
+      const hostEnv = argv['host-env'];
+      if (hostEnv === 'k8s') return;
+
+      await this.pushServiceVersions();
+    } catch (e) {
+      getLogger(CoordinatorMetricsService.name).error(e, `failed to push service versions`);
+    }
   }
 
   async pushServiceVersions() {
