@@ -99,5 +99,6 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         "targetHeight": 0,
         "chainId": "",
         "subqueryHealthy": false,
+        "Cache-control": "no-cache",
     }))
 }
