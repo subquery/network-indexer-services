@@ -71,5 +71,6 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         "subqueryHealthy": subquery_healthy,
         "subqueryNode": subquery_node,
         "subqueryQuery": subquery_query,
+        "Cache-control": "no-cache",
     }))
 }
