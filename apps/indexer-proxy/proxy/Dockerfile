@@ -20,7 +20,11 @@ RUN --mount=type=cache,id=cargo_bin,target=~/.cargo/bin/ \
 # Final image
 FROM debian:bullseye-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+RUN rm /var/lib/dpkg/info/libc-bin.* && \
+    apt-get clean && \
+    apt-get update && \
+    apt-get install libc-bin && \
+    apt-get install -y --no-install-recommends ca-certificates && \
     apt-get --assume-yes install curl && \
     update-ca-certificates
 
