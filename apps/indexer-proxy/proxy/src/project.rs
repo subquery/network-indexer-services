@@ -725,6 +725,9 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                     "polkadot" => {
                         ptype = ProjectType::RpcSubstrate(rpc_mainfest.clone());
                     }
+                    "solana" => {
+                        ptype = ProjectType::RpcEvm(rpc_mainfest.clone());
+                    }
                     _ => {}
                 }
             }
