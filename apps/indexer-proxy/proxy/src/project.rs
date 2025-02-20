@@ -232,6 +232,7 @@ pub struct Endpoint {
     pub endpoint: String,
     pub is_internal: bool,
     pub is_ws: bool,
+    pub rpc_family: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -736,6 +737,7 @@ pub async fn handle_projects(projects: Vec<ProjectItem>) -> Result<()> {
                 endpoint: endpoint.value,
                 is_internal,
                 is_ws,
+                rpc_family: endpoint.rpc_family,
             };
 
             if is_default {
