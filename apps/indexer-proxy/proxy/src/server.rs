@@ -719,12 +719,16 @@ fn process_sign(value: &mut serde_json::Map<String, serde_json::Value>, key: &st
     }
 }
 
-async fn metadata_handler(Path(deployment): Path<String>) -> Result<Json<Value>, Error> {
-    get_project(&deployment)
+async fn metadata_handler(Path(deployment): Path<String>) -> Result<Response<String>, Error> {
+    let body = get_project(&deployment)
         .await?
         .metadata(MetricsNetwork::HTTP)
         .await
-        .map(Json)
+        .map(Json)?;
+    Ok(build_response(
+        body.to_string(),
+        vec![("Cache-control", "no-cache")],
+    ))
 }
 
 async fn healthy_handler() -> Result<Json<Value>, Error> {

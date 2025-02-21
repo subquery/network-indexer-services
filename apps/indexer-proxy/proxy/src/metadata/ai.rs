@@ -6,6 +6,5 @@ use crate::project::Project;
 pub async fn metadata(_project: &Project) -> Result<Value> {
     Ok(json!({
         "ai": "TODO",
-        "Cache-control": "no-cache",
     }))
 }
