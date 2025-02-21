@@ -98,7 +98,6 @@ pub async fn solana_metadata(
         RpcClient::new_with_commitment(endpoint.endpoint.clone(), CommitmentConfig::confirmed());
 
     let now = Instant::now();
-    let chain = U256::zero();
     let time = now.elapsed().as_millis() as u64;
     add_metrics_query(
         project.id.clone(),
@@ -143,8 +142,7 @@ pub async fn solana_metadata(
         "targetHeight": last_height,
         "lastTime": last_time,
         "genesis": base58_hash,
-        "chainId": chain,
-        "Cache-control": "no-cache",
+        "chainId": 0,
     }))
 }
 
