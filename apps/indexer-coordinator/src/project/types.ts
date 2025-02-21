@@ -83,6 +83,9 @@ export enum RpcEndpointType {
   subqlDictWs = 'subql_dictWs',
   subqlDictHttp = 'subql_dictHttp',
   subqlDictMetricsHttp = 'subql_dictMetricsHttp',
+
+  solanaHttp = 'solanaHttp',
+  solanaWs = 'solanaWs',
 }
 
 export const RpcEndpointAccessType = {

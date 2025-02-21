@@ -264,6 +264,7 @@ export class ProjectRpcService implements OnModuleInit {
         .withClientNameAndVersion(projectManifest.client?.name, projectManifest.client?.version)
         .withBlockFitlerCapability()
         .withFilteredBlocks()
+        .withHealth()
         .validate(endpoint, endpointKey as RpcEndpointType);
       return this.formatResponse(true);
     } catch (e) {
@@ -403,7 +404,7 @@ export class ProjectRpcService implements OnModuleInit {
         targetHeight = (await family.getTargetHeight(endpoint.value)) || lastHeight;
       }
     } catch (e) {
-      logger.debug(`getRpcMetadata error: ${e}`);
+      logger.debug(`getRpcMetadata error ${id}: ${e}`);
     }
     return {
       startHeight,

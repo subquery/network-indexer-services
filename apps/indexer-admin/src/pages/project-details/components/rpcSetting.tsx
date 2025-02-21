@@ -221,6 +221,7 @@ const RpcSetting: FC<IProps> = (props) => {
       polkadot: polkadotAndSubstrateRule,
       substrate: polkadotAndSubstrateRule,
       subql_dict: evmAndDataNodeRule,
+      solana: evmAndDataNodeRule,
     };
   }, [form, keys.data?.getRpcEndpointKeys]);
 
