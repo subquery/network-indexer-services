@@ -69,6 +69,5 @@ pub async fn metadata(project: &Project, network: MetricsNetwork) -> Result<Valu
         "lastTime": last_time,
         "genesis": genesis,
         "chainId": chain,
-        "Cache-control": "no-cache",
     }))
 }
