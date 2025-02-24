@@ -808,7 +808,11 @@ export class RpcFamilyPolkadot extends RpcFamilySubstrate {
 
 export class RpcFamilySolana extends RpcFamily {
   getEndpointKeys(): string[] {
-    return [RpcEndpointType.solanaWs, RpcEndpointType.solanaHttp];
+    return [
+      RpcEndpointType.solanaWs,
+      RpcEndpointType.solanaHttp,
+      RpcEndpointType.solanaMetricsHttp,
+    ];
   }
 
   get ws() {
@@ -816,6 +820,9 @@ export class RpcFamilySolana extends RpcFamily {
   }
   get http() {
     return RpcEndpointType.solanaHttp;
+  }
+  get metricsHttp() {
+    return RpcEndpointType.solanaMetricsHttp;
   }
 
   withChainId(chainId: string): IRpcFamily {
@@ -844,7 +851,11 @@ export class RpcFamilySolana extends RpcFamily {
     this.actions.push(async () => {
       let slot = 1;
       if (nodeType !== 'archive') {
-        let result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getLatestBlockhash', []);
+        let result = await getRpcRequestFunction(this.endpoint)(
+          this.endpoint,
+          'getLatestBlockhash',
+          []
+        );
         if (result.data.error) {
           throw new Error(`Request withNodeType failed: ${result.data.error.message}`);
         }
@@ -930,9 +941,7 @@ export class RpcFamilySolana extends RpcFamily {
       throw new Error(`Request getLastTimestamp failed: ${result.data.error.message}`);
     }
     const slot = BigNumber.from(result.data.result.context.slot).toNumber();
-    result = await getRpcRequestFunction(endpoint)(endpoint, 'getBlockTime', [
-      slot,
-    ]);
+    result = await getRpcRequestFunction(endpoint)(endpoint, 'getBlockTime', [slot]);
     if (result.data.error) {
       throw new Error(`Request getLastTimestamp-getBlockTime failed: ${result.data.error.message}`);
     }
