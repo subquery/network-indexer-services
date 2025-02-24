@@ -83,12 +83,17 @@ export enum RpcEndpointType {
   subqlDictWs = 'subql_dictWs',
   subqlDictHttp = 'subql_dictHttp',
   subqlDictMetricsHttp = 'subql_dictMetricsHttp',
+
+  solanaHttp = 'solanaHttp',
+  solanaWs = 'solanaWs',
+  solanaMetricsHttp = 'solanaMetricsHttp',
 }
 
 export const RpcEndpointAccessType = {
   [RpcEndpointType.evmMetricsHttp]: AccessType.INTERNAL,
   [RpcEndpointType.polkadotMetricsHttp]: AccessType.INTERNAL,
   [RpcEndpointType.subqlDictMetricsHttp]: AccessType.INTERNAL,
+  [RpcEndpointType.solanaMetricsHttp]: AccessType.INTERNAL,
 };
 
 @InputType('SubgraphPort')
