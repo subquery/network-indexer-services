@@ -831,17 +831,23 @@ export class RpcFamilySolana extends RpcFamily {
 
   withGenesisHash(genesisHash: string): IRpcFamily {
     this.actions.push(async () => {
-      const result = await getRpcRequestFunction(this.endpoint)(
-        this.endpoint,
-        'getGenesisHash',
-        []
-      );
-      if (result.data.error) {
-        throw new Error(`Request getGenesisHash failed: ${result.data.error.message}`);
-      }
-      const genesisHashFromRpc = result.data.result;
-      if (genesisHashFromRpc !== genesisHash) {
-        throw new Error(`GenesisHash mismatch: ${genesisHashFromRpc} != ${genesisHash}`);
+      switch (this.targetEndpointKey) {
+        case this.http:
+          const result = await getRpcRequestFunction(this.endpoint)(
+            this.endpoint,
+            'getGenesisHash',
+            []
+          );
+          if (result.data.error) {
+            throw new Error(`Request getGenesisHash failed: ${result.data.error.message}`);
+          }
+          const genesisHashFromRpc = result.data.result;
+          if (genesisHashFromRpc !== genesisHash) {
+            throw new Error(`GenesisHash mismatch: ${genesisHashFromRpc} != ${genesisHash}`);
+          }
+          break;
+        default:
+          break;
       }
     });
     return this;
@@ -849,28 +855,34 @@ export class RpcFamilySolana extends RpcFamily {
 
   withNodeType(nodeType: string): IRpcFamily {
     this.actions.push(async () => {
-      let slot = 1;
-      if (nodeType !== 'archive') {
-        let result = await getRpcRequestFunction(this.endpoint)(
-          this.endpoint,
-          'getLatestBlockhash',
-          []
-        );
-        if (result.data.error) {
-          throw new Error(`Request withNodeType failed: ${result.data.error.message}`);
-        }
-        slot = BigNumber.from(result.data.result.context.slot).toNumber();
-      }
-      const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getBlock', [
-        slot,
-        {
-          maxSupportedTransactionVersion: 0,
-          transactionDetails: 'none',
-          rewards: false,
-        },
-      ]);
-      if (result.data.error) {
-        throw new Error(`NodeType mismatch: ${nodeType} required`);
+      switch (this.targetEndpointKey) {
+        case this.http:
+          let slot = 1;
+          if (nodeType !== 'archive') {
+            let result = await getRpcRequestFunction(this.endpoint)(
+              this.endpoint,
+              'getLatestBlockhash',
+              []
+            );
+            if (result.data.error) {
+              throw new Error(`Request withNodeType failed: ${result.data.error.message}`);
+            }
+            slot = BigNumber.from(result.data.result.context.slot).toNumber();
+          }
+          const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getBlock', [
+            slot,
+            {
+              maxSupportedTransactionVersion: 0,
+              transactionDetails: 'none',
+              rewards: false,
+            },
+          ]);
+          if (result.data.error) {
+            throw new Error(`NodeType mismatch: ${nodeType} required`);
+          }
+          break;
+        default:
+          break;
       }
     });
     return this;
@@ -881,17 +893,27 @@ export class RpcFamilySolana extends RpcFamily {
       if (!clientName && !clientVersion) {
         return;
       }
-      const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getVersion', []);
-      if (result.data.error) {
-        throw new Error(`Request getVersion failed: ${result.data.error.message}`);
-      }
-      const resultSet = result.data.result;
-      const clientVersionFromRpc = resultSet['solana-core'];
-      if (
-        !!clientVersion &&
-        !semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)
-      ) {
-        throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
+      switch (this.targetEndpointKey) {
+        case this.http:
+          const result = await getRpcRequestFunction(this.endpoint)(
+            this.endpoint,
+            'getVersion',
+            []
+          );
+          if (result.data.error) {
+            throw new Error(`Request getVersion failed: ${result.data.error.message}`);
+          }
+          const resultSet = result.data.result;
+          const clientVersionFromRpc = resultSet['solana-core'];
+          if (
+            !!clientVersion &&
+            !semver.satisfies(semver.coerce(clientVersionFromRpc), clientVersion)
+          ) {
+            throw new Error(`ClientVersion mismatch: ${clientVersionFromRpc} vs ${clientVersion}`);
+          }
+          break;
+        default:
+          break;
       }
     });
     return this;
@@ -911,9 +933,27 @@ export class RpcFamilySolana extends RpcFamily {
 
   withHealth(): IRpcFamily {
     this.actions.push(async () => {
-      const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getHealth', []);
-      if (result.data.error) {
-        throw new Error(`Not health: ${result.data.error}`);
+      switch (this.targetEndpointKey) {
+        case this.http:
+          const result = await getRpcRequestFunction(this.endpoint)(this.endpoint, 'getHealth', []);
+          if (result.data.error) {
+            throw new Error(`Not health: ${result.data.error}`);
+          }
+          break;
+        case this.ws:
+          const wsResult = await jsonWsRpcRequest(this.endpoint, 'accountSubscribe', [
+            'CnARJJtJKBy3A5yUnQKUifMUG6JBqDZ3SnAEg37dmd2t',
+            {
+              encoding: 'jsonParsed',
+              commitment: 'finalized',
+            },
+          ]);
+          if (wsResult.data.error) {
+            throw new Error(`Check subscribe failed: ${wsResult.data.error.message}`);
+          }
+          break;
+        default:
+          break;
       }
     });
     return this;
