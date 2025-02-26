@@ -74,6 +74,10 @@ export function parseMetrics(metrics: string): MetricsData {
     if (lines[i].startsWith('# TYPE geth_info')) {
       mType = MetricsType.GETH_PROMETHEUS;
     }
+    // geth bor
+    else if (lines[i].startsWith('# TYPE rpc_duration_bor')) {
+      mType = MetricsType.GETH_PROMETHEUS;
+    }
     if (lines[i].startsWith('# TYPE chain_info')) {
       /**
         # TYPE chain_info gauge
