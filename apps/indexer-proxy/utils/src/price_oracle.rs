@@ -37,8 +37,14 @@ pub async fn convert_price<M: Middleware>(
 
     contract
         .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
-        .map_err(|_| Error::ServiceException(1028))?
+        .map_err(|e| {
+            println!("line: {}, getSigners error: {:?}", line!(), e);
+            Error::ServiceException(1028)
+        })?
         .call()
         .await
-        .map_err(|_| Error::ServiceException(1028))
+        .map_err(|e| {
+            println!("line: {}, getSigners error: {:?}", line!(), e);
+            Error::ServiceException(1028)
+        })
 }
