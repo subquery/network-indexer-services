@@ -357,6 +357,7 @@ export class PaygService implements OnModuleInit {
       channel.spent = (prevSpent + price).toString();
 
       logger.debug(`channel.spent: ${channel.spent}, spent: ${spent}, price: ${price}`);
+      const fields = ['id', 'spent'];
 
       // if remote is less than own, just add spent
       if (prevRemote < currentRemote) {
@@ -364,6 +365,7 @@ export class PaygService implements OnModuleInit {
         channel.lastFinal = isFinal;
         channel.lastIndexerSign = indexerSign;
         channel.lastConsumerSign = consumerSign;
+        fields.push(...['remote', 'lastFinal', 'lastIndexerSign', 'lastConsumerSign']);
       }
 
       // // threshold value for checkpoint and spawn to other promise.
@@ -387,7 +389,7 @@ export class PaygService implements OnModuleInit {
 
       logger.debug(`Updated state channel ${id}`);
 
-      return this.saveAndPublish(channel, PaygEvent.State);
+      return this.saveAndPublish(lodash.pick(channel, fields), PaygEvent.State);
     } catch (e) {
       logger.error(`Failed to update state channel ${id} with error: ${e}`);
     }
@@ -415,17 +417,20 @@ export class PaygService implements OnModuleInit {
     }
 
     let modified = false;
+    const fields = ['id'];
 
     const preExpirationAt = channel.expiredAt;
     if (channel.expiredAt < expiration) {
       channel.expiredAt = expiration;
       modified = true;
+      fields.push('expiredAt');
     }
 
     // TIPS: if delete db and restore from chain, it will be wrong
     if (price && price !== '0') {
       channel.price = BigInt(price).toString();
       modified = true;
+      fields.push('price');
     }
 
     let signed = false;
@@ -478,7 +483,7 @@ export class PaygService implements OnModuleInit {
             ),
       });
     }
-    return this.saveAndPublish(channel, PaygEvent.State);
+    return this.saveAndPublish(lodash.pick(channel, fields), PaygEvent.State);
   }
 
   async checkpoint(id: string, txType: TxType = TxType.check): Promise<Channel> {
@@ -522,8 +527,9 @@ export class PaygService implements OnModuleInit {
     channel.spent = channel.remote;
 
     logger.debug(`Checkpointed state channel ${id}`);
+    const fields = ['id', 'onchain', 'spent'];
 
-    return this.saveAndPublish(channel, PaygEvent.State);
+    return this.saveAndPublish(lodash.pick(channel, fields), PaygEvent.State);
   }
 
   async terminate(id: string): Promise<Channel> {
@@ -575,8 +581,9 @@ export class PaygService implements OnModuleInit {
     channel.lastFinal = true;
 
     logger.debug(`Terminated state channel ${id}`);
+    const fields = ['id', 'status', 'onchain', 'spent', 'lastFinal'];
 
-    return this.saveAndPublish(channel, PaygEvent.State);
+    return this.saveAndPublish(lodash.pick(channel, fields), PaygEvent.State);
   }
 
   async respond(id: string): Promise<Channel> {
@@ -621,11 +628,12 @@ export class PaygService implements OnModuleInit {
     channel.lastFinal = true;
 
     logger.debug(`Responded state channel ${id}`);
+    const fields = ['id', 'onchain', 'spent', 'lastFinal'];
 
-    return this.saveAndPublish(channel, PaygEvent.State);
+    return this.saveAndPublish(lodash.pick(channel, fields), PaygEvent.State);
   }
 
-  async saveAndPublish(channel: Channel, event: PaygEvent): Promise<Channel> {
+  async saveAndPublish(channel: Partial<Channel>, event: PaygEvent): Promise<Channel> {
     const new_channel = await this.channelRepo.save(channel);
     await this.pubSub.publish(event, { channelChanged: new_channel });
     return new_channel;
