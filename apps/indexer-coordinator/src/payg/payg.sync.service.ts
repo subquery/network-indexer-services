@@ -8,6 +8,7 @@ import { StateChannel as StateChannelOnChain } from '@subql/contract-sdk';
 import { StateChannel as StateChannelOnNetwork } from '@subql/network-query';
 import { BigNumber, utils } from 'ethers';
 
+import _ from 'lodash';
 import { AccountService } from 'src/core/account.service';
 import { PaygEvent } from 'src/utils/subscription';
 import { Repository } from 'typeorm';
@@ -216,11 +217,15 @@ export class PaygSyncService implements OnApplicationBootstrap {
     const channel = await this.paygService.channel(id);
     if (!channel) return;
 
+    const fields = ['id'];
     if (channel.expiredAt < expiredAt) {
       channel.expiredAt = expiredAt;
+      fields.push('expiredAt');
     }
     channel.terminatedAt = expiredAt;
-    await this.paygService.saveAndPublish(channel, PaygEvent.State);
+    fields.push('terminatedAt');
+
+    await this.paygService.saveAndPublish(_.pick(channel, fields), PaygEvent.State);
   }
 
   async syncFund(id: string, total: string) {
@@ -228,7 +233,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.total = total;
-    await this.paygService.saveAndPublish(channel, PaygEvent.State);
+    const fields = ['id', 'total'];
+    await this.paygService.saveAndPublish(_.pick(channel, fields), PaygEvent.State);
   }
 
   async syncCheckpoint(id: string, onchain: string) {
@@ -236,7 +242,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     if (!channel) return;
 
     channel.onchain = onchain;
-    await this.paygService.saveAndPublish(channel, PaygEvent.State);
+    const fields = ['id', 'onchain'];
+    await this.paygService.saveAndPublish(_.pick(channel, fields), PaygEvent.State);
   }
 
   async syncTerminate(id: string, onchain: string, terminatedAt: number, byIndexer: boolean) {
@@ -249,7 +256,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.terminateByIndexer = byIndexer;
     channel.lastFinal = true;
 
-    await this.paygService.saveAndPublish(channel, PaygEvent.State);
+    const fields = ['id', 'onchain', 'status', 'terminatedAt', 'terminateByIndexer', 'lastFinal'];
+    await this.paygService.saveAndPublish(_.pick(channel, fields), PaygEvent.State);
   }
 
   async syncFinalize(id: string, total: BigNumber, remain: BigNumber) {
@@ -260,7 +268,8 @@ export class PaygSyncService implements OnApplicationBootstrap {
     channel.status = ChannelStatus.FINALIZED;
     channel.lastFinal = true;
 
-    await this.paygService.saveAndPublish(channel, PaygEvent.Stopped);
+    const fields = ['id', 'onchain', 'status', 'lastFinal'];
+    await this.paygService.saveAndPublish(_.pick(channel, fields), PaygEvent.Stopped);
   }
 
   async syncLabor(deploymentId: string, indexer: string, total: string, createdAt: number) {
