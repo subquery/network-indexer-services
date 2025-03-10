@@ -809,7 +809,7 @@ export class RpcFamilyPolkadot extends RpcFamilySubstrate {
 export class RpcFamilySolana extends RpcFamily {
   getEndpointKeys(): string[] {
     return [
-      RpcEndpointType.solanaWs,
+      // RpcEndpointType.solanaWs,
       RpcEndpointType.solanaHttp,
       RpcEndpointType.solanaMetricsHttp,
     ];
