@@ -726,7 +726,10 @@ async fn handle_group(
                                             "state": res_state,
                                         })
                                     }
-                                    Err(err) => json!({ "error": format!("{:?}", err) }),
+                                    Err(err) => {
+                                        warn!("p2p query_single_state conflict error : {:?}", err);
+                                        json!({ "error": format!("{:?}", err) })
+                                    }
                                 };
 
                                 let e = Event::PaygQueryRes(uid, serde_json::to_string(&result)?);
