@@ -522,7 +522,10 @@ async fn ep_payg_handler(
             .await
             {
                 Ok(p) => p,
-                Err(e) => return e.into_response(),
+                Err(e) => {
+                    warn!("single query_single_state conflict error e : {:?}", e);
+                    return e.into_response();
+                }
             }
         }
     };

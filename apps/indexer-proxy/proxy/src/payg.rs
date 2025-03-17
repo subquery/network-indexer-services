@@ -329,11 +329,13 @@ pub async fn before_query_signle_state(
     mut state: QueryState,
     unit_times: u64,
     uint_overflow: u64,
+    network_type: &MetricsNetwork,
 ) -> Result<(QueryState, String, StateCache)> {
     debug!("Start handle query channel");
 
     // check channel state
     let channel_id = state.channel_id;
+    let channel = format!("{:#x}", channel_id);
     let (mut state_cache, keyname) = fetch_channel_cache(channel_id).await?;
     debug!("Got channel cache");
 
@@ -370,7 +372,9 @@ pub async fn before_query_signle_state(
     // check spent & conflict
     if remote_prev < remote_next && remote_prev + used_amount > remote_next {
         warn!(
-            "remote prev: {} remote next: {}, should: {}",
+            "channel: {}, network_type: {:?}, remote prev: {} remote next: {}, should: {}",
+            channel,
+            network_type,
             remote_prev,
             remote_next,
             remote_prev + price
@@ -394,12 +398,11 @@ pub async fn before_query_signle_state(
 
     if state_cache.conflict_times > conflict {
         warn!(
-            "CONFLICT: local_next: {}, remote_next: {}, price: {}, conflict: {}",
-            local_next, remote_next, price, state_cache.conflict_times
+            "CONFLICT: channel: {}, network_type: {:?},,  local_next: {}, remote_next: {}, price: {}, conflict: {}",
+            channel, network_type, local_next, remote_next, price, state_cache.conflict_times
         );
 
         let project_id = project.id.clone();
-        let channel = format!("{:#x}", channel_id);
         let times = state_cache.conflict_times;
         let start = state_cache.conflict_start;
         let end = Utc::now().timestamp();
@@ -488,7 +491,7 @@ pub async fn query_single_state(
     let is_rpc_project = project.is_rpc_project();
 
     let (before_state, keyname, state_cache) =
-        before_query_signle_state(&project, state, unit_times, unit_overflow)
+        before_query_signle_state(&project, state, unit_times, unit_overflow, &network_type)
             .await
             .map_err(|e| {
                 if is_rpc_project {
