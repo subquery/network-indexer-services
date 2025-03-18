@@ -365,6 +365,7 @@ pub async fn before_query_signle_state(
     let local_prev = state_cache.spent;
     let remote_prev = state_cache.remote;
     let used_amount = price * unit_times;
+    let project_id = project.id.clone();
 
     let local_next = local_prev + used_amount;
     let remote_next = state.spent;
@@ -372,9 +373,10 @@ pub async fn before_query_signle_state(
     // check spent & conflict
     if remote_prev < remote_next && remote_prev + used_amount > remote_next {
         warn!(
-            "channel: {}, network_type: {:?}, remote prev: {} remote next: {}, should: {}",
+            "channel: {}, network_type: {:?}, project_id: {}, remote prev: {} remote next: {}, should: {}",
             channel,
             network_type,
+            project_id,
             remote_prev,
             remote_next,
             remote_prev + price
@@ -398,11 +400,10 @@ pub async fn before_query_signle_state(
 
     if state_cache.conflict_times > conflict {
         warn!(
-            "CONFLICT: channel: {}, network_type: {:?},,  local_next: {}, remote_next: {}, price: {}, conflict: {}",
-            channel, network_type, local_next, remote_next, price, state_cache.conflict_times
+            "CONFLICT: channel: {}, network_type: {:?}, project_id: {}, conflict: {},  local_next: {}, remote_next: {}, price: {}, state-conflict: {}",
+            channel, network_type, project_id, conflict, local_next, remote_next, price, state_cache.conflict_times
         );
 
-        let project_id = project.id.clone();
         let times = state_cache.conflict_times;
         let start = state_cache.conflict_start;
         let end = Utc::now().timestamp();

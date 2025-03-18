@@ -23,6 +23,7 @@ prometheus-client = "0.22"
 redis = { version = "0.27", features = ["tokio-comp"] }
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 reqwest-streams = { version = "0.8", features = ["json"] }
+rustls-webpki = "0.102"
 sentry = "0.34.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
