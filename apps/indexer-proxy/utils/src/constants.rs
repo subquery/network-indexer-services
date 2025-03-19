@@ -78,17 +78,20 @@ pub const BOOTSTRAP: [&str; 5] = [
     "/ip4/154.91.1.165/quic/7370",
 ];
 
-pub const BOOTNODE_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8001/quic-v1";
-pub const BOOTNODE_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8001";
+pub const BOOTNODE_DEFAULT_QUIC_ADDRESS: &str =
+    "/dns4/metrics-bootstrap.subquery.network/udp/8001/quic-v1";
+pub const BOOTNODE_DEFAULT_TCP_ADDRESS: &str = "/dns4/metrics-bootstrap.subquery.network/tcp/8001";
 pub const METRICS_PEER_ID: &str = "16Uiu2HAmNa64mzMD6Uq4EhUTdHKoZE7MLiEh7hCK3ACN5F5MgJoL";
-pub const METRICS_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8003/quic-v1";
-pub const METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8003";
-
-pub const TEST_BOOTNODE_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8005/quic-v1";
-pub const TEST_BOOTNODE_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8005";
+pub const METRICS_DEFAULT_QUIC_ADDRESS: &str = "/dns4/metrics.subquery.network/udp/8003/quic-v1";
+pub const METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/metrics.subquery.network/tcp/8003";
+pub const TEST_BOOTNODE_DEFAULT_QUIC_ADDRESS: &str =
+    "/dns4/metrics-bootstrap.subquery.network/udp/8005/quic-v1";
+pub const TEST_BOOTNODE_DEFAULT_TCP_ADDRESS: &str =
+    "/dns4/metrics-bootstrap.subquery.network/tcp/8005";
 pub const TEST_METRICS_PEER_ID: &str = "16Uiu2HAmUGCzsEwPGyuE9HcTzKGY4LUPFpLP3vKpT7buJUAdsKX5";
-pub const TEST_METRICS_DEFAULT_QUIC_ADDRESS: &str = "/dns4/boot_node/udp/8007/quic-v1";
-pub const TEST_METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/boot_node/tcp/8007";
+pub const TEST_METRICS_DEFAULT_QUIC_ADDRESS: &str =
+    "/dns4/metrics.subquery.network/udp/8007/quic-v1";
+pub const TEST_METRICS_DEFAULT_TCP_ADDRESS: &str = "/dns4/metrics.subquery.network/tcp/8007";
 
 pub const TEST_BOOSTNODE_PEER_ID_LIST: [&str; 3] = [
     "16Uiu2HAm5SPUotukayoKUZG5jQQ9zAGgjAXXz4Tg62kzZMbikLdQ",
