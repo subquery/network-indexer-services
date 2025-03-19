@@ -25,13 +25,18 @@ export function colorText(text: string, color = TextColor.CYAN): string {
   return `\u001b[${color}m${text}\u001b[39m`;
 }
 
+// Logger configuration
 const logger = new Logger({
   level: argv.debug ? 'debug' : 'info',
-  outputFormat: 'colored',
+  outputFormat: 'colored', // Output format, but will be irrelevant for coordinator
   nestedKey: 'payload',
 });
 
 export function getLogger(category: string): Pino.Logger {
+  // Disable all output for the coordinator category
+  if (category === LogCategory.coordinator) {
+    return Pino({ level: 'silent' }); // Set logger to silent mode for the coordinator
+  }
   return logger.getLogger(category);
 }
 
@@ -63,6 +68,7 @@ export class NestLogger implements LoggerService {
   }
 }
 
+// Disable all coordinator logs without any CLI flag
 if (argv['log-args']) {
   getLogger('yargs').debug('yargs argv: %o', argv);
 }
