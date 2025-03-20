@@ -49,6 +49,7 @@ services:
       - --start-port=3100 # The start port number for the indexer node, by default: 3001
       - --secret-key=<a random str> # Change to your own secret key to encrypt the controller privatekey which store in db
       - --ipfs=http://indexer_ipfs:8080/api/v0/ # Use docker/local ipfs endpoint or
+      #- --host-env=k8s # If you are running in Kubernetes (k8s), make sure to specify the host-env for k8s.
       #- --ipfs=https://unauthipfs.subquery.network/ipfs/api/v0 # subquery's ipfs (heavily ratelimited)
     healthcheck:
       test:
