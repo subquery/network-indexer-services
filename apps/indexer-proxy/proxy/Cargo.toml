@@ -11,13 +11,28 @@ axum-streams = { version = "0.19", features = ["text"] }
 base64 = "0.22"
 bincode = "1.3"
 cached = "0.53.1"
-chamomile_types = "0.10"
 chrono = "0.4"
 digest = '0.10'
 ethers = { git = "https://github.com/gakonst/ethers-rs.git", tag = "ethers-v2.0.7" }
 futures-util = "0.3.30"
 hex = "0.4"
 jsonwebtoken = "9.1"
+libp2p = { version = "0.55", features = [
+  "dns",
+  "tokio",
+  "identify",
+  "json",
+  "kad",
+  "ping",
+  "tls",
+  "request-response",
+  "secp256k1",
+  "serde",
+  "tcp",
+  "quic",
+  "yamux",
+  "noise",
+] }
 once_cell = "1.12"
 prometheus-client = "0.22"
 redis = { version = "0.27", features = ["tokio-comp"] }
@@ -27,7 +42,7 @@ rustls-webpki = "0.102"
 sentry = "0.34.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_with ={ version = "3.0", features = ["json"] }
+serde_with = { version = "3.0", features = ["json"] }
 sha2 = '0.10'
 solana-client = "2.2"
 solana-sdk = "2.2"
@@ -36,7 +51,6 @@ structopt = "0.3"
 subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.6.0" }
 subql-indexer-utils = { version = "2", path = "../utils" }
 sysinfo = "0.32"
-tdn = { version = "0.10", default-features = false, features = ["multiple"] }
 tokenizers = "0.20"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1" }
