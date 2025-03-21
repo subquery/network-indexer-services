@@ -58,8 +58,6 @@ export class DominantPrice {
   lastUpdated?: string;
   @Field({ nullable: true })
   lastError?: string;
-  @Field({ nullable: true })
-  source?: string;
 }
 
 @ObjectType('ValidationResponse')
@@ -425,7 +423,7 @@ export class PaygEntity {
 
   @Column({ default: '' })
   @Field()
-  minPrice: string;
+  price: string;
 
   @Column({ default: 0 })
   @Field()
@@ -451,7 +449,7 @@ export class PaygEntity {
 @ObjectType('Payg')
 export class Payg extends PaygEntity {
   @Field({ nullable: true })
-  price?: string;
+  minPrice?: string;
 }
 
 @ObjectType('Project')

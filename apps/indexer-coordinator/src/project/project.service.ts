@@ -40,6 +40,7 @@ import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
+import { PriceService } from './price.service';
 import { getProjectManifest } from './project.manifest';
 import {
   IProjectConfig,
@@ -53,7 +54,6 @@ import {
   ProjectEntity,
   ProjectInfo,
   MetadataType,
-  DominantPrice,
 } from './project.model';
 import {
   MmrStoreType,
@@ -64,7 +64,6 @@ import {
   TemplateType,
 } from './types';
 import { validateNodeEndpoint, validateQueryEndpoint } from './validator/subquery.validator';
-import { PriceService } from './price.service';
 
 @Injectable()
 export class ProjectService {
@@ -181,7 +180,7 @@ export class ProjectService {
   async getAlivePaygs(): Promise<Payg[]> {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
-    const paygs = await this.paygRepo.find({ where: { minPrice: Not('') } });
+    const paygs = await this.paygRepo.find({ where: { price: Not('') } });
     for (const payg of paygs) {
       payg.overflow = 10000;
     }
@@ -278,7 +277,7 @@ export class ProjectService {
     if (flexConfig.flex_enabled === 'true') {
       paygConfig = {
         id: id.trim(),
-        minPrice: flexConfig.flex_price,
+        price: flexConfig.flex_price,
         expiration: Number(flexConfig.flex_valid_period) || 0,
         threshold: 10,
         overflow: 10,
@@ -591,7 +590,7 @@ export class ProjectService {
       throw new Error(`payg not exist: ${id}`);
     }
 
-    payg.minPrice = paygConfig.price;
+    payg.price = paygConfig.price;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;

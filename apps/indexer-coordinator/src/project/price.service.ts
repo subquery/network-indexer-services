@@ -4,17 +4,13 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ConfigService, ConfigType } from 'src/config/config.service';
-import { In, Repository } from 'typeorm';
-import {  getLogger } from '../utils/logger';
-import _ from 'lodash';
-import {
-  PaygEntity,
-  Project,
-  DominantPrice,
-} from './project.model';
 import axios from 'axios';
 import { BigNumber } from 'ethers';
+import _ from 'lodash';
+import { ConfigService, ConfigType } from 'src/config/config.service';
+import { In, Repository } from 'typeorm';
+import { getLogger } from '../utils/logger';
+import { PaygEntity, Project, DominantPrice } from './project.model';
 
 const CHS = 'http://192.168.1.141:8010/get_dominator_price';
 
@@ -65,11 +61,12 @@ export class PriceService {
 
         // no payg
         if (!p.payg) continue;
+        p.payg.minPrice = p.payg.price;
 
         // no dominant price
         if (!p.dominantPrice?.price) continue;
 
-        const minPrice = BigNumber.from(p.payg.minPrice || 0);
+        const minPrice = BigNumber.from(p.payg.price || 0);
         const dominant = BigNumber.from(p.dominantPrice.price).mul(ratio).div(100);
         p.payg.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
       }
