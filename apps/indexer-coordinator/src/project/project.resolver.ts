@@ -35,6 +35,7 @@ import {
   SubqueryEndpointAccessType,
   SubqueryEndpointType,
 } from './types';
+import { PriceService } from './price.service';
 
 @Resolver(() => Project)
 export class ProjectResolver {
@@ -45,7 +46,8 @@ export class ProjectResolver {
     private queryService: QueryService,
     private dockerRegistry: DockerRegistryService,
     private pubSub: SubscriptionService,
-    private dbStatsService: DbStatsService
+    private dbStatsService: DbStatsService,
+    private priceService: PriceService
   ) {}
 
   @Query(() => [String])
@@ -69,7 +71,7 @@ export class ProjectResolver {
           id,
           project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Query)?.value,
           project?.serviceEndpoints?.find((e) => e.key === SubqueryEndpointType.Node)?.value,
-          project?.hostType,
+          project?.hostType
         );
       case ProjectType.RPC:
         return this.projectRpcService.getRpcMetadata(id);
@@ -83,10 +85,19 @@ export class ProjectResolver {
   @Query(() => ProjectDetails)
   async project(@Args('id') id: string): Promise<ProjectDetails> {
     const project = await this.projectService.getProject(id);
+
+    await this.priceService.fillPaygAndDominatePrice([project]);
+
+    const payg = project.payg;
+    const dominantPrice = project.dominantPrice;
+    delete project.payg;
+    delete project.dominantPrice;
+
     return {
       ...project,
       metadata: await this.serviceMetadata(id, project.projectType),
-      payg: await this.projectService.getPayg(id),
+      payg,
+      dominantPrice,
     };
   }
 

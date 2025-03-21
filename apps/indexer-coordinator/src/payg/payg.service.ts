@@ -54,12 +54,12 @@ export class PaygService implements OnModuleInit {
       // project not modified since
       const pays = await this.paygRepo.find({
         where: {
-          price: '',
+          minPrice: '',
           token: '',
         },
       });
       for (const p of pays) {
-        p.price = flexConfig.flex_price;
+        p.minPrice = flexConfig.flex_price;
         p.expiration = Number(flexConfig.flex_valid_period) || 0;
         p.token = this.contract.getSdk().sqToken.address;
         await this.paygRepo.save(p);

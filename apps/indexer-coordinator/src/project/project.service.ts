@@ -53,6 +53,7 @@ import {
   ProjectEntity,
   ProjectInfo,
   MetadataType,
+  DominantPrice,
 } from './project.model';
 import {
   MmrStoreType,
@@ -63,6 +64,7 @@ import {
   TemplateType,
 } from './types';
 import { validateNodeEndpoint, validateQueryEndpoint } from './validator/subquery.validator';
+import { PriceService } from './price.service';
 
 @Injectable()
 export class ProjectService {
@@ -81,6 +83,7 @@ export class ProjectService {
     private portService: PortService,
     private onchainService: OnChainService,
     private configService: ConfigService,
+    private priceService: PriceService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -157,14 +160,13 @@ export class ProjectService {
     );
   }
 
-  async getAllProjects(): Promise<Project[]> {
+  async getAllProjects(source?: string): Promise<Project[]> {
     const projects = (await this.projectRepo.find()) as Project[];
-    for (const p of projects) {
-      const payg = await this.paygRepo.findOne({
-        where: { id: p.id },
-      });
-      p.payg = payg;
+
+    if (!['monitor'].includes(source)) {
+      await this.priceService.fillPaygAndDominatePrice(projects);
     }
+
     return projects.sort((a, b) => {
       if (!a?.details?.name) {
         return 1;
@@ -179,7 +181,7 @@ export class ProjectService {
   async getAlivePaygs(): Promise<Payg[]> {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
-    const paygs = await this.paygRepo.find({ where: { price: Not('') } });
+    const paygs = await this.paygRepo.find({ where: { minPrice: Not('') } });
     for (const payg of paygs) {
       payg.overflow = 10000;
     }
@@ -276,7 +278,7 @@ export class ProjectService {
     if (flexConfig.flex_enabled === 'true') {
       paygConfig = {
         id: id.trim(),
-        price: flexConfig.flex_price,
+        minPrice: flexConfig.flex_price,
         expiration: Number(flexConfig.flex_valid_period) || 0,
         threshold: 10,
         overflow: 10,
@@ -589,7 +591,7 @@ export class ProjectService {
       throw new Error(`payg not exist: ${id}`);
     }
 
-    payg.price = paygConfig.price;
+    payg.minPrice = paygConfig.price;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;

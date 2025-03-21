@@ -42,6 +42,26 @@ export class LogType {
   log: string;
 }
 
+@ObjectType('DominantPrice')
+export class DominantPrice {
+  @Field()
+  id: string;
+  @Field({ nullable: true })
+  price?: string;
+  @Field({ nullable: true })
+  retrieveCount?: number;
+  @Field({ nullable: true })
+  failCount?: number;
+  @Field({ nullable: true })
+  lastRetrieved?: string;
+  @Field({ nullable: true })
+  lastUpdated?: string;
+  @Field({ nullable: true })
+  lastError?: string;
+  @Field({ nullable: true })
+  source?: string;
+}
+
 @ObjectType('ValidationResponse')
 export class ValidationResponse {
   @Field()
@@ -405,7 +425,7 @@ export class PaygEntity {
 
   @Column({ default: '' })
   @Field()
-  price: string;
+  minPrice: string;
 
   @Column({ default: 0 })
   @Field()
@@ -422,15 +442,25 @@ export class PaygEntity {
   @Column({ default: '' })
   @Field()
   token: string;
+
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  @Field({ nullable: true })
+  priceRatio: number;
 }
 
 @ObjectType('Payg')
-export class Payg extends PaygEntity {}
+export class Payg extends PaygEntity {
+  @Field({ nullable: true })
+  price?: string;
+}
 
 @ObjectType('Project')
 export class Project extends ProjectEntity {
   @Field(() => Payg, { nullable: true })
   payg?: Payg;
+
+  @Field(() => DominantPrice, { nullable: true })
+  dominantPrice?: DominantPrice;
 }
 
 @ObjectType('ProjectWithStats')
@@ -446,4 +476,8 @@ export class ProjectDetails extends ProjectEntity {
 
   @Field(() => Payg, { nullable: true })
   payg?: Payg;
+
+  @Field(() => DominantPrice, { nullable: true })
+  dominantPrice?: DominantPrice;
+  
 }
