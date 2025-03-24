@@ -592,6 +592,7 @@ export class ProjectService {
     }
 
     payg.price = paygConfig.price;
+    payg.priceRatio = paygConfig.priceRatio;
     payg.expiration = paygConfig.expiration;
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;

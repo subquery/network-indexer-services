@@ -40,8 +40,9 @@ export class PriceService {
 
       if (exist && exist.price !== null) {
         p.minPrice = p.price;
+        p.priceRatio = p.priceRatio !== null ? p.priceRatio : ratio;
         const minPrice = BigNumber.from(p.price || 0);
-        const dominant = BigNumber.from(exist.price).mul(ratio).div(100);
+        const dominant = BigNumber.from(exist.price).mul(p.priceRatio).div(100);
         p.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
       }
     }
@@ -80,12 +81,13 @@ export class PriceService {
         // no payg
         if (!p.payg) continue;
         p.payg.minPrice = p.payg.price;
+        p.payg.priceRatio = p.payg.priceRatio !== null ? p.payg.priceRatio : ratio;
 
         // no dominant price
         if (!p.dominantPrice?.price) continue;
 
         const minPrice = BigNumber.from(p.payg.price || 0);
-        const dominant = BigNumber.from(p.dominantPrice.price).mul(ratio).div(100);
+        const dominant = BigNumber.from(p.dominantPrice.price).mul(p.payg.priceRatio).div(100);
         p.payg.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
       }
     }
