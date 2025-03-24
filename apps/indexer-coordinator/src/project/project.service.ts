@@ -162,7 +162,7 @@ export class ProjectService {
   async getAllProjects(source?: string): Promise<Project[]> {
     const projects = (await this.projectRepo.find()) as Project[];
 
-    if (!['monitor'].includes(source)) {
+    if (!['monitor', 'metadata'].includes(source)) {
       await this.priceService.fillPaygAndDominatePrice(projects);
     }
 
@@ -181,6 +181,7 @@ export class ProjectService {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
     const paygs = await this.paygRepo.find({ where: { price: Not('') } });
+    await this.priceService.inlinePayg(paygs);
     for (const payg of paygs) {
       payg.overflow = 10000;
     }

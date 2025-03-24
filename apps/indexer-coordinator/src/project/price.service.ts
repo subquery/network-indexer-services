@@ -10,7 +10,7 @@ import _ from 'lodash';
 import { ConfigService, ConfigType } from 'src/config/config.service';
 import { In, Repository } from 'typeorm';
 import { getLogger } from '../utils/logger';
-import { PaygEntity, Project, DominantPrice } from './project.model';
+import { PaygEntity, Project, DominantPrice, Payg } from './project.model';
 
 const CHS = 'http://192.168.1.141:8010/get_dominator_price';
 
@@ -27,6 +27,24 @@ export class PriceService {
   async refreshPrice() {
     const dids = [...this.cache.keys()];
     await this.request(dids, true);
+  }
+
+  async inlinePayg(paygs: Payg[]) {
+    const deploymentIds = paygs.map((p) => p.id);
+    if (!deploymentIds.length) return;
+    const dPrices = await this.getDominatePrice(deploymentIds);
+    const ratio = Number(await this.configService.get(ConfigType.FLEX_PRICE_RATIO));
+
+    for (const p of paygs) {
+      const exist = _.find(dPrices, (dp: DominantPrice) => dp.id === p.id);
+
+      if (exist && exist.price !== null) {
+        p.minPrice = p.price;
+        const minPrice = BigNumber.from(p.price || 0);
+        const dominant = BigNumber.from(exist.price).mul(ratio).div(100);
+        p.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
+      }
+    }
   }
 
   async fillPaygAndDominatePrice(projects: Project[]) {
@@ -73,7 +91,7 @@ export class PriceService {
     }
   }
 
-  async getDominatePrice(deploymentIds: string[]): Promise<DominantPrice[]> {
+  private async getDominatePrice(deploymentIds: string[]): Promise<DominantPrice[]> {
     const res = [];
     const nocacheIds = [];
     for (const did of deploymentIds) {
@@ -117,6 +135,7 @@ export class PriceService {
         res.push(_.pick(info, ['id', 'price', 'lastError']));
       }
     } catch (e) {
+      getLogger('price').error(`fail to request price, error: ${e.message}`);
       // error. add reason
       for (const id of deploymentIds) {
         res.push({

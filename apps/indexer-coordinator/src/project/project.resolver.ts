@@ -8,6 +8,7 @@ import { QueryService } from '../core/query.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ProjectEvent } from '../utils/subscription';
 import { DbStatsService } from './db.stats.service';
+import { PriceService } from './price.service';
 import { AggregatedManifest, RpcManifest, SubgraphManifest } from './project.manifest';
 import {
   LogType,
@@ -35,7 +36,6 @@ import {
   SubqueryEndpointAccessType,
   SubqueryEndpointType,
 } from './types';
-import { PriceService } from './price.service';
 
 @Resolver(() => Project)
 export class ProjectResolver {
@@ -116,7 +116,7 @@ export class ProjectResolver {
 
   @Query(() => [ProjectDetails])
   async getProjectsMetadata(): Promise<ProjectDetails[]> {
-    const projects = await this.projectService.getAllProjects();
+    const projects = await this.projectService.getAllProjects('metadata');
     return Promise.all(
       projects.map(async (project) => {
         switch (project.projectType) {

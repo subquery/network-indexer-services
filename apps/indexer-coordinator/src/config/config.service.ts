@@ -92,12 +92,11 @@ export class ConfigService {
   async getTips() {
     const keys = [ConfigType.TIP_DOMINANT_PRICE];
     const values = await this.getAll(keys);
-
-    for (const v of values) {
-      if (v.key === ConfigType.TIP_DOMINANT_PRICE && v.value === '1') {
-        await this.set(ConfigType.TIP_DOMINANT_PRICE, '0');
-      }
-    }
+    // for (const v of values) {
+    //   if (v.key === ConfigType.TIP_DOMINANT_PRICE && v.value === '1') {
+    //     await this.set(ConfigType.TIP_DOMINANT_PRICE, '0');
+    //   }
+    // }
     return values;
   }
 }
