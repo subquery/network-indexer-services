@@ -3,11 +3,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
+import { IoWarning } from 'react-icons/io5';
+import { formatEther } from '@ethersproject/units';
 import { Modal, Spinner, Typography } from '@subql/components';
 import { TOKEN_SYMBOLS } from '@subql/network-config';
 import { Button, Form, Input, Select, Tooltip } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import BigNumberJs from 'bignumber.js';
+import { BigNumber } from 'ethers';
 import { SubqlInput } from 'styles/input';
 
 import { useContractSDK } from 'containers/contractSdk';
@@ -22,12 +25,13 @@ type TProjectPAYG = {
 };
 
 export function PaygCard({ id }: TProjectPAYG) {
-  const { paygConfig, changePAYGCofnig, loading, initializeLoading } = usePAYGConfig(id);
+  const { paygConfig, changePAYGCofnig, loading, initializeLoading, dominantPrice } =
+    usePAYGConfig(id);
   const sdk = useContractSDK();
   const [showModal, setShowModal] = useState(false);
   const innerConfig = useMemo(() => {
-    const { paygPrice, paygExpiration } = paygConfig;
-    return { paygPrice, paygExpiration };
+    const { paygPrice, paygRatio, paygMinPrice, paygExpiration } = paygConfig;
+    return { paygPrice, paygExpiration, paygRatio, paygMinPrice };
   }, [paygConfig]);
   const paygEnabled = useMemo(() => {
     return innerConfig.paygExpiration && innerConfig.paygPrice;
@@ -38,12 +42,16 @@ export function PaygCard({ id }: TProjectPAYG) {
   const [paygConf, setPaygConf] = useState({
     token: '',
     price: '',
+    priceRatio: 0,
     validity: '',
+    minPrice: '',
   });
 
   useEffect(() => {
     setPaygConf({
+      priceRatio: paygConfig.paygRatio,
       price: paygConfig.paygPrice,
+      minPrice: paygConfig.paygMinPrice,
       validity: `${paygConfig.paygExpiration}`,
       token: paygConfig.token || sdk?.sqToken.address || '',
     });
@@ -69,7 +77,20 @@ export function PaygCard({ id }: TProjectPAYG) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="h6">Flex Plan Pricing</Typography>
+          <Typography variant="h6" style={{ display: 'flex', alignItems: 'center' }}>
+            Flex Plan Pricing (Current Dominant price:{' '}
+            {formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))}{' '}
+            {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts )
+            {dominantPrice?.lastError ? (
+              <Tooltip
+                title={`Fetch dominant price failed, the minimum acceptable price is used as the price for the flex plan. Error: ${dominantPrice.lastError}`}
+              >
+                <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 24, flexShrink: 0 }} />
+              </Tooltip>
+            ) : (
+              ''
+            )}
+          </Typography>
           <span style={{ flex: 1 }} />
           <Button
             type="primary"
@@ -81,6 +102,28 @@ export function PaygCard({ id }: TProjectPAYG) {
             Edit Flex Plan Pricing
           </Button>
         </div>
+        <Typography variant="medium" type="secondary">
+          Price Ratio: {paygConf.priceRatio}%
+        </Typography>
+        <Typography variant="medium" type="secondary">
+          Min pricing:{' '}
+          {paygConfig.token === sdk?.sqToken.address ? (
+            <Typography variant="medium" type="secondary">
+              {paygConfig.paygMinPrice} {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+            </Typography>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* <Typography variant="medium">
+                  {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
+                  <br />
+                </Typography>
+                <Typography variant="medium" type="secondary">
+                  = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
+                  {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
+                </Typography> */}
+            </div>
+          )}
+        </Typography>
 
         <Typography variant="medium" type="secondary">
           Pricing:{' '}
@@ -135,6 +178,8 @@ export function PaygCard({ id }: TProjectPAYG) {
           <Form
             form={form}
             initialValues={{
+              minPrice: paygConf.minPrice,
+              priceRatio: paygConf.priceRatio,
               price: paygConf.price,
               validity: paygConf.validity,
             }}
@@ -142,7 +187,44 @@ export function PaygCard({ id }: TProjectPAYG) {
             <SubqlInput>
               {sdk && (
                 <Form.Item
-                  name="price"
+                  name="priceRatio"
+                  rules={[
+                    {
+                      validator: (_, value) => {
+                        if (!value) {
+                          return Promise.reject(new Error('Price ratio is required'));
+                        }
+                        if (BigNumberJs(value).isLessThanOrEqualTo(0)) {
+                          return Promise.reject(new Error('Price ratio must be greater than 0'));
+                        }
+                        if (!BigNumberJs(value).isInteger()) {
+                          return Promise.reject(new Error('Price ratio must be integer'));
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <Input
+                    value={paygConf.priceRatio}
+                    onChange={(e) => {
+                      form.setFieldValue('priceRatio', e.target.value);
+                      setPaygConf({
+                        ...paygConf,
+                        priceRatio: +e.target.value,
+                      });
+                    }}
+                    type="number"
+                    disabled={loading}
+                    suffix="%"
+                  />
+                </Form.Item>
+              )}
+            </SubqlInput>
+            <SubqlInput>
+              {sdk && (
+                <Form.Item
+                  name="minPrice"
                   rules={[
                     {
                       validator: (_, value) => {
@@ -158,12 +240,12 @@ export function PaygCard({ id }: TProjectPAYG) {
                   ]}
                 >
                   <Input
-                    value={paygConf.price}
+                    value={paygConf.minPrice}
                     onChange={(e) => {
-                      form.setFieldValue('price', e.target.value);
+                      form.setFieldValue('minPrice', e.target.value);
                       setPaygConf({
                         ...paygConf,
-                        price: e.target.value,
+                        minPrice: e.target.value,
                       });
                     }}
                     type="number"
