@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FC, useMemo } from 'react';
+import { IoWarning } from 'react-icons/io5';
 import { useHistory } from 'react-router-dom';
 import { Spinner, SubqlProgress, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
 import { formatSQT } from '@subql/react-hooks';
+import { Tooltip } from 'antd';
 import BigNumberJs from 'bignumber.js';
 import { isNull, isUndefined } from 'lodash';
 
@@ -33,7 +35,7 @@ type Props = Omit<ProjectDetails, 'metadata'> & {
 };
 
 const ProjectItem: FC<Props> = (props) => {
-  const { id, details, payg, metadata, projectType, metadataLoading } = props;
+  const { id, details, payg, metadata, projectType, metadataLoading, dominantPrice } = props;
 
   const { indexer: account } = useCoordinatorIndexer();
   const history = useHistory();
@@ -113,9 +115,18 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={1} />
       <ItemContainer flex={1}>
         {payg?.expiration ? (
-          <Typography variant="small" type="secondary">
+          <Typography variant="small" type="secondary" style={{ display: 'flex' }}>
             {BigNumberJs(formatSQT(payg?.price)).multipliedBy(1000).toFixed()} {TOKEN_SYMBOL} / 1000
             requests
+            {dominantPrice.lastError ? (
+              <Tooltip
+                title={`Fetch dominant price failed, the minimum acceptable price is used as the price for the flex plan. Error: ${dominantPrice.lastError}`}
+              >
+                <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 16, flexShrink: 0 }} />
+              </Tooltip>
+            ) : (
+              ''
+            )}
           </Typography>
         ) : (
           <Typography variant="small" type="secondary">

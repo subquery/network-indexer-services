@@ -3,10 +3,11 @@
 
 import React, { FC, useEffect, useState } from 'react';
 import { BsBoxArrowInUpRight } from 'react-icons/bs';
+import InfoCircleOutlined from '@ant-design/icons/InfoCircleOutlined';
 import { useMutation, useQuery } from '@apollo/client';
 import { openNotification, Spinner, Tag, Typography } from '@subql/components';
 import { formatSQT, useAsyncMemo } from '@subql/react-hooks';
-import { Button, Form, Input, Select, Switch } from 'antd';
+import { Button, Form, Input, Select, Switch, Tooltip } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import BigNumberJs from 'bignumber.js';
 import { parseEther } from 'ethers/lib/utils';
@@ -72,10 +73,14 @@ const GlobalConfig: FC = () => {
       });
 
       const price = configQueryData.data.allConfig.find((i) => i.key === ConfigKey.FlexPrice);
+      const priceRatio = configQueryData.data.allConfig.find(
+        (i) => i.key === ConfigKey.FlexPriceRatio
+      );
       const validPeriod = configQueryData.data.allConfig.find(
         (i) => i.key === ConfigKey.FlexValidPeriod
       );
 
+      form.setFieldValue('priceRatio', BigNumberJs(priceRatio?.value || '0'));
       form.setFieldValue('price', BigNumberJs(formatSQT(price?.value || '0')).multipliedBy(1000));
       form.setFieldValue('validPeriod', BigNumberJs(validPeriod?.value || '0').dividedBy(86400));
     }
@@ -178,7 +183,64 @@ const GlobalConfig: FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        Price:{' '}
+                        Price ratio:{' '}
+                      </div>
+                    }
+                    colon={false}
+                    style={{ display: 'flex', alignItems: 'center' }}
+                    name="priceRatio"
+                    rules={[
+                      {
+                        validator: async (_, value) => {
+                          if (!value) {
+                            return Promise.reject(new Error('Please input price ratio'));
+                          }
+                          if (value <= 0) {
+                            return Promise.reject(new Error('Price ratio must be greater than 0'));
+                          }
+                          if (!Number.isInteger(+value)) {
+                            return Promise.reject(new Error('Price ratio must be integer'));
+                          }
+
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
+                    <Input
+                      style={{ width: 300 }}
+                      type="number"
+                      suffix={
+                        <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
+                          %
+                        </Typography>
+                      }
+                    />
+                  </Form.Item>
+                  <Tooltip title="Price Ratio is the ratio between your set acceptable price range and the price set by the main consumers in the market, used to measure the relationship between your pricing and market expectations. If the calculated result falls below your set minimum acceptable price, that minimum price will be used as the final price.">
+                    <InfoCircleOutlined
+                      style={{
+                        color: 'var(--sq-gray500)',
+                        height: '48px',
+                        fontSize: 18,
+                        marginLeft: 10,
+                      }}
+                    />
+                  </Tooltip>
+                </SubqlInput>
+                <SubqlInput style={{ display: 'flex' }}>
+                  <Form.Item
+                    label={
+                      <div
+                        style={{
+                          height: '100%',
+                          fontSize: 16,
+                          lineHeight: '46px',
+                          width: 100,
+                          textAlign: 'left',
+                        }}
+                      >
+                        Min Price:{' '}
                       </div>
                     }
                     colon={false}
@@ -317,6 +379,12 @@ const GlobalConfig: FC = () => {
                           value: BigNumberJs(form.getFieldValue('validPeriod') || 3).multipliedBy(
                             86400
                           ),
+                        },
+                      });
+                      await setConfigMutation({
+                        variables: {
+                          key: ConfigKey.FlexPriceRatio,
+                          value: BigNumberJs(form.getFieldValue('priceRatio') || 80),
                         },
                       });
                       openNotification({

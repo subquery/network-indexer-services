@@ -27,6 +27,7 @@ import { LoadingProvider } from 'containers/loadingContext';
 import { ModalProvider } from 'containers/modalContext';
 import { NotificationProvider, Notifications } from 'containers/notificationContext';
 import { HasControllerProvider, useHasController } from 'hooks/useHasController';
+import { useTipForDominatPrice } from 'hooks/useTipForDominatPrice';
 import { coordinatorServiceUrl, createApolloClient } from 'utils/apolloClient';
 
 import { GModalView } from './components/modalView';
@@ -51,7 +52,7 @@ const AppContents = () => {
   const { loading: hasControllerLoading, refetch } = useHasController();
   const history = useHistory();
   const location = useLocation();
-
+  const checkAndTip = useTipForDominatPrice();
   const stateFunc = async () => {
     if (!sdk || !tipsChainIds.includes(chain?.id || 0)) return;
     const hasController = await refetch();
@@ -71,7 +72,11 @@ const AppContents = () => {
     // database don't have indexer record so must register.
     if (!loading && !indexer && location.pathname !== '/register') {
       history.push('/register');
+      return;
     }
+    checkAndTip();
+    // eslint-disable-next-line consistent-return
+    return true;
   };
 
   // note this flow, after allow all wallet can be access, the coordinatorIndexer is a async fetch,
