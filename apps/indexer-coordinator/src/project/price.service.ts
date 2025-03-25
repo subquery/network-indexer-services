@@ -8,11 +8,12 @@ import axios from 'axios';
 import { BigNumber } from 'ethers';
 import _ from 'lodash';
 import { ConfigService, ConfigType } from 'src/config/config.service';
+import { argv } from 'src/yargs';
 import { In, Repository } from 'typeorm';
 import { getLogger } from '../utils/logger';
 import { PaygEntity, Project, DominantPrice, Payg } from './project.model';
 
-const CHS = 'http://192.168.1.141:8010/get_dominator_price';
+const CHS = argv['chs-endpoint'];
 
 @Injectable()
 export class PriceService {
