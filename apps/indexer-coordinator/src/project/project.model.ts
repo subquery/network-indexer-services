@@ -405,6 +405,8 @@ export class PaygConfig {
   @Field()
   price: string;
   @Field()
+  priceRatio: number;
+  @Field()
   expiration: number;
   @Field()
   threshold: number;
