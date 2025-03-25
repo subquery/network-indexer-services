@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
-import { ConfigService } from 'src/config/config.service';
+import { ConfigService, ConfigType } from 'src/config/config.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -279,7 +279,7 @@ export class ProjectService {
       paygConfig = {
         id: id.trim(),
         price: flexConfig.flex_price,
-        expiration: Number(flexConfig.flex_valid_period) || 0,
+        expiration: Number(this.configService.getDefault(ConfigType.FLEX_VALID_PERIOD)) || 259200, // default: 3 days
         threshold: 10,
         overflow: 10,
         token: this.contract.getSdk().sqToken.address,
@@ -593,7 +593,7 @@ export class ProjectService {
 
     payg.price = paygConfig.price;
     payg.priceRatio = paygConfig.priceRatio;
-    payg.expiration = paygConfig.expiration;
+    payg.expiration = Number(this.configService.getDefault(ConfigType.FLEX_VALID_PERIOD)) || 259200; // default: 3 days
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
     payg.token = paygConfig.token || this.contract.getSdk().sqToken.address;

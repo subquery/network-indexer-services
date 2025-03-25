@@ -99,4 +99,8 @@ export class ConfigService {
     // }
     return values;
   }
+
+  async getDefault(key: string) {
+    return defaultConfig[key];
+  }
 }
