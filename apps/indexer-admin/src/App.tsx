@@ -47,7 +47,7 @@ const AppContents = () => {
   const { address, isConnected } = useAccount();
   const sdk = useContractSDK();
   const { chain } = useNetwork();
-
+  // const [isThrowTheDialog, setIsThrowTheDialog] = React.useState(false);
   const { load, indexer, loading, error } = useCoordinatorIndexer();
   const { loading: hasControllerLoading, refetch } = useHasController();
   const history = useHistory();

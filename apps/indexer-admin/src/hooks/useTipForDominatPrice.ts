@@ -1,7 +1,7 @@
 // Copyright 2020-2022 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { useState } from 'react';
+import { useRef } from 'react';
 import { useHistory } from 'react-router';
 import { useMutation, useQuery } from '@apollo/client';
 import { Modal } from 'antd';
@@ -10,12 +10,13 @@ import { GET_TIPS, SET_CONFIG } from 'utils/queries';
 
 export const useTipForDominatPrice = () => {
   const history = useHistory();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useRef(false);
   const tips = useQuery<{ tips: { key: 'tip_dominant_price'; value: '1' | '0' }[] }>(GET_TIPS);
 
   const [setTips] = useMutation(SET_CONFIG);
   const checkAndTip = () => {
-    if (mounted) return;
+    if (mounted.current) return;
+    mounted.current = true;
     if (tips.data) {
       const tip = tips?.data?.tips?.find((tip) => tip.key === 'tip_dominant_price');
 
@@ -32,8 +33,6 @@ export const useTipForDominatPrice = () => {
             shape: 'round',
           },
           onOk: async () => {
-            setMounted(true);
-
             await setTips({
               variables: {
                 key: 'tip_dominant_price',
