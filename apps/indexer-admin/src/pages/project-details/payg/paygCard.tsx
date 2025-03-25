@@ -145,9 +145,9 @@ export function PaygCard({ id }: TProjectPAYG) {
           )}
         </Typography>
 
-        <Typography variant="medium" type="secondary">
+        {/* <Typography variant="medium" type="secondary">
           Maximum validity period: {innerConfig.paygExpiration} days
-        </Typography>
+        </Typography> */}
       </div>
 
       <Modal
@@ -303,7 +303,7 @@ export function PaygCard({ id }: TProjectPAYG) {
               </Tooltip>
             </div>
 
-            <SubqlInput>
+            <SubqlInput style={{ display: 'none' }}>
               <Form.Item
                 name="validity"
                 rules={[

@@ -310,7 +310,7 @@ const GlobalConfig: FC = () => {
                     / 1000 requests
                   </div>
                 </SubqlInput>
-                <SubqlInput>
+                <SubqlInput style={{ display: 'none' }}>
                   <Form.Item
                     label={
                       <div
