@@ -16,8 +16,8 @@ export const useTipForDominatPrice = () => {
   const [setTips] = useMutation(SET_CONFIG);
   const checkAndTip = () => {
     if (mounted.current) return;
-    mounted.current = true;
     if (tips.data) {
+      mounted.current = true;
       const tip = tips?.data?.tips?.find((tip) => tip.key === 'tip_dominant_price');
 
       if (tip?.value === '1') {
