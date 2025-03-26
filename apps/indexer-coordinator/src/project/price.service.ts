@@ -38,9 +38,9 @@ export class PriceService {
 
     for (const p of paygs) {
       const exist = _.find(dPrices, (dp: DominantPrice) => dp.id === p.id);
+      p.minPrice = p.price;
 
       if (exist && exist.price !== null) {
-        p.minPrice = p.price;
         p.priceRatio = p.priceRatio !== null ? p.priceRatio : ratio;
         const minPrice = BigNumber.from(p.price || 0);
         const dominant = BigNumber.from(exist.price).mul(p.priceRatio).div(100);
