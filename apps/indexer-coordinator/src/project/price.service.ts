@@ -45,6 +45,7 @@ export class PriceService {
         const minPrice = BigNumber.from(p.price || 0);
         const dominant = BigNumber.from(exist.price).mul(p.priceRatio).div(100);
         p.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
+        p.dominantPrice = exist.price;
       }
     }
   }

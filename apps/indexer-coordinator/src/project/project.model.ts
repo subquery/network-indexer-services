@@ -452,6 +452,9 @@ export class PaygEntity {
 export class Payg extends PaygEntity {
   @Field({ nullable: true })
   minPrice?: string;
+
+  @Field({ nullable: true })
+  dominantPrice?: string;
 }
 
 @ObjectType('Project')
