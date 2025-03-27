@@ -446,6 +446,10 @@ export class PaygEntity {
   @Column({ type: 'int', unsigned: true, nullable: true })
   @Field({ nullable: true })
   priceRatio: number;
+
+  @Column({ default: true })
+  @Field()
+  useDefault: boolean;
 }
 
 @ObjectType('Payg')

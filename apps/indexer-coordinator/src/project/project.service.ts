@@ -597,6 +597,7 @@ export class ProjectService {
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
     payg.token = paygConfig.token || this.contract.getSdk().sqToken.address;
+    payg.useDefault = false;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);
