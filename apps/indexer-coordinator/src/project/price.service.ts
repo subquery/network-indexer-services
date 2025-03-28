@@ -135,8 +135,9 @@ export class PriceService {
     const res = [];
     if (!deploymentIds.length) return res;
     try {
+      const url = new URL('/price/get_dominant_price', CHS).toString();
       const r = await axios.request({
-        url: CHS,
+        url,
         method: 'POST',
         data: {
           deployment_list: deploymentIds,

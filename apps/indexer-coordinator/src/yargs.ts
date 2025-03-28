@@ -221,7 +221,7 @@ function getYargsOption() {
       demandOption: false,
       describe: 'chs endpoint url',
       type: 'string',
-      default: '',
+      default: 'https://chs.subquery.network',
       group: Groups.coordinator,
     },
   });
