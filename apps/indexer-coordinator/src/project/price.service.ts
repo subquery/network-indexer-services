@@ -126,7 +126,7 @@ export class PriceService {
       }
       nocacheIds.push(did);
     }
-    console.log('----nocacheIds--', nocacheIds);
+    getLogger('price').debug(`nocacheIds: ${nocacheIds}`);
     const rest = await this.request(nocacheIds, true);
     return res.concat(rest);
   }
