@@ -148,7 +148,7 @@ export function PaygCard({ id }: TProjectPAYG) {
         <Typography
           variant="medium"
           type="secondary"
-          style={{ display: 'flex', alignItems: 'center' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 4 }}
         >
           Minimum pricing:{' '}
           {paygConfig.token === sdk?.sqToken.address ? (
@@ -256,7 +256,9 @@ export function PaygCard({ id }: TProjectPAYG) {
                 marginBottom: 8,
               }}
             >
-              <Typography>Advertise a price per 1,000 requests</Typography>
+              <Typography variant="medium" style={{ color: 'var(--sq-gray700)', maxWidth: 450 }}>
+                Advertise a price per 1,000 requests
+              </Typography>
               <Tooltip title="Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by SQT.">
                 <BsInfoCircle style={{ marginLeft: 8, color: 'var(--sq-gray600)' }} />
               </Tooltip>

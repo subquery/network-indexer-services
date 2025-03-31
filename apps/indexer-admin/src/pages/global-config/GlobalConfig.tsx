@@ -208,7 +208,7 @@ const GlobalConfig: FC = () => {
                     ]}
                   >
                     <Input
-                      style={{ width: 300 }}
+                      style={{ width: 300, marginLeft: 10 }}
                       type="number"
                       suffix={
                         <Typography type="secondary" style={{ color: 'var(--sq-gray500)' }}>
@@ -228,7 +228,7 @@ const GlobalConfig: FC = () => {
                     />
                   </Tooltip>
                 </SubqlInput>
-                <SubqlInput style={{ display: 'flex' }}>
+                <SubqlInput style={{ display: 'flex', gap: 4 }}>
                   <Form.Item
                     label={
                       <div
@@ -240,7 +240,7 @@ const GlobalConfig: FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        Minimum Price:{' '}
+                        Minimum price:
                       </div>
                     }
                     colon={false}
@@ -261,7 +261,7 @@ const GlobalConfig: FC = () => {
                     ]}
                   >
                     <Input
-                      style={{ width: 300 }}
+                      style={{ width: 300, marginLeft: 10 }}
                       type="number"
                       addonAfter={
                         <Select
