@@ -115,7 +115,7 @@ export function PaygCard({ id }: TProjectPAYG) {
           )}
         </Typography>
         <Typography variant="medium" type="secondary">
-          Price Ratio: {paygConf.priceRatio}% (
+          Price ratio: {paygConf.priceRatio}% (
           <Typography variant="medium" type="secondary">
             {paygConfig.token === sdk?.sqToken.address ? (
               <Typography variant="medium" type="secondary">
@@ -126,7 +126,8 @@ export function PaygCard({ id }: TProjectPAYG) {
                       .toString()
                   )
                 )
-                  .multipliedBy(0.9)
+                  .multipliedBy(paygConf.priceRatio)
+                  .multipliedBy(0.01)
                   .toString()}{' '}
                 {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
               </Typography>
@@ -289,6 +290,9 @@ export function PaygCard({ id }: TProjectPAYG) {
                           }
                           if (BigNumberJs(value).isLessThanOrEqualTo(0)) {
                             return Promise.reject(new Error('Price ratio must be greater than 0'));
+                          }
+                          if (BigNumberJs(value).isGreaterThan(100)) {
+                            return Promise.reject(new Error('Price ratio must be less than 100'));
                           }
                           if (!BigNumberJs(value).isInteger()) {
                             return Promise.reject(new Error('Price ratio must be integer'));

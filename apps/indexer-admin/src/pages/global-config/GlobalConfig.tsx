@@ -198,6 +198,9 @@ const GlobalConfig: FC = () => {
                           if (value <= 0) {
                             return Promise.reject(new Error('Price ratio must be greater than 0'));
                           }
+                          if (BigNumberJs(value).isGreaterThan(100)) {
+                            return Promise.reject(new Error('Price ratio must be less than 100'));
+                          }
                           if (!Number.isInteger(+value)) {
                             return Promise.reject(new Error('Price ratio must be integer'));
                           }

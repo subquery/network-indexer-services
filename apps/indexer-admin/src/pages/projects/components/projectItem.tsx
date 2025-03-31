@@ -71,7 +71,13 @@ const ProjectItem: FC<Props> = (props) => {
   }, [onlineStatus]);
 
   const pushDetailPage = () => history.push(`/project/${id}`, { data: { ...props, status } });
-
+  console.warn(
+    dominantPrice.price,
+    payg.price,
+    BigNumberJs(formatSQT(BigNumberJs(dominantPrice.price || 1).toString())).lt(
+      formatSQT(payg.price)
+    )
+  );
   return (
     <ProjectItemContainer onClick={pushDetailPage}>
       <ItemContainer flex={13}>
@@ -122,6 +128,16 @@ const ProjectItem: FC<Props> = (props) => {
               <Tooltip
                 title={`Fetch dominant price failed, the minimum acceptable price is used as the price for the flex plan. Error: ${dominantPrice.lastError}`}
               >
+                <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 16, flexShrink: 0 }} />
+              </Tooltip>
+            ) : (
+              ''
+            )}
+            {dominantPrice.price &&
+            BigNumberJs(formatSQT(BigNumberJs(dominantPrice.price || 1).toString())).lt(
+              formatSQT(payg.price)
+            ) ? (
+              <Tooltip title="The minimum pricing greater than the dominant price, you will not receive any flex plan, consider reduce the minimum pricing.">
                 <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 16, flexShrink: 0 }} />
               </Tooltip>
             ) : (
