@@ -39,6 +39,7 @@ export function usePAYGConfig(deploymentId: string) {
         paygRatio: 80,
         paygExpiration: 0,
         token: sdk?.sqToken.address,
+        useDefault: true,
       };
     }
 
@@ -54,6 +55,7 @@ export function usePAYGConfig(deploymentId: string) {
           : formatUnits(BigNumber.from(payg.minPrice).mul(1000), +STABLE_COIN_DECIMAL),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
       token: payg.token,
+      useDefault: payg.useDefault,
     };
   }, [projectQuery, sdk]);
 
@@ -64,9 +66,10 @@ export function usePAYGConfig(deploymentId: string) {
       price: string;
       token: string;
       validity: string;
+      useDefault: boolean;
     }) => {
       try {
-        const { priceRatio, minPrice, validity, token } = values;
+        const { priceRatio, minPrice, validity, token, useDefault } = values;
         const paygPrice =
           token === sdk?.sqToken.address
             ? parseEther(minPrice)
@@ -74,6 +77,7 @@ export function usePAYGConfig(deploymentId: string) {
 
         await paygPriceRequest({
           variables: {
+            useDefault,
             paygPrice: paygPrice.div(1000).toString(),
             paygToken: token,
             paygExpiration: Number(+validity * daySeconds),

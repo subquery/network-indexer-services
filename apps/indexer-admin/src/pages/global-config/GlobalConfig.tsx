@@ -240,7 +240,7 @@ const GlobalConfig: FC = () => {
                           textAlign: 'left',
                         }}
                       >
-                        Min Price:{' '}
+                        Minimum Price:{' '}
                       </div>
                     }
                     colon={false}

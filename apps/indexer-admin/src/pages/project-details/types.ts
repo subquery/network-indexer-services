@@ -113,6 +113,7 @@ export type ProjectConfig = {
     minPrice: string;
     priceRatio: number;
     token: string;
+    useDefault: boolean;
   };
   dominantPrice: {
     price?: string;

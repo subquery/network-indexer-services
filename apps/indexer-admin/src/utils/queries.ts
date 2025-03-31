@@ -83,6 +83,7 @@ const PaygFields = `
     minPrice
     priceRatio
     token
+    useDefault
   }
   dominantPrice {
     price
@@ -345,6 +346,7 @@ export const GET_REGISTRY_VERSIONS = gql`
 export const PAYG_PRICE = gql`
   mutation updateProjectPayg(
     $paygPrice: String!
+    $useDefault: Boolean!
     $paygRatio: Float!
     $paygToken: String!
     $paygExpiration: Float!
@@ -360,6 +362,7 @@ export const PAYG_PRICE = gql`
         expiration: $paygExpiration
         threshold: $paygThreshold
         overflow: $paygOverflow
+        useDefault: $useDefault
       }
       id: $id
     ) {
