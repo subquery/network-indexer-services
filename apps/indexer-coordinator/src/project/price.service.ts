@@ -34,23 +34,21 @@ export class PriceService {
     const deploymentIds = paygs.map((p) => p.id);
     if (!deploymentIds.length) return;
     const dPrices = await this.getDominatePrice(deploymentIds);
-    const ratio = Number(await this.configService.get(ConfigType.FLEX_PRICE_RATIO));
-
-    const defaultPrice = this.configService.getDefault(ConfigType.DEFAULT_PRICE);
-    const defaultPriceRatio = Number(this.configService.getDefault(ConfigType.DEFAULT_PRICE_RATIO));
+    const defaultFlex = await this.configService.getFlexConfig();
 
     for (const p of paygs) {
       const exist = _.find(dPrices, (dp: DominantPrice) => dp.id === p.id);
       p.minPrice = p.price;
 
       if (p.useDefault) {
-        p.price = defaultPrice;
-        p.minPrice = defaultPrice;
-        p.priceRatio = defaultPriceRatio;
+        p.price = defaultFlex[ConfigType.FLEX_PRICE];
+        p.minPrice = defaultFlex[ConfigType.FLEX_PRICE];
+        p.priceRatio = Number(defaultFlex[ConfigType.FLEX_PRICE_RATIO]);
       }
 
       if (exist && exist.price !== null) {
-        p.priceRatio = p.priceRatio !== null ? p.priceRatio : ratio;
+        p.priceRatio =
+          p.priceRatio !== null ? p.priceRatio : Number(defaultFlex[ConfigType.FLEX_PRICE_RATIO]);
         const minPrice = BigNumber.from(p.price || 0);
         const dominant = BigNumber.from(exist.price).mul(p.priceRatio).div(100);
         p.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
@@ -83,11 +81,7 @@ export class PriceService {
         getLogger('price').error(`fail to get prices. reason:${priceRes.reason}`);
       }
 
-      const ratio = Number(await this.configService.get(ConfigType.FLEX_PRICE_RATIO));
-      const defaultPrice = this.configService.getDefault(ConfigType.DEFAULT_PRICE);
-      const defaultPriceRatio = Number(
-        this.configService.getDefault(ConfigType.DEFAULT_PRICE_RATIO)
-      );
+      const defaultFlex = await this.configService.getFlexConfig();
 
       for (const p of projects) {
         p.payg = _.find(paygs, (payg: PaygEntity) => payg.id === p.id);
@@ -97,12 +91,15 @@ export class PriceService {
         if (!p.payg) continue;
 
         if (p.payg.useDefault) {
-          p.payg.price = defaultPrice;
-          p.payg.minPrice = defaultPrice;
-          p.payg.priceRatio = defaultPriceRatio;
+          p.payg.price = defaultFlex[ConfigType.FLEX_PRICE];
+          p.payg.minPrice = defaultFlex[ConfigType.FLEX_PRICE];
+          p.payg.priceRatio = Number(defaultFlex[ConfigType.FLEX_PRICE_RATIO]);
         } else {
           p.payg.minPrice = p.payg.price;
-          p.payg.priceRatio = p.payg.priceRatio !== null ? p.payg.priceRatio : ratio;
+          p.payg.priceRatio =
+            p.payg.priceRatio !== null
+              ? p.payg.priceRatio
+              : Number(defaultFlex[ConfigType.FLEX_PRICE_RATIO]);
         }
 
         // no dominant price

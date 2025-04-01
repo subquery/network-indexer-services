@@ -16,13 +16,10 @@ export enum ConfigType {
   STATE_CHANNEL_REWARD_THRESHOLD = 'state_channel_reward_threshold',
   AUTO_REDUCE_ALLOCATION_ENABLED = 'auto_reduce_allocation_enabled',
   TIP_DOMINANT_PRICE = 'tip_dominant_price',
-
-  DEFAULT_PRICE = 'default_price',
-  DEFAULT_PRICE_RATIO = 'default_price_ratio',
 }
 
 const defaultConfig: Record<string, string> = {
-  [ConfigType.FLEX_PRICE]: '100000000000000', // 0.0001 sqt per request
+  [ConfigType.FLEX_PRICE]: '500000000000000', // 0.0005 sqt per request
   [ConfigType.FLEX_PRICE_RATIO]: '80',
   [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24 * 3}`, // 3 days
   [ConfigType.FLEX_ENABLED]: 'true',
@@ -31,9 +28,6 @@ const defaultConfig: Record<string, string> = {
   [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
   [ConfigType.AUTO_REDUCE_ALLOCATION_ENABLED]: 'true',
   [ConfigType.TIP_DOMINANT_PRICE]: '1',
-
-  [ConfigType.DEFAULT_PRICE]: '500000000000000', // 0.0005 sqt per request
-  [ConfigType.DEFAULT_PRICE_RATIO]: '80',
 };
 
 @Injectable()

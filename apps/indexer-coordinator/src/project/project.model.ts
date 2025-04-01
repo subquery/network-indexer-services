@@ -414,6 +414,8 @@ export class PaygConfig {
   overflow: number;
   @Field()
   token: string;
+  @Field()
+  useDefault: boolean;
 }
 
 @Entity()
