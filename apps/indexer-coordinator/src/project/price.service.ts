@@ -158,7 +158,6 @@ export class PriceService {
       }
     } catch (e) {
       getLogger('price').error(`fail to request price, error: ${e.message}`);
-      getLogger('price').error(e.stack);
       // error. add reason
       for (const id of deploymentIds) {
         res.push({
