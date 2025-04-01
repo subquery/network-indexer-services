@@ -226,16 +226,18 @@ export function PaygCard({ id }: TProjectPAYG) {
         >
           <div className="col-flex" style={{ gap: 8 }}>
             <Radio value="default" checked={paygConf.useDefault}>
-              <Typography weight={500}>Default</Typography>
+              <Typography weight={500} variant="large">
+                Default
+              </Typography>
             </Radio>
-            <Typography variant="medium" style={{ color: 'var(--sq-gray700)', maxWidth: 450 }}>
+            <Typography variant="medium" style={{ maxWidth: 450 }} type="secondary">
               Set with default flex plan setting.
             </Typography>
           </div>
         </div>
 
         <div
-          style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}
           onClick={() => {
             setPaygConf({
               ...paygConf,
@@ -257,7 +259,7 @@ export function PaygCard({ id }: TProjectPAYG) {
                 marginBottom: 8,
               }}
             >
-              <Typography variant="medium" style={{ color: 'var(--sq-gray700)', maxWidth: 450 }}>
+              <Typography variant="medium" style={{ maxWidth: 450 }} type="secondary">
                 Advertise a price per 1,000 requests
               </Typography>
               <Tooltip title="Please note that this is just an indicative rate. The actual price depends on the exact exchange rate when consumer makes payment. The final payment will always be paid by SQT.">
