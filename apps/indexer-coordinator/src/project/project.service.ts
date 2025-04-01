@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { bytes32ToCid, GraphqlQueryClient, IPFSClient } from '@subql/network-clients';
 import { NETWORK_CONFIGS } from '@subql/network-config';
 import _ from 'lodash';
-import { ConfigService } from 'src/config/config.service';
+import { ConfigService, ConfigType } from 'src/config/config.service';
 import { OnChainService } from 'src/core/onchain.service';
 import { timeoutPromiseHO } from 'src/utils/promise';
 import { PostgresKeys, argv } from 'src/yargs';
@@ -40,6 +40,7 @@ import { IPFS_URL, nodeConfigs, projectConfigChanged } from '../utils/project';
 import { GET_DEPLOYMENT, GET_INDEXER_PROJECTS } from '../utils/queries';
 import { ProjectEvent } from '../utils/subscription';
 import { PortService } from './port.service';
+import { PriceService } from './price.service';
 import { getProjectManifest } from './project.manifest';
 import {
   IProjectConfig,
@@ -81,6 +82,7 @@ export class ProjectService {
     private portService: PortService,
     private onchainService: OnChainService,
     private configService: ConfigService,
+    private priceService: PriceService,
     private db: DB
   ) {
     this.client = new GraphqlQueryClient(NETWORK_CONFIGS[config.network]);
@@ -157,14 +159,13 @@ export class ProjectService {
     );
   }
 
-  async getAllProjects(): Promise<Project[]> {
+  async getAllProjects(source?: string): Promise<Project[]> {
     const projects = (await this.projectRepo.find()) as Project[];
-    for (const p of projects) {
-      const payg = await this.paygRepo.findOne({
-        where: { id: p.id },
-      });
-      p.payg = payg;
+
+    if (!['monitor', 'metadata'].includes(source)) {
+      await this.priceService.fillPaygAndDominatePrice(projects);
     }
+
     return projects.sort((a, b) => {
       if (!a?.details?.name) {
         return 1;
@@ -180,6 +181,7 @@ export class ProjectService {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
     const paygs = await this.paygRepo.find({ where: { price: Not('') } });
+    await this.priceService.inlinePayg(paygs);
     for (const payg of paygs) {
       payg.overflow = 10000;
     }
@@ -277,7 +279,7 @@ export class ProjectService {
       paygConfig = {
         id: id.trim(),
         price: flexConfig.flex_price,
-        expiration: Number(flexConfig.flex_valid_period) || 0,
+        expiration: Number(this.configService.getDefault(ConfigType.FLEX_VALID_PERIOD)) || 259200, // default: 3 days
         threshold: 10,
         overflow: 10,
         token: this.contract.getSdk().sqToken.address,
@@ -590,10 +592,12 @@ export class ProjectService {
     }
 
     payg.price = paygConfig.price;
-    payg.expiration = paygConfig.expiration;
+    payg.priceRatio = paygConfig.priceRatio;
+    payg.expiration = Number(this.configService.getDefault(ConfigType.FLEX_VALID_PERIOD)) || 259200; // default: 3 days
     payg.threshold = paygConfig.threshold;
     payg.overflow = paygConfig.overflow;
     payg.token = paygConfig.token || this.contract.getSdk().sqToken.address;
+    payg.useDefault = paygConfig.useDefault;
 
     await this.pubSub.publish(ProjectEvent.ProjectStarted, { projectChanged: payg });
     return this.paygRepo.save(payg);

@@ -33,7 +33,14 @@ export function usePAYGConfig(deploymentId: string) {
   const paygConfig = useMemo(() => {
     const payg = projectQuery.data?.project.payg;
     if (!payg || !payg.price) {
-      return { paygPrice: '', paygExpiration: 0, token: sdk?.sqToken.address };
+      return {
+        paygPrice: '',
+        paygMinPrice: '',
+        paygRatio: 80,
+        paygExpiration: 0,
+        token: sdk?.sqToken.address,
+        useDefault: true,
+      };
     }
 
     return {
@@ -41,25 +48,40 @@ export function usePAYGConfig(deploymentId: string) {
         payg.token === sdk?.sqToken.address
           ? formatEther(BigNumber.from(payg.price).mul(1000))
           : formatUnits(BigNumber.from(payg.price).mul(1000), +STABLE_COIN_DECIMAL),
+      paygRatio: payg.priceRatio || 80,
+      paygMinPrice:
+        payg.token === sdk?.sqToken.address
+          ? formatEther(BigNumber.from(payg.minPrice).mul(1000))
+          : formatUnits(BigNumber.from(payg.minPrice).mul(1000), +STABLE_COIN_DECIMAL),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
       token: payg.token,
+      useDefault: payg.useDefault,
     };
   }, [projectQuery, sdk]);
 
   const changePAYGCofnig = useCallback(
-    async (values: { price: string; token: string; validity: string }) => {
+    async (values: {
+      priceRatio: number;
+      minPrice: string;
+      price: string;
+      token: string;
+      validity: string;
+      useDefault: boolean;
+    }) => {
       try {
-        const { price, validity, token } = values;
+        const { priceRatio, minPrice, validity, token, useDefault } = values;
         const paygPrice =
           token === sdk?.sqToken.address
-            ? parseEther(price)
-            : parseUnits(price, +import.meta.env.VITE_STABLE_TOKEN_DECIMAL);
+            ? parseEther(minPrice)
+            : parseUnits(minPrice, +import.meta.env.VITE_STABLE_TOKEN_DECIMAL);
 
         await paygPriceRequest({
           variables: {
+            useDefault,
             paygPrice: paygPrice.div(1000).toString(),
             paygToken: token,
             paygExpiration: Number(+validity * daySeconds),
+            paygRatio: priceRatio,
             // TODO: remove these 2 param on coordinator service side
             paygThreshold: 10,
             paygOverflow: 10,
@@ -87,7 +109,13 @@ export function usePAYGConfig(deploymentId: string) {
     }
   }, [projectQuery.error]);
 
-  return { paygConfig, changePAYGCofnig, loading, initializeLoading: projectQuery.loading };
+  return {
+    paygConfig,
+    changePAYGCofnig,
+    loading,
+    initializeLoading: projectQuery.loading,
+    dominantPrice: projectQuery.data?.project.dominantPrice,
+  };
 }
 
 // hook for PAYG plans

@@ -17,6 +17,7 @@ import { ProjectResolver } from './project.resolver';
 import { ProjectRpcService } from './project.rpc.service';
 import { ProjectService } from './project.service';
 import { ProjectSubgraphService } from './project.subgraph.service';
+import { PriceService } from './price.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ProjectSubgraphService } from './project.subgraph.service';
     ProjectRpcService,
     ProjectSubgraphService,
     DbStatsService,
+    PriceService,
   ],
   exports: [ProjectService, ProjectRpcService],
 })

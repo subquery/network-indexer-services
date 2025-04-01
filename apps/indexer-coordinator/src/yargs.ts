@@ -217,6 +217,13 @@ function getYargsOption() {
         'https://94b886c37a3436e3bc1c29fbfd34f6de@o1192865.ingest.us.sentry.io/4508771319414784',
       group: Groups.coordinator,
     },
+    'chs-endpoint': {
+      demandOption: false,
+      describe: 'chs endpoint url',
+      type: 'string',
+      default: 'https://chs.subquery.network',
+      group: Groups.coordinator,
+    },
   });
 }
 

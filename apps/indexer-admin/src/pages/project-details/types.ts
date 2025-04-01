@@ -110,7 +110,14 @@ export type ProjectConfig = {
     threshold: number;
     expiration: number;
     price: string;
+    minPrice: string;
+    priceRatio: number;
     token: string;
+    useDefault: boolean;
+  };
+  dominantPrice: {
+    price?: string;
+    lastError?: string;
   };
 
   serviceEndpoints: { key: string; value: string; valid: boolean; reason: string }[];

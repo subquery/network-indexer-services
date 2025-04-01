@@ -80,7 +80,14 @@ const PaygFields = `
     threshold
     expiration
     price
+    minPrice
+    priceRatio
     token
+    useDefault
+  }
+  dominantPrice {
+    price
+    lastError
   }
 `;
 
@@ -339,6 +346,8 @@ export const GET_REGISTRY_VERSIONS = gql`
 export const PAYG_PRICE = gql`
   mutation updateProjectPayg(
     $paygPrice: String!
+    $useDefault: Boolean!
+    $paygRatio: Float!
     $paygToken: String!
     $paygExpiration: Float!
     $paygThreshold: Float!
@@ -348,10 +357,12 @@ export const PAYG_PRICE = gql`
     updateProjectPayg(
       paygConfig: {
         price: $paygPrice
+        priceRatio: $paygRatio
         token: $paygToken
         expiration: $paygExpiration
         threshold: $paygThreshold
         overflow: $paygOverflow
+        useDefault: $useDefault
       }
       id: $id
     ) {
@@ -548,6 +559,7 @@ export const GET_PROJECT_REWARDS_DETAILS = gql`
 `;
 
 export enum ConfigKey {
+  FlexPriceRatio = 'flex_price_ratio',
   FlexPrice = 'flex_price',
   FlexValidPeriod = 'flex_valid_period',
   FlexEnabled = 'flex_enabled',
@@ -578,8 +590,17 @@ export const GET_ALL_CONFIG = gql`
   }
 `;
 
-// excellency gql
+export const GET_TIPS = gql`
+  query {
+    tips {
+      id
+      key
+      value
+    }
+  }
+`;
 
+// excellency gql
 export interface IGetIndexerStatus {
   getIndexerServiceStatus: {
     endpointSuccess: boolean;

@@ -49,4 +49,9 @@ export class ConfigResolver {
   async allConfig(): Promise<ConfigEntity[]> {
     return await this.configService.getAll();
   }
+
+  @Query(() => [ConfigEntity])
+  async tips(): Promise<ConfigEntity[]> {
+    return await this.configService.getTips();
+  }
 }

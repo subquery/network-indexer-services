@@ -25,7 +25,7 @@ export class MonitorService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkNodeHealth() {
     this.logger.info(`check node health started`);
-    const projects = await this.projectService.getAllProjects();
+    const projects = await this.projectService.getAllProjects('monitor');
     this.logger.info(`projects's length: ${projects.length}`);
     for (const project of projects) {
       if (project.status === DesiredStatus.STOPPED) {
