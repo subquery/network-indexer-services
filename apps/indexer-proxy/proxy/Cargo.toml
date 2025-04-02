@@ -33,7 +33,7 @@ solana-client = "2.2"
 solana-sdk = "2.2"
 solana-transaction-status-client-types = "2.2"
 structopt = "0.3"
-subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.6.0" }
+subql-contracts = { git = "https://github.com/subquery/network-contracts", branch = "add-dynamic-address" }
 subql-indexer-utils = { version = "2", path = "../utils" }
 sysinfo = "0.32"
 tdn = { version = "0.10", default-features = false, features = ["multiple"] }

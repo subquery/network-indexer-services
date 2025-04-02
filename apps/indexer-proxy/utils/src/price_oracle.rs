@@ -18,9 +18,35 @@
 
 use ethers::prelude::*;
 use std::sync::Arc;
-use subql_contracts::{price_oracle, Network};
+use subql_contracts::{price_contract_with_dynamic_address, settings, Network};
 
 use crate::error::Error;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EthAbiType)]
+#[repr(u8)]
+pub enum SQContracts {
+    SQToken,
+    Staking,
+    StakingManager,
+    IndexerRegistry,
+    ProjectRegistry,
+    EraManager,
+    PlanManager,
+    ServiceAgreementRegistry,
+    RewardsDistributor,
+    RewardsPool,
+    RewardsStaking,
+    RewardsHelper,
+    InflationController,
+    Vesting,
+    DisputeManager,
+    StateChannel,
+    ConsumerRegistry,
+    PriceOracle,
+    Treasury,
+    RewardsBooster,
+    StakingAllocation,
+}
 
 pub async fn convert_price<M: Middleware>(
     asset_from: Address,
@@ -33,9 +59,20 @@ pub async fn convert_price<M: Middleware>(
         return Ok(amount_from);
     }
 
-    let contract = price_oracle(client, network).map_err(|_| Error::ServiceException(1023))?;
+    let setting_contract =
+        settings(client.clone(), network).map_err(|_| Error::ServiceException(1028))?;
 
-    contract
+    let price_contract_address: Address = setting_contract
+        .method::<_, Address>("getContractAddress", (SQContracts::PriceOracle,))
+        .map_err(|_| Error::ServiceException(1028))?
+        .call()
+        .await
+        .map_err(|_| Error::ServiceException(1028))?;
+    let price_contract =
+        price_contract_with_dynamic_address(client.clone(), price_contract_address)
+            .map_err(|_| Error::ServiceException(1028))?;
+
+    price_contract
         .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
         .map_err(|_| Error::ServiceException(1028))?
         .call()
