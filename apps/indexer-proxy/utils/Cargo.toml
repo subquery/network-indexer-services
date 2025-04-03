@@ -20,6 +20,6 @@ reqwest = { version = "0.12", features = ["json", "native-tls"] }
 rustc-hex = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_with ={ version = "3.0", features = ["json"] }
-subql-contracts = { git = "https://github.com/subquery/network-contracts", branch = "add-dynamic-address" }
+serde_with = { version = "3.0", features = ["json"] }
+subql-contracts = { git = "https://github.com/subquery/network-contracts", rev = "fed494b42970f824ff137c11ebe64742177b143a" }
 uint = "0.10"
