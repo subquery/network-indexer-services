@@ -4,13 +4,27 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { argv } from '../yargs';
 import { ConfigEntity } from './config.model';
+
+export const COIN_ADDRESS = {
+  testnet: {
+    baseUSDC: ['0x2d9dcE396FcD6543Da1Ba7c9029c4B77E7716C74', 18],
+    baseSQT: ['0x37B797EBE14B4490FE64c67390AeCfE20D650953', 18],
+  },
+  mainnet: {
+    baseUSDC: ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6],
+    baseSQT: ['0x858c50C3AF1913b0E849aFDB74617388a1a5340d', 18],
+  },
+};
 
 export enum ConfigType {
   FLEX_PRICE = 'flex_price',
   FLEX_PRICE_RATIO = 'flex_price_ratio',
   FLEX_VALID_PERIOD = 'flex_valid_period',
   FLEX_ENABLED = 'flex_enabled',
+  FLEX_TOKEN_ADDRESS = 'flex_token_address',
+  FLEX_SLIPPAGE = 'flex_slippage',
   ALLOCATION_REWARD_THRESHOLD = 'allocation_reward_threshold',
   ALLOCATION_REWARD_LAST_FORCE_TIME = 'allocation_reward_last_force_time',
   STATE_CHANNEL_REWARD_THRESHOLD = 'state_channel_reward_threshold',
@@ -23,6 +37,8 @@ const defaultConfig: Record<string, string> = {
   [ConfigType.FLEX_PRICE_RATIO]: '80',
   [ConfigType.FLEX_VALID_PERIOD]: `${60 * 60 * 24 * 3}`, // 3 days
   [ConfigType.FLEX_ENABLED]: 'true',
+  [ConfigType.FLEX_TOKEN_ADDRESS]: `${COIN_ADDRESS[argv.network].baseSQT[0]}`,
+  [ConfigType.FLEX_SLIPPAGE]: '5',
   [ConfigType.ALLOCATION_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
   [ConfigType.ALLOCATION_REWARD_LAST_FORCE_TIME]: '0',
   [ConfigType.STATE_CHANNEL_REWARD_THRESHOLD]: '2000000000000000000000', // 2000 sqt
@@ -73,6 +89,8 @@ export class ConfigService {
       ConfigType.FLEX_PRICE_RATIO,
       ConfigType.FLEX_VALID_PERIOD,
       ConfigType.FLEX_ENABLED,
+      ConfigType.FLEX_TOKEN_ADDRESS,
+      ConfigType.FLEX_SLIPPAGE,
     ];
     const config = await this.configRepo.find({
       where: { key: In(keys) },
@@ -98,6 +116,10 @@ export class ConfigService {
     //   }
     // }
     return values;
+  }
+
+  getUSDC() {
+    return COIN_ADDRESS[argv.network].baseUSDC;
   }
 
   getDefault(key: string) {
