@@ -6,11 +6,14 @@ import { BsBoxArrowInUpRight } from 'react-icons/bs';
 import InfoCircleOutlined from '@ant-design/icons/InfoCircleOutlined';
 import { useMutation, useQuery } from '@apollo/client';
 import { openNotification, Spinner, Tag, Typography } from '@subql/components';
-import { formatSQT, useAsyncMemo } from '@subql/react-hooks';
+import { SQT_DECIMAL, STABLE_COIN_DECIMAL } from '@subql/network-config';
+import { formatSQT, useAsyncMemo, useStableCoin } from '@subql/react-hooks';
+import { useUpdate } from 'ahooks';
 import { Button, Form, Input, Select, Switch, Tooltip } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import BigNumberJs from 'bignumber.js';
-import { parseEther } from 'ethers/lib/utils';
+import { STABLE_COIN_ADDRESS } from 'conf/stableCoin';
+import { formatUnits, parseEther, parseUnits } from 'ethers/lib/utils';
 import styled from 'styled-components';
 import { SubqlInput } from 'styles/input';
 
@@ -23,7 +26,7 @@ import {
   getIndexerSocialCredibility,
   SET_CONFIG,
 } from 'utils/queries';
-import { TOKEN_SYMBOL } from 'utils/web3';
+import { SUPPORTED_NETWORK, TOKEN_SYMBOL } from 'utils/web3';
 
 import NodeOperatorInformation from './components/NodeOperatorInforamtion';
 
@@ -41,11 +44,13 @@ const Wrapper = styled.div`
 const GlobalConfig: FC = () => {
   const { indexer: account, loading } = useCoordinatorIndexer();
 
+  const sdk = useContractSDK();
+  const { transPrice } = useStableCoin(sdk, SUPPORTED_NETWORK);
+  const update = useUpdate();
   const [config, setConfig] = useState({
     autoReduceOverAllocation: false,
     flexEnabled: false,
   });
-  const sdk = useContractSDK();
 
   const configQueryData = useQuery<AllConfig>(GET_ALL_CONFIG);
   const [setConfigMutation] = useMutation(SET_CONFIG);
@@ -79,13 +84,26 @@ const GlobalConfig: FC = () => {
       const validPeriod = configQueryData.data.allConfig.find(
         (i) => i.key === ConfigKey.FlexValidPeriod
       );
+      const tokenAddress = configQueryData.data.allConfig.find(
+        (i) => i.key === ConfigKey.FlexTokenAddress
+      );
+
+      const isSQT = tokenAddress?.value === sdk?.sqToken.address || !tokenAddress?.value;
 
       form.setFieldValue('priceRatio', BigNumberJs(priceRatio?.value || '0'));
-      form.setFieldValue('price', BigNumberJs(formatSQT(price?.value || '0')).multipliedBy(1000));
+      form.setFieldValue('flexTokenAddress', tokenAddress?.value || sdk?.sqToken.address);
+      form.setFieldValue(
+        'price',
+        BigNumberJs(
+          isSQT
+            ? formatSQT(price?.value || '0')
+            : formatUnits(price?.value || '0', STABLE_COIN_DECIMAL[SUPPORTED_NETWORK])
+        ).multipliedBy(1000)
+      );
       form.setFieldValue('validPeriod', BigNumberJs(validPeriod?.value || '0').dividedBy(86400));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configQueryData.data, form]);
+  }, [configQueryData.data, form, sdk]);
 
   return (
     <div
@@ -231,6 +249,7 @@ const GlobalConfig: FC = () => {
                     />
                   </Tooltip>
                 </SubqlInput>
+
                 <SubqlInput style={{ display: 'flex', gap: 4 }}>
                   <Form.Item
                     label={
@@ -268,22 +287,25 @@ const GlobalConfig: FC = () => {
                       type="number"
                       addonAfter={
                         <Select
-                          value={sdk?.sqToken?.address}
-                          // onChange={(e) => {}}
+                          value={form.getFieldValue('flexTokenAddress')}
+                          onChange={(e) => {
+                            form.setFieldValue('flexTokenAddress', e);
+                            update();
+                          }}
                           options={[
-                            // {
-                            //   value: STABLE_COIN_ADDRESS,
-                            //   label: (
-                            //     <div style={{ display: 'flex', alignItems: 'center' }}>
-                            //       <img
-                            //         style={{ width: 24, height: 24, marginRight: 8 }}
-                            //         src="/images/usdc.png"
-                            //         alt=""
-                            //       />
-                            //       <Typography>USDC</Typography>
-                            //     </div>
-                            //   ),
-                            // },
+                            {
+                              value: STABLE_COIN_ADDRESS,
+                              label: (
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <img
+                                    style={{ width: 24, height: 24, marginRight: 8 }}
+                                    src="/images/usdc.png"
+                                    alt=""
+                                  />
+                                  <Typography>USDC</Typography>
+                                </div>
+                              ),
+                            },
                             {
                               value: sdk?.sqToken?.address,
                               label: (
@@ -366,13 +388,15 @@ const GlobalConfig: FC = () => {
                   onClick={async () => {
                     await form.validateFields();
                     try {
+                      const isSQT = form.getFieldValue('flexTokenAddress') === sdk?.sqToken.address;
                       await setConfigMutation({
                         variables: {
                           key: ConfigKey.FlexPrice,
-                          value: parseEther(
+                          value: parseUnits(
                             BigNumberJs(form.getFieldValue('price') || 1)
                               .dividedBy(1000)
-                              .toString()
+                              .toString(),
+                            isSQT ? SQT_DECIMAL : STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
                           ).toString(),
                         },
                       });
@@ -388,6 +412,12 @@ const GlobalConfig: FC = () => {
                         variables: {
                           key: ConfigKey.FlexPriceRatio,
                           value: BigNumberJs(form.getFieldValue('priceRatio') || 80),
+                        },
+                      });
+                      await setConfigMutation({
+                        variables: {
+                          key: ConfigKey.FlexTokenAddress,
+                          value: form.getFieldValue('flexTokenAddress'),
                         },
                       });
                       openNotification({

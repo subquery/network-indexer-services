@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { BsInfoCircle } from 'react-icons/bs';
 import { IoWarning } from 'react-icons/io5';
 import { useQuery } from '@apollo/client';
-import { formatEther } from '@ethersproject/units';
+import { formatEther, formatUnits } from '@ethersproject/units';
 import { Modal, Spinner, Typography } from '@subql/components';
-import { TOKEN_SYMBOLS } from '@subql/network-config';
+import { STABLE_COIN_DECIMAL, STABLE_COIN_SYMBOLS, TOKEN_SYMBOLS } from '@subql/network-config';
+import { useStableCoin } from '@subql/react-hooks';
 import { Button, Form, Input, Radio, Select, Tooltip } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import BigNumberJs from 'bignumber.js';
+import { STABLE_COIN_ADDRESS } from 'conf/stableCoin';
 import { BigNumber } from 'ethers';
 import { SubqlInput } from 'styles/input';
 
@@ -30,6 +32,7 @@ export function PaygCard({ id }: TProjectPAYG) {
   const { paygConfig, changePAYGCofnig, loading, initializeLoading, dominantPrice } =
     usePAYGConfig(id);
   const sdk = useContractSDK();
+  const { fetchedTime, rates, transPrice } = useStableCoin(sdk, SUPPORTED_NETWORK);
   const configQueryData = useQuery<AllConfig>(GET_ALL_CONFIG);
   const [showModal, setShowModal] = useState(false);
   const innerConfig = useMemo(() => {
@@ -68,13 +71,38 @@ export function PaygCard({ id }: TProjectPAYG) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paygConfig, sdk, showModal]);
 
+  const dominantPriceSQT = useMemo(() => {
+    if (dominantPrice?.token === sdk?.sqToken.address) {
+      return BigNumberJs(
+        formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))
+      ).toString();
+    }
+    return transPrice(
+      STABLE_COIN_ADDRESS,
+      BigNumberJs(
+        formatUnits(
+          BigNumber.from(dominantPrice?.price || 0).mul(1000),
+          STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
+        )
+      ).toString()
+    ).sqtPrice;
+  }, [dominantPrice, transPrice, sdk]);
+
+  const minPriceSQT = useMemo(() => {
+    if (paygConfig.token === sdk?.sqToken.address) {
+      return paygConfig.paygMinPrice;
+    }
+    return transPrice(STABLE_COIN_ADDRESS, BigNumberJs(paygConfig.paygMinPrice).toString())
+      .sqtPrice;
+  }, [paygConfig.token, paygConfig.paygMinPrice, transPrice, sdk?.sqToken.address]);
+
   if (initializeLoading)
     return (
       <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <Spinner />
       </div>
     );
-  console.warn(paygConfig.paygMinPrice, dominantPrice?.price);
+
   return (
     <CardContainer>
       {!paygEnabled && (
@@ -102,8 +130,36 @@ export function PaygCard({ id }: TProjectPAYG) {
           </Button>
         </div>
         <Typography variant="medium" type="secondary">
-          Current dominant price: {formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))}{' '}
-          {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+          Current dominant price:
+          {dominantPrice?.token === sdk?.sqToken.address ? (
+            <>
+              {formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))}{' '}
+              {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+            </>
+          ) : (
+            <div style={{ display: 'inline-flex', flexDirection: 'column', marginLeft: 10 }}>
+              <Typography variant="medium">
+                {formatUnits(
+                  BigNumber.from(dominantPrice?.price || 0).mul(1000),
+                  STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
+                ).toString()}{' '}
+                {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+                <br />
+              </Typography>
+              <Typography variant="medium" type="secondary">
+                ={' '}
+                {BigNumberJs(
+                  formatUnits(
+                    BigNumber.from(dominantPrice?.price || 0).mul(1000),
+                    STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
+                  )
+                )
+                  .multipliedBy(rates.usdcToSqt)
+                  .toFixed()}{' '}
+                {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
+              </Typography>
+            </div>
+          )}
           {dominantPrice?.lastError ? (
             <Tooltip
               title={`Fetch dominant price failed, the minimum acceptable price is used as the price for the flex plan. Error: ${dominantPrice.lastError}`}
@@ -116,34 +172,52 @@ export function PaygCard({ id }: TProjectPAYG) {
         </Typography>
         <Typography variant="medium" type="secondary">
           Price ratio: {paygConf.priceRatio}% (
-          <Typography variant="medium" type="secondary">
-            {paygConfig.token === sdk?.sqToken.address ? (
+          {dominantPrice?.token === sdk?.sqToken.address ? (
+            <Typography variant="medium" type="secondary">
+              {BigNumberJs(
+                formatEther(
+                  BigNumberJs(dominantPrice?.price || 0)
+                    .multipliedBy(1000)
+                    .toString()
+                )
+              )
+                .multipliedBy(paygConf.priceRatio)
+                .multipliedBy(0.01)
+                .toString()}{' '}
+              {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+            </Typography>
+          ) : (
+            <Typography variant="medium" type="secondary">
+              {BigNumberJs(
+                formatUnits(
+                  BigNumberJs(dominantPrice?.price || 0)
+                    .multipliedBy(1000)
+                    .toString(),
+                  STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
+                )
+              )
+                .multipliedBy(paygConf.priceRatio)
+                .multipliedBy(0.01)
+                .toString()}{' '}
+              {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
               <Typography variant="medium" type="secondary">
+                ={' '}
                 {BigNumberJs(
-                  formatEther(
+                  formatUnits(
                     BigNumberJs(dominantPrice?.price || 0)
                       .multipliedBy(1000)
-                      .toString()
+                      .toString(),
+                    STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
                   )
                 )
                   .multipliedBy(paygConf.priceRatio)
                   .multipliedBy(0.01)
-                  .toString()}{' '}
-                {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
+                  .multipliedBy(rates.usdcToSqt)
+                  .toFixed()}{' '}
+                {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
               </Typography>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {/* <Typography variant="medium">
-                  {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
-                  <br />
-                </Typography>
-                <Typography variant="medium" type="secondary">
-                  = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
-                  {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
-                </Typography> */}
-              </div>
-            )}
-          </Typography>
+            </Typography>
+          )}
           )
         </Typography>
         <Typography
@@ -158,23 +232,18 @@ export function PaygCard({ id }: TProjectPAYG) {
             </Typography>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* <Typography variant="medium">
-                  {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
-                  <br />
-                </Typography>
-                <Typography variant="medium" type="secondary">
-                  = {BigNumber(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
-                  {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
-                </Typography> */}
+              <Typography variant="medium">
+                {paygConfig.paygPrice} {STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}/1000 reqeusts
+                <br />
+              </Typography>
+              <Typography variant="medium" type="secondary">
+                = {BigNumberJs(paygConfig.paygPrice).multipliedBy(rates.usdcToSqt).toFixed()}{' '}
+                {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} | {fetchedTime?.format('HH:mm:ss A')}
+              </Typography>
             </div>
           )}
-          {BigNumberJs(
-            formatEther(
-              BigNumberJs(dominantPrice?.price || 0)
-                .multipliedBy(1000)
-                .toString()
-            )
-          ).lt(paygConfig.paygMinPrice) ? (
+          {!BigNumberJs(dominantPrice?.price || 0).isZero() &&
+          BigNumberJs(dominantPriceSQT).lt(minPriceSQT) ? (
             <Tooltip title="The minimum pricing greater than the dominant price, you will not receive any flex plan, consider reduce the minimum pricing.">
               <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 24, flexShrink: 0 }} />
             </Tooltip>
@@ -238,16 +307,19 @@ export function PaygCard({ id }: TProjectPAYG) {
 
         <div
           style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}
-          onClick={() => {
-            setPaygConf({
-              ...paygConf,
-              useDefault: false,
-            });
-          }}
           aria-hidden="true"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Radio value="custom" checked={paygConf.useDefault === false}>
+            <Radio
+              value="custom"
+              checked={paygConf.useDefault === false}
+              onClick={() => {
+                setPaygConf({
+                  ...paygConf,
+                  useDefault: false,
+                });
+              }}
+            >
               <Typography weight={500} variant="large">
                 Custom
               </Typography>
@@ -354,25 +426,26 @@ export function PaygCard({ id }: TProjectPAYG) {
                         <Select
                           value={paygConf.token}
                           onChange={(e) => {
+                            console.warn(e);
                             setPaygConf({
                               ...paygConf,
                               token: e,
                             });
                           }}
                           options={[
-                            // {
-                            //   value: STABLE_COIN_ADDRESS,
-                            //   label: (
-                            //     <div style={{ display: 'flex', alignItems: 'center' }}>
-                            //       <img
-                            //         style={{ width: 24, height: 24, marginRight: 8 }}
-                            //         src="/images/usdc.png"
-                            //         alt=""
-                            //       />
-                            //       <Typography>USDC</Typography>
-                            //     </div>
-                            //   ),
-                            // },
+                            {
+                              value: STABLE_COIN_ADDRESS,
+                              label: (
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <img
+                                    style={{ width: 24, height: 24, marginRight: 8 }}
+                                    src="/images/usdc.png"
+                                    alt=""
+                                  />
+                                  <Typography>USDC</Typography>
+                                </div>
+                              ),
+                            },
                             {
                               value: sdk.sqToken.address,
                               label: (
