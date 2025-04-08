@@ -40,6 +40,23 @@ pub const PROJECT_QUERY: &str =
 
 pub const PAYG_QUERY: &str = "query { getAlivePaygs { id price token expiration overflow } }";
 
+pub fn exchange_rate_query(exchange_rate: &str) -> String {
+    format!(
+        r#"
+query {{
+  getAlivePaygs(exchangeRate: "{}") {{
+    id
+    price
+    token
+    expiration
+    overflow
+  }}
+}}
+"#,
+        exchange_rate
+    )
+}
+
 pub const CHANNEL_QUERY: &str =
     "query { getAliveChannels { id consumer deploymentId agent total spent remote price lastFinal expiredAt } }";
 

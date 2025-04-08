@@ -40,7 +40,7 @@ use subql_indexer_utils::{
         QueryState, MULTIPLE_RANGE_MAX,
     },
     request::{graphql_request, GraphQLQuery},
-    tools::{cid_deployment, deployment_cid},
+    tools::{cid_deployment, deployment_cid, string_u256},
     types::Result,
 };
 
@@ -53,6 +53,7 @@ use crate::metrics::{MetricsNetwork, MetricsQuery};
 use crate::p2p::report_conflict;
 use crate::project::{get_project, list_projects, Project};
 use crate::sentry_log::make_sentry_message;
+use crate::server::RawPaygPriceItem;
 const CURRENT_VERSION: u8 = 3;
 
 #[derive(Debug)]
@@ -235,6 +236,55 @@ async fn build_project_price(
         expired,
         convert_sign_to_string(&sign)
     )))
+}
+
+async fn build_exchange_rate_price(
+    price_item: &RawPaygPriceItem,
+    expired: i64,
+    controller: &LocalWallet,
+) -> Result<Value> {
+    // sign the price
+    let price = price_item.price.clone();
+    let token = price_item
+        .token
+        .parse()
+        .map_err(|_e| Error::Serialize(1137))?;
+
+    // price + price_token + price_expired
+    let sign = price_sign(string_u256(&price), token, expired, controller).await?;
+
+    Ok(json!((
+        price_item.id.clone(),
+        price.to_string(),
+        price_item.expiration.to_string(),
+        format!("{:?}", token),
+        expired,
+        convert_sign_to_string(&sign)
+    )))
+}
+
+pub async fn merket_price_with_exchange_rate_price(
+    price_list: &Vec<RawPaygPriceItem>,
+) -> Result<Value> {
+    let account = ACCOUNT.read().await;
+    let indexer = account.indexer.clone();
+    let controller = account.controller.clone();
+    let controller_address = account.controller_address();
+    drop(account);
+    let mut values = vec![];
+    let expired = Utc::now().timestamp() + 86400;
+    for price_item in price_list {
+        if string_u256(&price_item.price) > U256::zero() && price_item.expiration > 0 {
+            let v = build_exchange_rate_price(&price_item, expired, &controller).await?;
+            values.push(v);
+        }
+    }
+
+    Ok(json!({
+        "indexer": format!("{:?}", indexer),
+        "controller": format!("{:?}", controller_address),
+        "deployments": values,
+    }))
 }
 
 pub async fn merket_price(project_id: Option<String>) -> Result<Value> {
