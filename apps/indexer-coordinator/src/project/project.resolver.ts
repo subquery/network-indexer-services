@@ -191,7 +191,7 @@ export class ProjectResolver {
   }
 
   @Query(() => [Payg])
-  getAlivePaygs(@Args('exchangeRate') exchangeRate: string) {
+  getAlivePaygs(@Args('exchangeRate', { nullable: true }) exchangeRate: string) {
     return this.projectService.getAlivePaygs(exchangeRate);
   }
 

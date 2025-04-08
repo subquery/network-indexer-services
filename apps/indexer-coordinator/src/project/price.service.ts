@@ -32,7 +32,7 @@ export class PriceService {
     await this.request(dids, true);
   }
 
-  async inlinePayg(paygs: Payg[], remoteExchangeRate: string) {
+  async inlinePayg(paygs: Payg[], remoteExchangeRate?: string, trim: boolean = true) {
     const deploymentIds = paygs.map((p) => p.id);
     if (!deploymentIds.length) return;
     const dPrices = await this.getDominatePrice(deploymentIds);
@@ -98,6 +98,10 @@ export class PriceService {
     for (const p of paygs) {
       p.exchangeRate = effectiveExchangeRate;
       if (p.token === USDC_TOKEN) {
+        if (!p.exchangeRate) {
+          getLogger('price').error(`${p.id} fail to get payg exchange rate from usdc. ${p.error}`);
+          continue;
+        }
         p.rawpaygMinPrice = p.price;
         p.rawpaygToken = p.token;
 
@@ -109,6 +113,12 @@ export class PriceService {
       if (!p.dominantPrice) continue;
 
       if (p.rawdominantToken === USDC_TOKEN) {
+        if (!p.exchangeRate) {
+          getLogger('price').error(
+            `${p.id} fail to get dominant price exchange rate for usdc. ${p.error}`
+          );
+          continue;
+        }
         p.rawdominantPrice = p.dominantPrice;
 
         p.dominantPrice = BigNumber.from(effectiveExchangeRate)
@@ -121,6 +131,12 @@ export class PriceService {
       const dominant = BigNumber.from(p.dominantPrice).mul(p.priceRatio).div(100);
 
       p.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
+    }
+
+    if (trim) {
+      _.remove(paygs, function (p) {
+        return !p.exchangeRate && (p.token === USDC_TOKEN || p.rawdominantToken === USDC_TOKEN);
+      });
     }
   }
 
@@ -253,6 +269,11 @@ export class PriceService {
       return { error: transferRes.error };
     } else {
       const curChainExchangeRateBig = BigNumber.from(transferRes.data);
+
+      if (!remoteExchangeRate) {
+        return { data: curChainExchangeRateBig.toString() };
+      }
+
       const slippage = Number(defaultFlex[ConfigType.FLEX_SLIPPAGE]);
       const rerBig = BigNumber.from(remoteExchangeRate);
 

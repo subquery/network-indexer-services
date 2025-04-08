@@ -177,7 +177,7 @@ export class ProjectService {
     });
   }
 
-  async getAlivePaygs(remoteExchangeRate: string): Promise<Payg[]> {
+  async getAlivePaygs(remoteExchangeRate?: string): Promise<Payg[]> {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
     const paygs = await this.paygRepo.find({ where: { price: Not('') } });
