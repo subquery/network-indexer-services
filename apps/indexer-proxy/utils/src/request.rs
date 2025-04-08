@@ -28,8 +28,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
-use std::error::Error as StdError;
-use std::time::Duration;
+use std::{collections::HashMap, error::Error as StdError, time::Duration};
 
 pub static REQUEST_CLIENT: Lazy<Client> = Lazy::new(reqwest::Client::new);
 
@@ -165,6 +164,139 @@ async fn handle_request_raw(request: RequestBuilder, query: String) -> Result<Ve
     } else {
         let err = String::from_utf8(body).unwrap_or("Internal request error".to_owned());
         Err(Error::GraphQLInternal(1011, err))
+    }
+}
+
+// Request to indexer/consumer proxy, with query params
+pub async fn proxy_request_with_query_params(
+    method: &str,
+    url: &str,
+    path: &str,
+    token: &str,
+    query_params: &HashMap<String, String>,
+    body_query: String,
+    headers: Vec<(String, String)>,
+) -> Result<Value, Value> {
+    let url = format!("{}/{}", url, path);
+    let token = format!("Bearer {}", token);
+
+    let res = match method.to_lowercase().as_str() {
+        "get" => {
+            let mut req = REQUEST_CLIENT
+                .get(&url)
+                .timeout(Duration::from_secs(REQUEST_TIMEOUT))
+                .query(query_params);
+            let mut no_auth = true;
+            for (k, v) in headers {
+                if k.to_lowercase() == "authorization" {
+                    no_auth = false;
+                }
+                req = req.header(k, v);
+            }
+            if no_auth {
+                req = req.header(AUTHORIZATION, &token);
+            }
+            req.send().await
+        }
+        _ => {
+            let mut req = REQUEST_CLIENT
+                .post(&url)
+                .timeout(Duration::from_secs(REQUEST_TIMEOUT))
+                .query(query_params)
+                .header("content-type", "application/json");
+            let mut no_auth = true;
+            for (k, v) in headers {
+                if k.to_lowercase() == "authorization" {
+                    no_auth = false;
+                }
+                req = req.header(k, v);
+            }
+            if no_auth {
+                req = req.header(AUTHORIZATION, &token);
+            }
+
+            req.body(body_query).send().await
+        }
+    };
+
+    match res {
+        Ok(res) => {
+            let res_status = res.status();
+            let value = match res.text().await {
+                Ok(data) => match serde_json::from_str(&data) {
+                    Ok(data) => data,
+                    Err(_err) => json!(data),
+                },
+                Err(_err) => json!(format!("Status: {}", res_status)),
+            };
+
+            if res_status.is_success() {
+                Ok(value)
+            } else {
+                Err(value)
+            }
+        }
+        Err(err) => {
+            let error_message = if err.is_timeout() {
+                format!(
+                    "url : {} , Request timed out, source is {:?}",
+                    url,
+                    err.source()
+                )
+            } else if err.is_connect() {
+                format!(
+                    "url : {} , Connection error: This might be a network issue",
+                    url
+                )
+            } else if let Some(dns_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<std::io::Error>())
+            {
+                if dns_err.kind() == std::io::ErrorKind::AddrNotAvailable
+                    || dns_err.kind() == std::io::ErrorKind::NotFound
+                {
+                    format!(
+                        "url : {} , DNS resolution error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
+                } else {
+                    format!(
+                        "url: {} , Other IO error: {:?}, source is {:?}",
+                        url,
+                        dns_err,
+                        err.source()
+                    )
+                }
+            } else if let Some(tls_err) = err
+                .source()
+                .and_then(|source| source.downcast_ref::<NativeTlsError>())
+            {
+                format!(
+                    "url : {} , TLS/SSL error: {:?}, source is {:?}",
+                    url,
+                    tls_err,
+                    err.source()
+                )
+            } else if err.is_request() {
+                format!(
+                    "url : {} , Malformed HTTP response or protocol error, source is {:?}",
+                    url,
+                    err.source()
+                )
+            } else if err.is_redirect() {
+                format!(
+                    "url : {} , Too many redirects occurred, source is {:?}",
+                    url,
+                    err.source()
+                )
+            } else {
+                format!("url : {}, err: {}, source is: {:?}", url, err, err.source())
+            };
+
+            Err(json!(error_message))
+        }
     }
 }
 
