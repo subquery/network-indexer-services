@@ -72,18 +72,18 @@ pub async fn convert_price<M: Middleware>(
 
     let price_contract_address: Address = setting_contract
         .method::<_, Address>("getContractAddress", (SQContracts::PriceOracle,))
-        .map_err(|_| Error::ServiceException(1028))?
+        .map_err(|_| Error::ServiceException(1029))?
         .call()
         .await
-        .map_err(|_| Error::ServiceException(1028))?;
+        .map_err(|_| Error::ServiceException(1030))?;
     let price_contract =
         price_contract_with_dynamic_address(client.clone(), price_contract_address)
-            .map_err(|_| Error::ServiceException(1028))?;
+            .map_err(|_| Error::ServiceException(1031))?;
 
     price_contract
         .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
-        .map_err(|_| Error::ServiceException(1028))?
+        .map_err(|_| Error::ServiceException(1032))?
         .call()
         .await
-        .map_err(|_| Error::ServiceException(1028))
+        .map_err(|_| Error::ServiceException(1033))
 }
