@@ -140,7 +140,7 @@ const ProjectItem: FC<Props> = (props) => {
               : STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}{' '}
             / 1000 requests
             {payg.error ? (
-              <Tooltip title={`Conver price error, information: ${payg.error}`}>
+              <Tooltip title={`Convert price error, information: ${payg.error}`}>
                 <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 16, flexShrink: 0 }} />
               </Tooltip>
             ) : (
