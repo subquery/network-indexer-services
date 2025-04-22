@@ -180,7 +180,6 @@ export class ProjectService {
   async getAlivePaygs(remoteExchangeRate?: string): Promise<Payg[]> {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
-    console.log('-------getAlivePaygs----',remoteExchangeRate);
     const paygs = await this.paygRepo.find({ where: { price: Not('') } });
     await this.priceService.inlinePayg(paygs, remoteExchangeRate);
     for (const payg of paygs) {
