@@ -128,14 +128,14 @@ const ProjectItem: FC<Props> = (props) => {
             {BigNumberJs(
               formatUnits(
                 payg?.price,
-                payg.token === sdk?.sqToken.address
+                payg.token === sdk?.sqToken.address || !payg.token
                   ? SQT_DECIMAL
                   : STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
               )
             )
               .multipliedBy(1000)
               .toFixed()}{' '}
-            {payg.token === sdk?.sqToken.address
+            {payg.token === sdk?.sqToken.address || !payg.token
               ? TOKEN_SYMBOL
               : STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}{' '}
             / 1000 requests

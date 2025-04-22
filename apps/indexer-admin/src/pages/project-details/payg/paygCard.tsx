@@ -72,7 +72,7 @@ export function PaygCard({ id }: TProjectPAYG) {
   }, [paygConfig, sdk, showModal]);
 
   const dominantPriceSQT = useMemo(() => {
-    if (dominantPrice?.token === sdk?.sqToken.address) {
+    if (dominantPrice?.token === sdk?.sqToken.address || !dominantPrice?.token) {
       return BigNumberJs(
         formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))
       ).toString();
@@ -89,7 +89,7 @@ export function PaygCard({ id }: TProjectPAYG) {
   }, [dominantPrice, transPrice, sdk]);
 
   const minPriceSQT = useMemo(() => {
-    if (paygConfig.token === sdk?.sqToken.address) {
+    if (paygConfig.token === sdk?.sqToken.address || !paygConfig.token) {
       return paygConfig.paygMinPrice;
     }
     return transPrice(STABLE_COIN_ADDRESS, BigNumberJs(paygConfig.paygMinPrice).toString())
@@ -131,7 +131,7 @@ export function PaygCard({ id }: TProjectPAYG) {
         </div>
         <Typography variant="medium" type="secondary">
           Current dominant price:
-          {dominantPrice?.token === sdk?.sqToken.address ? (
+          {dominantPrice?.token === sdk?.sqToken.address || !dominantPrice?.token ? (
             <>
               {formatEther(BigNumber.from(dominantPrice?.price || 0).mul(1000))}{' '}
               {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
@@ -172,7 +172,7 @@ export function PaygCard({ id }: TProjectPAYG) {
         </Typography>
         <Typography variant="medium" type="secondary">
           Price ratio: {paygConf.priceRatio}% (
-          {dominantPrice?.token === sdk?.sqToken.address ? (
+          {dominantPrice?.token === sdk?.sqToken.address || !dominantPrice?.token ? (
             <Typography variant="medium" type="secondary">
               {BigNumberJs(
                 formatEther(
@@ -226,7 +226,7 @@ export function PaygCard({ id }: TProjectPAYG) {
           style={{ display: 'flex', alignItems: 'center', gap: 4 }}
         >
           Minimum pricing:{' '}
-          {paygConfig.token === sdk?.sqToken.address ? (
+          {paygConfig.token === sdk?.sqToken.address || !paygConfig.token ? (
             <Typography variant="medium" type="secondary">
               {paygConfig.paygMinPrice} {TOKEN_SYMBOLS[SUPPORTED_NETWORK]} / 1000 reqeusts
             </Typography>
