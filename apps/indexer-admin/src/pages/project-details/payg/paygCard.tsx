@@ -451,7 +451,13 @@ export function PaygCard({ id }: TProjectPAYG) {
                               label: (
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                   <img
-                                    style={{ width: 24, height: 24, marginRight: 8 }}
+                                    style={{
+                                      width: 24,
+                                      height: 24,
+                                      marginRight: 8,
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                    }}
                                     src="/images/sqt.png"
                                     alt=""
                                   />
