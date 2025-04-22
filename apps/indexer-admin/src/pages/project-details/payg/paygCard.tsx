@@ -452,7 +452,7 @@ export function PaygCard({ id }: TProjectPAYG) {
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                   <img
                                     style={{ width: 24, height: 24, marginRight: 8 }}
-                                    src="/images/ksqt.svg"
+                                    src="/images/sqt.png"
                                     alt=""
                                   />
                                   <Typography>{TOKEN_SYMBOL}</Typography>
