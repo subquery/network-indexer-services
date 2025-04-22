@@ -221,10 +221,10 @@ export class PriceService {
         }
       }
 
-      if (!exchangeRate) return;
-
       for (const p of projects) {
         if (convert && p.payg.token === USDC_TOKEN) {
+          if (!exchangeRate) continue;
+
           p.payg.error = null;
           p.payg.rawpaygMinPrice = p.payg.price;
           p.payg.rawpaygToken = p.payg.token;
@@ -240,6 +240,8 @@ export class PriceService {
         }
 
         if (convert && p.dominantPrice?.token === USDC_TOKEN) {
+          if (!exchangeRate) continue;
+
           p.payg.error = null;
           p.dominantPrice.rawToken = p.dominantPrice.token;
           p.dominantPrice.rawPrice = p.dominantPrice.price;
