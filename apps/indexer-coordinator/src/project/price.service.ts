@@ -93,7 +93,7 @@ export class PriceService {
       }
     }
 
-    effectiveExchangeRate = effectiveExchangeRate ?? remoteExchangeRate;
+    effectiveExchangeRate = effectiveExchangeRate || remoteExchangeRate;
 
     for (const p of paygs) {
       p.exchangeRate = effectiveExchangeRate;
@@ -141,7 +141,7 @@ export class PriceService {
   }
 
   // eslint-disable-next-line complexity
-  async fillPaygAndDominatePrice(projects: Project[]) {
+  async fillPaygAndDominatePrice(projects: Project[], convert: boolean = false) {
     const deploymentIds = projects.map((p) => p.id);
     if (deploymentIds.length) {
       const [paygRes, priceRes] = await Promise.allSettled([
@@ -193,7 +193,7 @@ export class PriceService {
               : Number(defaultFlex[ConfigType.FLEX_PRICE_RATIO]);
         }
 
-        if (p.payg.token === USDC_TOKEN) {
+        if (convert && p.payg.token === USDC_TOKEN) {
           if (!exchangeRate) {
             const transferRes = await this.contract.convertFromUSDC(ONE_USDC);
             if (transferRes.error) {
@@ -209,7 +209,7 @@ export class PriceService {
           continue;
         }
 
-        if (p.dominantPrice.token === USDC_TOKEN) {
+        if (convert && p.dominantPrice.token === USDC_TOKEN) {
           if (!exchangeRate) {
             const transferRes = await this.contract.convertFromUSDC(ONE_USDC);
             if (transferRes.error) {
@@ -224,7 +224,7 @@ export class PriceService {
       if (!exchangeRate) return;
 
       for (const p of projects) {
-        if (p.payg.token === USDC_TOKEN) {
+        if (convert && p.payg.token === USDC_TOKEN) {
           p.payg.error = null;
           p.payg.rawpaygMinPrice = p.payg.price;
           p.payg.rawpaygToken = p.payg.token;
@@ -239,7 +239,7 @@ export class PriceService {
           continue;
         }
 
-        if (p.dominantPrice?.token === USDC_TOKEN) {
+        if (convert && p.dominantPrice?.token === USDC_TOKEN) {
           p.payg.error = null;
           p.dominantPrice.rawToken = p.dominantPrice.token;
           p.dominantPrice.rawPrice = p.dominantPrice.price;
@@ -251,9 +251,11 @@ export class PriceService {
             .toString();
         }
 
-        const minPrice = BigNumber.from(p.payg.price || 0);
-        const dominant = BigNumber.from(p.dominantPrice.price).mul(p.payg.priceRatio).div(100);
-        p.payg.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
+        if (convert) {
+          const minPrice = BigNumber.from(p.payg.price || 0);
+          const dominant = BigNumber.from(p.dominantPrice.price).mul(p.payg.priceRatio).div(100);
+          p.payg.price = minPrice.gt(dominant) ? minPrice.toString() : dominant.toString();
+        }
       }
     }
   }
