@@ -141,8 +141,10 @@ if [[ -n "$proxy_line" && "$proxy_line" =~ subquerynetwork/indexer-proxy: && ! "
   fi
 fi
 
-if [[ ("$coordinator_update" == false && "$proxy_update" == false) || (-z "$latest_coordinator" && -z "$latest_proxy") ]]; then
-  echo "✅ No update needed. Current tags are already the latest or dev tags are present."
+if [[ -z "$latest_coordinator" || -z "$latest_proxy" ]]; then
+  echo "⚠️ CANNOT access docker hub to find latest tag of indexer-coordinator and indexer-proxy， continue..."
+elif [[ "$coordinator_update" == false && "$proxy_update" == false ]]; then
+  echo "✅ No update needed. Current tags are already the latest or dev tags are present, continue..."
 else
   timestamp=$(date +"%Y%m%d_%H%M%S")
   backup_file="${COMPOSE_FILE}.${timestamp}.bak"
