@@ -59,7 +59,7 @@ fi
 get_latest_tag() {
   local REPO="$1"
   local API_URL="https://hub.docker.com/v2/repositories/${REPO}/tags?page_size=100"
-  curl -s "$API_URL" | jq -r '.results[].name' | sort -Vr | head -n 1
+  curl -s --max-time 10 "$API_URL" | jq -r '.results[].name' | sort -Vr | head -n 1
 }
 
 latest_coordinator=$(get_latest_tag "subquerynetwork/indexer-coordinator")
@@ -141,7 +141,7 @@ if [[ -n "$proxy_line" && "$proxy_line" =~ subquerynetwork/indexer-proxy: && ! "
   fi
 fi
 
-if [[ "$coordinator_update" == false && "$proxy_update" == false ]]; then
+if [[ "$coordinator_update" == false && "$proxy_update" == false || ( -z "$latest_coordinator" && -z "$latest_proxy" ) ]]; then
   echo "✅ No update needed. Current tags are already the latest or dev tags are present."
 else
   timestamp=$(date +"%Y%m%d_%H%M%S")
