@@ -3,7 +3,7 @@
 set -e
 
 #############################################
-# update_compose_tags.sh
+# auto-upgrade-tool.sh
 #
 # Purpose:
 #   Update subquerynetwork/indexer-coordinator and indexer-proxy
@@ -18,8 +18,8 @@ set -e
 #   ✅ support docker compose v1 and v2
 #
 # Usage:
-#   ./update_compose_tags.sh             # Uses docker-compose.yml by default
-#   ./update_compose_tags.sh -f my-compose.yml
+#   ./auto-upgrade-tool.sh             # Uses docker-compose.yml by default
+#   ./auto-upgrade-tool.sh -f my-compose.yml
 #
 #############################################
 
