@@ -20,6 +20,7 @@ set -e
 # Usage:
 #   ./auto-upgrade-tool.sh             # Uses docker-compose.yml by default
 #   ./auto-upgrade-tool.sh -f my-compose.yml
+#   ./auto-upgrade-tool.sh -u          # run 'docker compose up' without asking
 #
 #############################################
 
@@ -34,17 +35,21 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-# Default compose file
+# Default compose file and flags
 COMPOSE_FILE="docker-compose.yml"
+PROMPT_UP=false
 
 # Parse options
-while getopts "f:" opt; do
+while getopts "f:u" opt; do
   case $opt in
   f)
     COMPOSE_FILE="$OPTARG"
     ;;
+  u)
+    PROMPT_UP=true
+    ;;
   *)
-    echo "Usage: $0 [-f compose-file]"
+    echo "Usage: $0 [-f compose-file] [-u]"
     exit 1
     ;;
   esac
@@ -172,7 +177,27 @@ else
   echo "🎉 $COMPOSE_FILE has been updated to the latest tags."
 fi
 
-# Detect docker compose command
-detect_docker_compose_cmd
-
-run_docker_compose_cmd
+if [[ "$PROMPT_UP" == true ]]; then
+  detect_docker_compose_cmd
+  run_docker_compose_cmd
+else
+  while true; do
+    echo -n "Do you want to run 'docker compose up'? (yes/[no]): "
+    read -r response
+    case "$response" in
+      yes|y|"")
+        # Detect docker compose command
+        detect_docker_compose_cmd
+        run_docker_compose_cmd
+        break
+        ;;
+      no|n)
+        echo "ℹ️ Skipping 'docker compose up' as per user response."
+        break
+        ;;
+      *)
+        echo "Please answer 'yes' or 'no'."
+        ;;
+    esac
+  done
+fi
