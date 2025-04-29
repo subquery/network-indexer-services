@@ -141,7 +141,7 @@ if [[ -n "$proxy_line" && "$proxy_line" =~ subquerynetwork/indexer-proxy: && ! "
   fi
 fi
 
-if [[ "$coordinator_update" == false && "$proxy_update" == false || ( -z "$latest_coordinator" && -z "$latest_proxy" ) ]]; then
+if [[ ("$coordinator_update" == false && "$proxy_update" == false) || (-z "$latest_coordinator" && -z "$latest_proxy") ]]; then
   echo "✅ No update needed. Current tags are already the latest or dev tags are present."
 else
   timestamp=$(date +"%Y%m%d_%H%M%S")
