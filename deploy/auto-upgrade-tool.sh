@@ -86,6 +86,11 @@ detect_docker_compose_cmd() {
 # Function to run docker compose command
 run_docker_compose_cmd() {
   if [[ -n "$DOCKER_COMPOSE_CMD" ]]; then
+    echo "🔄 Pulling latest images:"
+    echo "    Command    : $DOCKER_COMPOSE_CMD pull"
+    echo "    Config file: $COMPOSE_FILE"
+    $DOCKER_COMPOSE_CMD -f "$COMPOSE_FILE" pull
+
     echo "🔄 Starting services:"
     echo "    Command    : $DOCKER_COMPOSE_CMD up -d"
     echo "    Config file: $COMPOSE_FILE"
