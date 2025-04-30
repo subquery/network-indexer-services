@@ -20,7 +20,7 @@ set -e
 # Usage:
 #   ./auto-upgrade-tool.sh             # Uses docker-compose.yml by default
 #   ./auto-upgrade-tool.sh -f my-compose.yml
-#   ./auto-upgrade-tool.sh -u          # run 'docker compose up' without asking
+#   ./auto-upgrade-tool.sh -y          # run 'docker compose up' without asking
 #
 #############################################
 
@@ -40,12 +40,12 @@ COMPOSE_FILE="docker-compose.yml"
 PROMPT_UP=false
 
 # Parse options
-while getopts "f:u" opt; do
+while getopts "f:y" opt; do
   case $opt in
   f)
     COMPOSE_FILE="$OPTARG"
     ;;
-  u)
+  y)
     PROMPT_UP=true
     ;;
   *)
