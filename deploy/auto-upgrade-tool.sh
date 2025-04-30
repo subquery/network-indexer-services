@@ -64,7 +64,15 @@ fi
 get_latest_tag() {
   local REPO="$1"
   local API_URL="https://hub.docker.com/v2/repositories/${REPO}/tags?page_size=100"
-  curl -s --max-time 10 "$API_URL" | jq -r '.results[].name' | sort -Vr | head -n 1
+  local response
+  response=$(curl -s --max-time 10 "$API_URL")
+
+  if echo "$response" | jq empty >/dev/null 2>&1; then
+    echo "$response" | jq -r '.results[].name' | sort -Vr | head -n 1
+  else
+    echo "Error: Invalid JSON response from Docker Hub API for $REPO" >&2
+    echo ""
+  fi
 }
 
 latest_coordinator=$(get_latest_tag "subquerynetwork/indexer-coordinator")
@@ -147,7 +155,7 @@ if [[ -n "$proxy_line" && "$proxy_line" =~ subquerynetwork/indexer-proxy: && ! "
 fi
 
 if [[ -z "$latest_coordinator" || -z "$latest_proxy" ]]; then
-  echo "⚠️ CANNOT access docker hub to find latest tag of indexer-coordinator and indexer-proxy， continue..."
+  echo "⚠️ CANNOT access Docker Hub to find latest tag of indexer-coordinator and indexer-proxy， continue..."
 elif [[ "$coordinator_update" == false && "$proxy_update" == false ]]; then
   echo "✅ No update needed. Current tags are already the latest or dev tags are present, continue..."
 else
