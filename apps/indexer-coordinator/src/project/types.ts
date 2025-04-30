@@ -131,6 +131,7 @@ export type TemplateType = {
   networkEndpoints: string[];
   nodeVersion: string;
   queryVersion: string;
+  dockerRegistry?: string;
   servicePort: number;
   poiEnabled: boolean;
   mmrStoreType: MmrStoreType;

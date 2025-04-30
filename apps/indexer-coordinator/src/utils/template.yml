@@ -64,7 +64,7 @@ services:
       retries: 100
 
   query_{{projectID}}:
-    image: subquerynetwork/subql-query:{{queryVersion}}
+    image: {{dockerRegistry}}:{{queryVersion}}
     container_name: query_{{projectID}}
     user: "1000"
     expose:
