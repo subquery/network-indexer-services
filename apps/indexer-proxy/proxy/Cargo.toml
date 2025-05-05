@@ -35,7 +35,7 @@ solana-transaction-status-client-types = "2.2"
 structopt = "0.3"
 subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.6.0" }
 subql-indexer-utils = { version = "2", path = "../utils" }
-sysinfo = "0.32"
+sysinfo = "0.33"
 tdn = { version = "0.10", default-features = false, features = ["multiple"] }
 tokenizers = "0.20"
 tokio = { version = "1", features = ["full"] }
