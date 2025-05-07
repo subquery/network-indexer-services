@@ -1,6 +1,6 @@
 [package]
 name = "subql-indexer-proxy"
-version = "2.9.0"
+version = "2.9.1-beta1"
 edition = "2021"
 
 [dependencies]
@@ -27,13 +27,13 @@ rustls-webpki = "0.102"
 sentry = "0.34.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_with ={ version = "3.0", features = ["json"] }
+serde_with = { version = "3.0", features = ["json"] }
 sha2 = '0.10'
 solana-client = "2.2"
 solana-sdk = "2.2"
 solana-transaction-status-client-types = "2.2"
 structopt = "0.3"
-subql-contracts = { git = "https://github.com/subquery/network-contracts", tag = "v1.6.0" }
+subql-contracts = { git = "https://github.com/subquery/network-contracts", rev = "fed494b42970f824ff137c11ebe64742177b143a" }
 subql-indexer-utils = { version = "2", path = "../utils" }
 sysinfo = "0.32"
 tdn = { version = "0.10", default-features = false, features = ["multiple"] }

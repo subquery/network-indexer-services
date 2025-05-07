@@ -17,9 +17,26 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![deny(warnings)]
+use crate::ai::api_stream;
+use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
+use crate::cli::COMMAND;
+use crate::contracts::check_agreement_and_consumer;
+use crate::graphql::{exchange_rate_query, PAYG_QUERY};
+use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
+use crate::payg::{
+    extend_channel, fetch_channel_cache, merket_price, merket_price_with_exchange_rate_price,
+    open_state, pay_channel, query_multiple_state, query_single_state, AuthPayg,
+};
+use crate::project::get_project;
+use crate::sentry_log::make_sentry_message;
+use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
+use crate::{
+    account::{get_indexer, indexer_healthy},
+    auth::AuthWhitelistQuery,
+};
 use axum::extract::ws::WebSocket;
 use axum::{
-    extract::{ConnectInfo, Path, WebSocketUpgrade},
+    extract::{ConnectInfo, Path, Query, WebSocketUpgrade},
     http::{
         header::{self, HeaderMap, HeaderValue},
         Method, Response, StatusCode,
@@ -34,7 +51,10 @@ use base64::{engine::general_purpose, Engine as _};
 use ethers::prelude::U256;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+};
 use subql_indexer_utils::{
     eip712::{recover_consumer_token_payload, recover_indexer_token_payload},
     error::Error,
@@ -43,23 +63,6 @@ use subql_indexer_utils::{
     tools::{hex_u256, string_u256, u256_hex},
 };
 use tower_http::cors::{Any, CorsLayer};
-
-use crate::ai::api_stream;
-use crate::auth::{create_jwt, AuthQuery, AuthQueryLimit, Payload};
-use crate::cli::COMMAND;
-use crate::contracts::check_agreement_and_consumer;
-use crate::metrics::{get_owner_metrics, MetricsNetwork, MetricsQuery};
-use crate::payg::{
-    extend_channel, fetch_channel_cache, merket_price, open_state, pay_channel,
-    query_multiple_state, query_single_state, AuthPayg,
-};
-use crate::project::get_project;
-use crate::sentry_log::make_sentry_message;
-use crate::websocket::{connect_to_project_ws, handle_websocket, validate_project, QueryType};
-use crate::{
-    account::{get_indexer, indexer_healthy},
-    auth::AuthWhitelistQuery,
-};
 
 #[derive(Serialize)]
 pub struct QueryUri {
@@ -413,7 +416,36 @@ async fn query_limit_handler(
     })))
 }
 
-async fn payg_price() -> Result<Json<Value>, Error> {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RawPaygPriceItem {
+    pub id: String,
+    pub price: String,
+    pub token: String,
+    pub expiration: u64,
+    pub overflow: u64,
+}
+
+// http://localhost/payg-price?exchange_price=19000000000000000000
+async fn payg_price(
+    Query(query_map): Query<HashMap<String, String>>,
+) -> Result<Json<Value>, Error> {
+    let query = if let Some(exchange_price) = query_map.get("exchange_price") {
+        GraphQLQuery::query(&exchange_rate_query(exchange_price))
+    } else {
+        GraphQLQuery::query(PAYG_QUERY)
+    };
+    let url = COMMAND.graphql_url();
+    if let Ok(value) = graphql_request(&url, &query).await {
+        if let Some(item) = value.pointer("/data/getAlivePaygs") {
+            let price_items: Vec<RawPaygPriceItem> =
+                serde_json::from_str(item.to_string().as_str())
+                    .map_err(|_e| Error::Serialize(1120))?;
+            // warn!("price_items: {:?}", price_items);
+            let projects = merket_price_with_exchange_rate_price(&price_items).await?;
+            return Ok(Json(projects));
+        }
+    }
+
     let projects = merket_price(None).await?;
     Ok(Json(projects))
 }

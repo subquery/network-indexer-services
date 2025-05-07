@@ -18,9 +18,43 @@
 
 use ethers::prelude::*;
 use std::sync::Arc;
-use subql_contracts::{price_oracle, Network};
+use subql_contracts::{price_contract_with_dynamic_address, settings, Network};
 
 use crate::error::Error;
+
+// https://github.com/subquery/network-clients/blob/main/packages/network-config/src/constants.ts#L38
+pub const TESTNET_USDC_TOKEN_ADDRESS: &str = "0x2d9dce396fcd6543da1ba7c9029c4b77e7716c74";
+pub const MAINNET_USDC_TOKEN_ADDRESS: &str = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+// https://github.com/subquery/network-contracts/blob/fed494b42970f824ff137c11ebe64742177b143a/publish/testnet.json#L67
+pub const TESTNET_SQT_TOKEN_ADDRESS: &str = "0x37b797ebe14b4490fe64c67390aecfe20d650953";
+// https://github.com/subquery/network-contracts/blob/fed494b42970f824ff137c11ebe64742177b143a/publish/mainnet.json#L73
+pub const MAINNET_SQT_TOKEN_ADDRESS: &str = "0x858c50c3af1913b0e849afdb74617388a1a5340d";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EthAbiType)]
+#[repr(u8)]
+pub enum SQContracts {
+    SQToken,
+    Staking,
+    StakingManager,
+    IndexerRegistry,
+    ProjectRegistry,
+    EraManager,
+    PlanManager,
+    ServiceAgreementRegistry,
+    RewardsDistributor,
+    RewardsPool,
+    RewardsStaking,
+    RewardsHelper,
+    InflationController,
+    Vesting,
+    DisputeManager,
+    StateChannel,
+    ConsumerRegistry,
+    PriceOracle,
+    Treasury,
+    RewardsBooster,
+    StakingAllocation,
+}
 
 pub async fn convert_price<M: Middleware>(
     asset_from: Address,
@@ -33,12 +67,23 @@ pub async fn convert_price<M: Middleware>(
         return Ok(amount_from);
     }
 
-    let contract = price_oracle(client, network).map_err(|_| Error::ServiceException(1023))?;
+    let setting_contract =
+        settings(client.clone(), network).map_err(|_| Error::ServiceException(1028))?;
 
-    contract
-        .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
-        .map_err(|_| Error::ServiceException(1028))?
+    let price_contract_address: Address = setting_contract
+        .method::<_, Address>("getContractAddress", (SQContracts::PriceOracle,))
+        .map_err(|_| Error::ServiceException(1029))?
         .call()
         .await
-        .map_err(|_| Error::ServiceException(1028))
+        .map_err(|_| Error::ServiceException(1030))?;
+    let price_contract =
+        price_contract_with_dynamic_address(client.clone(), price_contract_address)
+            .map_err(|_| Error::ServiceException(1031))?;
+
+    price_contract
+        .method::<_, U256>("convertPrice", (asset_from, asset_to, amount_from))
+        .map_err(|_| Error::ServiceException(1032))?
+        .call()
+        .await
+        .map_err(|_| Error::ServiceException(1033))
 }
