@@ -450,7 +450,7 @@ export class ProjectService {
       dockerNetwork,
       ipfsUrl: IPFS_URL,
       mmrPath,
-      dockerRegistry: projectConfig.dockerRegistry || 'subquerynetwork/subql-query',
+      queryDockerRegistry: project.details.image,
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
       hostCertsPath: argv[PostgresKeys.hostCertsPath],

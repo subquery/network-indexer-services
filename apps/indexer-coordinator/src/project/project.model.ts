@@ -197,7 +197,6 @@ export interface IProjectConfig {
   networkDictionary: string;
   nodeVersion: string;
   queryVersion: string;
-  dockerRegistry?: string;
   usePrimaryNetworkEndpoint?: boolean;
   poiEnabled: boolean;
 
@@ -225,8 +224,6 @@ export class ProjectConfig implements IProjectConfig {
   nodeVersion: string;
   @Field()
   queryVersion: string;
-  @Field({ nullable: true })
-  dockerRegistry?: string;
   @Field({ nullable: true, defaultValue: true })
   usePrimaryNetworkEndpoint?: boolean;
   @Field()
@@ -491,5 +488,4 @@ export class ProjectDetails extends ProjectEntity {
 
   @Field(() => DominantPrice, { nullable: true })
   dominantPrice?: DominantPrice;
-
 }
