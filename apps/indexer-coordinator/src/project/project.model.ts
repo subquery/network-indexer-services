@@ -49,6 +49,12 @@ export class DominantPrice {
   @Field({ nullable: true })
   price?: string;
   @Field({ nullable: true })
+  token?: string;
+  @Field({ nullable: true })
+  rawPrice?: string;
+  @Field({ nullable: true })
+  rawToken?: string;
+  @Field({ nullable: true })
   retrieveCount?: number;
   @Field({ nullable: true })
   failCount?: number;
@@ -461,6 +467,24 @@ export class Payg extends PaygEntity {
 
   @Field({ nullable: true })
   dominantPrice?: string;
+
+  @Field({ nullable: true })
+  exchangeRate?: string;
+
+  @Field({ nullable: true })
+  rawdominantPrice?: string;
+
+  @Field({ nullable: true })
+  rawdominantToken?: string;
+
+  @Field({ nullable: true })
+  rawpaygMinPrice?: string;
+
+  @Field({ nullable: true })
+  rawpaygToken?: string;
+
+  @Field({ nullable: true })
+  error?: string;
 }
 
 @ObjectType('Project')
@@ -488,5 +512,4 @@ export class ProjectDetails extends ProjectEntity {
 
   @Field(() => DominantPrice, { nullable: true })
   dominantPrice?: DominantPrice;
-  
 }

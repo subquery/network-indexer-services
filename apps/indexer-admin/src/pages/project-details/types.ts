@@ -114,9 +114,11 @@ export type ProjectConfig = {
     priceRatio: number;
     token: string;
     useDefault: boolean;
+    error?: string;
   };
   dominantPrice: {
     price?: string;
+    token?: string;
     lastError?: string;
   };
 

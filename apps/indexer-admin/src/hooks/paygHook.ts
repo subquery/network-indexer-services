@@ -13,7 +13,7 @@ import { BigNumber } from 'ethers';
 import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { PAYG_PRICE } from 'utils/queries';
-import { network } from 'utils/web3';
+import { network, SUPPORTED_NETWORK } from 'utils/web3';
 
 import { useProjectDetails } from './projectHook';
 
@@ -42,17 +42,18 @@ export function usePAYGConfig(deploymentId: string) {
         useDefault: true,
       };
     }
+    const usdcDecimal = STABLE_COIN_DECIMAL[SUPPORTED_NETWORK];
 
     return {
       paygPrice:
         payg.token === sdk?.sqToken.address
           ? formatEther(BigNumber.from(payg.price).mul(1000))
-          : formatUnits(BigNumber.from(payg.price).mul(1000), +STABLE_COIN_DECIMAL),
+          : formatUnits(BigNumber.from(payg.price).mul(1000), usdcDecimal),
       paygRatio: payg.priceRatio || 80,
       paygMinPrice:
         payg.token === sdk?.sqToken.address
           ? formatEther(BigNumber.from(payg.minPrice).mul(1000))
-          : formatUnits(BigNumber.from(payg.minPrice).mul(1000), +STABLE_COIN_DECIMAL),
+          : formatUnits(BigNumber.from(payg.minPrice).mul(1000), usdcDecimal),
       paygExpiration: (payg.expiration ?? 0) / daySeconds,
       token: payg.token,
       useDefault: payg.useDefault,
@@ -73,7 +74,7 @@ export function usePAYGConfig(deploymentId: string) {
         const paygPrice =
           token === sdk?.sqToken.address
             ? parseEther(minPrice)
-            : parseUnits(minPrice, +import.meta.env.VITE_STABLE_TOKEN_DECIMAL);
+            : parseUnits(minPrice, STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]);
 
         await paygPriceRequest({
           variables: {

@@ -163,7 +163,7 @@ export class ProjectService {
     const projects = (await this.projectRepo.find()) as Project[];
 
     if (!['monitor', 'metadata'].includes(source)) {
-      await this.priceService.fillPaygAndDominatePrice(projects);
+      await this.priceService.fillPaygAndDominatePrice(projects, true);
     }
 
     return projects.sort((a, b) => {
@@ -177,11 +177,12 @@ export class ProjectService {
     });
   }
 
-  async getAlivePaygs(): Promise<Payg[]> {
+  async getAlivePaygs(remoteExchangeRate?: string): Promise<Payg[]> {
     // return this.paygRepo.find({ where: { price: Not('') } });
     // FIXME remove this
+    getLogger('project').debug(`remoteExchangeRate: ${remoteExchangeRate}`);
     const paygs = await this.paygRepo.find({ where: { price: Not('') } });
-    await this.priceService.inlinePayg(paygs);
+    await this.priceService.inlinePayg(paygs, remoteExchangeRate);
     for (const payg of paygs) {
       payg.overflow = 10000;
     }
@@ -275,14 +276,14 @@ export class ProjectService {
     const flexConfig = await this.configService.getFlexConfig();
 
     let paygConfig = {};
-    if (flexConfig.flex_enabled === 'true') {
+    if (flexConfig[ConfigType.FLEX_ENABLED] === 'true') {
       paygConfig = {
         id: id.trim(),
-        price: flexConfig.flex_price,
+        price: flexConfig[ConfigType.FLEX_PRICE],
         expiration: Number(this.configService.getDefault(ConfigType.FLEX_VALID_PERIOD)) || 259200, // default: 3 days
         threshold: 10,
         overflow: 10,
-        token: this.contract.getSdk().sqToken.address,
+        token: flexConfig[ConfigType.FLEX_TOKEN_ADDRESS],
       } as PaygEntity;
     }
 

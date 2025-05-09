@@ -6,6 +6,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { NetworkService } from 'src/network/network.service';
+import { ConfigModule } from '../config/config.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { Controller, Indexer } from './account.model';
 import { AccountResolver } from './account.resolver';
@@ -22,6 +23,7 @@ import { ServiceResolver } from './service.resolver';
     SubscriptionModule,
     TypeOrmModule.forFeature([Controller, Indexer]),
     ScheduleModule.forRoot(),
+    ConfigModule,
   ],
   providers: [
     ContractService,

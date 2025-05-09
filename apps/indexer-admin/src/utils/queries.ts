@@ -84,9 +84,11 @@ const PaygFields = `
     priceRatio
     token
     useDefault
+    error
   }
   dominantPrice {
     price
+    token
     lastError
   }
 `;
@@ -566,6 +568,7 @@ export enum ConfigKey {
   AllocationRewardThreshold = 'allocation_reward_threshold',
   StateChannelRewardThreshold = 'state_channel_reward_threshold',
   AutoReduceAllocationEnabled = 'auto_reduce_allocation_enabled',
+  FlexTokenAddress = 'flex_token_address',
 }
 
 export interface AllConfig {

@@ -4,8 +4,10 @@
 import { FC, useMemo } from 'react';
 import { IoWarning } from 'react-icons/io5';
 import { useHistory } from 'react-router-dom';
+import { formatUnits } from '@ethersproject/units';
 import { Spinner, SubqlProgress, Tag, Typography } from '@subql/components';
 import { indexingProgress } from '@subql/network-clients';
+import { SQT_DECIMAL, STABLE_COIN_DECIMAL, STABLE_COIN_SYMBOLS } from '@subql/network-config';
 import { formatSQT } from '@subql/react-hooks';
 import { Tooltip } from 'antd';
 import BigNumberJs from 'bignumber.js';
@@ -13,6 +15,7 @@ import { isNull, isUndefined } from 'lodash';
 
 import Avatar from 'components/avatar';
 import UnsafeWarn from 'components/UnsafeWarn';
+import { useContractSDK } from 'containers/contractSdk';
 import { useCoordinatorIndexer } from 'containers/coordinatorIndexer';
 import { useDeploymentStatus, useIsOnline } from 'hooks/projectHook';
 import { useGetIfUnsafeDeployment } from 'hooks/useGetIfUnsafeDeployment';
@@ -24,7 +27,7 @@ import {
 } from 'pages/project-details/types';
 import { cidToBytes32 } from 'utils/ipfs';
 import { formatValueToFixed } from 'utils/units';
-import { TOKEN_SYMBOL } from 'utils/web3';
+import { SUPPORTED_NETWORK, TOKEN_SYMBOL } from 'utils/web3';
 
 import { OnlineStatus, statusText } from '../constant';
 import { ItemContainer, ProfileContainer, ProjectItemContainer } from '../styles';
@@ -36,7 +39,7 @@ type Props = Omit<ProjectDetails, 'metadata'> & {
 
 const ProjectItem: FC<Props> = (props) => {
   const { id, details, payg, metadata, projectType, metadataLoading, dominantPrice } = props;
-
+  const sdk = useContractSDK();
   const { indexer: account } = useCoordinatorIndexer();
   const history = useHistory();
   const { status } = useDeploymentStatus(id);
@@ -122,8 +125,27 @@ const ProjectItem: FC<Props> = (props) => {
       <ItemContainer flex={1}>
         {payg?.expiration ? (
           <Typography variant="small" type="secondary" style={{ display: 'flex' }}>
-            {BigNumberJs(formatSQT(payg?.price)).multipliedBy(1000).toFixed()} {TOKEN_SYMBOL} / 1000
-            requests
+            {BigNumberJs(
+              formatUnits(
+                payg?.price,
+                payg.token === sdk?.sqToken.address || !payg.token
+                  ? SQT_DECIMAL
+                  : STABLE_COIN_DECIMAL[SUPPORTED_NETWORK]
+              )
+            )
+              .multipliedBy(1000)
+              .toFixed()}{' '}
+            {payg.token === sdk?.sqToken.address || !payg.token
+              ? TOKEN_SYMBOL
+              : STABLE_COIN_SYMBOLS[SUPPORTED_NETWORK]}{' '}
+            / 1000 requests
+            {payg.error ? (
+              <Tooltip title={`Convert price error, information: ${payg.error}`}>
+                <IoWarning style={{ color: 'var(--sq-warning)', fontSize: 16, flexShrink: 0 }} />
+              </Tooltip>
+            ) : (
+              ''
+            )}
             {dominantPrice.lastError ? (
               <Tooltip
                 title={`Fetch dominant price failed, the minimum acceptable price is used as the price for the flex plan. Error: ${dominantPrice.lastError}`}

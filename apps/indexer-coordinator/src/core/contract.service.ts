@@ -2,22 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Injectable } from '@nestjs/common';
-import { ContractSDK } from '@subql/contract-sdk';
+import { ContractSDK, PriceOracle__factory, SQContracts } from '@subql/contract-sdk';
 import { cidToBytes32 } from '@subql/network-clients';
 import { isValidPrivate, toBuffer } from 'ethereumjs-util';
 import { BigNumber, Overrides, Wallet, providers } from 'ethers';
-import { parseEther } from 'ethers/lib/utils';
+import { parseEther, formatEther } from 'ethers/lib/utils';
 import { getEthProvider } from 'src/utils/ethProvider';
 import { mutexPromise } from 'src/utils/promise';
 import { redisDel, redisGetObj, redisSetObj } from 'src/utils/redis';
 import { argv } from 'src/yargs';
+import { ConfigService } from '../config/config.service';
 import { Config } from '../configure/configure.module';
 import { ChainID, initContractSDK, initProvider, networkToChainID } from '../utils/contractSDK';
 import { decrypt } from '../utils/encrypt';
 import { TextColor, colorText, debugLogger, getLogger } from '../utils/logger';
 import { Controller } from './account.model';
 import { AccountService } from './account.service';
-import { IndexerDeploymentStatus, TxFun, TxOptions, TxType } from './types';
+import { IndexerDeploymentStatus, TxOptions, TxType } from './types';
 
 const MAX_RETRY = 3;
 const logger = getLogger('contract');
@@ -33,7 +34,11 @@ export class ContractService {
   private gasFeeLimit: BigNumber;
   private gasFeeLimitEnabled: boolean;
 
-  constructor(private accountService: AccountService, private config: Config) {
+  constructor(
+    private accountService: AccountService,
+    private config: Config,
+    private configService: ConfigService
+  ) {
     this.chainID = networkToChainID[config.network];
     this.existentialBalance = parseEther('0.001');
     this.provider = initProvider(config.networkEndpoint, this.chainID, logger);
@@ -209,6 +214,26 @@ export class ContractService {
     } catch (e) {
       logger.error(e, `failed to get indexing status for project: ${id}`);
       return IndexerDeploymentStatus.TERMINATED;
+    }
+  }
+
+  async convertFromUSDC(amount: string): Promise<{ error?: string; data?: string }> {
+    try {
+      const [USDC_ADDRESS] = this.configService.getUSDC();
+      const priceOracleAddress = await this.sdk.settings.getContractAddress(
+        SQContracts.PriceOracle
+      );
+      const priceOracleFactory = PriceOracle__factory.connect(priceOracleAddress, this.provider);
+      const assetPrice = await priceOracleFactory.convertPrice(
+        USDC_ADDRESS,
+        this.sdk.sqToken.address,
+        amount
+      );
+      logger.debug(`convertFromUSDC amount:${amount}, asset:${formatEther(assetPrice)}`);
+      return { data: assetPrice.toString() };
+    } catch (e) {
+      logger.error(`fail to convert from USDC. ${e.message}`);
+      return { error: e.message };
     }
   }
 
