@@ -450,6 +450,7 @@ export class ProjectService {
       dockerNetwork,
       ipfsUrl: IPFS_URL,
       mmrPath,
+      queryDockerRegistry: project.manifest.runner.query.name,
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
       hostCertsPath: argv[PostgresKeys.hostCertsPath],

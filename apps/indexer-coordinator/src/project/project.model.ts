@@ -488,5 +488,4 @@ export class ProjectDetails extends ProjectEntity {
 
   @Field(() => DominantPrice, { nullable: true })
   dominantPrice?: DominantPrice;
-  
 }
