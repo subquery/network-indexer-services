@@ -452,12 +452,13 @@ export class ProjectService {
       mmrPath,
       queryDockerRegistry: (() => {
         const queryName = project.manifest?.runner?.query?.name;
-        if (queryName === '@subql/query') {
-          return 'subquerynetwork/subql-query';
-        } else if (queryName === '@subql/query-subgraph') {
-          return 'subquerynetwork/query-subgraph';
-        } else {
-          return 'subquerynetwork/subql-query';
+        switch (queryName) {
+          case '@subql/query':
+            return 'subquerynetwork/subql-query';
+          case '@subql/query-subgraph':
+            return 'subquerynetwork/query-subgraph';
+          default:
+            return 'subquerynetwork/subql-query';
         }
       })(),
       ...projectConfig,
