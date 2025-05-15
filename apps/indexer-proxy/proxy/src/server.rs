@@ -107,6 +107,7 @@ pub async fn start_server(port: u16) {
         .route("/metrics", get(metrics_handler))
         // `Get /healthy` goes to query the service in running success (response the indexer)
         .route("/healthy", get(healthy_handler))
+        .route("/empty_test", get(empty_test))
         .route("/", get(|| async { Redirect::to("/healthy") }))
         .layer(
             CorsLayer::new()
@@ -737,6 +738,13 @@ async fn metadata_handler(Path(deployment): Path<String>) -> Result<Response<Str
 async fn healthy_handler() -> Result<Json<Value>, Error> {
     let info = indexer_healthy().await;
     Ok(Json(info))
+}
+
+async fn empty_test() -> Result<Json<Value>, Error> {
+    Ok(Json(json!({
+        "status": "success",
+        "message": "Message received"
+    })))
 }
 
 async fn metrics_handler(AuthBearer(token): AuthBearer) -> Response<String> {

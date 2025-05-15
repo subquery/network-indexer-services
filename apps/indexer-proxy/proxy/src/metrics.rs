@@ -284,6 +284,7 @@ pub enum MetricsQuery {
     Whitelist,
 }
 
+#[allow(dead_code)]
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
 pub enum MetricsNetwork {
     HTTP,
