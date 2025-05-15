@@ -447,6 +447,9 @@ export class ProjectService {
       case '@subql/query-subgraph':
         queryDockerRegistry = 'subquerynetwork/query-subgraph';
         break;
+      default:
+        queryDockerRegistry = 'subquerynetwork/subql-query';
+        break;
     }
 
     this.setDefaultConfigValue(projectConfig);
