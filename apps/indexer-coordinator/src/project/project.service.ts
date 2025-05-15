@@ -450,7 +450,16 @@ export class ProjectService {
       dockerNetwork,
       ipfsUrl: IPFS_URL,
       mmrPath,
-      queryDockerRegistry: project.manifest.runner.query.name || 'subquerynetwork/subql-query',
+      queryDockerRegistry: (() => {
+        const queryName = project.manifest?.runner?.query?.name;
+        if (queryName === '@subql/query') {
+          return 'subquerynetwork/subql-query';
+        } else if (queryName === '@subql/query-subgraph') {
+          return 'subquerynetwork/query-subgraph';
+        } else {
+          return 'subquerynetwork/subql-query';
+        }
+      })(),
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
       hostCertsPath: argv[PostgresKeys.hostCertsPath],
