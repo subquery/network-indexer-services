@@ -438,6 +438,20 @@ export class ProjectService {
     const mmrPath = argv['mmrPath'].replace(/\/$/, '');
     const containerCertsPath = '/usr/certs';
 
+    const queryName = project.manifest?.runner?.query?.name;
+    let queryDockerRegistry = 'subquerynetwork/subql-query';
+    switch (queryName) {
+      case '@subql/query':
+        queryDockerRegistry = 'subquerynetwork/subql-query';
+        break;
+      case '@subql/query-subgraph':
+        queryDockerRegistry = 'subquerynetwork/query-subgraph';
+        break;
+      default:
+        queryDockerRegistry = 'subquerynetwork/subql-query';
+        break;
+    }
+
     this.setDefaultConfigValue(projectConfig);
 
     const item: TemplateType = {
@@ -450,6 +464,7 @@ export class ProjectService {
       dockerNetwork,
       ipfsUrl: IPFS_URL,
       mmrPath,
+      queryDockerRegistry,
       ...projectConfig,
       primaryNetworkEndpoint: projectConfig.networkEndpoints[0] || '',
       hostCertsPath: argv[PostgresKeys.hostCertsPath],

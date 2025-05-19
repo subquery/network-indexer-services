@@ -130,6 +130,7 @@ export type TemplateType = {
   projectID: string;
   networkEndpoints: string[];
   nodeVersion: string;
+  queryDockerRegistry: string;
   queryVersion: string;
   servicePort: number;
   poiEnabled: boolean;
