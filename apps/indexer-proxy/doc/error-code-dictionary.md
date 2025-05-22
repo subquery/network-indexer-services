@@ -30,7 +30,7 @@
 - `1037` - Invalid service endpoint: no internal endpoint.
 - `1038` - Invalid controller: parse controller sk to LocalWallet failure.
 - `1039` - Invalid controller: parse controller sk as p2p key failure.
-- `1040` - Invalid signature: cannot recover address from siganture.
+- `1040` - Invalid signature: cannot recover address from signature.
 - `1041` - Invalid signature: cannot sign message.
 - `1042` - Invalid encrypt: cannot convert hex to bytes from ciphertext.
 - `1043` - Invalid encrypt: encrypt key not match the ciphertext.
@@ -99,7 +99,7 @@
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
-- `1203` - Service exception: Coordinator RPC mainfest is invalid
+- `1203` - Service exception: Coordinator RPC manifest is invalid
 - `1204` - Service exception: AI tokenizer missing or cannot download
 - `1205` - Service exception: AI tokenizer cannot encode
 - `1300` - Websocket connection: project not support websocket
@@ -107,8 +107,8 @@
 - `1302` - Websocket connection: failed to send message to remote socket
 - `1303` - Websocket connection: failed to send message to client socket
 - `1304` - Websocket connection: failed to close remote socket
-- `1305` - Websocket connection: failed to manange the before state cache
-- `1306` - Websocket connection: failed to manange the after state cache
+- `1305` - Websocket connection: failed to manage the before state cache
+- `1306` - Websocket connection: failed to manage the after state cache
 - `1307` - Websocket connection: invalid query state
 - `1308` - Websocket connection: failed to connect remote socket
 - `1309` - Websocket connection: remote socket disconnected
