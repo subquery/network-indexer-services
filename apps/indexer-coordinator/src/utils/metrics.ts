@@ -9,6 +9,7 @@ export enum MetricsType {
   RETH_PROMETHEUS = 'reth_prom',
   BESU_PROMETHEUS = 'besu_prom',
   AUTONITY_PROMETHEUS = 'auto_prom',
+  LAYER_EDGE_PROMETHEUS = 'layer_edge_prom',
 }
 
 function extractFromBrace(content: string) {
@@ -36,7 +37,7 @@ function extractFromGauge(content: string) {
 export type MetricsData = {
   mType: MetricsType;
 
-  // geth
+  // geth & layer-edge
   chain_id?: string;
 
   // geth & autonity
@@ -58,6 +59,10 @@ export type MetricsData = {
 
   // autonity
   p2p_acn_peers?: string;
+
+  // layer-edge
+  cometbft_p2p_peers?: string;
+  cometbft_blocksync_latest_block_height?: string;
 };
 
 // eslint-disable-next-line complexity
@@ -192,6 +197,39 @@ export function parseMetrics(metrics: string): MetricsData {
         Object.assign(parsedData, peerInfo);
       }
     }
+
+    // layer-edge
+    if (lines[i].startsWith('# TYPE cometbft_p2p_peers gauge')) {
+      /**
+        # TYPE cometbft_p2p_peers gauge
+        cometbft_p2p_peers{chain_id="4207"} 2
+       */
+      mType = MetricsType.LAYER_EDGE_PROMETHEUS;
+      const next = lines[i + 1] || '';
+      if (next.startsWith('cometbft_p2p_peers')) {
+        const peerInfo = extractFromGauge(next);
+        Object.assign(parsedData, peerInfo);
+
+        const chainInfo = extractFromBrace(next);
+        Object.assign(parsedData, chainInfo);
+      }
+    }
+    if (lines[i].startsWith('# TYPE cometbft_blocksync_latest_block_height gauge')) {
+      /**
+        # TYPE cometbft_blocksync_latest_block_height gauge
+        cometbft_blocksync_latest_block_height{chain_id="4207"} 6208
+      */
+      mType = MetricsType.LAYER_EDGE_PROMETHEUS;
+      const next = lines[i + 1] || '';
+      if (next.startsWith('cometbft_blocksync_latest_block_height')) {
+        const blockHeightInfo = extractFromGauge(next);
+        Object.assign(parsedData, blockHeightInfo);
+
+        const chainInfo = extractFromBrace(next);
+        Object.assign(parsedData, chainInfo);
+      }
+    }
+
   }
 
   parsedData.mType = mType;
