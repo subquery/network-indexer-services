@@ -284,6 +284,8 @@ export class RpcFamilyEvm extends RpcFamily {
           const metricsObj = parseMetrics(result.data);
           if (metricsObj.mType === MetricsType.GETH_PROMETHEUS) {
             chainIdFromRpc = metricsObj.chain_id;
+          } else if (metricsObj.mType === MetricsType.LAYER_EDGE_PROMETHEUS) {
+            chainIdFromRpc = metricsObj.chain_id;
           } else {
             chainIdFromRpc = chainId;
           }
@@ -428,6 +430,11 @@ export class RpcFamilyEvm extends RpcFamily {
             // deal with '0.0' for BigNumber
             headBlock = String(Number(metricsObj.ethereum_blockchain_height));
             errorMsg = 'incorrect besu block height';
+            break;
+          case MetricsType.LAYER_EDGE_PROMETHEUS:
+            p2pPeers = metricsObj.cometbft_p2p_peers;
+            headBlock = metricsObj.cometbft_blocksync_latest_block_height;
+            errorMsg = 'incorrect layeredge block height/peers';
             break;
           default:
         }
