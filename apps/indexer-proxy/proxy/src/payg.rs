@@ -1025,11 +1025,13 @@ pub async fn handle_channel(value: &Value) -> Result<()> {
             state_cache.coordi = spent;
 
             if state_cache.signer.is_empty() {
+                warn!("signer empty, check_state_channel_consumer");
                 state_cache.signer = check_state_channel_consumer(consumer, agent).await?;
             }
 
             state_cache
         } else {
+            warn!("state_cache_op is None, check_state_channel_consumer");
             let signer = check_state_channel_consumer(consumer, agent).await?;
             StateCache {
                 expiration: channel.expired,
@@ -1107,7 +1109,10 @@ pub async fn fetch_channel_cache(channel_id: U256) -> Result<(StateCache, String
         redis::cmd("GET").arg(&keyname).query_async(&mut conn).await;
 
     if let Err(err) = cache_bytes {
-        error!("Redis 3: {}", err);
+        error!(
+            "Redis 3: {}, channel_id is {:?}, keyname: {:?}",
+            err, channel_id, keyname
+        );
         return Err(Error::ServiceException(1021));
     }
     let cache_raw_bytes = cache_bytes.unwrap();

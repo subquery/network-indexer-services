@@ -148,10 +148,16 @@ pub async fn check_state_channel_consumer(
 
         let token: Token = host
             .method::<_, Token>("getSigners", ())
-            .map_err(|_| Error::ServiceException(1028))?
+            .map_err(|e| {
+                warn!("e is {:?}, 1028 error", e);
+                Error::ServiceException(1028)
+            })?
             .call()
             .await
-            .map_err(|_| Error::ServiceException(1028))?;
+            .map_err(|e| {
+                warn!("e is {:?}, 1028 error", e);
+                Error::ServiceException(1028)
+            })?;
 
         if let Some(ts) = token.into_array() {
             for t in ts {
