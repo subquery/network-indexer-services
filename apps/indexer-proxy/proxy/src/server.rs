@@ -140,19 +140,36 @@ async fn ep_wl_query(
     deployment: String,
     ep_name: String,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     if deployment != deployment_id {
-        return Err(Error::AuthVerify(1004));
+        return Error::AuthVerify(1004).into_response();
     };
 
     let (new_body, path) = match serde_json::from_str::<WhiteListBody>(&body) {
         Ok(body) => (body.body, Some((body.path, body.method))),
-        Err(_) => (body, None),
+        Err(_) => (body.clone(), None),
     };
 
-    let project = get_project(&deployment).await?;
-    let endpoint = project.endpoint(&ep_name, false)?;
-    let (data, signature, _limit) = project
+    let project = match get_project(&deployment).await {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
+    let endpoint = match project.endpoint(&ep_name, false) {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
+    if project.is_ai_project() && !endpoint.is_internal {
+        let v = match serde_json::from_str::<Value>(&body.clone())
+            .map_err(|_| Error::Serialize(1142))
+        {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
+        if let Some(&json!(true)) = v.get("stream") {
+            return payg_stream(endpoint.endpoint.clone(), v, None).await;
+        }
+    }
+    let (data, signature, _limit) = match project
         .check_query(
             new_body,
             endpoint.endpoint.clone(),
@@ -162,7 +179,11 @@ async fn ep_wl_query(
             false,
             path,
         )
-        .await?;
+        .await
+    {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
 
     let body = serde_json::to_string(&json!({
         "result": general_purpose::STANDARD.encode(data),
@@ -172,14 +193,14 @@ async fn ep_wl_query(
 
     let header = vec![("Content-Type", "application/json")];
 
-    Ok(build_response(body, header))
+    build_response(body, header).into_response()
 }
 
 async fn default_wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path(deployment): Path<String>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_wl_query(deployment_id, deployment, "default".to_owned(), body).await
 }
 
@@ -187,7 +208,7 @@ async fn wl_query(
     AuthWhitelistQuery(deployment_id): AuthWhitelistQuery,
     Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_wl_query(deployment_id, deployment, ep_name, body).await
 }
 
@@ -276,7 +297,7 @@ async fn default_query(
     AuthQuery(deployment_id): AuthQuery,
     Path(deployment): Path<String>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_query_handler(
         headers,
         deployment_id,
@@ -292,7 +313,7 @@ async fn query_handler(
     AuthQuery(deployment_id): AuthQuery,
     Path((deployment, ep_name)): Path<(String, String)>,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     ep_query_handler(headers, deployment_id, deployment, ep_name, body).await
 }
 
@@ -302,9 +323,9 @@ async fn ep_query_handler(
     deployment: String,
     ep_name: String,
     body: String,
-) -> Result<Response<String>, Error> {
+) -> AxumResponse {
     if COMMAND.auth() && deployment != deployment_id {
-        return Err(Error::AuthVerify(1004));
+        return Error::AuthVerify(1004).into_response();
     };
 
     let res_fmt = headers
@@ -315,12 +336,27 @@ async fn ep_query_handler(
         .unwrap_or(HeaderValue::from_static("false"));
     let no_sig = res_sig.to_str().map(|s| s == "true").unwrap_or(false);
 
-    let project = get_project(&deployment).await?;
-    let endpoint = project.endpoint(&ep_name, true)?;
+    let project = match get_project(&deployment).await {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
+    let endpoint = match project.endpoint(&ep_name, true) {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
     if endpoint.is_ws {
-        return Err(Error::WebSocket(1315));
+        return Error::WebSocket(1315).into_response();
     }
-    let (data, signature, limit) = project
+    if project.is_ai_project() && !endpoint.is_internal {
+        let v = match serde_json::from_str::<Value>(&body).map_err(|_| Error::Serialize(1142)) {
+            Ok(p) => p,
+            Err(e) => return e.into_response(),
+        };
+        if let Some(&json!(true)) = v.get("stream") {
+            return payg_stream(endpoint.endpoint.clone(), v, None).await;
+        }
+    }
+    let (data, signature, limit) = match project
         .check_query(
             body.clone(),
             endpoint.endpoint.clone(),
@@ -330,7 +366,11 @@ async fn ep_query_handler(
             no_sig,
             None,
         )
-        .await?;
+        .await
+    {
+        Ok(p) => p,
+        Err(e) => return e.into_response(),
+    };
 
     let (body, mut headers) = match res_fmt.to_str() {
         Ok("inline") => {
@@ -385,7 +425,7 @@ async fn ep_query_handler(
         headers.push(("X-RateLimit-Remaining-Second", (t - u).to_string().leak()));
     }
 
-    Ok(build_response(body, headers))
+    build_response(body, headers).into_response()
 }
 
 async fn ws_query(
@@ -475,8 +515,8 @@ async fn ep_payg_handler(
         return Error::WebSocket(1315).into_response();
     }
 
-    if project.is_ai_project() {
-        let state = match MultipleQueryState::from_bs64(auth) {
+    if project.is_ai_project() && !endpoint.is_internal {
+        let state = match MultipleQueryState::from_bs64(auth.clone()) {
             Ok(p) => p,
             Err(e) => return e.into_response(),
         };
@@ -484,7 +524,9 @@ async fn ep_payg_handler(
             Ok(p) => p,
             Err(e) => return e.into_response(),
         };
-        return payg_stream(endpoint.endpoint.clone(), v, state, false).await;
+        if let Some(&json!(true)) = v.get("stream") {
+            return payg_stream(endpoint.endpoint.clone(), v, Some(state)).await;
+        }
     }
 
     let (data, signature, state_data, limit) = match block.to_str() {
@@ -842,10 +884,9 @@ async fn ws_handler(
 async fn payg_stream(
     endpoint: String,
     v: Value,
-    state: MultipleQueryState,
-    is_test: bool,
+    state: Option<MultipleQueryState>,
 ) -> AxumResponse {
-    let mut res = StreamBodyAs::text(api_stream(endpoint, v, state, is_test)).into_response();
+    let mut res = StreamBodyAs::text(api_stream(endpoint, v, state)).into_response();
     res.headers_mut()
         .insert("Content-Type", "text/event-stream".parse().unwrap());
     res.headers_mut()
