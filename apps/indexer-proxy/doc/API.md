@@ -16,7 +16,7 @@ API Docs for Subquery Indexer Proxy
 > | indexer      |  Payload | string   | indexer address  |
 > | consumer      |  Payload | string   | consumer address  |
 > | agreement      |  Payload | string   | service agreement contract address  |
-> | deployment_id      |  Payload | string   | deployment id for the proejct  |
+> | deployment_id      |  Payload | string   | deployment id for the project  |
 > | signature      |  Payload | string   | signature of user  |
 > | timestamp      |  Payload | string   |   |
 > | chain_id      |  Payload | string   | chain id  |

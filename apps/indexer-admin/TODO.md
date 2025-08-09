@@ -1,4 +1,4 @@
-## Plan to refactor this projet
+## Plan to refactor this project
 
 - Part 1 for the whole project
 
@@ -15,7 +15,7 @@
 
 - Part 2 for the query and contract
 
-  - [ ] Move the relative codes to togather.
+  - [ ] Move the relative codes to together, to gather.
   - [ ] Wrap ContractSDK.
         ...
 
