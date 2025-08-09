@@ -81,7 +81,7 @@ const AppContents = () => {
 
   // note this flow, after allow all wallet can be access, the coordinatorIndexer is a async fetch,
   // all of other components dependent the result.
-  // and hasController also be dependent for otehr components.
+  // and hasController also be dependent for other components.
   useMount(async () => {
     await load();
   });
