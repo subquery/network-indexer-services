@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export enum AccountNotification {
-  MetadataUpated = 'MetadataUpated',
+  MetadataUpdated = 'MetadataUpdated',
   ControllerUpdated = 'ControllerUpdated',
 }
 
