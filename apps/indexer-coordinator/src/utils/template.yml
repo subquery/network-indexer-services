@@ -43,6 +43,7 @@ services:
       - --mmr-store-type={{mmrStoreType}}
       - -m={{mmrPath}}/poi/{{deploymentID}}/.mmr
       - --disable-historical=false
+      - --unsafe=true
       {{#if (eq chainType "ethereum")}}
       - --block-confirmations=100
       {{/if}}
