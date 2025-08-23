@@ -52,13 +52,10 @@ services:
       - --pg-cert={{pgCert}}
       {{/if}}
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-f",
-          "http://node_{{projectID}}:{{servicePort}}/ready"
-        ]
+      test: [
+          "CMD-SHELL",
+          "wget -qO- http://subquery-node:3000/ready >/dev/null 2>&1"
+      ]
       interval: 3s
       timeout: 5s
       retries: 100
