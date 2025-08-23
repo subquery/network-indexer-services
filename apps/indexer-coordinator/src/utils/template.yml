@@ -54,7 +54,7 @@ services:
     healthcheck:
       test: [
           "CMD-SHELL",
-          "wget -qO- http://subquery-node:3000/ready >/dev/null 2>&1"
+          "wget -qO- http://node_{{projectID}}:{{servicePort}}/ready >/dev/null 2>&1"
       ]
       interval: 3s
       timeout: 5s
