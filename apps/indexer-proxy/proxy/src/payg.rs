@@ -453,10 +453,14 @@ pub async fn post_query_signle_state(
         let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
     } else {
         // update, missing KEEPTTL, so use two operation.
-        let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let exp: RedisResult<i64> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+        let exp_value = match exp {
+            Ok(ttl) if ttl > 0 => ttl as usize,
+            _ => 86400, // Default to 24 hours if TTL is negative or error
+        };
         let _: core::result::Result<(), ()> = redis::cmd("SETEX")
             .arg(&keyname)
-            .arg(exp.unwrap_or(86400))
+            .arg(exp_value)
             .arg(state_cache.to_bytes())
             .query_async(&mut conn)
             .await
@@ -663,10 +667,14 @@ pub fn check_multiple_state_balance(
 
 pub async fn post_query_multiple_state(keyname: String, state_cache: StateCache) {
     let mut conn = redis();
-    let exp: RedisResult<usize> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+    let exp: RedisResult<i64> = redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+    let exp_value = match exp {
+        Ok(ttl) if ttl > 0 => ttl as usize,
+        _ => 86400, // Default to 24 hours if TTL is negative or error
+    };
     let _: core::result::Result<(), ()> = redis::cmd("SETEX")
         .arg(&keyname)
-        .arg(exp.unwrap_or(86400))
+        .arg(exp_value)
         .arg(state_cache.to_bytes())
         .query_async(&mut conn)
         .await
@@ -899,11 +907,15 @@ pub async fn pay_channel(mut state: QueryState) -> Result<String> {
             let _: RedisResult<()> = redis::cmd("DEL").arg(&keyname).query_async(&mut conn).await;
         } else {
             // update, missing KEEPTTL, so use two operation.
-            let exp: RedisResult<usize> =
+            let exp: RedisResult<i64> =
                 redis::cmd("TTL").arg(&keyname).query_async(&mut conn).await;
+            let exp_value = match exp {
+                Ok(ttl) if ttl > 0 => ttl as usize,
+                _ => 86400, // Default to 24 hours if TTL is negative or error
+            };
             let _: core::result::Result<(), ()> = redis::cmd("SETEX")
                 .arg(&keyname)
-                .arg(exp.unwrap_or(86400))
+                .arg(exp_value)
                 .arg(state_cache.to_bytes())
                 .query_async(&mut conn)
                 .await
