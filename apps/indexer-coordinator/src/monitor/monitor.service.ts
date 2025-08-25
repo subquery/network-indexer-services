@@ -97,7 +97,9 @@ export class MonitorService {
         return false;
       }
 
-      const url = new URL('health', endpoint.value);
+      const healthPath =
+        endpointType === SubqueryEndpointType.Query ? '.well-known/apollo/server-health' : 'health';
+      const url = new URL(healthPath, endpoint.value);
       const result = await axios.get(url.toString(), { timeout: 5000 });
 
       if (result.status === 200) {
