@@ -61,11 +61,11 @@ use crate::{
     auth::AuthWhitelistQuery,
 };
 
-#[derive(Serialize)]
-pub struct QueryUri {
-    /// the url refer to specific project
-    pub uri: String,
-}
+// #[derive(Serialize)]
+// pub struct QueryUri {
+//     /// the url refer to specific project
+//     pub uri: String,
+// }
 
 #[derive(Serialize)]
 pub struct QueryToken {
