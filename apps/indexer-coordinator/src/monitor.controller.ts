@@ -18,9 +18,9 @@ class Proxy {
   peer: string;
   // peer address in the p2p network
   addr: string;
-  // the number of actived agreements
+  // the number of active agreements
   agreement: number;
-  // the number of actived state channels
+  // the number of active state channels
   channel: number;
 }
 
