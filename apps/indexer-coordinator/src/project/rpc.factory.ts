@@ -413,7 +413,7 @@ export class RpcFamilyEvm extends RpcFamily {
             errorMsg = 'incorrect head block';
             break;
           case MetricsType.ERIGON_PROMETHEUS:
-            headBlock = metricsObj.chain_checkpoint_latest;
+            headBlock = metricsObj.chain_checkpoint_latest || metricsObj.exec_blocks;
             p2pPeers = metricsObj.p2p_peers;
             poolNewBlockCount = metricsObj.pool_new_block_count;
             errorMsg = 'incorrect checkpoint';

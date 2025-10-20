@@ -45,6 +45,7 @@ export type MetricsData = {
 
   // erigon
   chain_checkpoint_latest?: string;
+  exec_blocks?: string; // erigon + Caplin
   p2p_peers?: string;
   pool_new_block_count?: string;
 
@@ -121,6 +122,19 @@ export function parseMetrics(metrics: string): MetricsData {
         Object.assign(parsedData, cpInfo);
       }
     }
+    // Caplin (erigon fork)
+    if (lines[i].startsWith('# TYPE exec_blocks gauge')) {
+      /**
+        # TYPE exec_blocks gauge
+        exec_blocks 98905
+      */
+      const next = lines[i + 1] || '';
+      if (next.startsWith('exec_blocks')) {
+        const cpInfo = extractFromGauge(next);
+        Object.assign(parsedData, cpInfo);
+      }
+    }
+
     if (lines[i].startsWith('# TYPE p2p_peers gauge')) {
       /**
         # TYPE p2p_peers gauge
