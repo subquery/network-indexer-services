@@ -20,5 +20,9 @@
     "lint-staged": "yarn lint-staged:admin && yarn lint-staged:coordinator",
     "lint-staged:admin": "cd apps/indexer-admin && yarn lint-staged",
     "lint-staged:coordinator": "cd apps/indexer-coordinator && yarn lint-staged"
+  },
+  "volta": {
+    "node": "20.19.0",
+    "yarn": "1.22.22"
   }
 }

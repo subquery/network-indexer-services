@@ -58,7 +58,7 @@ export class PaygQueryService {
   }
 
   @timeoutPromiseCatched(20000, undefined)
-  async getStateChannel(id: string): Promise<StateChannel | undefined> {
+  async getStateChannel(id: string): Promise<StateChannel | null | undefined> {
     try {
       const result = await this.client.query<GetFlexPlanQuery>({
         // @ts-ignore TODO: fix type
@@ -67,8 +67,9 @@ export class PaygQueryService {
       });
 
       const channel = result.data.stateChannel;
+      // null: channel not found on network; undefined: request failed
       // @ts-ignore TODO: fix type
-      return channel;
+      return channel ?? null;
     } catch (e) {
       logger.error(`Failed to get channel ${id} from Subquery Project: ${e}`);
       return;
