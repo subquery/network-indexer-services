@@ -173,15 +173,19 @@ export class PaygService implements OnModuleInit {
 
   async updateChannelFromNetwork(
     id: string,
-    altChannelData?: StateChannelOnNetwork,
+    altChannelData?: StateChannelOnNetwork | null,
     isFinal?: boolean
   ): Promise<Channel | undefined> {
     id = BigNumber.from(id).toHexString().toLowerCase();
 
-    if (!altChannelData) {
+    if (altChannelData === undefined) {
       altChannelData = await this.paygQueryService.getStateChannel(id);
     }
-    if (!altChannelData) {
+    if (altChannelData === undefined) {
+      logger.debug(`State channel fetch from network failed, skip update: ${id}`);
+      return;
+    }
+    if (altChannelData === null) {
       logger.debug(`State channel not exist on network, remove from db: ${id}`);
       await this.channelRepo.delete({ id });
       return;
@@ -265,7 +269,7 @@ export class PaygService implements OnModuleInit {
   async syncChannel(
     channelId: string,
     altPrice?: BigNumber,
-    altChannelData?: StateChannelOnNetwork
+    altChannelData?: StateChannelOnNetwork | null
   ): Promise<Channel | undefined> {
     if (!this.contract.getSdk()) {
       return;
@@ -275,7 +279,7 @@ export class PaygService implements OnModuleInit {
 
     const channelState = await this.channelFromContract(BigNumber.from(id));
     if (!channelState) {
-      return this.updateChannelFromNetwork(id, altChannelData, true);
+      return this.updateChannelFromNetwork(id, altChannelData);
     }
 
     let channelPrice: BigNumber;

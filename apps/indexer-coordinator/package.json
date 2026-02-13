@@ -1,6 +1,6 @@
 {
   "name": "@subql/indexer-coordinator",
-  "version": "2.10.4",
+  "version": "2.10.5",
   "description": "",
   "author": "SubQuery",
   "license": "Apache-2.0",
@@ -8,9 +8,7 @@
     "/dist",
     "/bin"
   ],
-  "bin": {
-    "indexer-coordinator": "./bin/run"
-  },
+  "bin": "./bin/run",
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build && sh ./scripts/copy-resources.sh",
@@ -156,5 +154,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "volta": {
+    "node": "20.19.0",
+    "yarn": "1.22.22"
   }
 }
