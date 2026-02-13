@@ -178,7 +178,7 @@ export class PaygService implements OnModuleInit {
   ): Promise<Channel | undefined> {
     id = BigNumber.from(id).toHexString().toLowerCase();
 
-    if (!altChannelData) {
+    if (altChannelData === undefined) {
       altChannelData = await this.paygQueryService.getStateChannel(id);
     }
     if (altChannelData === undefined) {
