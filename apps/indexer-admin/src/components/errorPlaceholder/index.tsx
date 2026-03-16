@@ -33,7 +33,7 @@ const ErrorPlaceholder: FC<IProps> = (props) => {
         Oops! Can&apos;t connect to coordinator
       </Typography>
       <Typography type="secondary" style={{ textAlign: 'center' }}>
-        It looks like the coordinator service is temporarily unavaiable
+        It looks like the coordinator service is temporarily unavailable
         <span>, please</span>
         <br />
         <span>check your coordinator service or let us know in </span>
