@@ -1,3 +1,21 @@
+// This file is part of SubQuery.
+
+// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 use futures_util::{Stream, StreamExt};
 use reqwest_streams::*;
 use serde::{Deserialize, Serialize};
@@ -58,8 +76,7 @@ pub async fn connect_remote(
     endpoint: String,
     tx: Sender<String>,
     req: Value,
-    state: MultipleQueryState,
-    is_test: bool,
+    state: Option<MultipleQueryState>,
 ) -> Result<()> {
     let req_s = serde_json::to_string(&req).unwrap_or("".to_owned());
     let request: RequestMessage =
@@ -77,8 +94,8 @@ pub async fn connect_remote(
     }
 
     // pay by real count
-    if !is_test {
-        pay_by_token(req_num, &tx, state.clone(), true).await?;
+    if state.is_some() {
+        pay_by_token(req_num, &tx, state.as_ref().unwrap().clone(), true).await?;
     }
 
     // open stream and send query to remote
@@ -98,8 +115,8 @@ pub async fn connect_remote(
 
         // pay by real count
         if count == BATCH {
-            if !is_test {
-                pay_by_token(count, &tx, state.clone(), false).await?;
+            if state.is_some() {
+                pay_by_token(count, &tx, state.as_ref().unwrap().clone(), false).await?;
             }
             count = 0;
         }
@@ -110,8 +127,8 @@ pub async fn connect_remote(
         }
     }
 
-    if count != 0 && !is_test {
-        pay_by_token(count, &tx, state, true).await?;
+    if count != 0 && state.is_some() {
+        pay_by_token(count, &tx, state.unwrap(), true).await?;
     }
 
     Ok(())
@@ -120,14 +137,13 @@ pub async fn connect_remote(
 pub fn api_stream(
     endpoint: String,
     req: Value,
-    state: MultipleQueryState,
-    is_test: bool,
+    state: Option<MultipleQueryState>,
 ) -> impl Stream<Item = String> {
     let (tx, rx) = channel::<String>(1024);
 
     tokio::spawn(async move {
         let tx1 = tx.clone();
-        if let Err(err) = connect_remote(endpoint, tx1, req, state, is_test).await {
+        if let Err(err) = connect_remote(endpoint, tx1, req, state).await {
             let state = build_data(err.to_json());
             let _ = tx.send(state).await;
         }
