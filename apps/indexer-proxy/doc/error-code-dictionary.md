@@ -99,7 +99,7 @@
 - `1200` - Service exception: EVM RPC invalid
 - `1201` - Service exception: EVM RPC last block
 - `1202` - Service exception: indexer service exception.
-- `1203` - Service exception: Coordinator RPC mainfest is invalid
+- `1203` - Service exception: Coordinator RPC manifest is invalid
 - `1204` - Service exception: AI tokenizer missing or cannot download
 - `1205` - Service exception: AI tokenizer cannot encode
 - `1300` - Websocket connection: project not support websocket
