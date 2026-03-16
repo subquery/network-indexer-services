@@ -467,7 +467,7 @@ pub async fn post_query_signle_state(
             .map_err(|err| error!("Redis 1: {}", err));
     }
 
-    // async to coordiantor
+    // async to coordinator
     let channel_id = state.channel_id;
     let mdata = format!(
         r#"mutation {{
@@ -923,7 +923,7 @@ pub async fn pay_channel(mut state: QueryState) -> Result<String> {
         }
     }
 
-    // async to coordiantor
+    // async to coordinator
     let mdata = format!(
         r#"mutation {{
              channelUpdate(

@@ -1,6 +1,6 @@
 // This file is part of SubQuery.
 
-// Copyright (C) 2020-2024 SubQuery Pte Ltd authors & contributors
+// Copyright (C) 2020-2025 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ pub struct Payload {
     pub consumer: Option<String>,
     /// service agreement contract address
     pub agreement: Option<String>,
-    /// deployment id for the proejct
+    /// deployment id for the project
     pub deployment_id: String,
     /// signature of user
     pub signature: String,
@@ -67,7 +67,7 @@ struct Claims {
     pub indexer: String,
     /// agreement
     pub agreement: Option<String>,
-    /// deployment id for the proejct
+    /// deployment id for the project
     pub deployment_id: String,
     /// issue timestamp
     pub iat: i64,
