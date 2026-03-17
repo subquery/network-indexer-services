@@ -144,10 +144,34 @@ async fn handle_request_raw(request: RequestBuilder, query: String) -> Result<Ve
 
     let res = match response_result {
         Ok(res) => res,
-        Err(_e) => {
+        Err(e) => {
+            let status_info = e.status()
+                .map(|s| format!(" (status: {})", s))
+                .unwrap_or_default();
+            
+            let error_msg = if e.is_timeout() {
+                format!("Service exception or timeout: {} -- {}", e, status_info)
+            } else if e.is_connect() {
+                format!("Service exception or Connection error: {} -- {}", e, status_info)
+            } else if e.is_builder() {
+                format!("Service exception or builder error: {} -- {}", e, status_info)
+            } else if e.is_redirect() {
+                format!("Service exception or redirect error: {} -- {}", e, status_info)
+            } else if e.is_status() {
+                format!("Service exception or status error: {} -- {}", e, status_info)
+            } else if e.is_request() {
+                format!("Service exception or request error: {} -- {}", e, status_info)
+            } else if e.is_body() {
+                format!("Service exception or body error: {} -- {}", e, status_info)
+            } else if e.is_decode() {
+                format!("Service exception or decode error: {} -- {}", e, status_info)
+            } else {
+                format!("Service exception: {} -- {}", e, status_info)
+            };
+
             return Err(Error::GraphQLInternal(
                 1010,
-                "Service exception or timeout".to_owned(),
+                error_msg,
             ))
         }
     };
